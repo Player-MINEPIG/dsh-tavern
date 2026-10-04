@@ -12,17 +12,18 @@ function validateInput(data) {
  if(data.cardStorage){count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope)||!Array.isArray(data.cardStorage.entries))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
-export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onIdentityAction=async()=>{throw Error('Identity confirmation unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
+export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onAction=async()=>{throw Error('Card input is unavailable')},onResize=()=>{},onActionEnd=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onIdentityAction=async()=>{throw Error('Identity confirmation unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
  if(active>=4)throw Error('Four external card runtimes are active. Pause an older card, then retry this card.')
  const nonce=crypto.randomUUID(),url=URL.createObjectURL(new Blob([TAVERN_CARD_WORKER_SOURCE],{type:'text/javascript'}))
  let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
  let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null,lastIdentityActionId=0,identityAction=null
+ let lastActionId=0,action=null
  const tasks=new Map(),pending=new Map()
  let lastPhotoPickId=0
  let controlSequence=0,lastViewSequence=-1,lastViewString
- const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(identityAction){clearTimeout(identityAction.timer);identityAction.controller.abort();identityAction=null}if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
+ const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(identityAction){clearTimeout(identityAction.timer);identityAction.controller.abort();identityAction=null}if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}if(action){clearTimeout(action.timer);action.controller.abort();action=null}worker.terminate();tasks.clear();active--}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
  const replyWrite=(requestId,value,operationId)=>{if(disposed)return;try{if(JSON.stringify(value).length>128*1024)throw Error();worker.postMessage({kind:'writeResult',nonce,requestId,value})}catch{fail('Write result could not be delivered; inspect the operation receipt before retrying',operationId)}}
  worker.onerror=()=>fail('Card worker failed')
@@ -31,7 +32,7 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
   if(disposed||message?.nonce!==nonce)return
   if(message.kind==='busy'){if(!busyTimer)busyTimer=setTimeout(()=>fail('Card worker exceeded its response deadline'),1500);return}
   if(message.kind==='ready'){clearTimeout(startupTimer);startupTimer=null;return}
-  if(message.kind==='idle'){clearTimeout(busyTimer);busyTimer=null;return}
+  if(message.kind==='idle'){clearTimeout(busyTimer);busyTimer=null;const task=tasks.get(message.value?.taskId);if(task)task.composerFinished=true;if(task?.accepted)onActionEnd();return}
   if(message.kind==='error'){fail(String(message.value).slice(0,300));return}
   if(message.kind==='cardStorage'){
    const value=message.value
@@ -43,6 +44,31 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
    return
   }
   if(message.kind==='proposal'){if(typeof message.value==='string'&&message.value.length<=4000)onProposal(message.value);else fail('Invalid card proposal');return}
+  if(message.kind==='resize'){if(typeof message.value!=='number'||!Number.isFinite(message.value)||message.value<0||message.value>800){fail('Invalid card height');return}onResize(message.value);return}
+  if(message.kind==='action'){
+   const value=message.value
+   if(action||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastActionId||!['fill','send','saveMode','close'].includes(value.operation)||JSON.stringify(value).length>128*1024){fail('Invalid or duplicate card input request');return}
+   lastActionId=value.requestId
+   const task=tasks.get(value.taskId),fresh=task&&performance.now()-task.at<1500
+   const valid=task?.trusted===true&&!task.composerFinished&&task.type==='click'&&!task.actions.has(value.operation)&&(value.operation==='close'?task.accepted===true:fresh)&&(value.operation!=='send'||task.actions.has('fill'))
+   const respond=result=>{
+    if(disposed)return
+    try{worker.postMessage({kind:'actionResult',nonce,requestId:value.requestId,value:result})}catch{fail('Card input receipt could not be delivered')}
+   }
+   if(!valid){respond({error:'Card input requires a fresh trusted user click and one request per action'});return}
+   task.actions.add(value.operation)
+   clearTimeout(busyTimer);busyTimer=null
+   const controller=new AbortController(),ticket={controller,taskId:value.taskId,timer:setTimeout(()=>fail(value.operation==='send'?'Card send outcome is unknown; inspect the session before retrying':'Card input response deadline exceeded'),10000)}
+   action=ticket
+   Promise.resolve().then(()=>{if(disposed||action!==ticket)return;return onAction({operation:value.operation,value:value.value,taskId:value.taskId,cause:'user-interaction',signal:controller.signal})}).then(result=>{
+    if(disposed||action!==ticket)return
+    action=null;clearTimeout(ticket.timer)
+    if(value.operation==='send'&&result?.status==='accepted'){task.accepted=true;task.at=performance.now()}
+    busyTimer=setTimeout(()=>fail('Card worker exceeded its response deadline'),1500)
+    respond({value:result})
+   },error=>{if(disposed||action!==ticket)return;action=null;clearTimeout(ticket.timer);busyTimer=setTimeout(()=>fail('Card worker exceeded its response deadline'),1500);respond({error:String(error.message).slice(0,300)})})
+   return
+  }
   if(message.kind==='identityAction'){
    const value=message.value
    if(data.identityAction!==true||identityAction||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastIdentityActionId||JSON.stringify(value).length>128*1024){fail('Invalid identity action request');return}
@@ -114,5 +140,5 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
  try{worker.postMessage({...data,kind:'init',nonce})}catch(error){stop();throw error}
  let events=0,epoch=performance.now()
  const send=(kind,value,metadata={})=>{if(disposed)return;const now=performance.now();if(now-epoch>1000){epoch=now;events=0}if(++events>128){fail('Card input rate limit exceeded');return}try{worker.postMessage({kind,nonce,value,...metadata})}catch{fail('Card input could not be transferred')}}
- return {dispose:stop,resize:value=>{if(!value||!Number.isSafeInteger(value.width)||!Number.isSafeInteger(value.height)||value.width<1||value.height<1||value.width>16384||value.height>16384){fail('Invalid card viewport');return}send('viewport',{width:value.width,height:value.height})},dispatch:(value,{trusted=false,control=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500)tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}if(control&&controlSequence>=Number.MAX_SAFE_INTEGER){fail('Card control sequence limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,type:value?.type,at:performance.now()});send('event',value,{taskId,controlSequence:control?++controlSequence:0})},notifyVariables:value=>send('variables',value)}
+ return {dispose:stop,resize:value=>{if(!value||!Number.isSafeInteger(value.width)||!Number.isSafeInteger(value.height)||value.width<1||value.height<1||value.width>16384||value.height>16384){fail('Invalid card viewport');return}send('viewport',{width:value.width,height:value.height})},dispatch:(value,{trusted=false,control=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500&&task!==tasks.get(action?.taskId))tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}if(control&&controlSequence>=Number.MAX_SAFE_INTEGER){fail('Card control sequence limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,type:value?.type,at:performance.now(),actions:new Set(),accepted:false,composerFinished:false});send('event',value,{taskId,controlSequence:control?++controlSequence:0})},notifyVariables:value=>send('variables',value)}
 }

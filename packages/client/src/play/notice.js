@@ -28,6 +28,7 @@ import {useRestoredRenderingDisplay} from './rendering-display.js'
 import { shouldShowUnboundNotice } from './sidebar-model.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
+import {useCardComposer} from './card-composer-hook.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -48,7 +49,7 @@ function installStyles() {
   document.head.append(style)
 }
 
-export function PlaySessionDock({ session, useSessions, useConversation, conversationPhase, playClient }) {
+export function PlaySessionDock({ session, useSessions, useConversation, useInput, inputActions, conversationPhase, playClient }) {
   useClientUiSettings()
   installStyles()
   installPlayChatStyles()
@@ -63,6 +64,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
   const [error, setError] = useState('')
   const displaySettings = useConversationDisplaySettings()
   useRestoredRenderingDisplay(content?.sessionId===sessionId&&content?.kind==='opening'&&sessionBlank&&composerPhase==='blank'?content.display:null,displaySettings,setError)
+  const composer=useCardComposer({sessionId,useInput,inputActions,active:content?.kind==='opening'&&content.sessionId===sessionId,blocked:!sessionBlank||greetingBusy||composerPhase!=='blank',send:(text,{signal}={})=>playClient.postUserMessage(sessionId,text,{signal})})
 
   useEffect(() => {
     const refresh = () => setRevision(value => value + 1)
@@ -72,6 +74,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
 
   useEffect(() => {
     let active = true
+    if(composer?.pending&&content?.kind==='opening'&&content.sessionId===sessionId)return()=>{active=false}
     setContent(null)
     setError('')
     if (sessionId === null || summary === null) return () => { active = false }
@@ -120,7 +123,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       if (active) setError(reason instanceof Error ? reason.message : String(reason))
     })
     return () => { active = false }
-  }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary])
+  }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary, composer?.pending])
 
   const changeGreeting = async direction => {
     if (content?.kind !== 'opening' || greetingBusy || sessionId === null) return
@@ -145,7 +148,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       role: 'note',
     }, uiMessage('play.notice.unbound'))
   }
-  if (content.kind !== 'opening' || !sessionBlank || composerPhase !== 'blank') return null
+  if (content.kind !== 'opening' || ((!sessionBlank || composerPhase !== 'blank')&&!composer?.pending)) return null
   const greeting = content.greeting
   const importTurns = content.importTurns ?? []
   const options = greeting?.options ?? []
@@ -184,6 +187,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       : h('div',{className:'dtv-play-opening-body','data-dtv-card-viewport-boundary':'opening'},h(MessageContent,{
         text:greeting.text,
         openingBinding:openingSourceIdentity({sessionId,greeting}),
+        composer,
         writeScope:content.initialScope,
         createBinding:content.greetingScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:writeGrant?content.initialScope:content.greetingScope,signal,writeGrant}):undefined,
         enabled:displaySettings.interactiveCards===true,

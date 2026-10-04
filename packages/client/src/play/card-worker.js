@@ -8,6 +8,7 @@ import {IDENTITY_OPENING_RUNTIME} from './identity-opening-runtime.js'
 import {IDENTITY_ACTION_RUNTIME} from './identity-action-runtime.js'
 import {cardExecutionDiagnostic} from './card-execution-diagnostic.js'
 import {settleCardStorageWait} from './card-storage-wait-budget.js'
+import {settleCardActionWait} from './card-action-wait-budget.js'
 
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
@@ -27,6 +28,7 @@ const timers=new Map(),pendingMessages=[],pendingWrites=new Set();let lastWriteI
 let openingPending=null,lastOpeningId=0
 let identityActionPending=null,lastIdentityActionId=0
 let activeCause='script',activeTask=null,layoutCalls=0,layoutId=0,layoutPending=null,queue=Promise.resolve(),queued=0
+let actionId=0,actionPending=null,composerContext
 const startupTasks=[]
 let nextViewport,viewportQueued=false
 let photoPickId=0,lastPhotoTask=null
@@ -35,7 +37,7 @@ let storagePending=null,storageRevision=0
 let controlSequence=0,receivedControlSequence=0
 let executionInterrupted=false,executionTiming=null
 const reply=(kind,value,metadata={})=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value,...metadata})}
-function dispose(){if(destroyed)return;destroyed=true;for(const timer of timers.values())clearTimeout(timer);timers.clear();if(layoutPending)clearTimeout(layoutPending.timer);if(storagePending){clearTimeout(storagePending.timer);storagePending.reject(Error('Card storage generation expired'));storagePending=null}startupTasks.length=0;self.close()}
+function dispose(){if(destroyed)return;destroyed=true;for(const timer of timers.values())clearTimeout(timer);timers.clear();if(layoutPending)clearTimeout(layoutPending.timer);if(storagePending){clearTimeout(storagePending.timer);storagePending.reject(Error('Card storage generation expired'));storagePending=null}if(actionPending){clearTimeout(actionPending.timer);actionPending.reject(Error('Card input generation expired'));actionPending=null}startupTasks.length=0;self.close()}
 function fail(error){try{self.postMessage({nonce,kind:'error',value:String(error?.message??error).slice(0,300)})}finally{dispose()}}
 function expireStorage(ticket){if(storagePending!==ticket)return;storagePending=null;clearTimeout(ticket.timer);const error=Error('Card storage response deadline exceeded');ticket.reject(error);fail(error)}
 async function evaluate(code,name='card.js',module=false,initial=false){
@@ -61,12 +63,13 @@ function enter(callback,cause='script',taskId=null,correction=0){
  if(destroyed)return
  if(!ready){if(startupTasks.length>=64)return fail(Error('Card startup task limit exceeded'));startupTasks.push([callback,cause,taskId,correction]);return}
  if(++queued>128)return fail(Error('Card task queue limit exceeded'))
- queue=queue.then(async()=>{if(destroyed)return;activeCause=cause;activeTask=taskId;layoutCalls=0;if(correction)controlSequence=correction;reply('busy');try{await callback();await snapshot(correction>0);reply('idle')}catch(error){fail(error)}finally{activeCause='script';activeTask=null;queued--}})
+ queue=queue.then(async()=>{if(destroyed)return;activeCause=cause;activeTask=taskId;layoutCalls=0;if(correction)controlSequence=correction;reply('busy');try{await callback();await snapshot(correction>0);reply('idle',{taskId})}catch(error){fail(error)}finally{activeCause='script';activeTask=null;queued--}})
 }
 
 async function init(input){
  const data=validateInput(input)
  const started=performance.now();nonce=data.nonce;context=data.context;current=data.variables;viewport=data.viewport
+ composerContext=data.composer??{available:false,directSend:true}
  const hash=async text=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))].map(x=>x.toString(16).padStart(2,'0')).join('')
  const audit={compiler:'@babel/standalone@7.26.10 (react preset only)',sources:[],compiled:[]}
  for(const script of data.runs)audit.sources.push({name:script.name,sha256:await hash(script.code)})
@@ -91,6 +94,11 @@ async function init(input){
    else if(op==='cardStorageScope'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.scope}
    else if(op==='cardStorageSnapshot'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.entries}
    else if(op==='viewport'){if(!viewport||!Number.isSafeInteger(viewport.width)||!Number.isSafeInteger(viewport.height)||viewport.width<1||viewport.height<1||viewport.width>16384||viewport.height>16384)throw Error('Card viewport unavailable');result={width:viewport.width,height:viewport.height}}
+   else if(op==='composerContext')result=composerContext
+   else if(op==='composerResize'){
+    if(typeof args[0]!=='number'||!Number.isFinite(args[0])||args[0]<0)throw Error('Invalid card height')
+    reply('resize',Math.min(800,args[0]))
+   }
    else if(op==='variables'){
     const options=args[0]
     if(!current||current.status!=='available')throw Error('Variable snapshot unavailable')
@@ -144,6 +152,17 @@ async function init(input){
   if(destroyed)throw Error('Card storage generation expired')
   return vm.newString(JSON.stringify(result))
  });vm.setProp(vm.global,'__cardStorage',storage);storage.dispose()
+ const action=vm.newAsyncifiedFunction('__action',async handle=>{
+  if(++operations>10000||!executionTiming||actionPending||performance.now()>deadline)throw Error('Card action budget exceeded')
+  const raw=vm.getString(handle);if(raw.length>128*1024)throw Error('Card action exceeds limit')
+  const value=JSON.parse(raw)
+  if(!value||Array.isArray(value)||Object.keys(value).some(key=>!['operation','value'].includes(key))||!['fill','send','saveMode','close'].includes(value.operation))throw Error('Unsupported card action')
+  const requestId=++actionId,wait={started:null,execution:executionTiming,deadline,settled:false}
+  let result
+  try{result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{actionPending=null;reject(Error('Card input response deadline exceeded'))},10000);actionPending={requestId,resolve,reject,timer};reply('action',{...value,requestId,taskId:activeTask});wait.started=performance.now()})}finally{deadline=settleCardActionWait(wait,{current:executionTiming,live:!destroyed&&!executionInterrupted,now:performance.now(),deadline})}
+  if(destroyed)throw Error('Card disposed')
+  return vm.newString(JSON.stringify(result))
+ });vm.setProp(vm.global,'__action',action);action.dispose()
  const layout=vm.newAsyncifiedFunction('__layout',async handle=>{
   if(++layoutCalls>16||layoutPending||performance.now()>deadline)throw Error('Card layout budget exceeded')
   const raw=vm.getString(handle);if(raw.length>1024*1024)throw Error('Card layout input exceeds limit')
@@ -191,8 +210,9 @@ self.onmessage=event=>{
  if(data.nonce!==nonce||destroyed)return
  if(data.kind==='cardStorageResult'){if(!storagePending||data.requestId!==storagePending.requestId)return;const pending=storagePending;if(performance.now()>pending.expiresAt){expireStorage(pending);return}storagePending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error)pending.reject(Error(String(data.error).slice(0,200)));else pending.resolve(data.value);return}
+ if(data.kind==='actionResult'){if(!actionPending||data.requestId!==actionPending.requestId)return;const pending=actionPending;actionPending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='dispose'){dispose();return}
- if(!ready){if(['writeResult','variables','viewport','identityOpeningResult','identityActionResult'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
+ if(!ready){if(['event','writeResult','variables','viewport','identityOpeningResult','identityActionResult'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
  if(data.kind==='viewport'){if(!data.value||!Number.isSafeInteger(data.value.width)||!Number.isSafeInteger(data.value.height)||data.value.width<1||data.value.height<1||data.value.width>16384||data.value.height>16384)return fail(Error('Invalid card viewport'));nextViewport={width:data.value.width,height:data.value.height};if(!viewportQueued){viewportQueued=true;enter(()=>{viewport=nextViewport;nextViewport=null;viewportQueued=false;return evaluate('__viewportChanged()')})}}
  else if(data.kind==='event'){
   const correction=data.controlSequence??0

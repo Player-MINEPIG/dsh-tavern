@@ -63,7 +63,7 @@ flowchart LR
 
 1. **静态内容**：Markdown → DOMPurify；样式在 Shadow DOM 与绘制边界内隔离。实时视图的 `img` 与 CSS `background` / `background-image`（包括图片自定义变量）经过下述按需媒体控制器；导入不下载图库，静态 HTML 导出不加载远程图片。移除 srcset、poster 等；字体、其他 CSS 外部资源、`@import`、image/image-set/src 函数和转义仍拒绝。正常布局、颜色、渐变、变量、媒体查询和动画可用。外链需用户主动点击，带 `noopener noreferrer`。
 2. **脚本环境**：识别已闭合 `html` 围栏、无语言但以 `<body>`/`<html>` 开头的围栏，以及完整 `<html>…</html>`/`<body>…</body>` 中的控件或脚本。静态 DOM 在 `sandbox="allow-same-origin"`、无 `allow-scripts` 的 iframe 内呈现，CSP 禁止连接、外部图片、脚本、子 frame、表单提交等。卡片 JS 在独立 QuickJS WASM 中运行，不在 iframe 或父页面执行。iframe/Shadow DOM 本身不承担完整权限保证。
-3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面或 native eval 入口；模块仅从资源限定的已下载内容映射解析。建议只在卡片外显示，必须经用户点击 Tavern 按钮才调用已有 `user-message` API。
+3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面或 native eval 入口；模块仅从资源限定的已下载内容映射解析。建议在卡片外显示，由用户点击 Tavern 按钮提交；下述受控 ST 输入适配也允许直接模式中的卡片内真实用户点击，经既有 `user-message` API 请求提交。
 
 [DSH sandbox 固定版文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/sandbox/sandbox/README.md) 隔离的是子进程与文件访问，不能复用为消息 JS 的浏览器隔离。[官方桌面转发](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/desktop/src/web-document.ts) 会剥离 Origin；[桌面请求令牌](API.md#桌面请求令牌) 解决此差异，没有关闭 webSecurity。
 
@@ -76,6 +76,8 @@ flowchart LR
   C --> D[有界 JSON 白名单]
   D --> B
   D --> E[姓名上下文]
+  D --> H[受控输入请求]
+  H -->|真实点击与作用域校验| G
   D --> F[卡片外消息建议]
   F -->|用户点击| G[已有 Tavern API / DSH 历史]
   A --> H[惰性图片来源]
@@ -100,6 +102,25 @@ flowchart LR
 
 VM 只收到合成的 `selected-photo.jpg` 描述与有界 JPEG。窄 FileReader/Image/canvas 门面支持读取此次选择、自然尺寸，以及既有 `drawImage(image,0,0,width,height)` → `toDataURL('image/jpeg',0.82)` 流程，返回宿主已处理的 JPEG；没有通用 canvas、真实 File、路径、原文件名、任意图片获取或 Host 入口。照片变更不携带输入框发送权限。持久化仍遵守调用者已有预算及独立授权，选图不扩大存储额度或自动授予写入。输入保持单文件及栅格 accept 白名单；`hidden` 和明确的 `data-opening-choice`/`data-opening-perk` 属性可通过净化。
 
+## 受控 ST 输入兼容
+
+SUOT 选项卡使用窄范围的虚拟 `window.parent` / `window.top` facade。这些对象只含解释器自有代理，不包含宿主页面或真实 Window。惰性 `<template>` 数据保留 `<SUOT>` 标记，template fragment 支持纯文本读取，虚拟 window 收到 `DOMContentLoaded`；脚本和活动属性仍经过净化。
+
+| 接口 | 支持的请求 |
+| --- | --- |
+| `parent.document.getElementById('send_textarea')` | 脱离文档的虚拟 textarea；value setter 与 input/change 事件请求替换最多 4000 字符的草稿 |
+| `textarea.focus()` | 公开 DSH 编辑器插入会选中插入文本，不提供宿主 DOM focus handle |
+| `SillyTavern.getContext().generate()` / 虚拟 `send_but.click()` | 在明确直接模式中，请求提交本次点击填入的草稿；受理不等于模型完成 |
+| `extensionSettings.XiaJin.directSend` / `saveSettingsDebounced()` | 仅此布尔字段；按源码、渲染作用域与卡片位置绑定的本地偏好，最多 128 条，不保存写权限 |
+| `parent.document.querySelectorAll('iframe')` | 仅此卡自己的 frame proxy；`remove()` 只在其发送已受理后关闭 |
+| `parent.postMessage({type:'resizeIframe',height}, '*')` | 仅调整此 iframe，高度仍限制在 100–800 px |
+
+可信接收端将请求绑定到 runtime nonce、单调请求 ID 和近期原生点击。脚本合成事件、定时器、重复动作及事件任务结束后的请求不能继承该点击。仅填入模式不提交消息。发送需要同一事件填入的文本及未变化的草稿修订，然后使用已有、按 session 绑定的用户消息 API。并发或重复发送被拒绝；受理后清空草稿不会覆盖用户的新编辑。忙碌、带结构引用或附件的草稿拒绝替换。切换会话/源码、暂停、禁用或卸载会释放待处理请求；已受理的请求无法撤回。超时明确报告发送结果未知，不自动重试。输入/设置/发送拒绝保持可见，也不能关闭卡片。历史过渡画面不取得可写 composer。
+
+发送中的开场 dock 或开场布局保留到该点击的关闭或任务结束，以免 DSH 首条消息的界面转场先卸载回执接收端。会话或输入 shell 替换仍立即失效，其他卡片不能释放该请求的私有占用。启动期间的事件进入有界队列，处理时仍检查原点击的有效期。
+
+历史原文保持不变。当前会话中重新展示的历史卡使用新绑定实例，用户的新真实点击仍可填入或提出发送；旧实例或旧待处理点击不能继续提交。该输入请求独立于 MVU 的 initial 变量写授权。
+
 ## 支持接口与限制
 
 默认关闭脚本，在对话设置明确启用。可从[计数器示例](examples/interactive-counter.html)开始，将完整文件放进 `html` 代码围栏。每次重新挂载/切换周目/修改卡片源码都新建运行时；普通父组件刷新保留状态。生成中的消息不执行脚本，历史卡片不因其他消息的流式更新而重置。卡片局部变量只在内存中，刷新或重挂载后重置。
@@ -114,7 +135,7 @@ VM 只收到合成的 `selected-photo.jpg` 描述与有界 JPEG。窄 FileReader
 | `TavernUI.version`, `getContext()` | v1；角色与挂载时复制的 userName/characterName，复制的 JSON，不含 session ID 或凭据 |
 | `TavernUI.proposeMessage(text)` | 最多 4000 字符，生成可见建议；不能自行发送 |
 
-外部 `<script src>` 和 ES 模块使用下述资源依赖获取流程；缺失依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。提供下述卡片内限定布局读值；可变 CSSOM、canvas、父页面与系统接口仍不可用；本渲染器不提供世界书/聊天/生成接口；写变量走下述单独授权的 MVU 桥。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
+外部 `<script src>` 和 ES 模块使用下述资源依赖获取流程；缺失依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。提供下述卡片内限定布局读值；可变 CSSOM、canvas、父页面与系统接口仍不可用；仅下述受控 ST 输入子集提供聊天提交请求，通用世界书/聊天/模型生成接口仍不可用；写变量走下述单独授权的 MVU 桥。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
 
 上表描述小型内嵌 facade；其每卡源码最多 128K UTF-16 字符单元、解释器 8 MiB/256 KiB 栈；每次执行 60 ms 与 500 次中断检查双重上限、1000 bridge 操作、100 Promise jobs；DOM 最多 2048 handles，最多 256 listeners；高度 100–800 px。超限显示错误。浏览器布局/图片解码、WASM 引擎缺陷和复杂 CSS 的拒绝服务不由解释器配额完全覆盖，不能承诺绝对安全；显示正则仍有既有 RegExp 回溯风险。
 
@@ -177,7 +198,7 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 | `getAllVariables()` | 同一绑定消息快照，不合并全局/chat 变量 |
 | `TavernUI.onVariables(callback)` | 返回取消订阅函数；已提交快照 `{version,scope,revision,variables,status}`，最多 64 个订阅；不是原版可变的 before-update 事件 |
 
-变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。空开场白可用明确的 `{mode:'initial',playthroughId,sessionId,characterId}` 作用域，仅绑定已解析的根会话及所选角色；来源再次验证空持久历史，首个 turn 开始后永久关闭该初始作用域。离开、切角色/会话、重挂载均销毁旧绑定与授权。没有可核实坐标的导入与流式内容不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，写操作需要单独的 Host capability，不继承模型工具权限。发送消息仍需卡片外确认，与模型工具授权完全分离。
+变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。空开场白可用明确的 `{mode:'initial',playthroughId,sessionId,characterId}` 作用域，仅绑定已解析的根会话及所选角色；来源再次验证空持久历史，首个 turn 开始后永久关闭该初始作用域。离开、切角色/会话、重挂载均销毁旧绑定与授权。没有可核实坐标的导入与流式内容不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，写操作需要单独的 Host capability，不继承模型工具权限。消息建议仍需卡片外确认；受控输入请求走其独立的真实点击校验，与模型工具授权完全分离。
 
 ## 单独授权的变量写入
 

@@ -70,7 +70,7 @@ Name: 1–80 characters. Colors: six-digit `#RRGGBB`. Integer pixels: radius 0�
 
 1. **Static content:** Markdown passes DOMPurify, with Shadow DOM and paint containment for styles. Live `img` and CSS `background` / `background-image` (including image custom properties) use the demand media controller below. Importing does not download galleries; static HTML exports do not load remote images. srcset/poster are removed. Fonts, other external CSS resources, `@import`, image/image-set/src functions and escapes remain blocked. Layout, colors, gradients, variables, media queries and animations work. External links require a click and use `noopener noreferrer`.
 2. **Script execution:** closed `html` fences, unlabelled fences beginning with `<body>`/`<html>`, and complete `<html>…</html>`/`<body>…</body>` documents containing controls/scripts are recognized. Static DOM is presented in an iframe with `sandbox="allow-same-origin"` and no `allow-scripts`. CSP denies connections, external images, scripts, child frames and form submissions. Card JS runs in a separate QuickJS WASM interpreter, never in the iframe or parent browser realm. Neither iframe nor Shadow DOM alone is the full security boundary.
-3. **Capabilities:** a bounded JSON bridge permits card-local DOM operations, copied display names, and message proposals. There is no generic RPC, Host API, credential, filesystem, network, parent-page or native eval handle. Modules resolve only from resource-scoped downloaded content maps. Only an explicit click on the Tavern button outside the card sends a proposal through the existing user-message API.
+3. **Capabilities:** a bounded JSON bridge permits card-local DOM operations, copied display names, and message proposals. There is no generic RPC, Host API, credential, filesystem, network, parent-page or native eval handle. Modules resolve only from resource-scoped downloaded content maps. Proposals require an explicit click on the Tavern button outside the card. The controlled ST input adapter below also accepts a real user click within a card in direct mode, through the existing user-message API.
 
 The [versioned DSH sandbox](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/sandbox/sandbox/README.md) isolates subprocesses/files, not browser message JavaScript. The [official desktop forwarder](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/desktop/src/web-document.ts) strips Origin; the [request token](API_en.md#desktop-request-token) handles this difference without disabling webSecurity.
 
@@ -83,6 +83,8 @@ flowchart LR
   C --> D[Bounded JSON allowlist]
   D --> B
   D --> E[Display names]
+  D --> H[Controlled input request]
+  H -->|Native click and scope checks| G
   D --> F[Proposal outside card]
   F -->|User click| G[Existing Tavern API / DSH history]
   A --> H[Inert image sources]
@@ -106,6 +108,24 @@ Cards can express displayed images through their limited DOM, but cannot call ge
 With card scripts enabled, a sanitized `input[type=file]` can receive one user-selected static PNG/JPEG/WebP. A card button may open that input only during a fresh trusted click and browser user activation; synthetic clicks/changes cannot acquire authority. The trusted renderer reads only the selected File, checks 8 MiB, 8388608 pixels and 8192 per edge before decoding, then strips metadata and produces a JPEG with longest edge at most 640 and a data URI at most 65536 characters. Decoding is serialized, with at most four queued selections. A new selection, pause, source change or unmount invalidates pending results; invalid formats/limits show a separate photo error.
 
 The VM receives a synthetic `selected-photo.jpg` descriptor and the bounded JPEG. A narrow FileReader/Image/canvas facade supports reading this selection, its natural dimensions, and the existing `drawImage(image,0,0,width,height)` → `toDataURL('image/jpeg',0.82)` sequence; it returns the already processed JPEG. It has no general canvas, native File, path, original filename, arbitrary image fetch or Host access. Photo changes carry no composer/send authority. Persistence remains the caller's bounded, separately authorized storage contract; selecting a photo does not increase storage quotas or grant a write. The input remains single-file with a raster accept list, and `hidden` plus the explicit `data-opening-choice`/`data-opening-perk` attributes survive sanitization.
+## Controlled ST input compatibility
+
+SUOT option cards use a narrow virtual `window.parent` / `window.top` facade. These objects contain interpreter-owned proxies, never the parent page or a native Window. Inert `<template>` data preserves `<SUOT>` markers; template fragments expose plain text, and the virtual window receives `DOMContentLoaded`. Scripts and active attributes remain sanitized.
+
+| Interface | Supported request |
+| --- | --- |
+| `parent.document.getElementById('send_textarea')` | A detached virtual textarea; its value setter and input/change events request a draft replacement of at most 4000 characters |
+| `textarea.focus()` | The public DSH editor insertion selects the inserted text; no parent DOM focus handle is provided |
+| `SillyTavern.getContext().generate()` / virtual `send_but.click()` | Request submission of this click's filled draft, in explicit direct mode; acceptance is not model completion |
+| `extensionSettings.XiaJin.directSend` / `saveSettingsDebounced()` | Only this boolean; a local preference keyed by source, rendered scope and card position, bounded to 128 records, with no saved write permission |
+| `parent.document.querySelectorAll('iframe')` | Only this card's frame proxy; `remove()` closes it only after its accepted send |
+| `parent.postMessage({type:'resizeIframe',height}, '*')` | Resize only this frame, within the existing 100–800 px bounds |
+
+The trusted receiver binds requests to a runtime nonce, monotonically increasing request ID and a fresh native click. Synthetic events, timers, duplicate actions and requests after task completion cannot claim that click. Fill-only mode never submits a message. Sending requires the same event's filled text and unchanged draft revision, then uses the existing session-bound user-message API. Concurrent or repeated sends are refused; draft clearing after acceptance preserves newer user edits. Busy, structured-chip or attachment drafts reject replacement. Switching the session/source, pausing, disabling or unmounting disposes pending requests; an accepted request cannot be rolled back. A timeout reports an unknown send outcome rather than retrying. Rejected input/settings/send requests remain visible and cannot close the card. Historical transition surfaces receive no writable composer.
+
+An opening dock or opening layout remains mounted until its sending click closes the card or finishes its task, so the first-message transition does not remove the receipt receiver prematurely. A session or input-shell replacement still revokes it immediately; other cards cannot release its private request lease. Events during startup enter a bounded queue and retain the original click expiry check.
+
+Historical source text stays unchanged. A historical card displayed again in the current session receives a new instance binding; a new trusted user click may fill the input or request a send. An old instance or pending click cannot continue submitting. These input requests are independent of MVU initial-variable write authorization.
 
 ## Supported interfaces and limitations
 
@@ -121,7 +141,7 @@ Scripts default off; enable them in conversation settings. Start with the [count
 | `TavernUI.version`, `getContext()` | v1; role and userName/characterName captured at mount, copied JSON without session IDs or credentials |
 | `TavernUI.proposeMessage(text)` | Up to 4000 characters; visible proposal, never automatic sending |
 
-External script sources and ES modules use the resource download lifecycle below. Missing dependencies and inline on* handlers disable all scripts in the card. External sources, Helper scripts and JSX use a dedicated Worker running QuickJS with linkedom. Fixed official jQuery 3.6.0, React 18.3.1 and Vue 3.5.13 fixtures cover DOM insertion, click events and state changes. This does not establish full browser compatibility: bounded card-local layout reads are provided below; mutable CSSOM, canvas, parent-page and system APIs remain unavailable. World-book/chat/generation APIs are not supplied by this renderer. Variable writes use the separately authorized MVU bridge described below. Missing runtime APIs fail visibly and dispose the runtime; no silent success. Static HTML export does not execute scripts or export in-memory card state.
+External script sources and ES modules use the resource download lifecycle below. Missing dependencies and inline on* handlers disable all scripts in the card. External sources, Helper scripts and JSX use a dedicated Worker running QuickJS with linkedom. Fixed official jQuery 3.6.0, React 18.3.1 and Vue 3.5.13 fixtures cover DOM insertion, click events and state changes. This does not establish full browser compatibility: bounded card-local layout reads are provided below; mutable CSSOM, canvas, parent-page and system APIs remain unavailable. The controlled ST input subset below is the only chat submission interface; general world-book/chat/model-generation APIs are unavailable. Variable writes use the separately authorized MVU bridge described below. Missing runtime APIs fail visibly and dispose the runtime; no silent success. Static HTML export does not execute scripts or export in-memory card state.
 
 The table above describes the small inline facade. Its limits per card are 128K UTF-16 code units of source, 8 MiB interpreter heap, 256 KiB stack; each entry has a 60 ms deadline and 500-interrupt ceiling, 1000 bridge operations and 100 Promise jobs. At most 2048 DOM handles and 256 listeners, with height clamped to 100–800 px. Limits produce visible errors. Browser layout/image decoding, WASM engine defects and expensive CSS denial of service are not completely covered by interpreter quotas; this is not an absolute security guarantee. Existing display RegExp backtracking risks remain.
 

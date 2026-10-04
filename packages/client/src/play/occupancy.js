@@ -38,7 +38,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   let chatGeneration = 0
   let disposeChatEntry = null
   let disposeDefaultViewEntry = null
-  let mainDeclared=false,disposeOpeningRoot=null,disposeOpeningBody=null,openingSessionId=null
+  let mainDeclared=false,disposeOpeningRoot=null,disposeOpeningBody=null,openingSessionId=null,openingRequest=null
   let disposeSessionSubscription = null
   let refreshChatListener = null
   let refreshLocaleListener = null
@@ -194,12 +194,13 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   }
 
   const dropOpeningEntries=()=>{
+    openingRequest=null
     openingSessionId=null
     disposeOpeningBody?.();disposeOpeningBody=null
     disposeOpeningRoot?.();disposeOpeningRoot=null
   }
   const syncOpeningEntries=()=>{
-    const id=mainDeclared&&mode==='play'?openingLayoutSession(ctx.sessions?.list?.getSnapshot?.(),chatBindings):null
+    const id=mainDeclared&&mode==='play'?openingLayoutSession(ctx.sessions?.list?.getSnapshot?.(),chatBindings,openingRequest?.sessionId):null
     if(id===openingSessionId)return
     dropOpeningEntries()
     const store=findConversationStore(ctx.slots)
@@ -207,6 +208,13 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     disposeOpeningRoot=ctx.slots.register({name:'main.conversation',priority:PLAY_SLOT_PRIORITY,children:{[OPENING_SESSION_SLOT]:{kind:'single',scope:'session'}}},OpeningConversationRoot)
     disposeOpeningBody=ctx.slots.register({name:OPENING_SESSION_SLOT,store,inject:sessionId=>({
       ...bindingProps(sessionId),playClient,conversationPhase,switchToNative,
+      getComposerPending:()=>openingRequest?.sessionId===sessionId,
+      onComposerPending:(owner,pending)=>{
+        if(pending&&sessionId===openingSessionId)openingRequest={sessionId,owner}
+        else if(!pending&&openingRequest?.sessionId===sessionId&&openingRequest.owner===owner)openingRequest=null
+        else return
+        queueMicrotask(()=>{syncOpeningEntries();notifyBindings()})
+      },
       activateView:(id,view)=>ctx.get?.('uiConversation')?.binding(id).activate(view),
       openSession:(id,playthrough=chatBindings.get(sessionId)?.playthrough)=>openPlaySession(id,playthrough),
     })},OpeningConversationSession)

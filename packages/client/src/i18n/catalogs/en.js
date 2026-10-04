@@ -110,6 +110,7 @@ export default Object.freeze({
   "appearance.imageUnavailable": "Image unavailable",
   "appearance.photoUnavailable": "Photo could not be selected or processed. Choose one static PNG, JPEG or WebP under 8 MiB and 8 megapixels, using the card's upload button.",
   "appearance.imageStatus": "Images: {visible} visible · {loaded} ready · {loading} loading · {failed} unavailable",
+  "appearance.cardSendAccepted": "The card’s send request was accepted.",
   "appearance.scriptsOff": "Scripts are disabled or the message is still streaming. Showing static content.",
   "rendering.writeTitle": "Variable write permissions",
   "rendering.writeBoundary": "Writes default off. Review the complete active card bundle, then separately authorize this exact binding. Historical scopes remain read-only; MVU and manager policies must also allow each write. Revoking, remounting or changing code discards this permission.",

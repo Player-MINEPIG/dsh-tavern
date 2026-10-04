@@ -60,3 +60,20 @@ test('layout timeout aborts its Host callback and releases the Worker without a 
  await Promise.resolve();timers.find(item=>item.ms===1000).fn();assert.equal(signal.aborted,true);assert.equal(terminated,1)
  resolve({});await Promise.resolve();await Promise.resolve();assert.equal(posts.length,1);assert.match(errors[0],/layout deadline/);runtime.dispose()
 })
+
+test('an event arriving during startup is queued with its original task and nonce',async()=>{
+ const source=readFileSync(new URL('../packages/client/src/play/card-worker.js',import.meta.url),'utf8').replace(/^import.*\n/gm,'')
+ let release;const events=[],evaluated=[]
+ const vm={dispose(){},setProp(){},newFunction(){return{dispose(){}}},newAsyncifiedFunction(){return{dispose(){}}},typeof:handle=>handle.code==='__view()'?'string':'undefined',getString:x=>typeof x==='string'?x:'{}',newString:x=>x,evalCodeAsync:async code=>{evaluated.push(code);if(code==='__ready()')await new Promise(resolve=>release=resolve);return{value:{code,dispose(){}}}},dump:handle=>handle.code==='__view()'?'{}':null}
+ const runtime={setMemoryLimit(){},setMaxStackSize(){},setInterruptHandler(){},setModuleLoader(){},newContext:()=>vm,executePendingJobs:()=>({}),hasPendingJob:()=>false,computeMemoryUsage:()=>({dispose(){}}),dispose(){}}
+ const context=vmModule.createContext({DEPENDENCY_LIMITS,createAsyncJobDrain:()=>async()=>0,TAVERN_QUICKJS_VERSION:'0.31.0',newQuickJSAsyncWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP:'',TAVERN_VIRTUAL_DOM_SOURCE:'',performance:{now:()=>0},self:{postMessage:x=>events.push(x),close(){}},setTimeout,clearTimeout,URL,TextEncoder})
+ vmModule.runInContext(source,context);context.self.onmessage({data:{kind:'init',nonce:'fixture',html:'',runs:[]}})
+ for(let i=0;i<100&&!release;i++)await Promise.resolve();assert.equal(typeof release,'function')
+ context.self.onmessage({data:{kind:'event',nonce:'other',taskId:'wrong',value:{type:'click',target:3}}})
+ context.self.onmessage({data:{kind:'event',nonce:'fixture',taskId:'early',value:{type:'click',target:3}}})
+ assert(!evaluated.some(code=>code.startsWith('__domEvent')));release()
+ for(let i=0;i<100;i++)await Promise.resolve()
+ assert.equal(evaluated.filter(code=>code.startsWith('__domEvent')).length,1)
+ assert(events.some(event=>event.kind==='idle'&&event.value.taskId==='early'))
+ context.self.onmessage({data:{kind:'dispose',nonce:'fixture'}})
+})

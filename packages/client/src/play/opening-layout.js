@@ -25,7 +25,7 @@ function installStyles(){
 function OpeningViews(props){
  const opening=useContext(Opening)
  return h('div',{className:'dtv-rp-opening-view','data-dtv-opening-session':props.sessionId},h(MowanChatView,{
-  ...props,playClient:opening.playClient,playthrough:opening.binding.playthrough,openSession:opening.openSession,
+  ...props,playClient:opening.playClient,playthrough:opening.binding.playthrough,openSession:opening.openSession,onComposerPending:opening.onComposerPending,
  }))
 }
 const OPENING_VIEWS={views:OpeningViews}
@@ -35,9 +35,10 @@ export function OpeningConversationRoot({renderSlot}){
 }
 
 /** Owns only presentation; it never writes or substitutes Session lifecycle. */
-export function OpeningConversationSession({sessionId,useSession,useSessions,useConversation,useStore,actions,renderFactorySlot,getBinding,subscribeBindings,playClient,openSession,conversationPhase,switchToNative,activateView}){
+export function OpeningConversationSession({sessionId,useSession,useSessions,useConversation,useStore,actions,renderFactorySlot,getBinding,subscribeBindings,playClient,openSession,conversationPhase,switchToNative,activateView,getComposerPending=()=>false,onComposerPending}){
  installStyles()
  const binding=useSyncExternalStore(subscribeBindings,getBinding,getBinding)
+ const composerPending=useSyncExternalStore(subscribeBindings,getComposerPending,getComposerPending)
  const session=useSession(s=>s),conversation=useConversation(s=>s)
  const selected=useStore(s=>s.view)
  const title=useSessions(s=>s.byId?.[sessionId]?.displayTitle??sessionId)
@@ -47,7 +48,7 @@ export function OpeningConversationSession({sessionId,useSession,useSessions,use
  useLayoutEffect(()=>{if(current&&(selected===null||selected===undefined))actions.setView('rp')},[actions,current,selected])
  if(!current)return null
  const choose=view=>{activateView?.(sessionId,view);actions.setView(view)}
- return h(Opening.Provider,{value:{binding,playClient,openSession}},h('section',{
+ return h(Opening.Provider,{value:{binding,playClient,openSession,onComposerPending}},h('section',{
   className:'dtv-rp-opening-shell','data-dtv-rp-opening':'','data-phase':blank&&!rp?'hero':'active',
  },h('header',{className:'dtv-rp-opening-header'},
   h('span',{className:'dtv-rp-opening-title'},title),
@@ -55,12 +56,12 @@ export function OpeningConversationSession({sessionId,useSession,useSessions,use
    h('button',{type:'button',role:'tab','aria-selected':rp,onClick:()=>choose('rp')},translate('play.chat.label')),
    h('button',{type:'button',role:'tab','aria-selected':!rp,onClick:()=>choose('chat')},translate('play.opening.chat'))),
   h('button',{type:'button',onClick:switchToNative},translate('play.opening.native'))),
- renderFactorySlot('conversation.content',{variant:'embedded',phase:blank&&!rp?'hero':'active',hero:blank&&!rp},blank&&rp?{slots:OPENING_VIEWS}:undefined)))
+ renderFactorySlot('conversation.content',{variant:'embedded',phase:blank&&!rp?'hero':'active',hero:blank&&!rp},(blank||composerPending)&&rp?{slots:OPENING_VIEWS}:undefined)))
 }
 
-export function openingLayoutSession(snapshot,bindings){
+export function openingLayoutSession(snapshot,bindings,pendingSessionId=null){
  const rows=Object.values(snapshot?.byId??{})
  const main=rows.find(row=>(row.retainedBy?.mainView??0)>0)
  const binding=main&&bindings.get(main.id),ext=binding?.playthrough?.ext?.pmpDshTavern
- return main?.blank===true&&binding?.characterId&&binding.characterId===ext?.characterId&&ext?.rootSessionId===main.id?main.id:null
+ return (main?.blank===true||main?.id===pendingSessionId)&&binding?.characterId&&binding.characterId===ext?.characterId&&ext?.rootSessionId===main.id?main.id:null
 }

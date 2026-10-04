@@ -30,6 +30,26 @@ test('confirmed blank RP mounts its own child and actual first-turn lifecycle re
  assert.equal(f.registrations.filter(x=>x.options.name==='conversation.view'&&x.active).length,1)
  for(const dispose of f.cleanups)dispose()
 })
+test('only the current input owner can keep the first-send receipt surface alive',async()=>{
+ const f=fixture();f.occupancy.setMode('play');await settle();await settle()
+ const own=f.registrations.find(x=>x.options.name==='main.conversation'),body=f.registrations.find(x=>x.options.name===OPENING_SESSION_SLOT)
+ const bridge=body.options.inject('s'),owner={}
+ bridge.onComposerPending(owner,true)
+ f.update(s=>({byId:{...s.byId,s:{...s.byId.s,blank:false,running:true}}}))
+ await settle();assert.equal(own.active,true);assert.equal(bridge.getComposerPending(),true)
+ bridge.onComposerPending({},false);await settle();assert.equal(own.active,true)
+ bridge.onComposerPending(owner,false);await settle();assert.equal(own.active,false)
+ for(const dispose of f.cleanups)dispose()
+})
+test('a pending composer receipt cannot retain a replaced session',async()=>{
+ const f=fixture();f.occupancy.setMode('play');await settle();await settle()
+ const own=f.registrations.find(x=>x.options.name==='main.conversation'),body=f.registrations.find(x=>x.options.name===OPENING_SESSION_SLOT)
+ const bridge=body.options.inject('s'),owner={};bridge.onComposerPending(owner,true)
+ f.update(s=>({byId:{s:{...s.byId.s,retainedBy:{}},ordinary:{...s.byId.ordinary,retainedBy:{mainView:1}}}}))
+ assert.equal(own.active,false);assert.equal(bridge.getComposerPending(),false)
+ bridge.onComposerPending(owner,true);await settle();assert.equal(own.active,false)
+ for(const dispose of f.cleanups)dispose()
+})
 test('focus change and mode removal release the old opening before another classification finishes',async()=>{
  const f=fixture();f.occupancy.setMode('play');await settle();await settle()
  const own=f.registrations.find(x=>x.options.name==='main.conversation')

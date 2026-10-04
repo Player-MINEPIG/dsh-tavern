@@ -110,6 +110,7 @@ export default Object.freeze({
   "appearance.imageUnavailable": "图片暂不可用",
   "appearance.photoUnavailable": "照片未能选择或处理。请点击卡片上传按钮，选择一张小于 8 MiB、800 万像素的静态 PNG、JPEG 或 WebP 图片。",
   "appearance.imageStatus": "图片：可见 {visible} · 已显示 {loaded} · 加载中 {loading} · 不可用 {failed}",
+  "appearance.cardSendAccepted": "交互卡的发送请求已受理。",
   "appearance.scriptsOff": "脚本尚未启用，或消息仍在生成。当前显示静态内容。",
   "rendering.writeTitle": "变量写入权限",
   "rendering.writeBoundary": "默认不允许写入。先核对当前卡片完整执行代码，再单独授权此绑定。历史作用域仍只读，每次写入还须通过 MVU 和 manager 策略。撤销、重挂或代码变化均丢弃此权限。",

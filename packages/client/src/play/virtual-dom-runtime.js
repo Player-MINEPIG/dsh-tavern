@@ -1,11 +1,15 @@
 import { CARD_CONVENIENCE } from './card-convenience.js'
 import { CARD_PHOTO_RUNTIME } from './card-photo-runtime.js'
+import { CARD_COMPOSER_RUNTIME } from './card-composer-runtime.js'
 // This source runs inside the interpreter, not in the worker's native realm.
 export const VIRTUAL_DOM_BOOTSTRAP = `
 const __DOM=__TavernDOM;
-const __doc=__DOM.parseHTML('<html><head></head><body></body></html>');
+const __doc=__DOM.parseHTML('<html><head></head><body></body></html>',globalThis);
 globalThis.window=__doc.window;globalThis.self=window;globalThis.document=__doc.document;
-for(const key of ['Node','Element','HTMLElement','SVGElement','Event','CustomEvent','MutationObserver','DOMParser'])globalThis[key]=__DOM[key];
+for(const key of ['Node','Element','HTMLElement','HTMLTextAreaElement','SVGElement','Event','CustomEvent','MutationObserver','DOMParser'])globalThis[key]=__DOM[key];
+// Linkedom's fragment inherits Node.textContent=null. Browser templates expose
+// the concatenated inert descendant text instead (required by option parsers).
+if(__DOM.DocumentFragment)Object.defineProperty(__DOM.DocumentFragment.prototype,'textContent',{get(){return [...this.childNodes].map(node=>node.textContent??'').join('')},set(value){this.replaceChildren(document.createTextNode(String(value??'')))},configurable:true});
 document.implementation={createHTMLDocument:()=>__DOM.parseHTML('<html><head></head><body></body></html>').document};
 globalThis.navigator=Object.freeze({userAgent:'Tavern isolated virtual DOM'});
 globalThis.location=Object.freeze({href:'https://card.invalid/'});
@@ -15,6 +19,7 @@ globalThis.__viewportChanged=()=>window.dispatchEvent(new __DOM.Event('resize'))
 
 globalThis.console=Object.freeze({log(){},warn(){},error(){},info(){},debug(){}});
 function __call(op,args=[]){const value=JSON.parse(__host(JSON.stringify({op,args})));if(value.error)throw Error(value.error);return value.value}
+if(document.createElement&&__DOM.HTMLTextAreaElement){${CARD_COMPOSER_RUNTIME}}
 const __timers=new Map();let __timerId=0;
 globalThis.setTimeout=(fn,delay=0,...args)=>{if(typeof fn!=='function')throw Error('Timer requires callback');const id=++__timerId;__timers.set(id,()=>fn(...args));__call('timer',[id,delay]);return id};
 globalThis.clearTimeout=id=>{__timers.delete(id);__call('clearTimer',[id])};
@@ -64,6 +69,7 @@ globalThis.getComputedStyle=(node,pseudo)=>{const data=__geometry(node,pseudo).c
 globalThis.__domEvent=data=>{
  const node=__nodes.get(data.target);if(!node)return;
  if(data.type==='change'&&data.photo!==undefined)__acceptPhoto(node,data.photo);
+ globalThis.__beginComposerEvent?.();
  if(data.value!==undefined)node.value=data.value;if(data.checked!==undefined)node.checked=data.checked;
  const event=new __DOM.Event(data.type,{bubbles:true,cancelable:true});
  for(const name of ['key','code','keyCode','charCode','button','buttons','clientX','clientY','ctrlKey','altKey','shiftKey','metaKey'])if(data[name]!==undefined)event[name]=data[name];

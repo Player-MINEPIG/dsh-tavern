@@ -18,12 +18,13 @@ function errorMessage(data, status) {
 }
 
 function createRequester(fetchImpl, root) {
-  return async function request(method, path, body) {
+  return async function request(method, path, body, {signal} = {}) {
     const hasBody = body !== undefined
     const response = await fetchImpl(`${root}${path}`, {
       method,
       headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
       body: hasBody ? JSON.stringify(body) : undefined,
+      ...(signal ? {signal} : {}),
     })
     const data = await response.json().catch(() => null)
     if (!response.ok || data?.ok === false) {
@@ -285,8 +286,8 @@ export function createLivePlayClient({
       return v2('POST', `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId })
     },
 
-    postUserMessage(sessionId, text) {
-      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text })
+    postUserMessage(sessionId, text, options) {
+      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text }, options)
     },
 
     postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {

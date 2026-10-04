@@ -131,6 +131,8 @@ node --test test/play-sessions.test.mjs
 
 在隔离的目标 Host 上传并保存用户头像，确认根会话绑定的默认头像，修改单条及本周目全部头像，刷新并对照其他周目和源资源。预览/应用/导入/导出样式并拒绝非法版本。用[计数器示例](examples/interactive-counter.html)检查脚本开关，然后验证原生/RP 切换、流式、分支及桌面写入。官方桌面发行包需单独验收：使用其未改动转发模块的 Electron 验证壳只能建立协议行为证据，不能代表整款应用验收。使用合成资源与模型响应得到可复现结果，真实提供方和角色卡另行验收。运行记录放在被忽略的 `.local/`。
 
+受控输入桥运行 `node --test test/card-composer.test.mjs test/card-worker-lifecycle.test.mjs`、`node scripts/verify-card-composer-browser.mjs` 与 `TAVERN_COMPOSER_WIDTH=390 node scripts/verify-card-composer-browser.mjs`。自写 SUOT fixture 覆盖 window 就绪、template 解析、七个按钮、真实/合成点击、仅填入、直接请求、偏好恢复、错误、关闭和高度；此夹具使用合成发送 adapter，不代替隔离目标 Host 中公开 inputActions、持久 DSH 历史及桌面转发的实际验收。
+
 外部渲染与统一设置使用 `node --test test/rendering-sources.test.mjs` 和 `TAVERN_WORKER_FIXTURE=scripts/fixtures/rendering-browser.js node scripts/verify-card-worker-browser.mjs`。合成源码覆盖两种 Helper 格式、无语言 body 围栏、逐内容授权、相对模块、嵌套依赖阻断、撤销/禁用、重复渲染、切换中取消、只读变量作用域与统一设置草稿保护。没有下载或执行未知代码；实际第三方框架兼容性不由这些夹具建立。完整 Host 中继续核对来源绑定与原生/RP切换。
 
 Worker 框架验证使用 `node scripts/verify-card-worker-browser.mjs`，`TAVERN_FRAMEWORK_VENDOR_DIR` 指向本地固定官方库（文件名及必需 SHA-256 见验证器）；测试不下载依赖。隔离临时浏览器通过真实时间 CDP 等待，覆盖 React+JSX/Vue/jQuery 事件、状态、撤销、scope 重挂、传递依赖逐 owner 授权和预算。同一验证器设置 `TAVERN_WORKER_FIXTURE=scripts/fixtures/rendering-browser.js` 可跑统一设置回归。`node --test test/card-worker-lifecycle.test.mjs` 验证构造/传输/定时器失败清理。夹具不代表任意私有卡已兼容，也不建立进程峰值内存上限。

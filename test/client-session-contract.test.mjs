@@ -15,6 +15,7 @@ function renderSelectors(component, props) {
   dispatcher.current = {
     useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
     useRef: current => ({ current }),
+    useMemo: factory => factory(),
     useEffect() {},
     useLayoutEffect() {},
     useCallback: callback => callback,

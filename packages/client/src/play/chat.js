@@ -49,6 +49,7 @@ import { conversationDisplayStyle, useConversationDisplaySettings } from './disp
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 import { latestTurnFailureDetail, sessionFailureDetail, submissionInProgress } from './chat-failure.js'
 import { mathStyles } from './math-styles.js'
+import {useCardComposer} from './card-composer-hook.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -443,6 +444,7 @@ export function rememberChatSnapshot(client, playthrough, snapshot) {
 
 function ChatFrame({
   snapshot,
+  composer,
   currentSessionId,
   liveNodes,
   partial,
@@ -497,7 +499,7 @@ function ChatFrame({
     running,
   })
 
-  return h(ConversationPresentation, { state, playthrough, playClient, sessionId: currentSessionId, disabled: !interactive, busy: running, changed }, h('div', {
+  return h(ConversationPresentation, { state, playthrough, playClient, sessionId: currentSessionId, disabled: !interactive, busy: running, changed, composer:interactive?composer:null }, h('div', {
     className: 'dtv-play-chat-frame',
     'data-phase': phase,
     'data-direction': direction,
@@ -626,7 +628,7 @@ export function ChatFailureNotice({ detail, noticeKey = '' }) {
       ? h('p', null, uiMessage('play.chat.failureOwned')) : null) : null
 }
 
-export function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
+export function MowanChatView({ sessionId, useSession, useChat, useInput, inputActions, playClient, playthrough, openSession, chatScroll, onComposerPending }) {
   useClientUiSettings()
   installPlayChatStyles()
   const displaySettings = useConversationDisplaySettings()
@@ -650,6 +652,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const [transition, setTransition] = useState(null)
   const state = loadedState?.value ?? null
   const stateIsCurrent = loadedState?.sessionId === sessionId
+  const composer=useCardComposer({sessionId,useInput,inputActions,active:stateIsCurrent,blocked:running||submitting,onPending:onComposerPending,send:(text,{signal}={})=>playClient.postUserMessage(sessionId,text,{signal})})
   const [error, setError] = useState('')
   useRestoredRenderingDisplay(stateIsCurrent?state?.display:null,displaySettings,setError)
   const [greetingBusy, setGreetingBusy] = useState(false)
@@ -769,6 +772,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const frame = (snapshot, phase) => h(ChatFrame, {
     key: `${phase}:${snapshot.sessionId}`,
     snapshot,
+    composer,
     currentSessionId: sessionId,
     liveNodes,
     partial,

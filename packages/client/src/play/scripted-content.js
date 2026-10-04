@@ -21,6 +21,7 @@ import {createIdentityActionBridge} from './identity-action-bridge.js'
 import {IdentityActionProposal} from './identity-action-view.js'
 import {projectCardControlState,cardControlEventChecked} from './card-control-state.js'
 import { renderingTrust } from './rendering-trust.js'
+import {cardComposerIdentity,createCardComposerBridge} from './card-composer.js'
 
 const TAGS = 'template suot div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
 const ATTRS = 'id class title style type value min max step checked disabled placeholder name rows cols open hidden accept width height alt src for selected data-action data-opening-choice data-opening-perk data-dtv-node data-dtv-image-source viewBox preserveAspectRatio d x y x1 y1 x2 y2 cx cy r rx ry points fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-opacity transform opacity offset stop-color stop-opacity gradientUnits gradientTransform clip-path'.split(' ')
@@ -172,7 +173,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     }
     expanded+=code.length;if(expanded>DEPENDENCY_LIMITS.bytes||runs.length>=128)throw Error('Expanded card input exceeds limit')
     collect(code,externalUrl(name) ?? base,scriptOwner,scriptDepth)
-    if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized|errorCatched|innerWidth|innerHeight|documentElement|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth|offsetHeight|offsetWidth|clientHeight|clientWidth)\b/.test(code)||/\b_\s*\.\s*(?:get|isEmpty)\b|\.\s*(?:css|show|hide|addClass|removeClass|empty)\s*\(/.test(code))virtual=true
+    if(['text/babel','text/jsx'].includes(type)||/\b(?:SillyTavern|HTMLTextAreaElement|Mvu|eventOn|waitGlobalInitialized|errorCatched|innerWidth|innerHeight|documentElement|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth|offsetHeight|offsetWidth|clientHeight|clientWidth)\b/.test(code)||/\b_\s*\.\s*(?:get|isEmpty)\b|\.\s*(?:css|show|hide|addClass|removeClass|empty)\s*\(/.test(code))virtual=true
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
   collectModules()
@@ -240,7 +241,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
   return { bridge, attach: value => { runtime=value; if (destroyed) value.dispose() }, destroy }
 }
 
-const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, owners = [], helpers = [], helperBinding, createBinding, writeScope, openingBinding }) {
+const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, openingBinding }) {
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0),sourceFrameRevision=useRef(0)
   const sourceFrameKey=useMemo(()=>++sourceFrameRevision.current,[source])
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
@@ -253,6 +254,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const [identityProposal,setIdentityProposal]=useState(null)
   const openingBridge=useRef(null),identityBridge=useRef(null),proposalVersion=useRef(0)
   const replaceProposal=value=>{proposalVersion.current++;setProposal(value)}
+  const [closed,setClosed]=useState(false)
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
     try { if(!enabled)return cardDocument(source);const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
@@ -260,7 +262,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
   const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):''
   const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,error,photoError].filter(Boolean))
-  useLayoutEffect(()=>{replaceProposal('');setError('');setAudit(null);setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
+  useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setAudit(null);setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); replaceProposal('');setIdentityProposal(null)
     const doc=frame.current?.contentDocument
@@ -273,7 +275,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     projectRoot(initialRoot)
     let viewportMode=usesCardViewport(data.html,'',initialRoot),viewportFrame=0,lastViewport
     const controller=new AbortController()
-    let images, dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage
+    let images, dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage,composerBridge
     const applyViewportMode=()=>{ownFrame.parentElement.setAttribute('data-dtv-viewport',String(viewportMode));setViewportLayout(viewportMode)}
     applyViewportMode()
     const readViewport=()=>cardViewport({width:ownFrame.clientWidth,height:ownFrame.clientHeight})
@@ -302,7 +304,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();photoDiagnostic?.dispose();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();photoDiagnostic?.dispose();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();composerBridge?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!paused) images=observeImages(doc.body,{frame:frame.current,unavailable:translate('appearance.imageUnavailable'),onStatus:value=>{if(!cleaned&&current===generation.current)setMedia(value)}})
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
@@ -314,6 +316,12 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       if(data.virtual) {
         if(data.cardStorage)cardStorage=createCardScopedStorage({storage:window.localStorage,owners,scopeKey,sourceIdentity:source})
         if(data.identitySource&&openingBinding)openingBridge.current=createIdentityOpeningBridge({sourceIdentity:openingBinding,identitySource:data.identitySource,signal:controller.signal,onProposal:value=>{if(!cleaned&&current===generation.current)setOpeningProposal(value)},onProgress:value=>{if(!cleaned&&current===generation.current)setOpeningProgress(value)}})
+        const identity=await cardComposerIdentity(scopeKey,source)
+        if(cleaned||current!==generation.current)return
+        let storage
+        try{storage=window.localStorage}catch{/* An attempted save reports unavailable storage. */}
+        composerBridge=createCardComposerBridge({identity,adapter:composer,storage,onClose:()=>{if(!cleaned&&current===generation.current){setClosed(true);queueMicrotask(()=>{if(current===generation.current)cleanup.current()})}}})
+        if(composerBridge.modeError)setError(composerBridge.modeError)
         const activeBinding=binding??helperBinding
         const schemaEvidence=confirmMvuSchemas(data.schemaDeclarations??[],activeBinding?.getSnapshot())
         const events=['click','input','change','keydown','keyup','pointerdown','pointerup']
@@ -409,7 +417,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes
         }
-        virtualRuntime=createVirtualCardRuntime({html:data.html,root:initialRoot,viewport:readViewport(),runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current,identityAction:!!identityBridge.current},{
+        virtualRuntime=createVirtualCardRuntime({html:data.html,root:initialRoot,viewport:readViewport(),runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current,identityAction:!!identityBridge.current,composer:composerBridge.initial},{
           onOpening:async(openingId,{signal})=>{
             signal.throwIfAborted();if(cleaned||current!==generation.current||!openingBridge.current||!identityBridge.current)throw Error('Opening card generation expired')
             const action=identityBridge.current,token=action.beginOpening(openingId)
@@ -422,6 +430,12 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             return action.request(packet).finally(()=>signal.removeEventListener('abort',abort))
           },
           onStorage:request=>{if(cleaned||current!==generation.current)throw Error('Card storage generation expired');return cardStorage.request(request)},
+          onAction:async request=>{
+            try{if(cleaned||current!==generation.current)throw Error('Card input generation expired');const result=await composerBridge.request(request);if(!cleaned&&current===generation.current)setError('');return result}
+            catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}
+          },
+          onResize:height=>{if(!cleaned&&current===generation.current&&frame.current?.contentDocument===doc)frame.current.style.height=`${Math.max(100,Math.min(800,height+24))}px`},
+          onActionEnd:()=>{if(!cleaned&&current===generation.current)composerBridge.finishRequest()},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
               signal?.throwIfAborted()
@@ -475,7 +489,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   // Extracting scripts can leave srcDoc identical after a source edit. Give
   // that source its own iframe so onLoad recreates the disposed runtime.
   return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout)},
-    h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
+    closed?h('p',{role:'status'},translate('appearance.cardSendAccepted')):h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
     enabled?h('div',{className:'dtv-card-runtime-controls'},
       h('button',{type:'button',disabled:paused,onClick:()=>{generation.current++;cleanup.current();setPaused(true)}},translate('appearance.pauseCard')),
       h('button',{type:'button',onClick:()=>{generation.current++;cleanup.current();setPaused(false);setRestart(value=>value+1)}},translate('appearance.restartCard'))):null,
@@ -502,6 +516,6 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
 })
 export const MessageContent = memo(function MessageContent({text,...props}) {
   return h('div',{className:'dtv-play-rich'},...splitCards(text).map((part,index)=>part.html
-    ? h(InteractiveCard,{key:index,source:part.html,...props})
+    ? h(InteractiveCard,{key:index,source:part.html,...props,scopeKey:JSON.stringify([props.scopeKey,index])})
     : h(RichText,{key:index,text:part.text})))
 })
