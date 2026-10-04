@@ -25,5 +25,6 @@ test('host viewport and root presentation accept only bounded presentation value
  const root=cardRootPresentation({html:{className:'theme',style:'--accent:red'},body:{style:'margin:0'}})
  assert.equal(usesCardViewport('<div style="position:fixed">', '',root),true)
  assert.equal(usesCardViewport('', '.surface{height:100dvh}',root),true)
+ assert.equal(usesCardViewport('', 'h1{font-size:clamp(20px,3vw,40px)}.surface{width:100vw}',root),false)
  assert.equal(usesCardViewport('<div>Flow</div>', '',root),false)
 })

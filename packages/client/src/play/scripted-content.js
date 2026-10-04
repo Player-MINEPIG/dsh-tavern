@@ -255,7 +255,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const sourceFrameKey=useMemo(()=>++sourceFrameRevision.current,[source])
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
-  const [restart,setRestart]=useState(0),[viewportLayout,setViewportLayout]=useState(false)
+  const [viewportLayout,setViewportLayout]=useState(false)
   const [media,setMedia]=useState(null)
   const [photoError,setPhotoError]=useState('')
   const [error,setError]=useState(''), [proposal,setProposal]=useState(''), [sending,setSending]=useState(false)
@@ -271,12 +271,16 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:0;font:14px system-ui;color:#243042;background:transparent}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
   const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):''
   const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,error,photoError].filter(Boolean))
-  useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,restart,JSON.stringify(openingBinding)])
+  useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,JSON.stringify(openingBinding)])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); replaceProposal('');setIdentityProposal(null)
     const doc=frame.current?.contentDocument
     if (!doc) { setError('Card document unavailable'); return }
     const ownFrame=frame.current
+    // A transparent frame needs the surrounding message's default foreground.
+    // Card-owned styles still follow this fixed base rule and can override it.
+    const baseStyle=doc.head.querySelector('style')?.sheet?.cssRules[0]?.style
+    if(baseStyle)baseStyle.color=getComputedStyle(ownFrame).color
     let photoDiagnostic
     if(typeof TAVERN_PHOTO_DIAGNOSTIC!=='undefined'&&TAVERN_PHOTO_DIAGNOSTIC)try{photoDiagnostic=createPhotoPickerDiagnostic(doc,ownFrame.parentElement)}catch{}
     const initialRoot=cardRootPresentation(data.root)
@@ -292,7 +296,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected)return
       const content=ownFrame.parentElement.parentElement,boundary=content.parentElement
       const fillsOpening=viewportMode&&content.classList.contains('dtv-play-rich')&&content.children.length===1&&boundary?.matches('.dtv-play-opening-body[data-dtv-card-viewport-boundary]')
-      ownFrame.style.height=viewportMode?(fillsOpening?'100%':'clamp(362px,75dvh,800px)'):`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px`
+      ownFrame.style.height=viewportMode?(fillsOpening?'100%':'clamp(362px,75dvh,800px)'):`${Math.max(100,Math.min(800,doc.body.scrollHeight))}px`
       if(!viewportFrame)viewportFrame=requestAnimationFrame(()=>{
         viewportFrame=0
         if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected||controller.signal.aborted)return
@@ -443,7 +447,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             try{if(cleaned||current!==generation.current)throw Error('Card input generation expired');const result=await composerBridge.request(request);if(!cleaned&&current===generation.current)setError('');return result}
             catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}
           },
-          onResize:height=>{if(!cleaned&&current===generation.current&&frame.current?.contentDocument===doc)frame.current.style.height=`${Math.max(100,Math.min(800,height+24))}px`},
+          onResize:height=>{if(!cleaned&&current===generation.current&&frame.current?.contentDocument===doc){if(viewportMode)resize();else frame.current.style.height=`${Math.max(100,Math.min(800,height))}px`}},
           onActionEnd:()=>{if(!cleaned&&current===generation.current)composerBridge.finishRequest()},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
@@ -497,9 +501,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   // Extracting scripts can leave srcDoc identical after a source edit. Give
   // that source its own iframe so onLoad recreates the disposed runtime.
   return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout)},
-    closed?h('p',{role:'status'},translate('appearance.cardSendAccepted')):h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
-    enabled?h('div',{className:'dtv-card-runtime-controls'},
-      h('button',{type:'button',onClick:()=>{generation.current++;cleanup.current();setRestart(value=>value+1)}},translate('appearance.restartCard'))):null,
+    closed?h('p',{role:'status'},translate('appearance.cardSendAccepted')):h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
     !diagnosticsOutside&&unsupportedMessage ? h('p',{role:'alert'},unsupportedMessage):null,
     !diagnosticsOutside&&error ? h('p',{role:'alert'},error):null,
@@ -520,8 +522,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       h('button',{type:'button',onClick:()=>replaceProposal('')},translate('appearance.close'))):null,
   )
 })
-export const MessageContent = memo(function MessageContent({text,...props}) {
+export const MessageContent = memo(function MessageContent({text,textStyle,...props}) {
   return h('div',{className:'dtv-play-rich'},...splitCards(text).map((part,index)=>part.html
     ? h(InteractiveCard,{key:index,source:part.html,...props,scopeKey:JSON.stringify([props.scopeKey,index])})
-    : h(RichText,{key:index,text:part.text})))
+    : !part.text.trim()?null:textStyle?h('div',{key:index,style:textStyle},h(RichText,{text:part.text})):h(RichText,{key:index,text:part.text})))
 })

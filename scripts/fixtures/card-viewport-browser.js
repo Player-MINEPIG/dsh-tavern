@@ -30,10 +30,10 @@ import {MessageContent} from '../../packages/client/src/play/scripted-content.js
   const before=state();globalThis.__browserViewport={id:'tall',width:390,height:844};await until(()=>correct()&&state().height!==before.height)
   check('browser resize changes the card panel and dvh without a height feedback loop',state().height>before.height&&state().resizes>before.resizes,state())
   const count=state().resizes;await pause(300);check('unchanged dimensions stop resize notifications',state().resizes===count)
-  const previous=doc();render(content,'second');await until(correct);container.style.width='360px';await until(()=>correct()&&state().width===358)
+  const previous=doc();render(content,'second');await until(correct);container.style.width='360px';await until(()=>correct()&&state().width===360)
   check('scope replacement disposes old resize binding',previous!==doc()&&!previous.defaultView?.frameElement?.isConnected, state())
   render('<body><div style="height:180px">Flow</div><output id="flow"></output><script>document.getElementById("flow").textContent=String(innerWidth)</script></body>','flow');await until(()=>doc()?.getElementById('flow')?.textContent)
-  await pause(100);check('ordinary flow retains content height sizing',container.querySelector('iframe').clientHeight>=202&&container.querySelector('iframe').clientHeight<300)
+  await pause(100);check('ordinary flow retains content height sizing without host padding',container.querySelector('iframe').clientHeight===doc().body.scrollHeight&&container.querySelector('iframe').clientHeight>=180&&container.querySelector('iframe').clientHeight<300)
   root.unmount();container.style.width='500px';await pause(80);check('unmount removes the card and resize lifecycle',!container.querySelector('iframe'))
  }catch(error){results.push({name:'Unexpected '+error.stack,pass:false})}finally{try{root.unmount()}catch{}}
  const report=document.createElement('pre');report.id='results';report.textContent=JSON.stringify(results);document.body.append(report)
