@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { atomicJson, readJsonFile } from '../../play/src/atomic-json.js'
 import { applyMvuUpdate, containsMvuUpdate, normalizeVariables, parseMvuUpdate } from './updates.js'
 import { fail, json } from './value.js'
+import { createCommandProcessor } from './command-processor.js'
+import { commandHookDeclaration } from './command-hook-declaration.js'
 import { parseMvuData } from './data.js'
 import { compileMvuSchema, applyMvuSchema } from './schema.js'
 import { sessionIdentity, stateInstanceId, inheritedVersion, textFingerprint } from './instances.js'
@@ -49,11 +51,11 @@ function prepareResource(resource) {
 
 export class MvuService {
   protocolVersion = 1
-  #state; #path; #legacy; #listeners = new Set(); #usage = new Set(); #usageEpoch = 0; #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map()
-  constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, authorizeCardWrite, capturePromptScope, waitForHost, captureSessionLease } = {}) {
+  #state; #path; #legacy; #listeners = new Set(); #usage = new Set(); #usageEpoch = 0; #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map(); #processors = new Map()
+  constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, authorizeCardWrite, capturePromptScope, waitForHost, captureSessionLease, resolveCommandHook, captureCommandScope } = {}) {
     if (resources.some(resource => resource.instance)) fail('MVU_CONFIG', 'State instance identity is allocated by the Host, not configuration')
     this.inspect = inspect; this.resolveScope = resolveScope; this.refresh = refresh; this.isActive = isActive; this.authorizeCardWrite = authorizeCardWrite; this.capturePromptScope = capturePromptScope
-    this.waitForHost = waitForHost; this.captureSessionLease = captureSessionLease
+    this.captureCommandScope = captureCommandScope; this.resolveCommandHook = resolveCommandHook; this.waitForHost = waitForHost; this.captureSessionLease = captureSessionLease
     // The previous shared ledger is never rewritten or silently redistributed.
     const legacyPath = join(storageDir, 'mvu-state.json')
     this.#legacy = existsSync(legacyPath) ? readJsonFile(legacyPath, MAX_STORE) : { version: 1, resources: {} }
@@ -309,6 +311,56 @@ export class MvuService {
   #emit(fact) { for (const listener of this.#listeners) { try { listener(json(fact)) } catch {} } }
   observe(listener) { this.#listeners.add(listener); return () => this.#listeners.delete(listener) }
   registerUsage(handler) { if (typeof handler !== 'function') throw new TypeError('Usage handler required'); const registration = { handler }; this.#usage.add(registration); this.#usageEpoch++; return () => { if (this.#usage.delete(registration)) this.#usageEpoch++ } }
+  // Trusted Host registration only; no card endpoint or callback crosses into Node.
+  async registerCommandProcessor({ id, source } = {}) {
+    if (!this.resources.some(resource => resource.id === id)) fail('MVU_MISSING', 'Resource not found')
+    if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed')
+    if (!commandHookDeclaration(source)) fail('MVU_COMMAND_HOOK_DECLARATION', 'Complete command declaration required')
+    const previous = this.#processors.get(id)
+    const entry = { source, registrationId: randomUUID(), active: true }
+    this.#processors.set(id, entry); previous?.dispose()
+    entry.dispose = () => { entry.active = false; entry.processor?.dispose(); if (this.#processors.get(id) === entry) this.#processors.delete(id) }
+    entry.ready = createCommandProcessor(source).then(processor => {
+      if (!entry.active || this.#disposed || this.#processors.get(id) !== entry) { processor.dispose(); fail('MVU_USAGE_CANCELLED', 'Command registration changed') }
+      entry.processor = processor
+      entry.receipt = { protocolVersion: 1, registered: true, registrationId: entry.registrationId, source, sha256: createHash('sha256').update(source).digest('hex'), listenerCount: processor.listenerCount }
+      return entry
+    }).catch(error => {
+      const cancelled = this.#disposed || !entry.active || this.#processors.get(id) !== entry
+      entry.dispose()
+      if (cancelled) fail('MVU_USAGE_CANCELLED', 'Command registration changed during initialization')
+      throw error
+    })
+    await entry.ready
+    return { receipt: json(entry.receipt), dispose: entry.dispose }
+  }
+  async #processor(resource, scope) {
+    const resolved = this.resolveCommandHook?.(resource, scope)
+    const source = resolved ? resolved.source : resource.commandSource
+    let entry = this.#processors.get(resource.id)
+    try {
+      if (source && entry?.source !== source) {
+        await this.registerCommandProcessor({ id: resource.id, source })
+        entry = this.#processors.get(resource.id)
+      }
+      if (resolved && !source) { entry?.dispose(); return null }
+      if (!entry) return null
+      await entry.ready
+    } catch (error) {
+      // Include reused, still-pending registrations in the same failure boundary.
+      let current = false
+      try { current = !resolved || resolved.checkCurrent?.() === true } catch {}
+      if (!current) fail('MVU_USAGE_CANCELLED', 'Command source changed during initialization')
+      throw error
+    }
+    const checkCurrent = () => {
+      try { return !this.#disposed && entry.active && this.#processors.get(resource.id) === entry
+        && (!resolved || (typeof resolved.checkCurrent === 'function' && resolved.checkCurrent() === true)) }
+      catch { return false }
+    }
+    if (!checkCurrent()) fail('MVU_USAGE_CANCELLED', 'Command source changed during registration')
+    return { processor: entry.processor, receipt: entry.receipt, checkCurrent }
+  }
   validateConfig(config) { return validateMvuConfig(config) }
   async #decision(on, resource, scope, event, variables) {
     if (resource.legacy || resource.sourceError || (resource.discovered && this.isActive && !this.isActive(resource, scope.sessionId))) return { enabled: false, configRevision: null }
@@ -390,7 +442,8 @@ export class MvuService {
     }
     if (scope.messageId && (!version || (scope.endEventId != null && version.source.messageSeq !== scope.endEventId))) fail('MVU_SCOPE', 'Historical coordinates do not identify the same source')
     const historical = scope.messageId != null || scope.endEventId != null
-    return { id: resource.id, name: resource.name ?? resource.id, type: 'mvu-state', authority: 'local', managementMode: record.managementMode ?? resource.managementMode ?? 'native', ...(resource.legacy ? { sourceError: 'MVU_MIGRATION_REQUIRED', capabilities: { edit: false, copy: false, management: false }, legacy: true } : {}), ...(resource.templateId ? { templateId: resource.templateId, instance: json(resource.instance), ...(record.seed ? { inheritedFrom: json(record.seed.source) } : {}) } : {}), ...(resource.sourceError ? { sourceError: resource.sourceError } : {}), ...(resource.discovered ? { source: { kind: 'character', characterId: resource.characterId, discovered: true } } : {}), scope: json(scope), content: json(version?.variables ?? resource.initial), revision: historical ? (version?.revision ?? version?.result?.revision ?? 0) : record.revision, currentRevision: record.revision, historical, versionKey: version?.key ?? null }
+    const command = !resource.legacy && !resource.sourceError && (!resource.characterId || this.isActive?.(resource, scope.sessionId) === true) ? await this.#processor(resource, scope) : null
+    return { ...(command ? { commandProcessor: json(command.receipt) } : {}), id: resource.id, name: resource.name ?? resource.id, type: 'mvu-state', authority: 'local', managementMode: record.managementMode ?? resource.managementMode ?? 'native', ...(resource.legacy ? { sourceError: 'MVU_MIGRATION_REQUIRED', capabilities: { edit: false, copy: false, management: false }, legacy: true } : {}), ...(resource.templateId ? { templateId: resource.templateId, instance: json(resource.instance), ...(record.seed ? { inheritedFrom: json(record.seed.source) } : {}) } : {}), ...(resource.sourceError ? { sourceError: resource.sourceError } : {}), ...(resource.discovered ? { source: { kind: 'character', characterId: resource.characterId, discovered: true } } : {}), scope: json(scope), content: json(version?.variables ?? resource.initial), revision: historical ? (version?.revision ?? version?.result?.revision ?? 0) : record.revision, currentRevision: record.revision, historical, versionKey: version?.key ?? null }
   }
   #verifyHistory(record, sessionId, session) {
     const header = session.header ?? session.meta
@@ -569,23 +622,48 @@ export class MvuService {
         const checkpoint = record.checkpoints?.find(c => c.turn === turn)
         if (resource.instance && !checkpoint) fail('MVU_BASELINE_REQUIRED', 'A state instance requires its persisted pre-turn checkpoint')
         const baseline = checkpoint?.variables ?? this.#current(resource)
-        const user = turnEvents.find(e => e.type === 'user/message'), origin = user?.data?.message?.source?.kind ?? user?.data?.source?.kind
+        const turnStart = turnEvents.findLast(e => e.type === 'turn/start' && e.seq < reply.seq)
+        // V4 user/message has no turn field. Its accepted message is logged
+        // between this turn's start and reply; exclude runtime context messages.
+        const users = (turnStart ? session.events.filter(e => e.seq > turnStart.seq && e.seq < reply.seq) : turnEvents).filter(e => e.type === 'user/message')
+        const user = users.findLast(e => (e.data?.message?.source?.kind ?? e.data?.source?.kind) === 'user')
+        const origin = user?.data?.message?.source?.kind ?? user?.data?.source?.kind
         const fact = { id: resource.id, eventId: key, sessionId: session.id, turn, turnKind: origin === 'user' ? 'human' : 'unknown' }
         this.#emit({ ...fact, phase: 'started' })
+        let command, decision, scopeLease, sessionLease
+        const commitCurrent = () => {
+          try { return !this.#disposed && (!decision || decision.usageEpoch === undefined || decision.usageEpoch === this.#usageEpoch)
+            && (!command || command.checkCurrent() === true)
+            && (!decision?.decided || decision.checkCurrent() === true)
+            && (!this.capturePromptScope || (typeof scopeLease === 'function' && scopeLease() === true))
+            && (!this.captureCommandScope || (typeof sessionLease === 'function' && sessionLease() === true))
+            && this.resources.find(item => item.id === resource.id) === resource && this.#record(resource.id).revision === record.revision
+            && (!resource.characterId || this.isActive?.(resource, session.id) === true) } catch { return false }
+        }
         try {
-          const event = { ...source, text, containsMvuUpdate: containsMvuUpdate(text) }
-          const { enabled, configRevision, usageEpoch } = await this.#decision('assistant_message_committed', resource, scope, event, baseline)
-          if (usageEpoch !== undefined && usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Usage provider changed before commit')
-          if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed before commit')
+          const event = { ...source, text, containsMvuUpdate: containsMvuUpdate(text) || /<UpdateVariable>\s*(?:```(?:json)?\s*)?\[/i.test(text) }
+          scopeLease = this.capturePromptScope?.(scope, resource); sessionLease = this.captureCommandScope?.(session)
+          decision = await this.#decision('assistant_message_committed', resource, scope, event, baseline)
+          const { enabled, configRevision, usageEpoch } = decision
           let variables = baseline
-          if (enabled && event.containsMvuUpdate) { this.#emit({ ...fact, phase: 'triggered' }); variables = applyMvuUpdate(baseline, parseMvuUpdate(text)) }
-          else this.#emit({ ...fact, phase: 'skipped', detail: enabled ? 'no-update' : 'usage-policy' })
+          if (enabled && event.containsMvuUpdate) {
+            this.#emit({ ...fact, phase: 'triggered', configRevision })
+            command = await this.#processor(resource, scope)
+            const commands = command ? await command.processor.process({ variables: baseline, text, userText: textOf(user?.data?.message) }) : parseMvuUpdate(text)
+            variables = applyMvuUpdate(baseline, commands)
+          } else this.#emit({ ...fact, phase: 'skipped', configRevision, detail: enabled ? 'no-update' : 'usage-policy' })
+          // No await after these leases: registration, selection, policy and CAS
+          // belong to this exact durable turn, never a display VM or focus.
+          if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed before commit')
+          if (usageEpoch !== undefined && usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Usage provider changed before commit')
+          if (command && !commitCurrent()) fail('MVU_USAGE_CANCELLED', 'Command commit lease changed')
           const latest = this.#record(resource.id), revision = latest.revision + 1
           this.#save(resource.id, { ...latest, revision, currentKey: key, versions: [...latest.versions, { key, source, fingerprint, variables, parentKey: latest.currentKey, sourceRevision: latest.revision, revision, configRevision }] })
-          if (enabled && event.containsMvuUpdate && JSON.stringify(baseline.stat_data) !== JSON.stringify(variables.stat_data)) this.#emit({ ...fact, phase: 'applied', revision, detail: 'state-committed' })
-          this.#emit({ ...fact, phase: 'completed', revision, detail: 'state-committed' })
+          if (enabled && event.containsMvuUpdate && JSON.stringify(baseline.stat_data) !== JSON.stringify(variables.stat_data)) this.#emit({ ...fact, phase: 'applied', revision, configRevision, detail: 'state-committed' })
+          this.#emit({ ...fact, phase: 'completed', revision, configRevision, detail: 'state-committed' })
         } catch (error) {
-          if (this.#disposed || error.code === 'MVU_USAGE_CANCELLED') { this.#emit({ ...fact, phase: 'failed', detail: error.code }); throw error }
+          if ((command || error.code?.startsWith('MVU_COMMAND_HOOK_')) && !commitCurrent()) error = Object.assign(new Error('Command commit lease changed'), { code: 'MVU_USAGE_CANCELLED' })
+          if (this.#disposed || ['MVU_USAGE_CANCELLED', 'MVU_COMMAND_HOOK_DISPOSED'].includes(error.code)) { this.#emit({ ...fact, phase: 'failed', detail: error.code }); throw error }
           // Keep the unchanged snapshot and a durable failure receipt; later valid
           // turns and explicit edits can recover without replaying a poison reply.
           const latest = this.#record(resource.id), revision = latest.revision + 1
@@ -727,7 +805,7 @@ export class MvuService {
       row.content = json(version.variables)
       row.revision = version.revision ?? version.result?.revision ?? 0
     }
-    return { version: 1, scope: json(scope), revision: row?.revision ?? 0, currentRevision: row?.currentRevision ?? 0, status: row ? 'available' : 'unavailable', variables: row?.content ?? {}, ...(row ? { resourceId: row.id } : {}) }
+    return { version: 1, scope: json(scope), revision: row?.revision ?? 0, currentRevision: row?.currentRevision ?? 0, status: row ? 'available' : 'unavailable', variables: row?.content ?? {}, ...(row ? { resourceId: row.id, ...(row.commandProcessor ? { commandProcessor: row.commandProcessor } : {}) } : {}) }
   }
   /** Trusted Host only. This grants a checked dependency read, not proof of model delivery.
    * @param {import('./prompt-dependency.js').MvuPromptDependencyRequest} request
@@ -802,5 +880,5 @@ export class MvuService {
       for (const phase of ['started', 'triggered', 'applied', 'completed']) this.#emit({ ...fact, phase })
     }
   }
-  dispose() { this.#disposed = true; this.#listeners.clear(); this.#usage.clear(); this.#usageEpoch++; this.#cardBindings.clear() }
+  dispose() { this.#disposed = true; for (const entry of this.#processors.values()) entry.dispose(); this.#listeners.clear(); this.#usage.clear(); this.#usageEpoch++; this.#cardBindings.clear() }
 }

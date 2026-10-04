@@ -1,3 +1,4 @@
+import {commandHookDeclaration} from '../packages/mvu-adapter/src/command-hook-declaration.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
@@ -12,7 +13,7 @@ import {createRenderingDependencies} from '../packages/client/src/play/rendering
 const text=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
 const body=text.slice(text.indexOf('export function prepareCardDocument('),text.indexOf('\nexport function createDomBridge(')).replace('export function','function')
 const {document}=parseHTML('<html></html>')
-const prepare=new Function('DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,8*1024*1024,document,html=>({html,scripts:[],unsupported:[]}))
+const prepare=new Function('commandHookDeclaration','DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(commandHookDeclaration,DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,8*1024*1024,document,html=>({html,scripts:[],unsupported:[]}))
 const memory=()=>{
  const map=new Map(),read=key=>structuredClone(map.get(key)??{generation:0})
  const advance=(key,pending)=>{const generation=read(key).generation+1;map.set(key,{generation,pending});return generation}

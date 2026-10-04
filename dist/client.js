@@ -15927,6 +15927,13 @@ function confirmMvuSchemas(declarations, snapshot) {
     return { ...item, status: "source-registered", resourceId: snapshot.resourceId, revision: snapshot.revision, interpreterVersion: descriptor.interpreterVersion, confirmation: "Derived locally from the authoritative snapshot; original schema script was not executed in the card" };
   });
 }
+function confirmMvuCommandHooks(declarations, snapshot) {
+  return declarations.map((item) => {
+    const receipt = snapshot?.commandProcessor;
+    if (snapshot?.status !== "available" || receipt?.protocolVersion !== 1 || receipt?.registered !== true || receipt.source !== item.source || typeof receipt.registrationId !== "string" || !receipt.registrationId || !Number.isSafeInteger(receipt.listenerCount) || receipt.listenerCount < 1) throw Error("MVU command Helper requires a matching successful source registration receipt");
+    return { ...item, status: "source-registered", resourceId: snapshot.resourceId, registrationId: receipt.registrationId, confirmation: "Source precommit registration; no state commit implied" };
+  });
+}
 
 // packages/client/src/play/rendering-sources.js
 var import_acorn_jsx = __toESM(require_acorn_jsx(), 1);
@@ -27872,6 +27879,40 @@ async function selectedPhoto(file, signal) {
     bitmap?.close();
     release();
   }
+}
+
+// packages/mvu-adapter/src/command-hook-declaration.js
+function commandHookDeclaration(source) {
+  if (typeof source !== "string" || !source.includes("COMMAND_PARSED") || !source.includes("global_Mvu_initialized")) return null;
+  if (source.length > 64 * 1024) throw Object.assign(new Error("Command Helper exceeds 64 KiB"), { code: "MVU_COMMAND_HOOK_LIMIT" });
+  let tree;
+  try {
+    tree = parse3(source, { ecmaVersion: "latest", sourceType: "script" });
+  } catch {
+    throw Object.assign(new Error("Command Helper must be a complete inline script"), { code: "MVU_COMMAND_HOOK_DECLARATION" });
+  }
+  let parsed = false, initialized = false;
+  const gates = /* @__PURE__ */ new Map(), reads = /* @__PURE__ */ new Map(), pending2 = [tree];
+  while (pending2.length) {
+    const node = pending2.pop();
+    if (node.type === "MemberExpression" && !node.computed && node.property.name === "COMMAND_PARSED") parsed = true;
+    if (node.type === "CallExpression" && node.callee.type === "Identifier" && node.callee.name === "eventOn" && node.arguments[0]?.value === "global_Mvu_initialized") initialized = true;
+    if (node.type === "VariableDeclarator" && node.id.type === "Identifier" && node.init?.type === "MemberExpression" && node.init.object.name === "globalThis" && !node.init.computed) gates.set(node.id.name, node.init.property.name);
+    if (node.type === "MemberExpression" && node.object.type === "Identifier" && !node.computed && ["latestUserText", "extractOperationBlock"].includes(node.property.name)) {
+      if (!reads.has(node.object.name)) reads.set(node.object.name, /* @__PURE__ */ new Set());
+      reads.get(node.object.name).add(node.property.name);
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) for (const child of value) {
+        if (child?.type) pending2.push(child);
+      }
+      else if (value?.type) pending2.push(value);
+    }
+  }
+  if (!parsed || !initialized) return null;
+  const globals = [...gates].filter(([name2]) => reads.get(name2)?.size === 2).map(([, name2]) => name2);
+  if (globals.length > 1 || globals.some((name2) => !/^[A-Za-z_$][\w$]{0,127}$/.test(name2) || ["Mvu", "console", "JSON", "Object", "__proto__", "constructor", "prototype"].includes(name2))) throw Object.assign(new Error("Ambiguous operation context"), { code: "MVU_COMMAND_HOOK_DECLARATION" });
+  return { protocolVersion: 1, source, ...globals.length ? { gateGlobal: globals[0] } : {} };
 }
 
 // packages/client/src/play/card-worker-client.js
@@ -50195,7 +50236,7 @@ function cardDocument(source) {
   return { html: html2, scripts, root: sourceRootPresentation(source), unsupported: [...new Set(unsupported)] };
 }
 function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
-  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters = [], schemaDeclarations = [];
+  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters = [], schemaDeclarations = [], commandDeclarations = [];
   let total = source.length, expanded = source.length, virtual = false;
   const analyzed = /* @__PURE__ */ new Map(), pending2 = [];
   const read = (url, ownerHint) => {
@@ -50286,6 +50327,12 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
       schemaDeclarations.push({ source: content, owner: helper.owner, key: helper.key, sha256: helper.contentDigest ?? trust.inspect(helper.owner, helper.key)?.digest });
       continue;
     }
+    if (commandHookDeclaration(content)) {
+      const declaration = { source: content, owner: helper.owner, key: helper.key };
+      commandDeclarations.push(declaration);
+      adapters.push({ kind: "backend-command-hook", version: 1, ...declaration, replacement: "Source-owned precommit command processing; original script is not executed in display VMs" });
+      continue;
+    }
     collect(content, void 0, helper.owner);
     runs.push({ code: content, module: true, name: "helper-" + runs.length + ".js" });
   }
@@ -50315,7 +50362,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   }
   collectModules();
   const data3 = cardDocument(template.innerHTML);
-  return { ...data3, root, runs, modules, virtual, adapters, schemaDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
+  return { ...data3, root, runs, modules, virtual, adapters, schemaDeclarations, commandDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
 }
 function createDomBridge(doc, context, onProposal, onError, helperBinding) {
   const nodes = [doc.body], ids = new WeakMap([[doc.body, 0]]), disposers = [];
@@ -50656,6 +50703,7 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
         if (composerBridge.modeError) setError(composerBridge.modeError);
         const activeBinding = binding ?? helperBinding;
         confirmMvuSchemas(data3.schemaDeclarations ?? [], activeBinding?.getSnapshot());
+        confirmMvuCommandHooks(data3.commandDeclarations ?? [], activeBinding?.getSnapshot());
         const events = ["click", "input", "change", "keydown", "keyup", "pointerdown", "pointerup"];
         const controlPhases = /* @__PURE__ */ new WeakMap();
         const handler = (event) => {

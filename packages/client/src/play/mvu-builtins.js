@@ -13,3 +13,12 @@ export function confirmMvuSchemas(declarations,snapshot){
   return {...item,status:'source-registered',resourceId:snapshot.resourceId,revision:snapshot.revision,interpreterVersion:descriptor.interpreterVersion,confirmation:'Derived locally from the authoritative snapshot; original schema script was not executed in the card'}
  })
 }
+
+// A registration receipt confirms a source processor, never a state commit.
+export function confirmMvuCommandHooks(declarations,snapshot){
+ return declarations.map(item=>{
+  const receipt=snapshot?.commandProcessor
+  if(snapshot?.status!=='available'||receipt?.protocolVersion!==1||receipt?.registered!==true||receipt.source!==item.source||typeof receipt.registrationId!=='string'||!receipt.registrationId||!Number.isSafeInteger(receipt.listenerCount)||receipt.listenerCount<1)throw Error('MVU command Helper requires a matching successful source registration receipt')
+  return {...item,status:'source-registered',resourceId:snapshot.resourceId,registrationId:receipt.registrationId,confirmation:'Source precommit registration; no state commit implied'}
+ })
+}

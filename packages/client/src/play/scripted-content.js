@@ -4,7 +4,8 @@ import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBU
 import { selectedPhoto } from './card-photo.js'
 import {createPhotoPickerDiagnostic} from './card-photo-diagnostic.js'
 import {DEPENDENCY_LIMITS} from './rendering-limits.js'
-import {mvuBuiltin,confirmMvuSchemas} from './mvu-builtins.js'
+import {mvuBuiltin,confirmMvuSchemas,confirmMvuCommandHooks} from './mvu-builtins.js'
+import {commandHookDeclaration} from '../../../mvu-adapter/src/command-hook-declaration.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
 import DOMPurify from 'dompurify'
@@ -93,7 +94,7 @@ export function cardDocument(source) {
 }
 
 export function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
-  const modules = Object.create(null), runs = [], seen = new Set(), reviewed = new Set(), adapters = [], schemaDeclarations = []
+  const modules = Object.create(null), runs = [], seen = new Set(), reviewed = new Set(), adapters = [], schemaDeclarations = [], commandDeclarations = []
   let total = source.length, expanded = source.length, virtual = false
   const analyzed=new Map(),pending=[]
   const read = (url, ownerHint) => {
@@ -167,6 +168,12 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
       schemaDeclarations.push({source:content,owner:helper.owner,key:helper.key,sha256:helper.contentDigest??trust.inspect(helper.owner,helper.key)?.digest})
       continue
     }
+    if(commandHookDeclaration(content)){
+      const declaration={source:content,owner:helper.owner,key:helper.key}
+      commandDeclarations.push(declaration)
+      adapters.push({kind:'backend-command-hook',version:1,...declaration,replacement:'Source-owned precommit command processing; original script is not executed in display VMs'})
+      continue
+    }
     collect(content,undefined,helper.owner)
     runs.push({code:content,module:true,name:'helper-' + runs.length + '.js'})
   }
@@ -187,7 +194,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   }
   collectModules()
   const data = cardDocument(template.innerHTML)
-  return {...data,root,runs,modules,virtual,adapters,schemaDeclarations,cardStorage:wrapper?.kind==='identity-html-loader',identitySource}
+  return {...data,root,runs,modules,virtual,adapters,schemaDeclarations,commandDeclarations,cardStorage:wrapper?.kind==='identity-html-loader',identitySource}
 }
 
 export function createDomBridge(doc, context, onProposal, onError, helperBinding) {
@@ -337,6 +344,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         if(composerBridge.modeError)setError(composerBridge.modeError)
         const activeBinding=binding??helperBinding
         confirmMvuSchemas(data.schemaDeclarations??[],activeBinding?.getSnapshot())
+        confirmMvuCommandHooks(data.commandDeclarations??[],activeBinding?.getSnapshot())
         const events=['click','input','change','keydown','keyup','pointerdown','pointerup']
         const controlPhases=new WeakMap()
         const handler=event=>{
