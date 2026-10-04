@@ -11,7 +11,18 @@ export function snapshotMvuSession(session) {
       result.data = json(select(data, ['turn', 'step', 'interrupted']))
       if (event.type === 'turn/end' && data.reason) result.data.reason = json(select(data.reason, ['kind']))
       if (event.type === 'user/message') {
-        if (data.message?.source) result.data.message = { source: json(select(data.message.source, ['kind'])) }
+        const message = data.message ?? data // Official V4 user/message payload is the message itself.
+        if (message && typeof message === 'object') {
+          result.data.message = message.source ? { source: json(select(message.source, ['kind'])) } : {}
+          // Command gates consume only this turn's bounded text. Do not retain
+          // media/trace bodies, truncate an operation block or exceed state budgets.
+          let text = '', available = true
+          for (const block of message.content ?? []) if (block.type === 'text') {
+            if (typeof block.text !== 'string' || text.length + block.text.length + 1 > 64 * 1024) { available = false; break }
+            text += (text ? '\n' : '') + block.text
+          }
+          if (available && text) result.data.message.content = [{ type: 'text', text }]
+        }
         if (data.source) result.data.source = json(select(data.source, ['kind']))
       }
       if (event.type === 'assistant/message' && data.message) {

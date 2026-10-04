@@ -9,7 +9,7 @@ export const MVU_SERVICE = 'tavernMvu'
 export const MVU_SOURCE = 'tavern.mvu/state'
 
 /** Install with public Cordis/DSH seams. No Helper runtime or manager dependency. */
-export function installMvu(ctx, { storageDir, resources = [], sources, memberships, refresh, isActive, getSelection, getSelectionToken, onError = () => {} } = {}) {
+export function installMvu(ctx, { storageDir, resources = [], sources, memberships, refresh, isActive, getSelection, getSelectionToken, resolveCommandHook, onError = () => {} } = {}) {
   const sessionEpochs = new Map()
   let hostQueue = Promise.resolve()
   // DSH permission presets pin these exact configuration facts before publishing a new session.
@@ -66,7 +66,12 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     return () => ctx.get(MVU_SERVICE) === service && getSelectionToken(scope.sessionId) === selection
       && getSelection(scope.sessionId)?.characterCardId === selected && contextLease() === true
   }
-  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, capturePromptScope, captureSessionLease, waitForHost: () => hostQueue, authorizeCardWrite: async request => {
+  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, resolveCommandHook, capturePromptScope, captureSessionLease, captureCommandScope: session => {
+    const epoch = sessionEpochs.get(session.id) ?? 0, live = ctx.get('sessions')?.get?.(session.id)
+    const header = live && digest(live.header), events = live?.snapshotEvents && digest(live.snapshotEvents())
+    return () => ctx.get(MVU_SERVICE) === service && (sessionEpochs.get(session.id) ?? 0) === epoch
+      && ctx.get('sessions')?.get?.(session.id) === live && (!live || (digest(live.header) === header && digest(live.snapshotEvents()) === events))
+  }, waitForHost: () => hostQueue, authorizeCardWrite: async request => {
     const authority = ctx.get('tavernRenderingAuthority')
     const grant = await authority?.resolve(request)
     return grant && ctx.get('tavernRenderingAuthority') === authority ? { ...grant, checkCurrent: () => ctx.get('tavernRenderingAuthority') === authority && authority.isCurrent?.(request) === true } : null

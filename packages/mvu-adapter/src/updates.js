@@ -2,7 +2,7 @@ import { at, fail, json, literal, pathParts, safeKey } from './value.js'
 import { parseCommandValue } from './data.js'
 import { applyMvuSchema } from './schema.js'
 
-export function parseMvuUpdate(text) {
+export function parseMvuUpdate(text, options = {}) {
   if (typeof text !== 'string' || text.length > 1024 * 1024) fail('MVU_LIMIT', 'Reply exceeds 1 MiB')
   const commands = [], covered = []
   for (const match of text.matchAll(/<(json_?patch)>\s*([\s\S]*?)<\/\1>/gi)) {
@@ -13,6 +13,7 @@ export function parseMvuUpdate(text) {
       if (!patch || !['replace', 'delta', 'insert', 'add', 'remove', 'move'].includes(patch.op)) fail('MVU_UNSUPPORTED', 'Unsupported JSONPatch operation')
       const path = pathParts(patch.path ?? patch.to, true)
       const command = { op: { replace: 'set', delta: 'add', add: 'insert', remove: 'delete' }[patch.op] ?? patch.op, path, index: match.index }
+      if (options.source) { command.full_match = JSON.stringify(patch); command.reason = 'json_patch' }
       if (patch.op === 'move') command.from = pathParts(patch.from, true)
       else if (patch.op !== 'remove') { if (!Object.hasOwn(patch, 'value')) fail('MVU_PARSE', 'Patch value is missing'); command.value = patch.value }
       if (command.op === 'insert') { command.key = path.at(-1); command.path = path.slice(0, -1); if (!path.length) fail('MVU_UNSUPPORTED', 'Root insert is unsupported') }
@@ -40,6 +41,7 @@ export function parseMvuUpdate(text) {
     const op = { assign: 'insert', remove: 'delete', unset: 'delete' }[match[1]] ?? match[1]
     if ((op === 'set' && ![2, 3].includes(args.length)) || (op === 'add' && args.length !== 2) || (op === 'insert' && ![2, 3].includes(args.length)) || (op === 'delete' && ![1, 2].includes(args.length))) fail('MVU_PARSE', 'Invalid command arity')
     const command = { op, path: pathParts(args[0]), index: match.index }
+    if (options.source) { command.full_match = text.slice(match.index, i + 1); command.reason = 'legacy'; command.source_args = args.slice(1).map(value => JSON.stringify(value)) }
     if (op === 'set' || op === 'add') command.value = args.at(-1)
     if (op === 'insert') { command.value = args.at(-1); if (args.length === 3) command.key = safeKey(args[1]) }
     if (op === 'delete' && args.length === 2) command.target = args[1]

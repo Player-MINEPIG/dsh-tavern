@@ -406,9 +406,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js
 var require_xhtml = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js"(exports, module2) {
     module2.exports = {
       quot: '"',
       amp: "&",
@@ -667,9 +667,9 @@ var require_xhtml = __commonJS({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js
 var require_acorn = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, factory(global.acorn = {}));
     })(exports, (function(exports2) {
@@ -6294,9 +6294,9 @@ var require_acorn = __commonJS({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js
 var require_acorn_jsx = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js"(exports, module2) {
     "use strict";
     var XHTMLEntities = require_xhtml();
     var hexNumber = /^[\da-fA-F]+$/;
@@ -6717,10 +6717,10 @@ var require_acorn_jsx = __commonJS({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs
 var EvalFlags, IntrinsicsFlags, JSPromiseStateEnum, GetOwnPropertyNamesFlags, IsEqualOp;
 var init_dist = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs"() {
     EvalFlags = { JS_EVAL_TYPE_GLOBAL: 0, JS_EVAL_TYPE_MODULE: 1, JS_EVAL_TYPE_DIRECT: 2, JS_EVAL_TYPE_INDIRECT: 3, JS_EVAL_TYPE_MASK: 3, JS_EVAL_FLAG_STRICT: 8, JS_EVAL_FLAG_STRIP: 16, JS_EVAL_FLAG_COMPILE_ONLY: 32, JS_EVAL_FLAG_BACKTRACE_BARRIER: 64 };
     IntrinsicsFlags = { BaseObjects: 1, Date: 2, Eval: 4, StringNormalize: 8, RegExp: 16, RegExpCompiler: 32, JSON: 64, Proxy: 128, MapSet: 256, TypedArrays: 512, Promise: 1024, BigInt: 2048, BigFloat: 4096, BigDecimal: 8192, OperatorOverloading: 16384, BignumExt: 32768 };
     JSPromiseStateEnum = { Pending: 0, Fulfilled: 1, Rejected: 2 };
@@ -6729,7 +6729,7 @@ var init_dist = __esm({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs
 function debugLog(...args) {
   QTS_DEBUG && console.log("quickjs-emscripten:", ...args);
 }
@@ -6813,7 +6813,7 @@ function applyModuleEvalRuntimeOptions(runtime, options) {
 }
 var __defProp2, __export2, QTS_DEBUG, errors_exports, QuickJSUnwrapError, QuickJSWrongOwner, QuickJSUseAfterFree, QuickJSNotImplemented, QuickJSAsyncifyError, QuickJSAsyncifySuspended, QuickJSMemoryLeakDetected, QuickJSEmscriptenModuleError, QuickJSUnknownIntrinsic, QuickJSPromisePending, QuickJSEmptyGetOwnPropertyNames, AwaitYield, UsingDisposable, SymbolDispose, prototypeAsAny, Lifetime, StaticLifetime, WeakLifetime, Scope3, AbstractDisposableResult, DisposableSuccess, DisposableFail, DisposableResult, QuickJSDeferredPromise, ModuleMemory, DefaultIntrinsics, QuickJSIterator, ContextMemory, QuickJSContext, QuickJSRuntime, QuickJSEmscriptenModuleCallbacks, QuickJSModuleCallbacks, QuickJSWASMModule;
 var init_chunk_JTKJZQYV = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs"() {
     init_dist();
     init_dist();
     __defProp2 = Object.defineProperty;
@@ -7745,7 +7745,7 @@ Attempted to suspend at:`);
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs
 var module_6F3E5H7Y_exports = {};
 __export(module_6F3E5H7Y_exports, {
   QuickJSModuleCallbacks: () => QuickJSModuleCallbacks,
@@ -7754,19 +7754,19 @@ __export(module_6F3E5H7Y_exports, {
   applyModuleEvalRuntimeOptions: () => applyModuleEvalRuntimeOptions
 });
 var init_module_6F3E5H7Y = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs"() {
     init_chunk_JTKJZQYV();
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs
 var ffi_exports = {};
 __export(ffi_exports, {
   QuickJSFFI: () => QuickJSFFI
 });
 var QuickJSFFI;
 var init_ffi = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs"() {
     QuickJSFFI = class {
       constructor(module2) {
         this.module = module2;
@@ -7842,14 +7842,14 @@ var init_ffi = __esm({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs
 var emscripten_module_browser_VTL2UBYQ_exports = {};
 __export(emscripten_module_browser_VTL2UBYQ_exports, {
   default: () => emscripten_module_browser_default
 });
 var import_meta, QuickJSRaw, emscripten_module_browser_default;
 var init_emscripten_module_browser_VTL2UBYQ = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs"() {
     import_meta = {};
     QuickJSRaw = (() => {
       var _scriptName = import_meta.url;
@@ -8146,9 +8146,9 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js
 var require_dist = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.JSON5 = factory();
     })(exports, (function() {
@@ -9611,7 +9611,7 @@ function updateRenderingAdapter(value, owner, source, mode) {
   return normalizeRenderingAdapters({ schemaVersion: 1, entries: entries2 });
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.mjs
 var astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 80, 3, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 343, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 330, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 726, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
 var astralIdentifierStartCodes = [0, 11, 2, 25, 2, 18, 2, 1, 2, 14, 3, 13, 35, 122, 70, 52, 268, 28, 4, 48, 48, 31, 14, 29, 6, 37, 11, 29, 3, 35, 5, 7, 2, 4, 43, 157, 19, 35, 5, 35, 5, 39, 9, 51, 13, 10, 2, 14, 2, 6, 2, 1, 2, 10, 2, 14, 2, 6, 2, 1, 4, 51, 13, 310, 10, 21, 11, 7, 25, 5, 2, 41, 2, 8, 70, 5, 3, 0, 2, 43, 2, 1, 4, 0, 3, 22, 11, 22, 10, 30, 66, 18, 2, 1, 11, 21, 11, 25, 71, 55, 7, 1, 65, 0, 16, 3, 2, 2, 2, 28, 43, 28, 4, 28, 36, 7, 2, 27, 28, 53, 11, 21, 11, 18, 14, 17, 111, 72, 56, 50, 14, 50, 14, 35, 39, 27, 10, 22, 251, 41, 7, 1, 17, 2, 60, 28, 11, 0, 9, 21, 43, 17, 47, 20, 28, 22, 13, 52, 58, 1, 3, 0, 14, 44, 33, 24, 27, 35, 30, 0, 3, 0, 9, 34, 4, 0, 13, 47, 15, 3, 22, 0, 2, 0, 36, 17, 2, 24, 20, 1, 64, 6, 2, 0, 2, 3, 2, 14, 2, 9, 8, 46, 39, 7, 3, 1, 3, 21, 2, 6, 2, 1, 2, 4, 4, 0, 19, 0, 13, 4, 31, 9, 2, 0, 3, 0, 2, 37, 2, 0, 26, 0, 2, 0, 45, 52, 19, 3, 21, 2, 31, 47, 21, 1, 2, 0, 185, 46, 42, 3, 37, 47, 21, 0, 60, 42, 14, 0, 72, 26, 38, 6, 186, 43, 117, 63, 32, 7, 3, 0, 3, 7, 2, 1, 2, 23, 16, 0, 2, 0, 95, 7, 3, 38, 17, 0, 2, 0, 29, 0, 11, 39, 8, 0, 22, 0, 12, 45, 20, 0, 19, 72, 200, 32, 32, 8, 2, 36, 18, 0, 50, 29, 113, 6, 2, 1, 2, 37, 22, 0, 26, 5, 2, 1, 2, 31, 15, 0, 328, 18, 16, 0, 2, 12, 2, 33, 125, 0, 80, 921, 103, 110, 18, 195, 2637, 96, 16, 1071, 18, 5, 26, 3994, 6, 582, 6842, 29, 1763, 568, 8, 30, 18, 78, 18, 29, 19, 47, 17, 3, 32, 20, 6, 18, 433, 44, 212, 63, 129, 74, 6, 0, 67, 12, 65, 1, 2, 0, 29, 6135, 9, 1237, 42, 9, 8936, 3, 2, 6, 2, 1, 2, 290, 16, 0, 30, 2, 3, 0, 15, 3, 9, 395, 2309, 106, 6, 12, 4, 8, 8, 9, 5991, 84, 2, 70, 2, 1, 3, 0, 3, 1, 3, 3, 2, 11, 2, 0, 2, 6, 2, 64, 2, 3, 3, 7, 2, 6, 2, 27, 2, 3, 2, 4, 2, 0, 4, 6, 2, 339, 3, 24, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 7, 1845, 30, 7, 5, 262, 61, 147, 44, 11, 6, 17, 0, 322, 29, 19, 43, 485, 27, 229, 29, 3, 0, 496, 6, 2, 3, 2, 1, 2, 14, 2, 196, 60, 67, 8, 0, 1205, 3, 2, 26, 2, 1, 2, 0, 3, 0, 2, 9, 2, 3, 2, 0, 2, 0, 7, 0, 5, 0, 2, 0, 2, 0, 2, 2, 2, 1, 2, 0, 3, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 1, 2, 0, 3, 3, 2, 6, 2, 3, 2, 3, 2, 0, 2, 9, 2, 16, 6, 2, 2, 4, 2, 16, 4421, 42719, 33, 4153, 7, 221, 3, 5761, 15, 7472, 16, 621, 2467, 541, 1507, 4938, 6, 4191];
 var nonASCIIidentifierChars = "\u200C\u200D\xB7\u0300-\u036F\u0387\u0483-\u0487\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u0610-\u061A\u064B-\u0669\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u06F0-\u06F9\u0711\u0730-\u074A\u07A6-\u07B0\u07C0-\u07C9\u07EB-\u07F3\u07FD\u0816-\u0819\u081B-\u0823\u0825-\u0827\u0829-\u082D\u0859-\u085B\u0897-\u089F\u08CA-\u08E1\u08E3-\u0903\u093A-\u093C\u093E-\u094F\u0951-\u0957\u0962\u0963\u0966-\u096F\u0981-\u0983\u09BC\u09BE-\u09C4\u09C7\u09C8\u09CB-\u09CD\u09D7\u09E2\u09E3\u09E6-\u09EF\u09FE\u0A01-\u0A03\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A66-\u0A71\u0A75\u0A81-\u0A83\u0ABC\u0ABE-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AE2\u0AE3\u0AE6-\u0AEF\u0AFA-\u0AFF\u0B01-\u0B03\u0B3C\u0B3E-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B55-\u0B57\u0B62\u0B63\u0B66-\u0B6F\u0B82\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD7\u0BE6-\u0BEF\u0C00-\u0C04\u0C3C\u0C3E-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C62\u0C63\u0C66-\u0C6F\u0C81-\u0C83\u0CBC\u0CBE-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CE2\u0CE3\u0CE6-\u0CEF\u0CF3\u0D00-\u0D03\u0D3B\u0D3C\u0D3E-\u0D44\u0D46-\u0D48\u0D4A-\u0D4D\u0D57\u0D62\u0D63\u0D66-\u0D6F\u0D81-\u0D83\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DE6-\u0DEF\u0DF2\u0DF3\u0E31\u0E34-\u0E3A\u0E47-\u0E4E\u0E50-\u0E59\u0EB1\u0EB4-\u0EBC\u0EC8-\u0ECE\u0ED0-\u0ED9\u0F18\u0F19\u0F20-\u0F29\u0F35\u0F37\u0F39\u0F3E\u0F3F\u0F71-\u0F84\u0F86\u0F87\u0F8D-\u0F97\u0F99-\u0FBC\u0FC6\u102B-\u103E\u1040-\u1049\u1056-\u1059\u105E-\u1060\u1062-\u1064\u1067-\u106D\u1071-\u1074\u1082-\u108D\u108F-\u109D\u135D-\u135F\u1369-\u1371\u1712-\u1715\u1732-\u1734\u1752\u1753\u1772\u1773\u17B4-\u17D3\u17DD\u17E0-\u17E9\u180B-\u180D\u180F-\u1819\u18A9\u1920-\u192B\u1930-\u193B\u1946-\u194F\u19D0-\u19DA\u1A17-\u1A1B\u1A55-\u1A5E\u1A60-\u1A7C\u1A7F-\u1A89\u1A90-\u1A99\u1AB0-\u1ABD\u1ABF-\u1ACE\u1B00-\u1B04\u1B34-\u1B44\u1B50-\u1B59\u1B6B-\u1B73\u1B80-\u1B82\u1BA1-\u1BAD\u1BB0-\u1BB9\u1BE6-\u1BF3\u1C24-\u1C37\u1C40-\u1C49\u1C50-\u1C59\u1CD0-\u1CD2\u1CD4-\u1CE8\u1CED\u1CF4\u1CF7-\u1CF9\u1DC0-\u1DFF\u200C\u200D\u203F\u2040\u2054\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2CEF-\u2CF1\u2D7F\u2DE0-\u2DFF\u302A-\u302F\u3099\u309A\u30FB\uA620-\uA629\uA66F\uA674-\uA67D\uA69E\uA69F\uA6F0\uA6F1\uA802\uA806\uA80B\uA823-\uA827\uA82C\uA880\uA881\uA8B4-\uA8C5\uA8D0-\uA8D9\uA8E0-\uA8F1\uA8FF-\uA909\uA926-\uA92D\uA947-\uA953\uA980-\uA983\uA9B3-\uA9C0\uA9D0-\uA9D9\uA9E5\uA9F0-\uA9F9\uAA29-\uAA36\uAA43\uAA4C\uAA4D\uAA50-\uAA59\uAA7B-\uAA7D\uAAB0\uAAB2-\uAAB4\uAAB7\uAAB8\uAABE\uAABF\uAAC1\uAAEB-\uAAEF\uAAF5\uAAF6\uABE3-\uABEA\uABEC\uABED\uABF0-\uABF9\uFB1E\uFE00-\uFE0F\uFE20-\uFE2F\uFE33\uFE34\uFE4D-\uFE4F\uFF10-\uFF19\uFF3F\uFF65";
@@ -15925,6 +15925,13 @@ function confirmMvuSchemas(declarations, snapshot) {
     const descriptor = snapshot?.variables?.mvu_schema;
     if (snapshot?.status !== "available" || descriptor?.mvuSchema !== 1 || ![1, 2].includes(descriptor?.interpreterVersion) || descriptor?.source !== item.source) throw Error("Built-in MVU schema requires an available backend snapshot with the exact complete schema source and supported interpreter version");
     return { ...item, status: "source-registered", resourceId: snapshot.resourceId, revision: snapshot.revision, interpreterVersion: descriptor.interpreterVersion, confirmation: "Derived locally from the authoritative snapshot; original schema script was not executed in the card" };
+  });
+}
+function confirmMvuCommandHooks(declarations, snapshot) {
+  return declarations.map((item) => {
+    const receipt = snapshot?.commandProcessor;
+    if (snapshot?.status !== "available" || receipt?.protocolVersion !== 1 || receipt?.registered !== true || receipt.source !== item.source || typeof receipt.registrationId !== "string" || !receipt.registrationId || !Number.isSafeInteger(receipt.listenerCount) || receipt.listenerCount < 1) throw Error("MVU command Helper requires a matching successful source registration receipt");
+    return { ...item, status: "source-registered", resourceId: snapshot.resourceId, registrationId: receipt.registrationId, confirmation: "Source precommit registration; no state commit implied" };
   });
 }
 
@@ -27876,6 +27883,40 @@ async function selectedPhoto(file, signal) {
   }
 }
 
+// packages/mvu-adapter/src/command-hook-declaration.js
+function commandHookDeclaration(source) {
+  if (typeof source !== "string" || !source.includes("COMMAND_PARSED") || !source.includes("global_Mvu_initialized")) return null;
+  if (source.length > 64 * 1024) throw Object.assign(new Error("Command Helper exceeds 64 KiB"), { code: "MVU_COMMAND_HOOK_LIMIT" });
+  let tree;
+  try {
+    tree = parse3(source, { ecmaVersion: "latest", sourceType: "script" });
+  } catch {
+    throw Object.assign(new Error("Command Helper must be a complete inline script"), { code: "MVU_COMMAND_HOOK_DECLARATION" });
+  }
+  let parsed = false, initialized = false;
+  const gates = /* @__PURE__ */ new Map(), reads = /* @__PURE__ */ new Map(), pending2 = [tree];
+  while (pending2.length) {
+    const node = pending2.pop();
+    if (node.type === "MemberExpression" && !node.computed && node.property.name === "COMMAND_PARSED") parsed = true;
+    if (node.type === "CallExpression" && node.callee.type === "Identifier" && node.callee.name === "eventOn" && node.arguments[0]?.value === "global_Mvu_initialized") initialized = true;
+    if (node.type === "VariableDeclarator" && node.id.type === "Identifier" && node.init?.type === "MemberExpression" && node.init.object.name === "globalThis" && !node.init.computed) gates.set(node.id.name, node.init.property.name);
+    if (node.type === "MemberExpression" && node.object.type === "Identifier" && !node.computed && ["latestUserText", "extractOperationBlock"].includes(node.property.name)) {
+      if (!reads.has(node.object.name)) reads.set(node.object.name, /* @__PURE__ */ new Set());
+      reads.get(node.object.name).add(node.property.name);
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) for (const child of value) {
+        if (child?.type) pending2.push(child);
+      }
+      else if (value?.type) pending2.push(value);
+    }
+  }
+  if (!parsed || !initialized) return null;
+  const globals = [...gates].filter(([name2]) => reads.get(name2)?.size === 2).map(([, name2]) => name2);
+  if (globals.length > 1 || globals.some((name2) => !/^[A-Za-z_$][\w$]{0,127}$/.test(name2) || ["Mvu", "console", "JSON", "Object", "__proto__", "constructor", "prototype"].includes(name2))) throw Object.assign(new Error("Ambiguous operation context"), { code: "MVU_COMMAND_HOOK_DECLARATION" });
+  return { protocolVersion: 1, source, ...globals.length ? { gateGlobal: globals[0] } : {} };
+}
+
 // packages/client/src/play/card-worker-client.js
 var active = 0;
 function validateInput(data3) {
@@ -28520,7 +28561,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
   }, notifyVariables: (value) => send("variables", value) };
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/dompurify/dist/purify.es.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/dompurify/dist/purify.es.mjs
 function _OverloadYield(e, d2) {
   this.v = e, this.k = d2;
 }
@@ -30518,7 +30559,7 @@ function restrictStaticResources(fragment, { liveImages = false } = {}) {
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/marked/lib/marked.esm.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/marked/lib/marked.esm.js
 function C() {
   return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
 }
@@ -31890,7 +31931,7 @@ function mountStyledHtml(element) {
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/katex/dist/katex.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/katex/dist/katex.mjs
 var ParseError = class _ParseError extends Error {
   // The underlying error message without any context added.
   constructor(message, token) {
@@ -46701,7 +46742,7 @@ var RichText = (0, import_react18.memo)(function RichText2({ text: text3, classN
   });
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/index.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/index.mjs
 init_dist();
 async function newQuickJSWASMModuleFromVariant(variantOrPromise) {
   let variant2 = smartUnwrap(await variantOrPromise), [wasmModuleLoader, QuickJSFFI2, { QuickJSWASMModule: QuickJSWASMModule2 }] = await Promise.all([variant2.importModuleLoader().then(smartUnwrap), variant2.importFFI(), Promise.resolve().then(() => (init_module_6F3E5H7Y(), module_6F3E5H7Y_exports)).then(smartUnwrap)]), wasmModule = await wasmModuleLoader();
@@ -46713,7 +46754,7 @@ function smartUnwrap(val) {
   return val && "default" in val && val.default ? val.default && "default" in val.default && val.default.default ? val.default.default : val.default : val;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/index.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/index.mjs
 var variant = { type: "sync", importFFI: () => Promise.resolve().then(() => (init_ffi(), ffi_exports)).then((mod) => mod.QuickJSFFI), importModuleLoader: () => Promise.resolve().then(() => (init_emscripten_module_browser_VTL2UBYQ(), emscripten_module_browser_VTL2UBYQ_exports)).then((mod) => mod.default) };
 var src_default = variant;
 
@@ -47348,7 +47389,7 @@ function createFixedIdentityActionModel(source) {
 // packages/mvu-adapter/src/data.js
 var import_json5 = __toESM(require_dist(), 1);
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/identity.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/identity.js
 var ALIAS = /* @__PURE__ */ Symbol.for("yaml.alias");
 var DOC = /* @__PURE__ */ Symbol.for("yaml.document");
 var MAP = /* @__PURE__ */ Symbol.for("yaml.map");
@@ -47384,7 +47425,7 @@ function isNode(node) {
 }
 var hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/visit.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/visit.js
 var BREAK = /* @__PURE__ */ Symbol("break visit");
 var SKIP = /* @__PURE__ */ Symbol("skip children");
 var REMOVE = /* @__PURE__ */ Symbol("remove node");
@@ -47534,7 +47575,7 @@ function replaceNode2(key2, path3, node) {
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/directives.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/directives.js
 var escapeChars = {
   "!": "%21",
   ",": "%2C",
@@ -47697,7 +47738,7 @@ var Directives = class _Directives {
 Directives.defaultYaml = { explicit: false, version: "1.2" };
 Directives.defaultTags = { "!!": "tag:yaml.org,2002:" };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/anchors.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/anchors.js
 function anchorIsValid(anchor) {
   if (/[\x00-\x19\s,[\]{}]/.test(anchor)) {
     const sa = JSON.stringify(anchor);
@@ -47707,7 +47748,7 @@ function anchorIsValid(anchor) {
   return true;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/applyReviver.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/applyReviver.js
 function applyReviver(reviver, obj, key2, val) {
   if (val && typeof val === "object") {
     if (Array.isArray(val)) {
@@ -47751,7 +47792,7 @@ function applyReviver(reviver, obj, key2, val) {
   return reviver.call(obj, key2, val);
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/toJS.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/toJS.js
 function toJS(value, arg, ctx) {
   if (Array.isArray(value))
     return value.map((v2, i3) => toJS(v2, String(i3), ctx));
@@ -47774,7 +47815,7 @@ function toJS(value, arg, ctx) {
   return value;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Node.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Node.js
 var NodeBase = class {
   constructor(type) {
     Object.defineProperty(this, NODE_TYPE2, { value: type });
@@ -47806,7 +47847,7 @@ var NodeBase = class {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Alias.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Alias.js
 var Alias = class extends NodeBase {
   constructor(source) {
     super(ALIAS);
@@ -47913,7 +47954,7 @@ function getAliasCount(doc, node, anchors) {
   return 1;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Scalar.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Scalar.js
 var isScalarValue = (value) => !value || typeof value !== "function" && typeof value !== "object";
 var Scalar = class extends NodeBase {
   constructor(value) {
@@ -47933,7 +47974,7 @@ Scalar.PLAIN = "PLAIN";
 Scalar.QUOTE_DOUBLE = "QUOTE_DOUBLE";
 Scalar.QUOTE_SINGLE = "QUOTE_SINGLE";
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/createNode.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/createNode.js
 var defaultTagPrefix = "tag:yaml.org,2002:";
 function findTagObject(value, tagName, tags) {
   if (tagName) {
@@ -47999,7 +48040,7 @@ function createNode(value, tagName, ctx) {
   return node;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Collection.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Collection.js
 function collectionFromPath(schema5, path3, value) {
   let v2 = value;
   for (let i3 = path3.length - 1; i3 >= 0; --i3) {
@@ -48131,7 +48172,7 @@ var Collection = class extends NodeBase {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyComment.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyComment.js
 var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
 function indentComment(comment, indent) {
   if (/^\n+$/.test(comment))
@@ -48140,7 +48181,7 @@ function indentComment(comment, indent) {
 }
 var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
 var FOLD_FLOW = "flow";
 var FOLD_BLOCK = "block";
 var FOLD_QUOTED = "quoted";
@@ -48267,7 +48308,7 @@ function consumeMoreIndentedLines(text3, i3, indent) {
   return end;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyString.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyString.js
 var getFoldOptions = (ctx, isBlock) => ({
   indentAtStart: isBlock ? ctx.indent.length : ctx.indentAtStart,
   lineWidth: ctx.options.lineWidth,
@@ -48542,7 +48583,7 @@ function stringifyString(item, ctx, onComment, onChompKeep) {
   return res;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringify.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringify.js
 function createStringifyContext(doc, options) {
   const opt = Object.assign({
     blockQuote: true,
@@ -48655,7 +48696,7 @@ function stringify(item, ctx, onComment, onChompKeep) {
 ${ctx.indent}${str}`;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyPair.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyPair.js
 function stringifyPair({ key: key2, value }, ctx, onComment, onChompKeep) {
   const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
   let keyComment = isNode(key2) && key2.comment || null;
@@ -48778,14 +48819,14 @@ ${ctx.indent}`;
   return str;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/log.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/log.js
 function warn(logLevel, warning) {
   if (logLevel === "debug" || logLevel === "warn") {
     console.warn(warning);
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
 var MERGE_KEY = "<<";
 var merge = {
   identify: (value) => value === MERGE_KEY || typeof value === "symbol" && value.description === MERGE_KEY,
@@ -48835,7 +48876,7 @@ function resolveAliasValue(ctx, value) {
   return ctx && isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
 function addPairToJSMap(ctx, map2, { key: key2, value }) {
   if (isNode(key2) && key2.addToJSMap)
     key2.addToJSMap(ctx, map2, value);
@@ -48888,7 +48929,7 @@ function stringifyKey(key2, jsKey, ctx) {
   return JSON.stringify(jsKey);
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Pair.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Pair.js
 function createPair(key2, value, ctx) {
   const k = createNode(key2, void 0, ctx);
   const v2 = createNode(value, void 0, ctx);
@@ -48917,7 +48958,7 @@ var Pair = class _Pair {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
 function stringifyCollection(collection, ctx, options) {
   const flow = ctx.inFlow ?? collection.flow;
   const stringify4 = flow ? stringifyFlowCollection : stringifyBlockCollection;
@@ -49059,7 +49100,7 @@ function addCommentBefore({ indent, options: { commentString } }, lines, comment
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLMap.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLMap.js
 function findPair(items2, key2) {
   const k = isScalar(key2) ? key2.value : key2;
   for (const it2 of items2) {
@@ -49190,7 +49231,7 @@ var YAMLMap = class extends Collection {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/map.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/map.js
 var map = {
   collection: "map",
   default: true,
@@ -49204,7 +49245,7 @@ var map = {
   createNode: (schema5, obj, ctx) => YAMLMap.from(schema5, obj, ctx)
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
 var YAMLSeq = class extends Collection {
   static get tagName() {
     return "tag:yaml.org,2002:seq";
@@ -49308,7 +49349,7 @@ function asItemIndex(key2) {
   return typeof idx === "number" && Number.isInteger(idx) && idx >= 0 ? idx : null;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/seq.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/seq.js
 var seq = {
   collection: "seq",
   default: true,
@@ -49322,7 +49363,7 @@ var seq = {
   createNode: (schema5, obj, ctx) => YAMLSeq.from(schema5, obj, ctx)
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/json/schema.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/json/schema.js
 function intIdentify(value) {
   return typeof value === "bigint" || Number.isInteger(value);
 }
@@ -49380,7 +49421,7 @@ var jsonError = {
 };
 var schema2 = [map, seq].concat(jsonScalars, jsonError);
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
 function createPairs(schema5, iterable, ctx) {
   const { replacer } = ctx;
   const pairs2 = new YAMLSeq(schema5);
@@ -49413,7 +49454,7 @@ function createPairs(schema5, iterable, ctx) {
   return pairs2;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
 var YAMLOMap = class _YAMLOMap extends YAMLSeq {
   constructor() {
     super();
@@ -49457,7 +49498,7 @@ var YAMLOMap = class _YAMLOMap extends YAMLSeq {
 };
 YAMLOMap.tag = "tag:yaml.org,2002:omap";
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
 var YAMLSet = class _YAMLSet extends YAMLMap {
   constructor(schema5) {
     super(schema5);
@@ -49518,7 +49559,7 @@ var YAMLSet = class _YAMLSet extends YAMLMap {
 };
 YAMLSet.tag = "tag:yaml.org,2002:set";
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
 function parseSexagesimal(str, asBigInt) {
   const sign = str[0];
   const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
@@ -49553,7 +49594,7 @@ var timestamp2 = {
   stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/cst-visit.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/cst-visit.js
 var BREAK2 = /* @__PURE__ */ Symbol("break visit");
 var SKIP2 = /* @__PURE__ */ Symbol("skip children");
 var REMOVE2 = /* @__PURE__ */ Symbol("remove item");
@@ -49609,7 +49650,7 @@ function _visit(path3, item, visitor) {
   return typeof ctrl === "function" ? ctrl(item, path3) : ctrl;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/lexer.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/lexer.js
 var hexDigits = new Set("0123456789ABCDEFabcdef");
 var tagChars = new Set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$_.!~*'()");
 var flowIndicatorChars = new Set(",[]{}");
@@ -50197,7 +50238,7 @@ function cardDocument(source) {
   return { html: html2, scripts, root: sourceRootPresentation(source), unsupported: [...new Set(unsupported)] };
 }
 function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
-  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters = [], schemaDeclarations = [];
+  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters = [], schemaDeclarations = [], commandDeclarations = [];
   let total = source.length, expanded = source.length, virtual = false;
   const analyzed = /* @__PURE__ */ new Map(), pending2 = [];
   const read = (url, ownerHint) => {
@@ -50288,6 +50329,12 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
       schemaDeclarations.push({ source: content, owner: helper.owner, key: helper.key, sha256: helper.contentDigest ?? trust.inspect(helper.owner, helper.key)?.digest });
       continue;
     }
+    if (commandHookDeclaration(content)) {
+      const declaration = { source: content, owner: helper.owner, key: helper.key };
+      commandDeclarations.push(declaration);
+      adapters.push({ kind: "backend-command-hook", version: 1, ...declaration, replacement: "Source-owned precommit command processing; original script is not executed in display VMs" });
+      continue;
+    }
     collect(content, void 0, helper.owner);
     runs.push({ code: content, module: true, name: "helper-" + runs.length + ".js" });
   }
@@ -50317,7 +50364,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   }
   collectModules();
   const data3 = cardDocument(template.innerHTML);
-  return { ...data3, root, runs, modules, virtual, adapters, schemaDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
+  return { ...data3, root, runs, modules, virtual, adapters, schemaDeclarations, commandDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
 }
 function createDomBridge(doc, context, onProposal, onError, helperBinding) {
   const nodes = [doc.body], ids = new WeakMap([[doc.body, 0]]), disposers = [];
@@ -50656,6 +50703,7 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
         if (composerBridge.modeError) setError(composerBridge.modeError);
         const activeBinding = binding ?? helperBinding;
         confirmMvuSchemas(data3.schemaDeclarations ?? [], activeBinding?.getSnapshot());
+        confirmMvuCommandHooks(data3.commandDeclarations ?? [], activeBinding?.getSnapshot());
         const events = ["click", "input", "change", "keydown", "keyup", "pointerdown", "pointerup"];
         const controlPhases = /* @__PURE__ */ new WeakMap();
         const handler = (event) => {

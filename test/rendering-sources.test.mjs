@@ -1,3 +1,4 @@
+import {commandHookDeclaration} from '../packages/mvu-adapter/src/command-hook-declaration.js'
 import {DEPENDENCY_LIMITS} from '../packages/client/src/play/rendering-limits.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -100,7 +101,7 @@ test('module graph checks every source owner before sharing identical dependenci
  const source=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
  const body=source.slice(source.indexOf('export function prepareCardDocument('),source.indexOf('\nexport function createDomBridge(')).replace('export function','function')
  const inertDocument={createElement(){return {innerHTML:'',content:{querySelectorAll(){return []}}}}}
- const prepare=new Function('DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
+ const prepare=new Function('commandHookDeclaration','DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(commandHookDeclaration,DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
  const trust=createRenderingTrust(),url='https://example.com/shared.js'
  const helpers=['character:A','preset:B'].map(owner=>({owner,key:owner+':helper',content:`import {value} from '${url}';`,enabled:true}))
  const approve=async(owner,key,content)=>trust.approve(owner,key,await trust.stage(owner,key,content))
@@ -126,7 +127,7 @@ test('runtime and acquisition count the first inline dependency at depth zero',a
  const text=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
  const body=text.slice(text.indexOf('export function prepareCardDocument('),text.indexOf('\nexport function createDomBridge(')).replace('export function','function')
  const document={createElement:()=>({innerHTML:'',content:{querySelectorAll:()=>[]}})}
- const prepare=new Function('DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,document,()=>({html:'',scripts:[],unsupported:[]}))
+ const prepare=new Function('commandHookDeclaration','DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(commandHookDeclaration,DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,document,()=>({html:'',scripts:[],unsupported:[]}))
  const owner='character:depth-fixture',trust=createRenderingTrust(),url=n=>'https://example.com/depth-'+n+'.js'
  const items=Array.from({length:9},(_,i)=>({url:url(i),content:i===8?'export const done=1;':`import './depth-${i+1}.js';`}))
  await trust.install(owner,items)
@@ -161,7 +162,7 @@ test('S2: disabled global URL does not shadow reviewed enabled character; explic
  const source=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
  const body=source.slice(source.indexOf('export function prepareCardDocument('),source.indexOf('\nexport function createDomBridge(')).replace('export function','function')
  const inertDocument={createElement(){return {innerHTML:'',content:{querySelectorAll(){return []}}}}}
- const prepare=new Function('DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
+ const prepare=new Function('commandHookDeclaration','DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(commandHookDeclaration,DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
  const trust=createRenderingTrust(),url='https://example.com/shared.html',owners=['global:workspace:synthetic','character:synthetic']
  for(const owner of owners)trust.approve(owner,url,await trust.stage(owner,url,'<body>synthetic</body>'))
  trust.setEnablement({schemaVersion:1,entries:[{owner:owners[0],key:url,enabled:false}]})
