@@ -171,6 +171,33 @@ test('initial scope crosses the JSON HTTP and shared client binding without expo
   await assert.rejects(binding.write({ operation: 'patch', value: [], expectedRevision: 1, operationId: 'http-stale', cause: 'script' }), { code: 'MVU_READ_ONLY' })
 })
 
+test('indexed greeting HTTP read and initial write retain the observed source token', async t => {
+  const { Readable } = await import('node:stream')
+  const { createMvuApi } = await import('../packages/mvu-adapter/src/http.js')
+  const { createMvuCardBinding } = await import('../packages/client/src/play/mvu-bridge.js')
+  const { API_V1 } = await import('../packages/identity.js')
+  const f = fixture(t); f.allow(); const api = createMvuApi(f.service)
+  const invoke = (url, body) => new Promise((resolve, reject) => {
+    const req = Readable.from(body ? [Buffer.from(JSON.stringify(body))] : []); req.url = url; req.method = body ? 'POST' : 'GET'
+    const res = { setHeader() {}, end(text) { const result = JSON.parse(text); if (this.statusCode >= 400) reject(Object.assign(new Error(result.error), { code: result.code })); else resolve(result) } }
+    Promise.resolve(api(req, res)).catch(reject)
+  })
+  const client = { getMvuSnapshot: scope => invoke(`${API_V1}/mvu/snapshot?scope=${encodeURIComponent(JSON.stringify(scope))}`), postMvuOperation: (path, body) => invoke(`${API_V1}/mvu/${path}`, body) }
+  const greeting = { ...f.scope, mode: 'greeting', greetingIndex: 0 }
+  const snapshot = await client.getMvuSnapshot(greeting)
+  assert.equal(snapshot.viewIdentity.greetingIndex, 0)
+  Object.assign(f.scope, { greetingIndex: 0, selectionToken: snapshot.viewIdentity.selectionToken })
+  const binding = await createMvuCardBinding({ client, scope: f.scope, writeGrant: { grantId: 'grant', sourceIdentity: f.sourceIdentity } }); t.after(() => binding.dispose())
+  assert.equal((await binding.write({ operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'indexed-http', cause: 'user-interaction' })).revision, 1)
+  for (const [scope, code] of [[{ ...greeting, greetingIndex: 1 }, 'MVU_READ_ONLY'], [{ ...greeting, greetingIndex: -1 }, 'MVU_SCOPE'], [{ ...greeting, selectionToken: 'b'.repeat(64) }, 'MVU_READ_ONLY'], [{ ...greeting, messageId: 'forged' }, 'MVU_SCOPE']]) {
+    await assert.rejects(client.getMvuSnapshot(scope), { code })
+  }
+  f.selections.set('s', { character: { greetingIndex: 1 } })
+  f.selections.set('s', { character: { greetingIndex: 0 } })
+  await assert.rejects(client.postMvuOperation('card-binding', { scope: f.scope, grantId: 'grant', sourceIdentity: f.sourceIdentity }), { code: 'MVU_READ_ONLY' })
+  assert.equal((await f.service.read({ id: 'mvu:initial', scope: { sessionId: 's' } })).revision, 1)
+})
+
 
 test('official new-session permission metadata permits initial scope; all activity and unknown events still refuse it', async t => {
   // Neutral replay of the sequence emitted by official SessionController creation plus Tavern RP mode.

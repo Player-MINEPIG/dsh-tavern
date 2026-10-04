@@ -111,7 +111,7 @@ renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 c
 
 开场渲染将只读 greeting scope 与空会话 initial 写 scope 分开；角色或周目切换会取消旧读取及订阅。缺失变量和初始化错误应显示错误，而非补造默认状态。
 
-显示端可用 `greetingIndex` 固定自己实际读取的选中开场；来源拒绝不匹配的索引。当前开场快照带 `viewIdentity:{greetingIndex,selectionToken}`，token 绑定来源 Host 实例、会话和选择代次，不是写授权。带索引的 initial 写 scope 还必须带该已观察 token，并纳入原有独立 grant 的完整 scope。切换 A→B、A→B→A、Host 重启或领能力前切换都会拒绝旧视图；不能以懒领取的新能力替换旧显示意图。
+显示端可用 `greetingIndex` 固定自己实际读取的选中开场；来源拒绝不匹配的索引。HTTP 只在 `greeting`、`initial` scope 接纳 `greetingIndex/selectionToken`，历史消息 scope 不能附带未验证的选择身份。当前开场快照带 `viewIdentity:{greetingIndex,selectionToken}`，token 绑定来源 Host 实例、会话和选择代次，不是写授权。带索引的 initial 写 scope 还必须带该已观察 token，并纳入原有独立 grant 的完整 scope。切换 A→B、A→B→A、Host 重启或领能力前切换都会拒绝旧视图；不能以懒领取的新能力替换旧显示意图。
 
 隔离 Worker 提供有限的首消息读取：`getChatMessages(0|'0')` 只返回本绑定选中开场的 source 正文（名称宏展开、显示正则之前）。`SillyTavern.getContext().chat[0]` 是同一投影，数组 length 为该根会话的 user/assistant 持久消息数加开场；其余项为 null，未开放其他聊天正文或完整 ST context。`Mvu.getMvuData({type:'message',message_id:0|'0'})` 仅在本 greeting/initial 绑定上作为当前资源别名；`latest` 只有开场是唯一消息时可用。全局 `getVariables` 的严格 scope 规则保留，别名不授予写权限。
 
