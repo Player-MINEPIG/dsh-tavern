@@ -312,3 +312,36 @@ test('greeting reads a stored session without starting an Agent and rechecks acc
   f.service.list = async input => { const rows = await list(input); f.select('other'); return rows }
   await assert.rejects(f.service.snapshot(scope), { code: 'MVU_READ_ONLY' })
 })
+
+test('a selected greeting view cannot lazily acquire a newer selection lease or survive selection ABA', async t => {
+ const f=fixture(t);f.allow()
+ f.selections.set('s',{character:{greetingIndex:0}})
+ const readScope={...f.scope,mode:'greeting',greetingIndex:0}
+ const observed=await f.service.snapshot(readScope)
+ assert.equal(observed.viewIdentity.greetingIndex,0)
+ assert.match(observed.viewIdentity.selectionToken,/^[a-f0-9]{64}$/)
+ const scope={...f.scope,greetingIndex:0,selectionToken:observed.viewIdentity.selectionToken}
+ f.ctx.get('tavernRenderingAuthority').resolve=async request=>({valid:true,write:true,scope:request.sourceIdentity.scope})
+ const bind=input=>f.service.createCardBinding({scope:input,grantId:'grant',sourceIdentity:{version:1,sha256:'a'.repeat(64),scope:input}})
+ await assert.rejects(bind({...scope,selectionToken:undefined}),{code:'MVU_SCOPE'})
+ f.selections.set('s',{character:{greetingIndex:1}})
+ await assert.rejects(f.service.snapshot(readScope),{code:'MVU_READ_ONLY'})
+ await assert.rejects(bind(scope),{code:'MVU_READ_ONLY'})
+ f.selections.set('s',{character:{greetingIndex:0}})
+ await assert.rejects(bind(scope),{code:'MVU_READ_ONLY'})
+ const fresh=await f.service.snapshot(readScope)
+ assert.notEqual(fresh.viewIdentity.selectionToken,observed.viewIdentity.selectionToken)
+ assert.ok((await bind({...scope,selectionToken:fresh.viewIdentity.selectionToken})).capability)
+ assert.equal((await f.service.read({id:'mvu:initial',scope:{sessionId:'s'}})).revision,0)
+ assert.equal(f.facts.filter(fact=>fact.phase==='applied').length,0)
+})
+
+test('greeting view identity rejects malformed coordinates and changes with the Host instance', async t => {
+ const f=fixture(t)
+ for(const greetingIndex of [-1,0.5,'0'])await assert.rejects(f.service.snapshot({...f.scope,mode:'greeting',greetingIndex}),{code:'MVU_SCOPE'})
+ await assert.rejects(f.service.snapshot({...f.scope,mode:'greeting',selectionToken:'foreign'}),{code:'MVU_SCOPE'})
+ const old=await f.service.snapshot({...f.scope,mode:'greeting',greetingIndex:0})
+ f.service.dispose()
+ const renewed=installMvu(f.ctx,f.options);t.after(()=>renewed.dispose())
+ await assert.rejects(renewed.snapshot({...f.scope,mode:'greeting',greetingIndex:0,selectionToken:old.viewIdentity.selectionToken}),{code:'MVU_READ_ONLY'})
+})

@@ -23,6 +23,7 @@ function validateInput(data) {
  return {...data,runs,modules,html}
 }
 
+let greetingEvent=null,greetingEventReceived=false
 let compiler, vm, runtime, drainJob, nonce, destroyed=false, deadline=0, operations=0, current, context, viewport, lastView='', ready=false
 const timers=new Map(),pendingMessages=[],pendingWrites=new Set();let lastWriteId=0
 let openingPending=null,lastOpeningId=0
@@ -66,6 +67,29 @@ function enter(callback,cause='script',taskId=null,correction=0){
  queue=queue.then(async()=>{if(destroyed)return;activeCause=cause;activeTask=taskId;layoutCalls=0;if(correction)controlSequence=correction;reply('busy');try{await callback();await snapshot(correction>0);reply('idle',{taskId})}catch(error){fail(error)}finally{activeCause='script';activeTask=null;queued--}})
 }
 
+// This projection comes from the trusted selected-greeting renderer. It grants
+// only first-message reads; the source still independently authorizes writes.
+function boundGreeting(){
+ const view=context?.boundGreeting,scope=current?.scope
+ if(!view||view.version!==1||current?.status!=='available'||!['greeting','initial'].includes(scope?.mode)
+  ||view.scope?.mode!=='greeting'||['playthroughId','sessionId','characterId'].some(key=>typeof scope[key]!=='string'||scope[key]!==view.scope[key])
+  ||!Number.isSafeInteger(view.messageCount)||view.messageCount<1||view.messageCount>100000
+  ||view.message?.message_id!==0||typeof view.message.mes!=='string'||view.message.mes.length>64*1024
+  ||!Number.isSafeInteger(view.message.swipe_id)||view.message.swipe_id<0
+  ||scope.greetingIndex!==undefined&&scope.greetingIndex!==view.message.swipe_id
+  ||current.viewIdentity&&current.viewIdentity.greetingIndex!==view.message.swipe_id)return null
+ return view
+}
+function mvuOptions(options){
+ if(options===null||options===undefined)return null
+ if(typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(key=>!['type','message_id'].includes(key))||(options.type!==undefined&&options.type!=='message'))throw Error('Variable scope is bound to this card')
+ if(options.message_id===undefined||options.message_id===current?.scope?.messageId)return options
+ // Message 0 is an alias of this selected greeting only. Latest is never a
+ // focus redirect; it is accepted only when the greeting is the sole message.
+ const view=boundGreeting()
+ if(view&&([0,'0'].includes(options.message_id)||options.message_id==='latest'&&view.messageCount===1))return null
+ throw Error('Variable scope is bound to this card')
+}
 async function init(input){
  const data=validateInput(input)
  const started=performance.now();nonce=data.nonce;context=data.context;current=data.variables;viewport=data.viewport
@@ -91,6 +115,9 @@ async function init(input){
    if(op==='reportError'){if(typeof args[0]!=='string'||args[0].length>200)throw Error('Invalid card error');fail(Error(args[0]))}
    else if(op==='context')result=context
    else if(op==='boundScope'){if(!current||current.status!=='available')throw Error('Variable snapshot unavailable');result={mode:current.scope?.mode??'message',messageId:current.scope?.messageId??null}}
+   else if(op==='boundGreeting'){result=boundGreeting()}
+   else if(op==='boundGreetingSelection'){result=greetingEvent&&boundGreeting()?{view:boundGreeting(),...greetingEvent}:null;greetingEvent=null}
+   else if(op==='firstChatMessage'){const view=boundGreeting();if(!view||![0,'0'].includes(args[0]))throw Error('Only this bound first message is available');result=[view.message]}
    else if(op==='cardStorageScope'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.scope}
    else if(op==='cardStorageSnapshot'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.entries}
    else if(op==='viewport'){if(!viewport||!Number.isSafeInteger(viewport.width)||!Number.isSafeInteger(viewport.height)||viewport.width<1||viewport.height<1||viewport.width>16384||viewport.height>16384)throw Error('Card viewport unavailable');result={width:viewport.width,height:viewport.height}}
@@ -104,13 +131,17 @@ async function init(input){
     if(!current||current.status!=='available')throw Error('Variable snapshot unavailable')
     if(options!==null&&options!==undefined&&(typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(key=>!['type','message_id'].includes(key))||(options.type!==undefined&&options.type!=='message')||(options.message_id!==undefined&&options.message_id!==current.scope?.messageId)))throw Error('Variable scope is bound to this card')
     result=current.variables
+   }else if(op==='mvuVariables'){
+    if(!current||current.status!=='available')throw Error('Variable snapshot unavailable')
+    mvuOptions(args[0]);result=current.variables
    }else if(op==='variableWrite'){
     const [requestId,operation,value,options]=args
     if(!Number.isSafeInteger(requestId)||requestId<=lastWriteId||pendingWrites.size>=32||!['patch','replace'].includes(operation))throw Error('Invalid variable write request')
     const observedRevision=current?.currentRevision??current?.revision
     if(!Number.isSafeInteger(observedRevision)||observedRevision<0)throw Error('Variable snapshot unavailable')
+    const resolvedOptions=mvuOptions(options)
     lastWriteId=requestId;pendingWrites.add(requestId)
-    reply('write',{requestId,operation,value,options,observedRevision,cause:activeCause,taskId:activeTask})
+    reply('write',{requestId,operation,value,options:resolvedOptions,observedRevision,cause:activeCause,taskId:activeTask})
    }else if(op==='photoPick'){
     const [id,view]=args
     if(!activeTask||activeTask===lastPhotoTask||!Number.isSafeInteger(id)||id<=0||typeof view?.html!=='string'||typeof view?.styles!=='string')throw Error('Photo selection requires a new user click')
@@ -212,7 +243,7 @@ self.onmessage=event=>{
  if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error)pending.reject(Error(String(data.error).slice(0,200)));else pending.resolve(data.value);return}
  if(data.kind==='actionResult'){if(!actionPending||data.requestId!==actionPending.requestId)return;const pending=actionPending;actionPending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='dispose'){dispose();return}
- if(!ready){if(['event','writeResult','variables','viewport','identityOpeningResult','identityActionResult'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
+ if(!ready){if(['event','writeResult','variables','viewport','identityOpeningResult','identityActionResult','greetingSelection'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
  if(data.kind==='viewport'){if(!data.value||!Number.isSafeInteger(data.value.width)||!Number.isSafeInteger(data.value.height)||data.value.width<1||data.value.height<1||data.value.width>16384||data.value.height>16384)return fail(Error('Invalid card viewport'));nextViewport={width:data.value.width,height:data.value.height};if(!viewportQueued){viewportQueued=true;enter(()=>{viewport=nextViewport;nextViewport=null;viewportQueued=false;return evaluate('__viewportChanged()')})}}
  else if(data.kind==='event'){
   const correction=data.controlSequence??0
@@ -220,6 +251,7 @@ self.onmessage=event=>{
   if(correction)receivedControlSequence=correction
   enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId,correction)
  }
+ else if(data.kind==='greetingSelection'){if(greetingEventReceived)return;greetingEventReceived=true;enter(()=>{greetingEvent={swiped:data.value?.swiped===true};return evaluate('__greetingSelected()')})}
  else if(data.kind==='writeResult'){if(!pendingWrites.delete(data.requestId))return;enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='identityOpeningResult'){if(openingPending!==data.requestId)return;openingPending=null;enter(()=>evaluate(`__identityOpeningResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='identityActionResult'){if(identityActionPending!==data.requestId)return;identityActionPending=null;enter(()=>evaluate(`__identityActionResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}

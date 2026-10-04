@@ -683,6 +683,7 @@ export class MvuService {
     return grant.checkCurrent
   }
   async createCardBinding({ scope, grantId, sourceIdentity, signal } = {}) {
+    if (scope?.mode === 'initial' && scope.greetingIndex !== undefined && (typeof scope.selectionToken !== 'string' || !/^[a-f0-9]{64}$/.test(scope.selectionToken))) fail('MVU_SCOPE', 'Selected greeting writes require a source view token')
     if (scope?.mode === 'greeting') fail('MVU_READ_ONLY', 'Greeting snapshots cannot grant writes')
     if (typeof grantId !== 'string' || !grantId || !scope || !sourceIdentity || hash(sourceIdentity.scope) !== hash(scope) || sourceIdentity.version !== 1 || !/^[a-f0-9]{64}$/.test(sourceIdentity.sha256)) fail('MVU_SCOPE', 'Execution identity must bind the exact scope')
     const binding = { scope: json(scope), grantId, sourceIdentity: json(sourceIdentity) }
@@ -786,6 +787,7 @@ export class MvuService {
     })
   }
   async snapshot(scope) {
+    let viewIdentity
     let evidence = this.resolveScope ? await this.resolveScope(scope) : null
     if (!evidence && scope.endEventId != null) { const source = this.#sessions.get(scope.sessionId) ?? await this.inspect?.(scope.sessionId); const event = source?.events?.find(e => e.seq === scope.endEventId && e.type === 'assistant/message'); if (event) evidence = { messageId: event.data.message.id, fingerprint: hash(textOf(event.data.message)) } }
     let rows = await this.list({ scope })
@@ -793,6 +795,7 @@ export class MvuService {
       if (evidence?.mode !== scope.mode || evidence.checkCurrent?.() !== true) fail('MVU_READ_ONLY', 'Current card scope is no longer current')
       rows = rows.filter(row => this.#cardResourceActive(this.resources.find(r => r.id === row.id), scope))
       if (rows.length !== 1) fail('MVU_AMBIGUOUS', 'Current card scope requires one active resource')
+      viewIdentity = evidence.viewIdentity
       evidence = null
     }
     if (rows.length > 1 && evidence) rows = rows.filter(row => { const version = this.#record(row.id).versions.find(v => v.key === row.versionKey); return version?.source.messageSeq === scope.endEventId && version?.source.messageId === evidence.messageId && (version?.sourceFingerprint ?? version?.fingerprint) === evidence.fingerprint })
@@ -805,7 +808,7 @@ export class MvuService {
       row.content = json(version.variables)
       row.revision = version.revision ?? version.result?.revision ?? 0
     }
-    return { version: 1, scope: json(scope), revision: row?.revision ?? 0, currentRevision: row?.currentRevision ?? 0, status: row ? 'available' : 'unavailable', variables: row?.content ?? {}, ...(row ? { resourceId: row.id, ...(row.commandProcessor ? { commandProcessor: row.commandProcessor } : {}) } : {}) }
+    return { version: 1, scope: json(scope), ...(viewIdentity ? { viewIdentity: json(viewIdentity) } : {}), revision: row?.revision ?? 0, currentRevision: row?.currentRevision ?? 0, status: row ? 'available' : 'unavailable', variables: row?.content ?? {}, ...(row ? { resourceId: row.id, ...(row.commandProcessor ? { commandProcessor: row.commandProcessor } : {}) } : {}) }
   }
   /** Trusted Host only. This grants a checked dependency read, not proof of model delivery.
    * @param {import('./prompt-dependency.js').MvuPromptDependencyRequest} request

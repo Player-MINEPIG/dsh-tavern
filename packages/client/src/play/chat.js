@@ -1,3 +1,4 @@
+import {carryGreetingSelection} from './bound-greeting.js'
 import {restoreRenderingDisplay,useRestoredRenderingDisplay} from './rendering-display.js'
 import { readRenderingWorkspace, identifyRenderingSources, renderingInventory } from './rendering-sources.js'
 import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
@@ -228,6 +229,10 @@ export async function loadChatState(client, sessionId, playthrough) {
     && importedContext.binding?.state !== 'consumed'
   const displayGreeting = importedTurns.length > 0 || greeting === null ? null : {
     ...greeting,
+    sourceText: applyDisplayNameMacros(greeting.text, macros),
+    messageCount: 1 + (rootMessages?.messages ?? []).filter(
+      message => message?.role === 'user' || message?.role === 'assistant',
+    ).length,
     ...applyGreetingDisplayRegex(
       applyDisplayNameMacros(greeting.text, macros), rules, bindings, { depth },
     ),
@@ -718,6 +723,8 @@ export function MowanChatView({ sessionId, useSession, useChat, useInput, inputA
       if (!active) return
       const incoming = { sessionId, value: next }
       const previous = loadedStateRef.current
+      // Read-back of a different selection is the event, rather than mount.
+      carryGreetingSelection(chatSnapshots.get(playClient)?.get(playthroughCacheKey(playthrough,sessionId))?.value?.greeting,next.greeting)
       if (previous !== null && previous.sessionId !== sessionId) {
         const intent = transitionIntent.current.sessionId === sessionId
           ? transitionIntent.current.intent

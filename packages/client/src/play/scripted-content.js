@@ -1,3 +1,5 @@
+import {claimGreetingSelection,greetingReadView} from './bound-greeting.js'
+import {initialWriteViewScope} from './mvu-scope.js'
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
 import {useCardDiagnostics} from './card-diagnostics.js'
 import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBUTE } from './card-images.js'
@@ -368,7 +370,9 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         }
         for(const type of events)doc.body.addEventListener(type,handler)
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
-        if(writeScope&&createBinding)writeRequest=renderingWriteRequests.register({scope:writeScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,onRevoke:revokeWrites})
+        let variableWriteScope
+        if(writeScope&&createBinding)try{variableWriteScope=initialWriteViewScope(writeScope,activeBinding?.getSnapshot())}catch{/* Missing MVU denies writes; ordinary cards can still render. */}
+        if(variableWriteScope)writeRequest=renderingWriteRequests.register({scope:variableWriteScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,onRevoke:revokeWrites})
         const ensureWriteBinding=async()=>{
           const grant=writeRequest?.getGrant()
           if(!grant)throw Object.assign(Error('Variable writes require separate authorization in conversation settings'),{code:'MVU_WRITE_DENIED'})
@@ -434,7 +438,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes
         }
-        virtualRuntime=createVirtualCardRuntime({html:data.html,root:initialRoot,viewport:readViewport(),runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current,identityAction:!!identityBridge.current,composer:composerBridge.initial},{
+        virtualRuntime=createVirtualCardRuntime({html:data.html,root:initialRoot,viewport:readViewport(),runs:data.runs,modules:data.modules,context:{...context,boundGreeting:greetingReadView(context?.boundGreeting)},variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current,identityAction:!!identityBridge.current,composer:composerBridge.initial},{
           onOpening:async(openingId,{signal})=>{
             signal.throwIfAborted();if(cleaned||current!==generation.current||!openingBridge.current||!identityBridge.current)throw Error('Opening card generation expired')
             const action=identityBridge.current,token=action.beginOpening(openingId)
@@ -467,6 +471,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
           },
           onProposal:value=>{if(current===generation.current)replaceProposal(value)},
           onError:error=>{if(current===generation.current){setError(error.message+(error.operationId?' · operationId: '+error.operationId:''));cleanup.current()}},
+          onGreetingReady:()=>claimGreetingSelection(context?.boundGreeting?.selectionReceipt),
           onView:displayView,
           onPhotoPick:request=>{
             try{

@@ -32,7 +32,7 @@ export const storageAck=(message,post,value={value:{revision:message.value.revis
 
 // The real production client owns the wall watchdog and trusted-task timestamps.
 // Only this authored transport adapter delays IPC replies in transit.
-export function createClientProbe({delay=0,onStorage=()=>({}),onWrite,onOpening,onIdentityAction,onMeasure,clock=performance}={}) {
+export function createClientProbe({delay=0,onStorage=()=>({}),onWrite,onOpening,onIdentityAction,onMeasure,onGreetingReady,clock=performance}={}) {
  const clientSource=readFileSync(new URL('../../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace(/^import[^\n]*\n/gm,'').replace('export function','function')
  const messages=[],errors=[],views=[],children=[],transportTimers=new Set(),clientTimers=[]
  let readyResolve,runtime,closed=false
@@ -44,5 +44,5 @@ export function createClientProbe({delay=0,onStorage=()=>({}),onWrite,onOpening,
  }
  const timers=(fn,ms)=>{clientTimers.push(ms);return setTimeout(fn,ms)}
  const api=new Function('DEPENDENCY_LIMITS','TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','setTimeout','clearTimeout','performance',clientSource+';return createVirtualCardRuntime')(DEPENDENCY_LIMITS,workerSource,BrowserWorker,{createObjectURL:()=> 'blob:authored-fixture',revokeObjectURL(){}},class{},timers,clearTimeout,clock)
- return {messages,errors,views,ready,clientTimers,start(input){runtime=api(input,{onView:view=>views.push(view),onError:error=>errors.push(error.message),onProposal(){},onStorage,onWrite,onOpening,onIdentityAction,onMeasure});return runtime},get runtime(){return runtime},async close(){runtime?.dispose();await Promise.all(children.map(child=>child.child.terminate()))}}
+ return {messages,errors,views,ready,clientTimers,start(input){runtime=api(input,{onView:view=>views.push(view),onError:error=>errors.push(error.message),onProposal(){},onStorage,onWrite,onOpening,onIdentityAction,onMeasure,onGreetingReady});return runtime},get runtime(){return runtime},async close(){runtime?.dispose();await Promise.all(children.map(child=>child.child.terminate()))}}
 }
