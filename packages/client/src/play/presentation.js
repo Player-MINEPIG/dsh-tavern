@@ -1,7 +1,7 @@
 import {boundGreetingView} from './bound-greeting.js'
 import {initialCardScope,greetingCardScope,writeGrantScope} from './mvu-scope.js'
 import { createMvuCardBinding } from './mvu-bridge.js'
-import { createElement as h, createContext, useContext, useState, useEffect } from 'react'
+import { createElement as h, createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { API_V1 } from '../../../identity.js'
 import { avatarFor, editAvatar } from '../../../presentation/avatar.js'
 import { AvatarInput } from '../avatar-input.js'
@@ -47,8 +47,8 @@ export function MessageBubble({ text, role = 'assistant', messageKey, editable =
   }
   const name = context?.state?.display?.macros?.[role === 'user' ? 'user' : 'character'] ?? (role === 'user' ? 'User' : 'Assistant')
   const hasCards=splitCards(text).some(part=>part.html!==undefined)
-  const textBubbleStyle=messageBubbleStyle(settings.bubbleStyle,role)
-  const containerStyle=hasCards?{...textBubbleStyle,width:'100%',background:'transparent',color:'inherit',border:0,borderRadius:0,padding:0}:textBubbleStyle
+  const textBubbleStyle=useMemo(()=>messageBubbleStyle(settings.bubbleStyle,role),[settings.bubbleStyle,role])
+  const containerStyle=hasCards?{...textBubbleStyle,width:'100%',background:'var(--dsw-alias-bg-layer-2, transparent)',color:'inherit',border:0,padding:0,overflow:'hidden'}:textBubbleStyle
   return h(MessageRow, { role, className: `dtv-message dtv-message-${role}`,
     avatar: h('button', { className: 'dtv-message-avatar', type: 'button', disabled, title: translate('appearance.editAvatar'), 'aria-label': `${translate('appearance.editAvatar')} · ${name}`, style: { ...messageAvatarStyle, cursor: disabled ? 'default' : 'pointer' }, onClick: () => { setAvatar(image?.startsWith('data:') ? image : null); setEditing(true) } },
       image && failedImage !== image ? h('img', { src: image, alt: name, width: 42, height: 42, style: { objectFit: 'cover' }, onError: () => setFailedImage(image) }) : name.slice(0, 1)),

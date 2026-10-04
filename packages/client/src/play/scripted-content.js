@@ -277,7 +277,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
     try { if(!enabled)return cardDocument(source);const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
-  const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:0;font:14px system-ui;color:#243042;background:transparent}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
+  const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
   const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):''
   const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,error,photoError].filter(Boolean))
   useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,JSON.stringify(openingBinding)])
@@ -288,8 +288,9 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const ownFrame=frame.current
     // A transparent frame needs the surrounding message's default foreground.
     // Card-owned styles still follow this fixed base rule and can override it.
-    const baseStyle=doc.head.querySelector('style')?.sheet?.cssRules[0]?.style
-    if(baseStyle)baseStyle.color=getComputedStyle(ownFrame).color
+    const baseRules=doc.head.querySelector('style')?.sheet?.cssRules,frameStyle=getComputedStyle(ownFrame)
+    if(baseRules?.[0]?.style)baseRules[0].style.color=frameStyle.color
+    if(baseRules?.[1]?.style)baseRules[1].style.colorScheme=frameStyle.colorScheme
     let photoDiagnostic
     if(typeof TAVERN_PHOTO_DIAGNOSTIC!=='undefined'&&TAVERN_PHOTO_DIAGNOSTIC)try{photoDiagnostic=createPhotoPickerDiagnostic(doc,ownFrame.parentElement)}catch{}
     const initialRoot=cardRootPresentation(data.root)
@@ -538,5 +539,5 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
 export const MessageContent = memo(function MessageContent({text,textStyle,...props}) {
   return h('div',{className:'dtv-play-rich'},...splitCards(text).map((part,index)=>part.html
     ? h(InteractiveCard,{key:index,source:part.html,...props,scopeKey:JSON.stringify([props.scopeKey,index])})
-    : !part.text.trim()?null:textStyle?h('div',{key:index,style:textStyle},h(RichText,{text:part.text})):h(RichText,{key:index,text:part.text})))
+    : !part.text.trim()?null:h(RichText,{key:index,text:part.text,textStyle})))
 })

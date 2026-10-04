@@ -46782,18 +46782,48 @@ function sanitizeRenderedHtml(html2, {
 function renderRichTextHtml(text3, options) {
   return sanitizeRenderedHtml(markdownToHtml(text3), { ...options, isolateStyles: true });
 }
-var RichText = (0, import_react18.memo)(function RichText2({ text: text3, className }) {
+function presentProse(html2, textStyle) {
+  if (!textStyle) return { html: html2 };
+  const selector = "[data-dtv-style-boundary], [data-dtv-html-document]";
+  const template = document.createElement("template");
+  template.innerHTML = html2;
+  if (!template.content.querySelector(selector)) return { html: html2, style: textStyle };
+  const output = document.createElement("template");
+  let prose;
+  for (const node of [...template.content.childNodes]) {
+    if (node.nodeType === 1 && (node.matches(selector) || node.querySelector(selector))) {
+      prose = null;
+      output.content.append(node);
+      continue;
+    }
+    if (node.nodeType === 3 && !node.textContent.trim()) {
+      output.content.append(node);
+      continue;
+    }
+    if (!prose) {
+      prose = document.createElement("div");
+      for (const [key2, value] of Object.entries(textStyle)) prose.style[key2] = typeof value === "number" && value !== 0 ? `${value}px` : value;
+      output.content.append(prose);
+    }
+    prose.append(node);
+  }
+  return { html: output.innerHTML };
+}
+var RichText = (0, import_react18.memo)(function RichText2({ text: text3, className, textStyle }) {
   const element = (0, import_react18.useRef)(null);
+  const html2 = (0, import_react18.useMemo)(() => renderRichTextHtml(text3, { liveImages: true }), [text3]);
+  const presentation = (0, import_react18.useMemo)(() => presentProse(html2, textStyle), [html2, textStyle]);
   (0, import_react18.useLayoutEffect)(() => {
     mountStyledHtml(element.current);
     const media = observeImages(element.current, { unavailable: translate("appearance.imageUnavailable") });
     return () => media.dispose();
-  }, [text3]);
+  }, [presentation.html]);
   return (0, import_react18.createElement)("div", {
     className,
+    style: presentation.style,
     "data-dtv-rich-text": "",
     ref: element,
-    dangerouslySetInnerHTML: { __html: renderRichTextHtml(text3, { liveImages: true }) }
+    dangerouslySetInnerHTML: { __html: presentation.html }
   });
 });
 
@@ -50586,7 +50616,7 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
       }
     }
   }, [source, enabled, trustRevision, JSON.stringify(owners), JSON.stringify(helpers)]);
-  const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:0;font:14px system-ui;color:#243042;background:transparent}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data3.html, { inertImages: true })}</body></html>`;
+  const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data3.html, { inertImages: true })}</body></html>`;
   const unsupportedMessage = data3.unsupported.length ? data3.unsupported.map((reason) => reason.startsWith("appearance.") ? translate(reason) : reason).join(" ") + " " + translate("appearance.cardStaticFallback") : "";
   const diagnosticsOutside = useCardDiagnostics([unsupportedMessage, error, photoError].filter(Boolean));
   (0, import_react20.useLayoutEffect)(() => {
@@ -50615,8 +50645,9 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
       return;
     }
     const ownFrame = frame.current;
-    const baseStyle = doc.head.querySelector("style")?.sheet?.cssRules[0]?.style;
-    if (baseStyle) baseStyle.color = getComputedStyle(ownFrame).color;
+    const baseRules = doc.head.querySelector("style")?.sheet?.cssRules, frameStyle = getComputedStyle(ownFrame);
+    if (baseRules?.[0]?.style) baseRules[0].style.color = frameStyle.color;
+    if (baseRules?.[1]?.style) baseRules[1].style.colorScheme = frameStyle.colorScheme;
     let photoDiagnostic;
     if (false) try {
       photoDiagnostic = createPhotoPickerDiagnostic(doc, ownFrame.parentElement);
@@ -51079,7 +51110,7 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
   );
 });
 var MessageContent = (0, import_react20.memo)(function MessageContent2({ text: text3, textStyle, ...props }) {
-  return (0, import_react20.createElement)("div", { className: "dtv-play-rich" }, ...splitCards(text3).map((part, index) => part.html ? (0, import_react20.createElement)(InteractiveCard, { key: index, source: part.html, ...props, scopeKey: JSON.stringify([props.scopeKey, index]) }) : !part.text.trim() ? null : textStyle ? (0, import_react20.createElement)("div", { key: index, style: textStyle }, (0, import_react20.createElement)(RichText, { text: part.text })) : (0, import_react20.createElement)(RichText, { key: index, text: part.text })));
+  return (0, import_react20.createElement)("div", { className: "dtv-play-rich" }, ...splitCards(text3).map((part, index) => part.html ? (0, import_react20.createElement)(InteractiveCard, { key: index, source: part.html, ...props, scopeKey: JSON.stringify([props.scopeKey, index]) }) : !part.text.trim() ? null : (0, import_react20.createElement)(RichText, { key: index, text: part.text, textStyle })));
 });
 
 // packages/client/src/play/presentation.js
@@ -51130,8 +51161,8 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
   }
   const name2 = context?.state?.display?.macros?.[role2 === "user" ? "user" : "character"] ?? (role2 === "user" ? "User" : "Assistant");
   const hasCards = splitCards(text3).some((part) => part.html !== void 0);
-  const textBubbleStyle = messageBubbleStyle(settings.bubbleStyle, role2);
-  const containerStyle = hasCards ? { ...textBubbleStyle, width: "100%", background: "transparent", color: "inherit", border: 0, borderRadius: 0, padding: 0 } : textBubbleStyle;
+  const textBubbleStyle = (0, import_react21.useMemo)(() => messageBubbleStyle(settings.bubbleStyle, role2), [settings.bubbleStyle, role2]);
+  const containerStyle = hasCards ? { ...textBubbleStyle, width: "100%", background: "var(--dsw-alias-bg-layer-2, transparent)", color: "inherit", border: 0, padding: 0, overflow: "hidden" } : textBubbleStyle;
   return (0, import_react21.createElement)(
     MessageRow,
     {
