@@ -63,7 +63,7 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
    Promise.resolve().then(()=>{if(disposed||action!==ticket)return;return onAction({operation:value.operation,value:value.value,taskId:value.taskId,cause:'user-interaction',signal:controller.signal})}).then(result=>{
     if(disposed||action!==ticket)return
     action=null;clearTimeout(ticket.timer)
-    if(value.operation==='send'&&result?.status==='accepted'){task.accepted=true;task.at=performance.now()}
+    if(value.operation==='send'&&result?.status==='accepted')task.accepted=true
     busyTimer=setTimeout(()=>fail('Card worker exceeded its response deadline'),1500)
     respond({value:result})
    },error=>{if(disposed||action!==ticket)return;action=null;clearTimeout(ticket.timer);busyTimer=setTimeout(()=>fail('Card worker exceeded its response deadline'),1500);respond({error:String(error.message).slice(0,300)})})

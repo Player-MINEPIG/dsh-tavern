@@ -26,6 +26,9 @@ try{
   await f.manager.sync([source(A),source(B)]);await f.manager.acquire(A)
   check('a cached public source gives another owner no execution record before its own acquisition',f.trust.inspect(B,url)===null)
   await f.manager.acquire(B);let stored=await raw('reuse')
+  const legacySnapshot=await f.store.get(A)
+  // V1 stored inline content and did not contain V2 source-reference digests.
+  for(const item of [...legacySnapshot.graph.items,...(legacySnapshot.graph.retained??[])])delete item.contentDigest
   check('two real IndexedDB owner graphs share one physical source and one network request',calls===1&&stored.sources.length===1&&stored.sources[0].references===2&&stored.graphs.every(row=>row.graph.items[0].content===undefined),{calls,physicalSources:stored.sources.length,references:stored.sources[0].references})
   check('two installed owners charge the exact source bytes once',f.budget.snapshot().total===bytes)
   f.manager.dispose();f=create('reuse',async()=>{throw Error('Unexpected cold network')},createRenderingCacheBudget(bytes))
@@ -50,6 +53,22 @@ try{
   f=create('legacy',async()=>{throw Error('Unexpected legacy network')},createRenderingCacheBudget(bytes))
   await f.manager.sync([source(C)]);await f.manager.acquire(C);stored=await raw('legacy')
   check('v1 duplicated owner sources migrate to one physical v2 source without network or approval inheritance',stored.sources.length===1&&stored.sources[0].references===3&&stored.graphs.every(row=>row.graph.items[0].content===undefined)&&f.trust.inspect(A,url)===null&&f.trust.read(C,url)===one&&f.budget.snapshot().total===bytes)
+  f.manager.dispose()
+
+  const restoredDb=await open('legacy-owner-restore',1),restoredWrite=restoredDb.transaction('graphs','readwrite')
+  restoredWrite.objectStore('graphs').put({...legacySnapshot,generation:7},A)
+  restoredWrite.objectStore('graphs').put({...legacySnapshot,generation:9},B)
+  restoredWrite.objectStore('graphs').put({generation:12,pending:false},'removed-owner')
+  restoredWrite.objectStore('graphs').put({...legacySnapshot,generation:13,pending:true},'pending-owner')
+  await new Promise((resolve,reject)=>{restoredWrite.oncomplete=resolve;restoredWrite.onerror=()=>reject(restoredWrite.error)});restoredDb.close()
+  f=create('legacy-owner-restore',async()=>{throw Error('Unexpected migrated-owner network')})
+  await f.manager.sync([source(A)])
+  const restoredOwner=await f.store.get(A),removedOwner=await f.store.get('removed-owner'),pendingOwner=await f.store.get('pending-owner')
+  check('v1 same-owner cache restores its existing fingerprint and generation without network',f.manager.inspect(A).status==='ready'&&f.trust.read(A,url)===one&&restoredOwner.generation===7&&restoredOwner.graph.fingerprint===legacySnapshot.graph.fingerprint)
+  check('migration preserves tombstones and pending generations without installing inactive owners',removedOwner.generation===12&&!removedOwner.graph&&pendingOwner.generation===13&&pendingOwner.pending===true&&f.trust.inspect(B,url)===null&&f.trust.inspect('pending-owner',url)===null)
+  let oldVersionError
+  try{const unsupportedOldClient=await open('legacy-owner-restore',1);unsupportedOldClient.close()}catch(error){oldVersionError=error.name}
+  check('a newly opened v1 client explicitly cannot read upgraded v2 cache',oldVersionError==='VersionError',{oldClientError:oldVersionError,requiresCompatibleClient:true})
   f.manager.dispose()
 
   const oldConnection=await open('blocked',1),oldWrite=oldConnection.transaction('graphs','readwrite')
