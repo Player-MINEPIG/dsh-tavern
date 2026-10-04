@@ -10,6 +10,7 @@ import {mvuBuiltin,confirmMvuSchemas,confirmMvuCommandHooks} from './mvu-builtin
 import {commandHookDeclaration} from '../../../mvu-adapter/src/command-hook-declaration.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
+import {firstCardVisibility} from './card-first-visible.js'
 import DOMPurify from 'dompurify'
 import { createElement as h, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { RichText, isCompleteHtmlDocument } from './rich-text.js'
@@ -332,6 +333,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     if (!enabled || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
     try {
+      if (!(data.runs?.length || data.scripts?.length)) return
+      if (!await firstCardVisibility(ownFrame,controller.signal) || cleaned || current!==generation.current) return
       if(createBinding) {
         try { binding=await createBinding(controller.signal) } catch(error) { if(controller.signal.aborted)return /* Missing MVU is reported only if the card requests variables. */ }
         if(current!==generation.current){binding?.dispose();return}

@@ -30,7 +30,9 @@ import {OPENING_CARD_VIEWPORT_CSS} from '../../packages/client/src/play/card-vie
   const surface=doc().querySelector('.surface');check('narrow layout scrolls inside the card while the outer pane stays fixed',surface.scrollHeight>surface.clientHeight&&pane.scrollHeight<=pane.clientHeight+1,{cardScroll:surface.scrollHeight,cardClient:surface.clientHeight,paneScroll:pane.scrollHeight,paneClient:pane.clientHeight})
   pane.style.height='480px';await until(()=>settled()&&value().height===480);check('local container height changes update the guest without resizing Host UI',pane.clientHeight===480&&pane.scrollHeight<=481&&window.innerHeight===844,value())
   pane.style.height='';render('Ordinary opening text','plain');await until(()=>!pane.querySelector('iframe'));check('leaving the viewport card restores ordinary opening layout',getComputedStyle(pane).maxHeight!=='none'&&getComputedStyle(pane).paddingTop==='13px')
-  render('```html\n'+text+'\n```\n\n```html\n'+text+'\n```','multiple');await until(()=>pane.querySelectorAll('iframe').length===2&&[...pane.querySelectorAll('iframe')].every(frame=>frame.contentDocument?.getElementById('value')?.textContent))
+  render('```html\n'+text+'\n```\n\n```html\n'+text+'\n```','multiple');await until(()=>pane.querySelectorAll('iframe').length===2)
+  const multiple=[...pane.querySelectorAll('iframe')]
+  for(const frame of multiple){pane.scrollTop=frame.offsetTop-pane.offsetTop;frame.scrollIntoView({block:'nearest'});await until(()=>frame.contentDocument?.getElementById('value')?.textContent)}
   check('multiple cards retain the original opening scroll layout',getComputedStyle(pane).maxHeight!=='none'&&getComputedStyle(pane).paddingTop==='13px')
   root.unmount();dock.remove();await pause(40);check('dock unmount removes the frame and its resize binding',!document.querySelector('iframe'))
  }catch(error){results.push({name:'Unexpected '+error.stack,pass:false})}finally{try{root.unmount()}catch{}}

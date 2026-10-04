@@ -1,4 +1,4 @@
-import { createElement, useLayoutEffect, useSyncExternalStore } from 'react'
+import { createElement, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { mainSessionId, retainedSessions } from '../session-selection.js'
 import { CLIENT_REFRESH_EVENT, CLIENT_UI_SETTINGS_EVENT } from '../../../identity.js'
 import { getClientUiSettings, translate } from '../i18n.js'
@@ -416,14 +416,36 @@ function ScopedPlaySessionDock({getOpeningSessionId,subscribeBindings,...props})
 // selection. Subscribe because classification may finish after the slot mounts.
 export function ScopedPlayChatView({ getBinding, subscribeBindings, useStore, actions, ...props }) {
   const binding = useSyncExternalStore(subscribeBindings, getBinding, getBinding)
-  const selectedView = typeof useStore === 'function' ? useStore(state => state.view) : null
+  const selectedView = typeof useStore === 'function' ? useStore(state => state.view) : PLAY_VIEW_ID
+  const surface=useRef(null),[displayActive,setDisplayActive]=useState(false)
+  useLayoutEffect(()=>{
+    const node=surface.current
+    if(!node){setDisplayActive(false);return}
+    let live=true
+    // A retained Session is not necessarily displayed. Use this occurrence's
+    // actual layout, not mainView selection; visible secondary panes are valid.
+    // Scrolling a panel offscreen leaves the surface's layout/state intact.
+    const update=()=>{
+      if(!live)return
+      const rect=node.getBoundingClientRect(),visibility=getComputedStyle(node).visibility
+      setDisplayActive(node.isConnected&&rect.width>0&&rect.height>0&&visibility!=='hidden'&&visibility!=='collapse'&&(!node.checkVisibility||node.checkVisibility({visibilityProperty:true})))
+    }
+    const resize=new ResizeObserver(update),mutation=new MutationObserver(update)
+    resize.observe(node)
+    for(let ancestor=node;ancestor;ancestor=ancestor.parentElement)mutation.observe(ancestor,{attributes:true,attributeFilter:['style','class','hidden','aria-hidden']})
+    update()
+    return()=>{live=false;resize.disconnect();mutation.disconnect()}
+  },[binding==null,selectedView])
   useLayoutEffect(() => {
     // Some retained surfaces omit the input dock; the view itself must also
     // restore native Chat if this Session has no RP binding.
     if (binding === null && selectedView === PLAY_VIEW_ID) actions?.setView?.('chat')
   }, [actions, binding, selectedView])
-  return binding == null ? null : createElement(MowanChatView, {
+  return binding == null || selectedView !== PLAY_VIEW_ID ? null : createElement('div',{
+    ref:surface,style:{height:'100%',minHeight:1,minWidth:0},
+  },displayActive?createElement(MowanChatView, {
+    key: JSON.stringify([props.sessionId,binding.playthrough.id,binding.playthrough.path]),
     ...props,
     playthrough: binding.playthrough,
-  })
+  }):null)
 }

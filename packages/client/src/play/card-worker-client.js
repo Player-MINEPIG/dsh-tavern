@@ -1,5 +1,4 @@
 import {DEPENDENCY_LIMITS} from './rendering-limits.js'
-let active=0
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
  if(!Array.isArray(runs)||runs.length>128||!modules||typeof modules!=='object'||Array.isArray(modules)||Object.keys(modules).length>DEPENDENCY_LIMITS.count)throw Error('Card input count exceeds limit')
@@ -15,15 +14,14 @@ function validateInput(data) {
 export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onGreetingReady=()=>null,onAction=async()=>{throw Error('Card input is unavailable')},onResize=()=>{},onActionEnd=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onIdentityAction=async()=>{throw Error('Identity confirmation unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
- if(active>=4)throw Error('This card cannot start while four other cards are running.')
  const nonce=crypto.randomUUID(),url=URL.createObjectURL(new Blob([TAVERN_CARD_WORKER_SOURCE],{type:'text/javascript'}))
- let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
+ let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}
  let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null,lastIdentityActionId=0,identityAction=null
  let lastActionId=0,action=null
  const tasks=new Map(),pending=new Map()
  let lastPhotoPickId=0
  let controlSequence=0,lastViewSequence=-1,lastViewString
- const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(identityAction){clearTimeout(identityAction.timer);identityAction.controller.abort();identityAction=null}if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}if(action){clearTimeout(action.timer);action.controller.abort();action=null}worker.terminate();tasks.clear();active--}
+ const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(identityAction){clearTimeout(identityAction.timer);identityAction.controller.abort();identityAction=null}if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}if(action){clearTimeout(action.timer);action.controller.abort();action=null}worker.terminate();tasks.clear()}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
  const replyWrite=(requestId,value,operationId)=>{if(disposed)return;try{if(JSON.stringify(value).length>128*1024)throw Error();worker.postMessage({kind:'writeResult',nonce,requestId,value})}catch{fail('Write result could not be delivered; inspect the operation receipt before retrying',operationId)}}
  worker.onerror=()=>fail('Card worker failed')

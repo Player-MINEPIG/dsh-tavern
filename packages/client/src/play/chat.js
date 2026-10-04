@@ -451,6 +451,7 @@ function ChatFrame({
   snapshot,
   composer,
   currentSessionId,
+  confirmed = true,
   liveNodes,
   partial,
   running,
@@ -469,7 +470,7 @@ function ChatFrame({
 }) {
   const state = snapshot.value
   const current = snapshot.sessionId === currentSessionId
-  const interactive = current && phase !== 'outgoing'
+  const interactive = current && confirmed && phase !== 'outgoing'
   const liveSourceTurns = !current ? [] : projectLiveTurns({
     timeline: state.timeline,
     sessionId: currentSessionId,
@@ -652,11 +653,15 @@ export function MowanChatView({ sessionId, useSession, useChat, useInput, inputA
   const failureTurn = useChat(state => state.timeline.turnOrder.at(-1) ?? null)
   const failureDetail = hostFailure ?? (submitting ? null : turnFailure)
   const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough, sessionId))
+  // Cached presentation can outlive a frontend mount while an Agent continues.
+  // Only this mount's authoritative read may reactivate its scripts/composer.
+  const [confirmedOwner,setConfirmedOwner] = useState(null)
+  const ownerIdentity=JSON.stringify([playthrough?.id,playthrough?.path,sessionId])
   const loadedStateRef = useRef(loadedState)
   const transitionIntent = useRef({ sessionId: null, intent: null })
   const [transition, setTransition] = useState(null)
   const state = loadedState?.value ?? null
-  const stateIsCurrent = loadedState?.sessionId === sessionId
+  const stateIsCurrent = loadedState?.sessionId === sessionId && confirmedOwner?.client===playClient && confirmedOwner.identity===ownerIdentity
   const composer=useCardComposer({sessionId,useInput,inputActions,active:stateIsCurrent,blocked:running||submitting,onPending:onComposerPending,send:(text,{signal}={})=>playClient.postUserMessage(sessionId,text,{signal})})
   const [error, setError] = useState('')
   useRestoredRenderingDisplay(stateIsCurrent?state?.display:null,displaySettings,setError)
@@ -740,6 +745,7 @@ export function MowanChatView({ sessionId, useSession, useChat, useInput, inputA
       rememberChatSnapshot(playClient, playthrough, incoming)
       setPendingSwipe(current => current?.sourceSessionId !== sessionId ? null : current)
       setLoadedState(incoming)
+      setConfirmedOwner({client:playClient,identity:ownerIdentity})
     }).catch(reason => {
       if (!active) return
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -780,6 +786,7 @@ export function MowanChatView({ sessionId, useSession, useChat, useInput, inputA
     key: `${phase}:${snapshot.sessionId}`,
     snapshot,
     composer,
+    confirmed:stateIsCurrent,
     currentSessionId: sessionId,
     liveNodes,
     partial,
