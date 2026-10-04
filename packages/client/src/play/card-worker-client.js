@@ -15,7 +15,7 @@ function validateInput(data) {
 export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onAction=async()=>{throw Error('Card input is unavailable')},onResize=()=>{},onActionEnd=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onIdentityAction=async()=>{throw Error('Identity confirmation unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
- if(active>=4)throw Error('Four external card runtimes are active. Pause an older card, then retry this card.')
+ if(active>=4)throw Error('This card cannot start while four other cards are running.')
  const nonce=crypto.randomUUID(),url=URL.createObjectURL(new Blob([TAVERN_CARD_WORKER_SOURCE],{type:'text/javascript'}))
  let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
  let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null,lastIdentityActionId=0,identityAction=null
