@@ -22,6 +22,15 @@ test('browser cannot override canonical variant with arbitrary messageId', async
   await handler({ method: 'GET', url: '/?scope=' + encodeURIComponent(JSON.stringify({ sessionId: 'A', messageId: 'B-message' })) }, { setHeader() {}, end(body) { result = JSON.parse(body) } })
   assert.equal(called, false); assert.equal(result.code, 'MVU_SCOPE')
 })
+test('HTTP selection identity cannot be mistaken for a verified historical coordinate', async () => {
+  for (const fields of [{ greetingIndex: 0 }, { selectionToken: 'a'.repeat(64) }, { greetingIndex: 'invalid', selectionToken: {} }]) {
+    let called = false, result
+    const handler = createMvuApi({ snapshot() { called = true } })
+    const scope = { sessionId: 'A', nodeId: 'node', variantId: 'variant', endEventId: 3, ...fields }
+    await handler({ method: 'GET', url: '/?scope=' + encodeURIComponent(JSON.stringify(scope)) }, { setHeader() {}, end(body) { result = JSON.parse(body) } })
+    assert.equal(called, false); assert.equal(result.code, 'MVU_SCOPE')
+  }
+})
 test('service and usage-provider removal cancel in-flight commits', async t => {
   for (const removeService of [false, true]) {
     const { service, session, options } = fixture(t)
