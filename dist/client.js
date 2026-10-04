@@ -51042,7 +51042,7 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
     !diagnosticsOutside && unsupportedMessage ? (0, import_react20.createElement)("p", { role: "alert" }, unsupportedMessage) : null,
     !diagnosticsOutside && error ? (0, import_react20.createElement)("p", { role: "alert" }, error) : null,
     !diagnosticsOutside && photoError ? (0, import_react20.createElement)("p", { className: "dtv-card-photo-error", role: "alert" }, photoError) : null,
-    media?.total ? (0, import_react20.createElement)("small", { className: "dtv-card-media", role: "status" }, translate("appearance.imageStatus", { visible: media.visible, loaded: media.loaded, loading: media.loading + media.queued, failed: media.failed })) : null,
+    media?.failed > 0 ? (0, import_react20.createElement)("small", { className: "dtv-card-media", role: "alert" }, translate("appearance.imageUnavailable")) : null,
     openingProgress ? (0, import_react20.createElement)("p", { role: "status" }, translate("appearance.openingProgress")) : null,
     openingProposal ? (0, import_react20.createElement)(
       "section",
