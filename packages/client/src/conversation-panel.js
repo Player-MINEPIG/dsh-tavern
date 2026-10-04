@@ -27,7 +27,7 @@ export function ConversationSettingsPanel({settings,status,busy,close,update,cli
   useEffect(()=>{const warn=event=>{if(Object.values(dirty.current).some(Boolean)){event.preventDefault();event.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
   useEffect(()=>registerBeforeLeave?.(()=>!(busy||Object.values(dirty.current).some(Boolean))||window.confirm(translate('rendering.unsaved'))),[registerBeforeLeave,busy])
   return h('div',{className:'dtv-panel dtv-conversation-settings'},
-    h('div',{className:'dtv-header',style:{paddingRight:68}},h('div',{className:'dtv-title'},translate('conversationSettings.title')),h('button',{type:'button',className:'dtv-close',onClick:close,'aria-label':translate('appearance.close')},'✕')),
+    h('div',{className:'dtv-header'},h('div',{className:'dtv-title'},translate('conversationSettings.title')),h('button',{type:'button',className:'dtv-close',onClick:close,'aria-label':translate('appearance.close')},'✕')),
     h('div',{className:'dtv-body'},
       h('div', { className: 'dtv-settings-tabs', role: 'tablist', 'aria-label': translate('conversationSettings.title') },
         ...TABS.map(value => h('button', {
