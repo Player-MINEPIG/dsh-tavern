@@ -33,6 +33,10 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 新状态写入 `mvu-instances.json`。旧 `mvu-state.json` 保留原字节，只作为带 `MVU_MIGRATION_REQUIRED` 的只读资源，不能更新、复制、提供给模型或作为继承来源。旧共享账本可能已串写，不按 session 自动拆分。绑定旧状态的会话需显式处理；新会话可独立从模板开始。
 
+角色侧栏的“新周目”明确创建独立会话和状态，不复用尚无 DSH 对话但已初始化的旧周目。旧周目、旧状态和历史仍保留。
+如需恢复其中已确认的数据，可信 Host 调用方可用现有原语：`read({id:旧资源ID,scope:{authority:'local',sessionId:旧会话ID}})` 读取只读记录，创建新周目后 `list`/`read` 确认其独立实例 ID 和当前 revision，再显式选择要恢复的 `stat_data`，以该新 ID、scope、`expectedRevision` 和新 `operationId` 调 `update`。不要把旧完整 envelope 或旧 schema 当作目标内容。
+这是经目标 schema 验证的数据恢复；目标 schema 可转换或拒绝内容，CAS 冲突须重新读取并确认。它不迁移旧历史、schema、管理策略、授权或幂等记录，不改变旧账本；新发现实例仍默认 managed，使用与卡片写权限需分别配置。当前不提供自动历史迁移或专用迁移向导。
+
 发现不等于启用。来源许可和宿主权限不能由卡片脚本自行提升。
 
 ## Host 服务

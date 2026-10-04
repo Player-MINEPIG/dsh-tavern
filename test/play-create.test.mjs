@@ -248,6 +248,58 @@ test('latest empty playthrough is reused without creating workspace or session d
   assert.equal(calls.includes('postSession'), false)
 })
 
+test('explicit new playthrough never reads or reuses an empty initialized previous run', async () => {
+  const client = fakeClient()
+  const previous = {
+    id: 'old', path: 'character-a/old/timeline.json', title: 'Initialized opening',
+    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root', playthroughNumber: 2 } },
+  }
+  await client.putCatalog({ playthroughs: [previous] })
+  await client.putTimeline(previous, { nodes: [] })
+  client.getMessages = async () => { throw Error('The previous MVU run must not be inspected or resumed') }
+  const result = await createCharacterPlaythrough(client, {
+    character: { id: 'character-a' }, reuseEmpty: false, selectionFromSessionId: 'old-root', ...dependencies,
+  })
+  assert.equal(result.reused, false)
+  assert.equal(result.sessionId, 'session-new')
+  assert.notEqual(result.playthrough.id, previous.id)
+  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 3)
+  assert.deepEqual((await client.getCatalog()).playthroughs[0], previous)
+  assert.deepEqual(client.calls.find(call => call[0] === 'postSession'), ['postSession', 'old-root'])
+})
+
+test('explicit new and reusable requests share ordering but never share an in-flight result', async () => {
+  const client = fakeClient()
+  const previous = { id: 'old', path: 'character-a/old/timeline.json', ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root' } } }
+  await client.putCatalog({ playthroughs: [previous] })
+  await client.putTimeline(previous, { nodes: [] })
+  let release
+  const blocked = new Promise(resolve => { release = resolve })
+  client.getMessages = async () => { await blocked; return { messages: [], incompleteTurn: false } }
+  const controller = createPlaythroughController(client, dependencies)
+  const reusable = controller.create({ character: { id: 'character-a' } })
+  const fresh = controller.create({ character: { id: 'character-a' }, reuseEmpty: false })
+  assert.notEqual(fresh, reusable)
+  assert.equal(fresh, controller.create({ character: { id: 'character-a' }, reuseEmpty: false }))
+  release()
+  assert.equal((await reusable).sessionId, 'old-root')
+  assert.equal((await fresh).sessionId, 'session-new')
+  assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
+})
+
+test('controller passes the same effective reuse mode used for deduplication and rejects null', async () => {
+  const client = fakeClient()
+  const previous = { id: 'old', path: 'character-a/old/timeline.json', ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root' } } }
+  await client.putCatalog({ playthroughs: [previous] })
+  await client.putTimeline(previous, { nodes: [] })
+  client.getMessages = async () => { throw Error('The effective false mode must reach the transaction') }
+  const controller = createPlaythroughController(client, { ...dependencies, reuseEmpty: false })
+  assert.throws(() => controller.create({ character: { id: 'character-a' }, reuseEmpty: null }), /reuseEmpty/)
+  const first = controller.create({ character: { id: 'character-a' }, reuseEmpty: undefined })
+  assert.equal(first, controller.create({ character: { id: 'character-a' }, reuseEmpty: false }))
+  assert.equal((await first).reused, false)
+})
+
 test('an empty detached playthrough receives a new root session instead of creating another playthrough', async () => {
   const playthrough = {
     id: 'pt-vacant', path: 'character-a/pt-vacant/timeline.json', title: '2周目',

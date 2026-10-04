@@ -27,6 +27,10 @@ Normal forks freeze a concrete source instance, versionKey, revision and content
 
 New state uses `mvu-instances.json`. The old `mvu-state.json` keeps its original bytes and is exposed only as read-only resources with `MVU_MIGRATION_REQUIRED`. It cannot be edited, copied, provided to a model or used as an inheritance source. Shared history may already contain cross-branch changes and is never automatically split by session. Old bound sessions require explicit handling; fresh sessions can independently start from their template.
 
+The card sidebar's new-playthrough action creates a separate session and state instead of reusing a run whose MVU opening is initialized but has no DSH conversation. Old runs, state and history remain available.
+To recover confirmed data, a trusted Host caller can compose existing primitives: read the old resource with `read({id:oldResourceId,scope:{authority:'local',sessionId:oldSessionId}})`, create a new playthrough, and use `list`/`read` to confirm its separate instance ID and current revision. Explicitly select the `stat_data` to recover, then call `update` with that new ID, scope, `expectedRevision` and a new `operationId`. Do not submit the old complete envelope or old schema as the target content.
+This is data recovery through the target schema, which may transform or reject the content. A CAS conflict requires a new read and confirmation. It does not migrate history, schema, manager policies, grants or idempotency records, and never changes the old ledger. New discoveries remain managed by default; usage and card write permissions require separate configuration. There is currently no automatic history migration or dedicated migration wizard.
+
 ## Host service
 
 Use `ctx.get('tavernMvu')` or optional `ctx.inject(['tavernMvu'], ...)`. Package export `pmp-dsh-tavern/mvu` exposes the service, installation, discovery, parsers and pure update functions.

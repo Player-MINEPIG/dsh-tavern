@@ -143,14 +143,18 @@ RP 正文与开场白默认支持 LaTeX 数学公式：行内使用 `$x^2$` 或 
 
 ## 7. 周目与外部记录开场
 
-在魔丸侧边栏的角色卡下点击新建周目，会创建或复用该角色最近一个没有任何真实记录的
-`x周目`。自动标题会随界面语言显示为 `{number}周目` 或 `Playthrough {number}`；主动重命名后保持原文。复用检查同时查看 `timeline.json`、root session 的 DSH user/assistant 消息、开放
-turn，以及是否已有外部导入 QA；因此连续点击不会无限增加空周目。周目标题旁的菜单可以
-重命名。被点击的角色卡是创建事务的权威角色；无论 DSH 新会话继承了哪个最近聚焦配置，
-创建或复用后都会校验并在必要时纠正 root session 的角色绑定，再显示该角色 greeting。
+在魔丸侧边栏的角色卡下点击新建周目，会创建独立的 blank DSH session 和新 `x周目`，
+即使上一个周目还没有对话。空 DSH 历史不代表 MVU 尚未初始化，不能据此把新建操作重定向到旧状态。
+同一次创建尚未结束时，连续点击只提交一次；完成后的再次点击会新建另一个周目。
+自动标题会随界面语言显示为 `{number}周目` 或 `Playthrough {number}`；主动重命名后保持原文。
+周目标题旁的菜单可以重命名。被点击的角色卡是创建事务的权威角色；无论 DSH 新会话继承了哪个最近聚焦配置，
+创建后都会校验并在必要时纠正 root session 的角色绑定，再显示该角色 greeting。
 创建只建立真实 blank DSH session 和周目元数据，不写 greeting 或伪造消息。
 
-已经分配给周目的 session 若在角色卡面板解绑，或换绑为与周目不同的角色卡，会先显示确认框。确认后，目标 session 及其所有后代分支从原周目 timeline 脱离并按新绑定成为游离 session；兄弟分支、DSH 原始历史与空周目保留。取消则 selection 和 timeline 都不变。再次给原角色新建周目时会为这个空周目接入新的 blank DSH session，复用原名称和编号。
+组合函数 `createCharacterPlaythrough` 默认仍检查并复用最近的空周目；检查包括 timeline、DSH 消息、
+开放 turn 与外部导入 QA。显式新建调用传 `reuseEmpty:false`。配置模板入口保留其原有复用行为。
+
+已经分配给周目的 session 若在角色卡面板解绑，或换绑为与周目不同的角色卡，会先显示确认框。确认后，目标 session 及其所有后代分支从原周目 timeline 脱离并按新绑定成为游离 session；兄弟分支、DSH 原始历史与空周目保留。取消则 selection 和 timeline 都不变。角色侧栏再次新建会分配新周目；选择复用的组合调用仍可为保留的空周目接入新的 blank DSH session，复用原名称和编号。
 
 空周目尚未出现顶栏时，greeting 会显示在原生对话栏下方的 opening dock 中。左右按钮切换
 角色卡 alternate greeting；角色卡没有 greeting 时仍保留空白区域和同一 footer 布局。点击

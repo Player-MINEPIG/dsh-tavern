@@ -431,6 +431,9 @@ export function PlayWorkspaceBrowser({
       const result = await creator.current.controller.create({
         character,
         selectionFromSessionId: sourceSessionIdForCharacter(character),
+        // This explicit action starts a new run even when the previous run has
+        // no DSH turns yet: its card may already have persistent MVU state.
+        reuseEmpty: false,
       })
       openSession(result.sessionId, result.playthrough)
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))

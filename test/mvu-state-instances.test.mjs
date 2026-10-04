@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MvuService, stateInstanceId } from '../packages/mvu-adapter/src/index.js'
 import { installMvu } from '../packages/mvu-adapter/src/host.js'
+import { createCharacterPlaythrough, playthroughIsReusable } from '../packages/client/src/play/create.js'
 
 function fixture(t, extra = {}) {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-instances-'))
@@ -117,6 +118,56 @@ test('legacy shared ledger stays byte-for-byte read-only and cannot feed active 
   await assert.rejects(f.service.copy({ id: row.id, scope: { sessionId: 'old' }, newId: 'mvu:copy' }), { code: 'MVU_MIGRATION_REQUIRED' })
   assert.equal((await f.read('fresh')).content.stat_data.hp, 100)
   assert.equal(readFileSync(path, 'utf8'), bytes)
+})
+
+test('an initialized legacy empty playthrough can start a separate new run and explicitly restore selected data', async t => {
+  const storageDir = mkdtempSync(join(tmpdir(), 'mvu-legacy-new-run-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
+  const path = join(storageDir, 'mvu-state.json')
+  const bytes = JSON.stringify({ version: 1, resources: { 'mvu:template': {
+    revision: 7, currentKey: 'old-opening', managementMode: 'native',
+    definition: { id: 'mvu:template', sessionIds: ['old'], initial: { stat_data: { hp: 100 } } },
+    versions: [{ key: 'old-opening', revision: 7, operationId: 'old-click', variables: { stat_data: { hp: 50 } },
+      source: { sessionId: 'old', sessionCreatedAt: 1, sessionFormatVersion: 4, initial: true, manual: true, card: true, messageSeq: -1 } }],
+  } } })
+  writeFileSync(path, bytes)
+  const f = fixture(t, { storageDir, resources: [{ id: 'mvu:template', sessionIds: ['*'], managementMode: 'managed', initial: { stat_data: { hp: 100 } }, schemaSource: 'const Schema=z.object({hp:z.number().min(0).max(100)});' }] })
+  f.create('old')
+  const previous = { id: 'old-run', path: 'card/old-run/timeline.json', ext: { pmpDshTavern: { characterId: 'card', rootSessionId: 'old', playthroughNumber: 1 } } }
+  let catalog = { playthroughs: [previous] }
+  const timelines = new Map([[previous.path, { nodes: [] }]])
+  const client = {
+    getCatalog: async () => structuredClone(catalog), putCatalog: async value => { catalog = structuredClone(value) },
+    getTimeline: async play => timelines.get(play.path), putTimeline: async (play, value) => { timelines.set(play.path, value) }, createDirs: async () => {},
+    getMessages: async () => ({ messages: [], incompleteTurn: false }),
+    getCharacterSelection: async () => ({ selection: { characterCardId: 'card' } }),
+    postSession: async from => { assert.equal(from, 'old'); f.create('new'); return { sessionId: 'new' } },
+  }
+  // This was the exact mismatch: DSH is blank while the old MVU opening is persisted.
+  assert.equal(await playthroughIsReusable(client, previous), true)
+  await assert.rejects(f.read('old'), { code: 'MVU_MIGRATION_REQUIRED' })
+  const created = await createCharacterPlaythrough(client, { character: { id: 'card' }, selectionFromSessionId: 'old', reuseEmpty: false, randomUUID: () => 'new-run' })
+  assert.equal(created.reused, false); assert.equal(created.sessionId, 'new')
+  assert.deepEqual(catalog.playthroughs[0], previous)
+  const fresh = await f.read('new')
+  assert.equal(fresh.content.stat_data.hp, 100); assert.equal(fresh.revision, 0); assert.equal(fresh.managementMode, 'managed')
+  const legacy = await f.service.read({ id: 'mvu:template', scope: { sessionId: 'old' } })
+  assert.equal(legacy.revision, 7); assert.equal(legacy.content.stat_data.hp, 50); assert.equal(legacy.capabilities.edit, false)
+  // Explicit data recovery composes existing primitives; it is not history or permission migration.
+  await assert.rejects(f.service.update({ id: fresh.id, scope: { sessionId: 'new' }, expectedRevision: 0, operationId: 'invalid-restore', content: { stat_data: { hp: 'invalid' } } }), { code: 'MVU_SCHEMA' })
+  assert.equal((await f.read('new')).revision, 0)
+  const request = { id: fresh.id, scope: { sessionId: 'new' }, expectedRevision: 0, operationId: 'explicit-restore', content: { stat_data: legacy.content.stat_data } }
+  await f.service.update(request); await f.service.update(request)
+  const restored = await f.read('new')
+  assert.equal(restored.content.stat_data.hp, 50); assert.equal(restored.revision, 1)
+  assert.deepEqual(restored.content.mvu_schema, fresh.content.mvu_schema)
+  assert.equal(restored.managementMode, 'managed')
+  const record = JSON.parse(readFileSync(join(storageDir, 'mvu-instances.json'))).resources[fresh.id]
+  assert.deepEqual(record.versions.map(v => v.operationId), ['explicit-restore'])
+  assert.equal(record.seed, undefined)
+  assert.equal(readFileSync(path, 'utf8'), bytes)
+  f.service.dispose()
+  const noPolicy = new MvuService(f.options); t.after(() => noPolicy.dispose())
+  assert.equal((await noPolicy.resolveRequest({ sessionId: 'new' })).blocks.length, 0)
 })
 
 test('one instance is allocated under concurrent refresh and caller-provided content never enters a seed', async t => {

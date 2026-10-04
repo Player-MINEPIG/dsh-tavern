@@ -2,15 +2,15 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { createPlayHost } from '../packages/tavern-loader/src/play-host.js'
-import { MvuService } from '../packages/mvu-adapter/src/index.js'
+import { MvuService, characterMvuId, stateInstanceId } from '../packages/mvu-adapter/src/index.js'
 
 const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT ?? process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
-test('official SessionController fork and root-swipe creation freeze isolated state before AgentLoop requests', { skip: !runtimeRoot, timeout: 30000 }, async () => {
+test('official SessionController creates fresh state beside an initialized legacy empty session, then isolates forks and swipes', { skip: !runtimeRoot, timeout: 30000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json')), load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt'), llm = await load('@deepseek-ai/dsh-llm')
   const ctx = new Context(), directory = mkdtempSync(join(tmpdir(), 'mvu-instance-host-')), requests = [], failures = []
@@ -34,13 +34,35 @@ test('official SessionController fork and root-swipe creation freeze isolated st
       async *stream(request) { requests.push(request); const text = updateText; yield { type: 'block-start', index: 0, blockType: 'text' }; yield { type: 'text-delta', index: 0, text }; yield { type: 'block-end', index: 0, block: { type: 'text', text } }; yield { type: 'finish', reason: { kind: 'stop' } } }
     }
     ctx.llm.registerAdapter(['instance-test'], new Adapter())
+    const previous = await ctx.sessionController.create({ cwd: directory })
+    const previousHeader = ctx.sessions.get(previous.sessionId).header
+    const legacyPath = join(directory, 'tavern', 'mvu-state.json')
+    const oldRecord = {
+      revision: 7, currentKey: 'old-opening', managementMode: 'managed',
+      definition: { id: 'mvu:template', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } },
+      versions: [{ key: 'old-opening', revision: 7, operationId: 'old-click',
+        source: { sessionId: previous.sessionId, sessionCreatedAt: previousHeader.createdAt, sessionFormatVersion: previousHeader.version, initial: true, manual: true, card: true, messageSeq: -1 },
+        variables: { stat_data: { hp: 40 } } }],
+    }
+    const cardTemplateId = characterMvuId('legacy-card')
+    const legacyBytes = JSON.stringify({ version: 1, resources: {
+      'mvu:template': oldRecord,
+      [cardTemplateId]: { ...oldRecord, definition: { id: cardTemplateId, characterId: 'legacy-card', discovered: true, sessionIds: [previous.sessionId], initial: { stat_data: { hp: 100 } } } },
+    } })
+    mkdirSync(join(directory, 'tavern'), { recursive: true }); writeFileSync(legacyPath, legacyBytes)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: join(directory, 'tavern'), mvu: { resources: [{ id: 'mvu:template', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }] } }) } })
     ctx.on('agent/error', e => failures.push(e.error))
     const service = ctx.get('tavernMvu')
     const host = createPlayHost({ sessionController: ctx.sessionController }, { selections: store.sessionSelections, stateSeeds: () => service, onSelectionCopied: (id, from) => store.assemblyPresets.copySelection(from, id) })
     const root = await host.createSession({ cwd: directory }), rootId = root.sessionId
     const row = async id => (await service.list({ scope: { sessionId: id } })).find(r => r.templateId === 'mvu:template')
-    await service.flush(); const initial = await row(rootId)
+    await service.flush()
+    // Public creation/agent lifecycle allocates before any MVU read, edit or turn.
+    assert(service.resources.some(r => r.instance?.sessionId === rootId))
+    const initial = await row(rootId)
+    assert.equal(initial.content.stat_data.hp, 100)
+    assert.notEqual(rootId, previous.sessionId)
+    await assert.rejects(row(previous.sessionId), { code: 'MVU_MIGRATION_REQUIRED' })
     await service.update({ id: initial.id, scope: { sessionId: rootId }, expectedRevision: initial.revision, operationId: 'opening', content: { stat_data: { hp: 70 } } })
     const preset = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-cache'), rules: [...store.assemblyPresets.get('builtin-cache').rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
     store.assemblyPresets.apply(rootId, preset.id)
@@ -78,9 +100,29 @@ test('official SessionController fork and root-swipe creation freeze isolated st
       assert(assembly.nodes.some(n => n.source?.resourceId === current.id))
       await ctx.sessions.flush(ctx.sessions.get(id))
     }
+    // The actual discovery path: public new-session creation, copied character
+    // selection, then the first turn without a prior MVU read/initialization call.
+    store.characterStore.import(JSON.stringify({ spec: 'chara_card_v2', spec_version: '2.0', data: {
+      name: 'Anonymous legacy opening', first_mes: 'Opening', extensions: {},
+      character_book: { entries: [{ comment: '[initvar]', content: 'hp: 100' }] },
+    } }), { id: 'legacy-card' })
+    store.sessionSelections.set(previous.sessionId, { characterCardId: 'legacy-card' })
+    const cardRun = await host.createSession({ cwd: directory })
+    await host.copySelection(previous.sessionId, cardRun.sessionId)
+    assert.equal(store.sessionSelections.get(cardRun.sessionId).characterCardId, 'legacy-card')
+    const cardIdentity = { sessionId: cardRun.sessionId, createdAt: ctx.sessions.get(cardRun.sessionId).header.createdAt }
+    const cardId = stateInstanceId(cardTemplateId, cardIdentity)
+    service.registerUsage(request => request.id === cardId && request.scope.sessionId === cardRun.sessionId
+      ? { enabled: true, checkCurrent: () => true } : undefined)
+    await turn(cardRun.sessionId)
+    const cardState = await service.read({ id: cardId, scope: { sessionId: cardRun.sessionId } })
+    assert.equal(cardState.content.stat_data.hp, 99)
+    assert.equal(cardState.managementMode, 'managed')
+    assert.notEqual(cardState.id, cardTemplateId)
     const restored = new MvuService({ storageDir: join(directory, 'tavern'), inspect: id => ctx.sessionController.inspect(id) })
     assert.equal((await restored.read({ id: (await row(child.sessionId)).id, scope: { sessionId: child.sessionId } })).content.stat_data.hp, 68)
     restored.dispose()
-    assert.equal(requests.length, 5); assert.deepEqual(failures, [])
+    assert.equal(readFileSync(legacyPath, 'utf8'), legacyBytes)
+    assert.equal(requests.length, 6); assert.deepEqual(failures, [])
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })
