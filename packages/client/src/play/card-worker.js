@@ -6,7 +6,7 @@ import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
 import {CARD_STORAGE_RUNTIME,validateCardStorage,cardStorageBytes,CARD_STORAGE_VALUE_LIMIT} from './card-scoped-storage.js'
 import {IDENTITY_OPENING_RUNTIME} from './identity-opening-runtime.js'
 import {IDENTITY_ACTION_RUNTIME} from './identity-action-runtime.js'
-import {cardExecutionDiagnostic} from './card-execution-diagnostic.js'
+import {cardExecutionDiagnostic,cardExecutionPhase} from './card-execution-diagnostic.js'
 import {settleCardStorageWait} from './card-storage-wait-budget.js'
 import {settleCardActionWait} from './card-action-wait-budget.js'
 
@@ -45,11 +45,11 @@ async function evaluate(code,name='card.js',module=false,initial=false){
  if(destroyed)throw Error('Card disposed')
  if(typeof code!=='string'||code.length>8*1024*1024)throw Error('Card source exceeds 8 MiB')
  if(executionTiming)throw Error('Card interpreter entry overlap')
- const started=performance.now(),timing={waitMs:0,creditedWaitMs:0};executionTiming=timing;executionInterrupted=false
+ const started=performance.now(),timing={waitMs:0,creditedWaitMs:0,layoutFailure:'none'};executionTiming=timing;executionInterrupted=false
  deadline=started+(initial?2000:120);operations=0
  try{
   const result=await vm.evalCodeAsync(code,name,{type:module?'module':'global'})
-  if(result.error){result.error.dispose();const diagnostic=cardExecutionDiagnostic({interrupted:executionInterrupted,phase:initial?'initial':code.startsWith('__domEvent(')?'event':code==='__view()'?'snapshot':'execution',elapsedMs:performance.now()-started,bridgeWaitMs:timing.waitMs,creditedWaitMs:timing.creditedWaitMs});throw Error('Card execution failed: '+String(name).slice(0,160)+' ['+diagnostic.code+'; phase='+diagnostic.phase+'; elapsedMs='+diagnostic.elapsedMs+'; bridgeWaitMs='+diagnostic.bridgeWaitMs+'; creditedWaitMs='+diagnostic.creditedWaitMs+']')}
+  if(result.error){result.error.dispose();const diagnostic=cardExecutionDiagnostic({interrupted:executionInterrupted,phase:cardExecutionPhase(code,initial),elapsedMs:performance.now()-started,bridgeWaitMs:timing.waitMs,creditedWaitMs:timing.creditedWaitMs,layoutFailure:timing.layoutFailure});throw Error('Card execution failed: '+String(name).slice(0,160)+' ['+diagnostic.code+'; phase='+diagnostic.phase+'; elapsedMs='+diagnostic.elapsedMs+'; bridgeWaitMs='+diagnostic.bridgeWaitMs+'; creditedWaitMs='+diagnostic.creditedWaitMs+'; layoutFailure='+diagnostic.layoutFailure+']')}
   const value=vm.typeof(result.value)==='string'?vm.getString(result.value):undefined;result.value.dispose()
   let jobs=0;while(runtime.hasPendingJob()){if(++jobs>200)throw Error('Card pending job limit exceeded');await drainJob()}
   return value
@@ -195,12 +195,14 @@ async function init(input){
   return vm.newString(JSON.stringify(result))
  });vm.setProp(vm.global,'__action',action);action.dispose()
  const layout=vm.newAsyncifiedFunction('__layout',async handle=>{
-  if(++layoutCalls>16||layoutPending||performance.now()>deadline)throw Error('Card layout budget exceeded')
+  if(++layoutCalls>16||layoutPending||performance.now()>deadline){if(executionTiming)executionTiming.layoutFailure='budget';throw Error('Card layout budget exceeded')}
   const raw=vm.getString(handle);if(raw.length>1024*1024)throw Error('Card layout input exceeds limit')
   const value=JSON.parse(raw)
   if(!Number.isSafeInteger(value.id)||value.id<0||typeof value.view?.html!=='string'||typeof value.view?.styles!=='string'||!['',null,undefined,'::before','::after'].includes(value.pseudo))throw Error('Invalid card measurement')
-  const requestId=++layoutId
-  const result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{layoutPending=null;reject(Error('Card layout response deadline exceeded'))},1000);layoutPending={requestId,resolve,reject,timer};reply('measure',{...value,requestId},{controlSequence})})
+  const requestId=++layoutId,started=performance.now(),timing=executionTiming
+  let result
+  try{result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{layoutPending=null;if(timing)timing.layoutFailure='response-deadline';reject(Error('Card layout response deadline exceeded'))},1000);layoutPending={requestId,resolve,reject,timer,timing};reply('measure',{...value,requestId},{controlSequence})})}
+  finally{if(timing&&executionTiming===timing)timing.waitMs+=Math.max(0,performance.now()-started)}
   if(destroyed)throw Error('Card disposed')
   return vm.newString(JSON.stringify(result))
  });vm.setProp(vm.global,'__layout',layout);layout.dispose()
@@ -240,7 +242,7 @@ self.onmessage=event=>{
  if(data.kind==='init'){if(nonce)return;init(data).catch(fail);return}
  if(data.nonce!==nonce||destroyed)return
  if(data.kind==='cardStorageResult'){if(!storagePending||data.requestId!==storagePending.requestId)return;const pending=storagePending;if(performance.now()>pending.expiresAt){expireStorage(pending);return}storagePending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
- if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error)pending.reject(Error(String(data.error).slice(0,200)));else pending.resolve(data.value);return}
+ if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error){if(pending.timing)pending.timing.layoutFailure='response-error';pending.reject(Error(String(data.error).slice(0,200)))}else pending.resolve(data.value);return}
  if(data.kind==='actionResult'){if(!actionPending||data.requestId!==actionPending.requestId)return;const pending=actionPending;actionPending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='dispose'){dispose();return}
  if(!ready){if(['event','writeResult','variables','viewport','identityOpeningResult','identityActionResult','greetingSelection'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}

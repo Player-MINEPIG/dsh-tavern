@@ -12,7 +12,7 @@ import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
 import {firstCardVisibility} from './card-first-visible.js'
 import DOMPurify from 'dompurify'
-import { createElement as h, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createElement as h, memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { RichText, isCompleteHtmlDocument } from './rich-text.js'
 import { createCardRuntime } from './card-runtime.js'
 import { translate } from '../i18n.js'
@@ -261,6 +261,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
 }
 
 const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, openingBinding }) {
+  const diagnosticId=useId()
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0),sourceFrameRevision=useRef(0)
   const sourceFrameKey=useMemo(()=>++sourceFrameRevision.current,[source])
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
@@ -280,7 +281,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
   const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):''
-  const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,error,photoError].filter(Boolean))
+  const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,error,photoError].filter(Boolean),diagnosticId)
   useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,JSON.stringify(openingBinding)])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); replaceProposal('');setIdentityProposal(null)
@@ -297,7 +298,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const initialRoot=cardRootPresentation(data.root)
     const projectRoot=root=>{for(const [key,node] of [['html',doc.documentElement],['body',doc.body]]){node.setAttribute('class',root[key].className);node.setAttribute('style',imageCss(root[key].style))}}
     projectRoot(initialRoot)
-    let viewportMode=usesCardViewport(data.html,'',initialRoot),viewportFrame=0,lastViewport
+    let viewportMode=usesCardViewport(data.html,'',initialRoot),viewportFrame=0,measurementFrame=0,lastViewport
     const controller=new AbortController()
     let images, dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage,composerBridge
     const applyViewportMode=()=>{ownFrame.parentElement.setAttribute('data-dtv-viewport',String(viewportMode));setViewportLayout(viewportMode)}
@@ -308,14 +309,16 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       const content=ownFrame.parentElement.parentElement,boundary=content.parentElement
       const fillsOpening=viewportMode&&content.classList.contains('dtv-play-rich')&&content.children.length===1&&boundary?.matches('.dtv-play-opening-body[data-dtv-card-viewport-boundary]')
       ownFrame.style.height=viewportMode?(fillsOpening?'100%':'clamp(362px,75dvh,800px)'):`${Math.max(1,Math.min(800,doc.body.scrollHeight))}px`
-      if(!viewportFrame)viewportFrame=requestAnimationFrame(()=>{
+      if(!controller.signal.aborted&&!viewportFrame)viewportFrame=requestAnimationFrame(()=>{
         viewportFrame=0
         if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected||controller.signal.aborted)return
         if(ownFrame.clientWidth<1||ownFrame.clientHeight<1)return
-        try{const value=readViewport();if(value.width!==lastViewport?.width||value.height!==lastViewport?.height){lastViewport=value;virtualRuntime?.resize(value)}}catch(error){setError(error.message);cleanup.current()}
+        try{const value=readViewport();if(value.width!==lastViewport?.width||value.height!==lastViewport?.height){lastViewport=value;virtualRuntime?.resize(value)}}catch(error){failRuntime(error)}
       })
     }
-    const observer=new ResizeObserver(resize);observer.observe(doc.body);observer.observe(ownFrame);resize()
+    // Keep layout writes outside native ResizeObserver delivery.
+    const requestResize=()=>{if(!measurementFrame)measurementFrame=requestAnimationFrame(()=>{measurementFrame=0;resize()})}
+    const observer=new ResizeObserver(requestResize);observer.observe(doc.body);observer.observe(ownFrame);resize()
     let photoController,photoEpoch=0
     const revokeWrites=()=>{
       identityBridge.current?.invalidate('Variable write permission changed')
@@ -328,7 +331,11 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();photoDiagnostic?.dispose();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();composerBridge?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    const stopRuntime=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();photoDiagnostic?.dispose();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();composerBridge?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{stopRuntime();observer.disconnect();cancelAnimationFrame(measurementFrame);measurementFrame=0}
+    // Stop all active capabilities on failure while sizing the inert view until
+    // its owner replaces/unmounts it. Native details can still open and close.
+    const failRuntime=error=>{stopRuntime();requestResize();setError(error.message+(error.operationId?' · operationId: '+error.operationId:''))}
     images=observeImages(doc.body,{frame:frame.current,unavailable:translate('appearance.imageUnavailable'),onStatus:value=>{if(!cleaned&&current===generation.current)setMedia(value)}})
     if (!enabled || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
@@ -471,7 +478,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             try{if(cleaned||current!==generation.current)throw Error('Card input generation expired');const result=await composerBridge.request(request);if(!cleaned&&current===generation.current)setError('');return result}
             catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}
           },
-          onResize:height=>{if(!cleaned&&current===generation.current&&frame.current?.contentDocument===doc){if(viewportMode)resize();else frame.current.style.height=`${Math.max(1,Math.min(800,height))}px`}},
+          onResize:()=>{if(!cleaned&&current===generation.current&&frame.current?.contentDocument===doc)requestResize()},
           onActionEnd:()=>{if(!cleaned&&current===generation.current)composerBridge.finishRequest()},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
@@ -488,7 +495,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             }catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}
           },
           onProposal:value=>{if(current===generation.current)replaceProposal(value)},
-          onError:error=>{if(current===generation.current){setError(error.message+(error.operationId?' · operationId: '+error.operationId:''));cleanup.current()}},
+          onError:error=>{if(current===generation.current)failRuntime(error)},
           onGreetingReady:()=>claimGreetingSelection(context?.boundGreeting?.selectionReceipt),
           onView:displayView,
           onPhotoPick:request=>{
@@ -517,17 +524,17 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         if(activeBinding)stopVariables=activeBinding.subscribe(value=>virtualRuntime?.notifyVariables(value))
         return
       }
-      dom=createDomBridge(doc,context,replaceProposal,e=>{setError(e.message);cleanup.current()},binding??helperBinding)
+      dom=createDomBridge(doc,context,replaceProposal,failRuntime,binding??helperBinding)
       const runtime=await createCardRuntime(dom.bridge, { modules:data.modules })
       if(current!==generation.current){runtime.dispose();return}
       dom.attach(runtime)
       for(const script of data.runs ?? data.scripts.map(code=>({code}))) runtime.evaluate(script.code,script)
       resize()
-    }catch(error){if(current===generation.current){cleanup.current();setError(error.message)}}
+    }catch(error){if(current===generation.current)failRuntime(error)}
   }
   // Extracting scripts can leave srcDoc identical after a source edit. Give
   // that source its own iframe so onLoad recreates the disposed runtime.
-  return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout)},
+  return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout),'data-dtv-card-instance':diagnosticId},
     closed?h('p',{role:'status'},translate('appearance.cardSendAccepted')):h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
     !diagnosticsOutside&&unsupportedMessage ? h('p',{role:'alert'},unsupportedMessage):null,

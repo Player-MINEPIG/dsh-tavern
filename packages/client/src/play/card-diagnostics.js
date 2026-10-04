@@ -15,11 +15,11 @@ export function CardDiagnosticBoundary({children}){
  }),[])
  return h(Fragment,null,h(Diagnostics.Provider,{value:sink},children),
   notices.size?h('div',{className:'dtv-message-diagnostics','data-dtv-card-diagnostics':''},
-   ...[...notices].flatMap(([id,messages])=>messages.map((message,index)=>h('p',{key:`${id}:${index}`,role:'alert'},message)))):null)
+   ...[...notices].flatMap(([id,messages])=>messages.map((message,index)=>h('p',{key:`${id}:${index}`,role:'alert','data-dtv-card-instance':id},message)))):null)
 }
 
-export function useCardDiagnostics(messages){
- const sink=useContext(Diagnostics),id=useId(),key=JSON.stringify(messages)
+export function useCardDiagnostics(messages,cardId){
+ const sink=useContext(Diagnostics),fallbackId=useId(),id=cardId??fallbackId,key=JSON.stringify(messages)
  useEffect(()=>{
   if(!sink)return
   sink.put(id,JSON.parse(key))
