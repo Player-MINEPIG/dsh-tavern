@@ -8,6 +8,7 @@ import { parseMvuData } from './data.js'
 import { compileMvuSchema, applyMvuSchema } from './schema.js'
 import { sessionIdentity, stateInstanceId, inheritedVersion, textFingerprint } from './instances.js'
 import { snapshotMvuSession, cloneMvuVersion, cloneMvuCheckpoint, cloneMvuReceipt } from './history.js'
+import { boundScope, boundSnapshot } from '../../memory-sources/bound-metadata.js'
 
 const MAX_STORE = 32 * 1024 * 1024
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -449,6 +450,27 @@ export class MvuService {
       this.resources.push(definition)
       return this.#snapshot(definition, scope)
     })
+  }
+  /** Metadata only. Does not discover cards, allocate instances or read snapshots. */
+  async listBound({ scope, signal } = {}) {
+    scope = boundScope(scope); signal?.throwIfAborted()
+    if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed')
+    await this.waitForHost?.()
+    signal?.throwIfAborted()
+    const rowsNow = () => this.resources.filter(resource => {
+      try { return !resource.legacy && this.#configured(resource.id, scope) && (!resource.characterId || this.isActive?.(resource, scope.sessionId) === true) } catch (error) { if (error.code === 'SCOPE_MISMATCH') return false; throw error }
+    }).map(resource => {
+      const record = this.#record(resource.id)
+      return { id: resource.id, adapterId: 'tavern.mvu', name: resource.name ?? resource.id, type: 'mvu-state', revision: record.revision,
+        managementMode: record.managementMode ?? resource.managementMode ?? 'native', ...(resource.sourceError ? { sourceError: resource.sourceError } : {}),
+        binding: { sessionId: scope.sessionId, kind: resource.instance ? 'state-instance' : 'shared-state', ...(resource.instance ? { instanceCreatedAt: resource.instance.createdAt } : {}),
+          ...(resource.characterId ? { characterId: resource.characterId } : {}), ...(resource.templateId ? { templateId: resource.templateId } : {}) } }
+    })
+    const rows = rowsNow(), revision = hash(rows)
+    const leases = rows.map(row => this.capturePromptScope?.(scope, this.resources.find(r => r.id === row.id))).filter(Boolean)
+    const checkCurrent = () => { try { return !this.#disposed && !signal?.aborted && hash(rowsNow()) === revision && leases.every(check => check() === true) } catch { return false } }
+    if (!checkCurrent()) fail('MVU_SCOPE', 'Bound MVU metadata changed during lookup')
+    return boundSnapshot(rows, revision, checkCurrent)
   }
   async list({ scope, signal } = {}) {
     if (scope?.authority && scope.authority !== 'local') fail('MVU_AUTHORITY', 'Remote authority requires its own MVU service')

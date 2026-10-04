@@ -97,6 +97,12 @@ For public contracts and read timing, see [consumer read paths and compatibility
 An assembled section is not necessarily an original source field; current resources, historical sections,
 and runtime assembly are not interchangeable.
 
+## Current session bound resources
+
+Session resource views can call the optional Host method `tavernMemorySources.listBound({scope:{sessionId,authority:'local'},signal?})`, returning deeply immutable `{items,revision,checkCurrent}`. Items contain only `{id,adapterId,name,type,revision,managementMode,binding}` and optional `enabled/sourceError`, with no content or variables. Binding metadata identifies the real session, current character, preset/Persona origins or existing MVU instance identity. The directory covers the current character's embedded book, effectively selected standalone and session opening books, templates actually bound to the session, and existing current-character MVU state instances. Inline preset prompts are not represented as persistent resources.
+
+The lookup checks selected books without scanning other cards/global resources, activating entries, allocating MVU instances or granting write/prompt usage. Global `list/read` remain available for global resource management. Session views must filter configuration and historical traces through these actual IDs; unbound configuration or old traces must not recreate other-card rows. Cross-card binding UI is outside this interface. After the final await, consumers check the Host-only `checkCurrent()` lease, revoked by selection generations, source versions, session instance/identity changes and service unload. An absent MVU service contributes no items; an older service lacking metadata support explicitly rejects rather than guessing binding through content catalogs. World-book/template adapters and `tavernMvu` also expose this same `listBound` shape for direct manager forwarding. No HTTP route is added.
+
 ## Session opening world books
 
 The optional Host service `tavernOpeningWorldBooks` exposes `prepare` and `commit`; types are exported by `pmp-dsh-tavern/opening-worldbook`. HTTP uses `POST /pmp-dsh-tavern/api/v1/sessions/:sessionId/opening-worldbook/prepare` and `/commit`, retaining local peer, Host, Origin/desktop token, JSON and official DSH admission checks.

@@ -1,12 +1,35 @@
 import { hash, fail } from './policy.js'
 import { WorldBookMemorySource } from './world-books.js'
 import { PromptTemplateService, TEMPLATE_SOURCE } from '../prompt-template/service.js'
+import { boundScope, boundSnapshot } from './bound-metadata.js'
 export const MEMORY_SOURCE_SERVICE = 'tavernMemorySources'
 export function createMemorySources(options) {
   const worldBooks = new WorldBookMemorySource(options)
   const templates = new PromptTemplateService({ ...options, worldBooks })
+  let disposed = false
   return { protocolVersion: 1, adapters: [worldBooks, templates], worldBooks, templates,
-    dispose() { worldBooks.dispose(); templates.dispose() },
+    async listBound({ scope, signal } = {}) {
+      scope = boundScope(scope); signal?.throwIfAborted()
+      if (disposed || !options.getSession || !options.getSelection) fail('SOURCE_BOUND_UNAVAILABLE', 'Current session binding metadata is unavailable')
+      const session = options.getSession(scope.sessionId), selection = hash(options.getSelection(scope.sessionId))
+      if (!session) fail('SOURCE_BOUND_UNAVAILABLE', 'Session is not loaded')
+      const sessionIdentity = hash([session.header?.id, session.header?.version, session.header?.createdAt])
+      const mvu = options.getMvu?.(), snapshots = [worldBooks.listBound({ scope, signal }), templates.listBound({ scope, signal })]
+      if (mvu) {
+        if (typeof mvu.listBound !== 'function') fail('SOURCE_BOUND_UNSUPPORTED', 'MVU source does not expose bound metadata')
+        snapshots.push(await mvu.listBound({ scope, signal }))
+      }
+      const items = snapshots.flatMap(snapshot => snapshot.items), revision = hash([selection, ...snapshots.map(s => s.revision)])
+      const checkCurrent = () => {
+        try { return !disposed && !signal?.aborted && options.getSession(scope.sessionId) === session && hash([session.header?.id, session.header?.version, session.header?.createdAt]) === sessionIdentity
+          && items.every(row => row.binding.kind !== 'state-instance' || row.binding.instanceCreatedAt === session.header?.createdAt) && hash(options.getSelection(scope.sessionId)) === selection
+          && options.getMvu?.() === mvu && snapshots.every(snapshot => snapshot.checkCurrent() === true) } catch { return false }
+      }
+      signal?.throwIfAborted()
+      if (!checkCurrent()) fail('SOURCE_BOUND_CHANGED', 'Current bindings changed during lookup')
+      return boundSnapshot(items, revision, checkCurrent)
+    },
+    dispose() { disposed = true; worldBooks.dispose(); templates.dispose() },
     validateAssembly(assembly) {
       for (const snapshot of assembly?.snapshots ?? []) if (snapshot.source?.sourceId === 'worldbook' && worldBooks.policy.mode(`world-book:${snapshot.source.resourceId}`) === 'managed') {
         fail('MANAGED_WORLD_BOOK_SNAPSHOT_UNSUPPORTED', 'Managed world books require request lifetime; retained native snapshots cannot bypass current policy')

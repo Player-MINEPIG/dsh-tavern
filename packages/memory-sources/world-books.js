@@ -1,8 +1,10 @@
 import { join } from 'node:path'
 import { embeddedWorldBookDocument } from './embedded-document.js'
 import { SourcePolicy, hash, fail, localScope, validateConfig, optionCatalog } from './policy.js'
+import { boundScope, boundSnapshot } from './bound-metadata.js'
 export class WorldBookMemorySource {
   #checks = new WeakMap()
+  #boundDisposed = false
   id = 'tavern.world-books'; name = '世界书 / World books'; authority = 'local'; strategyOwner = 'source'
   optionCatalog = optionCatalog('world-book', '世界书激活与装配 / Activate and assemble world book', 'tavern.worldbook')
   constructor({ storageDir, store, characters, getSelection, sessionBooks }) {
@@ -31,6 +33,28 @@ export class WorldBookMemorySource {
     localScope(scope)
     const ids = [...this.store.list().map(row => `world-book:${row.id}`), ...(this.characters?.list() ?? []).map(row => `world-book:character:${row.id}:embedded-world-book`), ...(scope?.sessionId ? this.sessionBooks?.list(scope.sessionId) ?? [] : []).map(row => `world-book:${row.id}`)]
     return ids.map(id => this.read({ id, scope, signal })).filter(Boolean)
+  }
+  listBound({ scope, signal } = {}) {
+    scope = boundScope(scope); signal?.throwIfAborted()
+    if (this.#boundDisposed) fail('SOURCE_UNAVAILABLE', 'World-book source is unloaded')
+    if (!scope?.sessionId || !this.getSelection) fail('SOURCE_BOUND_SCOPE', 'A current session selection is required')
+    const selected = this.getSelection(scope.sessionId), token = hash(selected)
+    const ids = [...new Set([...(selected.characterId ? [`world-book:character:${selected.characterId}:embedded-world-book`] : []), ...selected.worldBookIds.map(id => `world-book:${id}`)])]
+    // Only selected resources are inspected. No global library/card scan or
+    // activation, and no source body is returned to a directory consumer.
+    const rowsNow = () => ids.flatMap(id => {
+      const doc = this.#document(id, scope)
+      return doc ? [{ id, adapterId: this.id, name: doc.name, type: 'world-book', revision: this.policy.revision(id, doc), managementMode: this.policy.mode(id),
+        binding: { sessionId: scope.sessionId, kind: doc.ownerSessionId ? 'session-opening' : doc.ownerCharacterId ? 'character-embedded' : 'selected-world-book',
+          ...(doc.ownerCharacterId ? { characterId: doc.ownerCharacterId } : {}), ...(selected.worldBookBindings?.[doc.id] ? { origins: selected.worldBookBindings[doc.id] } : {}),
+          ...(selected.worldBookBindings?.[doc.id]?.includes('preset') ? { presetId: selected.presetId } : {}),
+          ...(selected.worldBookBindings?.[doc.id]?.includes('user') ? { userId: selected.userId } : {}) } }] : []
+    })
+    const rows = rowsNow(), revision = hash(rows), checkCurrent = () => {
+      try { return !this.#boundDisposed && hash(this.getSelection(scope.sessionId)) === token && hash(rowsNow()) === revision } catch { return false }
+    }
+    if (!checkCurrent()) fail('SOURCE_BOUND_CHANGED', 'Bound world books changed during lookup')
+    return boundSnapshot(rows, revision, checkCurrent)
   }
   setManagementMode(args) {
     localScope(args.scope)
@@ -97,5 +121,5 @@ export class WorldBookMemorySource {
     this.#checks.set(context, checks)
     return { ...output, blocks, diagnostics }
   }
-  dispose() { this.policy.dispose() }
+  dispose() { this.#boundDisposed = true; this.policy.dispose() }
 }

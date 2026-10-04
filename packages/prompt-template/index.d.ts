@@ -20,6 +20,7 @@ export class PromptTemplateService {
   readonly optionCatalog: Record<string, unknown>;
   read(args: {id: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Record<string, unknown> | null;
   list(args?: {scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Array<Record<string, unknown>>;
+  listBound(args: import('../memory-sources/index.js').BoundResourceRequest): import('../memory-sources/index.js').BoundResourceSnapshot;
   validateConfig(config: Record<string, unknown>): void;
   update(args: {id: string; content: string; expectedRevision: string; operationId: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Record<string, unknown>;
   copy(args: {id: string; newId: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Record<string, unknown>;

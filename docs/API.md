@@ -82,6 +82,12 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 公开合同与读取时机的速查见 [v3 消费方读取路径与兼容边界](PROMPT_API_V3.md#消费方读取路径与兼容边界)。
 官方装配段的正文不等于某个来源字段的原文；当前资源、历史段落和运行期装配不能互相替代。
 
+## 当前会话绑定资源
+
+会话资源目录可调用可选 Host 方法 `tavernMemorySources.listBound({scope:{sessionId,authority:'local'},signal?})`，返回深层不可变的 `{items,revision,checkCurrent}`。每项仅含 `{id,adapterId,name,type,revision,managementMode,binding}` 及可选 `enabled/sourceError`，不含正文或变量。`binding` 说明真实 session、当前角色、预设/Persona 绑定来源或既有 MVU 实例身份。目录覆盖当前角色内嵌书、当前有效选择中的独立书与会话开场书、实际绑定到该 session 的模板，以及当前角色对应的既有 MVU 状态实例。内联预设 prompt 不会伪装成持久资源。
+
+查询只检查选中的书，不扫描其他卡或全局资源，不做激活，不自动创建 MVU 实例，不授权写入或 prompt 使用。全局 `list/read` 合同继续用于全局资源管理。会话列表应以该目录的真实 ID 过滤配置与历史 trace，不能让未绑定的配置或旧 trace 补出其他卡资源；手动跨卡绑定界面不属于本接口。调用方在最后一次 await 后检查 Host-only `checkCurrent()`；当前选择代际、来源版本、会话实例/身份与服务卸载变化会撤销结果。MVU 未装载则无 MVU 项，旧 MVU 缺此元数据能力则明确拒绝，不能退回正文 catalog 猜测绑定。世界书/模板 adapter 与 `tavernMvu` 同时提供同形 `listBound`，manager 可直接转接来源方法；没有新增 HTTP 路由。
+
 ## 会话开场世界书
 
 Host 可选服务 `tavernOpeningWorldBooks` 提供 `prepare` 与 `commit`，类型见包入口 `pmp-dsh-tavern/opening-worldbook`。HTTP 为 `POST /pmp-dsh-tavern/api/v1/sessions/:sessionId/opening-worldbook/prepare` 与 `/commit`，沿用本机、Host、Origin/桌面 token、JSON 与官方 DSH admission 检查。

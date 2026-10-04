@@ -382,14 +382,19 @@ export function apply(ctx, config = {}) {
   })
   const assemblyPresets = new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
   const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [],
+    getSession: id => ctx.get('sessions')?.get?.(id), getMvu: () => ctx.get('tavernMvu'),
     resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
     getSelection: sessionId => {
       const selected = selections.get(sessionId)
-      const worldBookIds = composeWorldBookSelection([...selected.worldBookIds, ...openingWorldBooks.selectedIds(sessionId, selected)],
+      const bound = composeWorldBookSelection([...selected.worldBookIds, ...openingWorldBooks.selectedIds(sessionId, selected)],
         selected.userId ? userWorldBooks.get(selected.userId) : [],
         selected.presetId ? resourceWorldBooks.get('preset', selected.presetId) : [],
-        selected.characterCardId ? resourceWorldBooks.get('character', selected.characterCardId) : []).effectiveIds
-      return { worldBookIds, characterId: selected.characterCardId, selectionRevision: `${selections.selectionRevision(sessionId)}:${openingWorldBooks.revision()}` }
+        selected.characterCardId ? resourceWorldBooks.get('character', selected.characterCardId) : [])
+      const worldBookBindings = Object.fromEntries(bound.effectiveIds.map(id => [id, [
+        ...(bound.explicitIds.includes(id) ? ['session'] : []), ...(bound.userBoundIds.includes(id) ? ['user'] : []),
+        ...(bound.presetBoundIds.includes(id) ? ['preset'] : []), ...(bound.characterBoundIds.includes(id) ? ['character'] : [])]]))
+      return { worldBookIds: bound.effectiveIds, worldBookBindings, characterId: selected.characterCardId, presetId: selected.presetId, userId: selected.userId,
+        selectionRevision: `${selections.selectionRevision(sessionId)}:${openingWorldBooks.revision()}` }
     } })
   const registry = createDefaultRegistry({ worldbookPolicy: (context, output) => memorySources.worldBooks.filter(context, output), worldbookValidateResolved: memorySources.worldBooks.validateResolved })
   const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry })

@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { renderTemplate } from './runtime.js'
 import { inspectTemplateMetadata } from './metadata.js'
 import { SourcePolicy, atomicJson, readJson, hash, fail, localScope, validateConfig, optionCatalog } from '../memory-sources/policy.js'
+import { boundScope, boundSnapshot } from '../memory-sources/bound-metadata.js'
 export const TEMPLATE_SOURCE = 'pmp-dsh-tavern/prompt-template'
 const idPattern = /^prompt-template:[a-zA-Z0-9_.-]{1,100}$/
 function normalize(resource) {
@@ -13,6 +14,7 @@ function normalize(resource) {
 }
 export class PromptTemplateService {
   #checks = new WeakMap()
+  #boundDisposed = false
   id = 'tavern.prompt-templates'; name = '提示词模板 / Prompt templates'; authority = 'local'; strategyOwner = 'source'
   optionCatalog = optionCatalog('prompt-template', '隔离只读模板展开 / Isolated read-only expansion', 'tavern.prompt-template')
   constructor({ storageDir, resources = [], resolveVariables, worldBooks }) {
@@ -45,6 +47,19 @@ export class PromptTemplateService {
   list({ scope = {}, signal } = {}) {
     localScope(scope)
     return this.state.resources.filter(r => !scope.sessionId || r.sessionIds.includes('*') || r.sessionIds.includes(scope.sessionId)).map(r => this.read({ id: r.id, scope, signal }))
+  }
+  listBound({ scope, signal } = {}) {
+    scope = boundScope(scope); signal?.throwIfAborted()
+    if (this.#boundDisposed) fail('SOURCE_UNAVAILABLE', 'Template source is unloaded')
+    const rows = this.state.resources.filter(r => r.sessionIds.includes('*') || r.sessionIds.includes(scope.sessionId)).map(resource => ({
+      id: resource.id, adapterId: this.id, name: resource.name, type: 'prompt-template', revision: this.policy.revision(resource.id, resource), managementMode: this.policy.mode(resource.id), enabled: resource.enabled,
+      binding: { sessionId: scope.sessionId, kind: resource.sessionIds.includes('*') ? 'all-sessions' : 'session' } }))
+    const revision = hash(rows), checkCurrent = () => {
+      try { return !this.#boundDisposed && hash(this.state.resources.filter(r => r.sessionIds.includes('*') || r.sessionIds.includes(scope.sessionId)).map(resource => ({
+        id: resource.id, adapterId: this.id, name: resource.name, type: 'prompt-template', revision: this.policy.revision(resource.id, resource), managementMode: this.policy.mode(resource.id), enabled: resource.enabled,
+        binding: { sessionId: scope.sessionId, kind: resource.sessionIds.includes('*') ? 'all-sessions' : 'session' } }))) === revision } catch { return false }
+    }
+    return boundSnapshot(rows, revision, checkCurrent)
   }
   update({ id, scope, signal, content, expectedRevision, operationId }) {
     signal?.throwIfAborted()
@@ -136,5 +151,5 @@ export class PromptTemplateService {
     this.#checks.set(context, checks)
     return { blocks, diagnostics }
   }
-  dispose() { this.policy.dispose() }
+  dispose() { this.#boundDisposed = true; this.policy.dispose() }
 }
