@@ -190,7 +190,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, useInpu
         composer,
         writeScope:content.initialScope,
         createBinding:content.greetingScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:writeGrant?content.initialScope:content.greetingScope,signal,writeGrant}):undefined,
-        enabled:displaySettings.interactiveCards===true,
+        enabled:displaySettings.interactiveCards!==false,
         scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index,content.greetingScope,content.initialScope]),
         owners:[content.display?.globalRenderingOwner,...Object.entries(content.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean),
         helpers:(content.display?.renderingSources??[]).filter(item=>item.kind==='helper'),

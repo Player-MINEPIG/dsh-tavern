@@ -6,7 +6,7 @@ import { externalUrl, MAX_RENDER_SOURCE } from './rendering-sources.js'
 import {uniqueSourceBytes} from './rendering-shared-sources.js'
 
 // Outside-card executable cache. Only the resource acquisition lifecycle installs
-// downloaded graphs. Script enablement and variable-write grants stay separate.
+// downloaded graphs. Enabled scripts use their current bound variable capability.
 export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS,budget=createRenderingCacheBudget()}={}) {
   const installs = new Map(), records = new Map(), intentions = new Map(), adapters = new Map(), listeners = new Set()
   let revision = 0, generation = 0

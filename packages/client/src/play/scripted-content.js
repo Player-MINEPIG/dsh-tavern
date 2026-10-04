@@ -377,21 +377,29 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
         let variableWriteScope
         if(writeScope&&createBinding)try{variableWriteScope=initialWriteViewScope(writeScope,activeBinding?.getSnapshot())}catch{/* Missing MVU denies writes; ordinary cards can still render. */}
-        if(variableWriteScope)writeRequest=renderingWriteRequests.register({scope:variableWriteScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,onRevoke:revokeWrites})
-        const ensureWriteBinding=async()=>{
-          const grant=writeRequest?.getGrant()
-          if(!grant)throw Object.assign(Error('Variable writes require separate authorization in conversation settings'),{code:'MVU_WRITE_DENIED'})
+        // Preparation has read only downloaded dependencies and enabled scripts.
+        if(variableWriteScope)writeRequest=renderingWriteRequests.register({scope:variableWriteScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,downloaded:true,enabled:true,onRevoke:revokeWrites})
+        const ensureWriteBinding=async(refresh=false)=>{
+          if(!writeRequest)throw Object.assign(Error('Card variables are not writable in this view'),{code:'MVU_READ_ONLY'})
+          if(refresh){writeEpoch++;writeController?.abort();writeBinding?.dispose();writeBinding=null;writeLoading=null;await writeRequest.renew()}
           if(!writeBinding){
-            if(!writeLoading){const pendingController=new AbortController();writeController=pendingController;writeLoading=createBinding(pendingController.signal,grant).then(next=>{if(pendingController.signal.aborted||cleaned){next.dispose();throw Error('Variable write binding cancelled')}stopVariables?.();binding?.dispose();binding=next;writeBinding=next;stopVariables=next.subscribe(snapshot=>virtualRuntime?.notifyVariables(snapshot));return next}).finally(()=>{if(writeController===pendingController)writeLoading=null})}
+            if(!writeLoading){const pendingController=new AbortController();writeController=pendingController;writeLoading=(async()=>{
+              let grant=await writeRequest.getGrant();pendingController.signal.throwIfAborted()
+              let next
+              try{next=await createBinding(pendingController.signal,grant)}catch(error){if(error.code!=='MVU_WRITE_DENIED'||pendingController.signal.aborted||cleaned)throw error;grant=await writeRequest.renew();pendingController.signal.throwIfAborted();next=await createBinding(pendingController.signal,grant)}
+              if(pendingController.signal.aborted||cleaned){next.dispose();throw Error('Variable write binding cancelled')}
+              stopVariables?.();binding?.dispose();binding=next;writeBinding=next;stopVariables=next.subscribe(snapshot=>virtualRuntime?.notifyVariables(snapshot));return next
+            })().finally(()=>{if(writeController===pendingController)writeLoading=null})}
             await writeLoading
           }
+          if(cleaned||!writeBinding)throw Error('Card execution stopped')
           return writeBinding
         }
         if(data.identitySource&&openingBridge.current)identityBridge.current=createIdentityActionBridge({
           model:createFixedIdentityActionModel(data.identitySource),
           prepareBinding:async()=>{
-            const bound=await ensureWriteBinding(),epoch=writeEpoch,grantKey=JSON.stringify(writeRequest.getGrant())
-            return {binding:bound,messageLease:{generation:current,revision:proposalVersion.current},isCurrent:()=>!cleaned&&!controller.signal.aborted&&current===generation.current&&epoch===writeEpoch&&writeBinding===bound&&JSON.stringify(writeRequest?.getGrant())===grantKey}
+            const bound=await ensureWriteBinding(),epoch=writeEpoch,grantKey=JSON.stringify(writeRequest.peekGrant())
+            return {binding:bound,messageLease:{generation:current,revision:proposalVersion.current},isCurrent:()=>!cleaned&&!controller.signal.aborted&&current===generation.current&&epoch===writeEpoch&&writeBinding===bound&&JSON.stringify(writeRequest?.peekGrant())===grantKey}
           },
           onState:value=>{if(!cleaned&&current===generation.current)setIdentityProposal(value)},
           deliverMessage:(message,lease)=>{
@@ -469,7 +477,9 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
               signal?.throwIfAborted()
               const snapshot=writeBinding.getSnapshot()
               if(options!==null&&options!==undefined&&(typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(key=>!['type','message_id'].includes(key))||(options.type!==undefined&&options.type!=='message')||(options.message_id!==undefined&&options.message_id!==snapshot.scope?.messageId)))throw Error('Variable scope is bound to this card')
-              const result=await writeBinding.write({operation,value,expectedRevision:observedRevision,operationId,cause,signal:signal?AbortSignal.any([signal,writeController.signal]):writeController.signal})
+              const submit=()=>writeBinding.write({operation,value,expectedRevision:observedRevision,operationId,cause,signal:signal?AbortSignal.any([signal,writeController.signal]):writeController.signal})
+              let result
+              try{result=await submit()}catch(error){if(error.code!=='MVU_WRITE_DENIED'||signal?.aborted||cleaned||current!==generation.current)throw error;await ensureWriteBinding(true);signal?.throwIfAborted();result=await submit()}
               if(cleaned||current!==generation.current)throw Error('Variable write cancelled')
               setError('');return result
             }catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}

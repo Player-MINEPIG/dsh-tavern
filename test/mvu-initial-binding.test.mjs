@@ -25,7 +25,7 @@ function fixture(t, { managed = false, resources } = {}) {
   const service = installMvu(ctx, options); t.after(() => service.dispose())
   const facts = []; service.observe(f => facts.push(f))
   return { service, scope, sourceIdentity, session, playthrough, timeline, facts, options, ctx, selections,
-    allow: () => service.registerUsage(request => { const captured = policy; assert.equal(request.on, 'card_variable_update'); return { enabled: captured.enabled, configRevision: captured.revision, checkCurrent: () => policy === captured } }),
+    allow: () => service.registerUsage(request => { const captured = policy; return { enabled: captured.enabled, configRevision: captured.revision, checkCurrent: () => policy === captured } }),
     reload: () => { policy = { enabled: false, revision: 2 } }, revoke: () => { valid = false },
     select: id => { selections.set('s', { characterCardId: id }) },
     append: (type, data) => { const event = { type, data, seq: events.length }; events = [...events, event]; handlers.get('session/event')(session, event) },
@@ -48,7 +48,7 @@ test('initial scope exposes source schema and commits one shared current entity 
   await assert.rejects(f.service.cardWrite(request(capability, 0, 'stale')), { code: 'REVISION_CONFLICT' })
   await assert.rejects(f.service.cardWrite({ ...request(capability, 1, 'invalid'), value: { stat_data: { hp: -1 } } }), { code: 'MVU_SCHEMA' })
   assert.equal(f.facts.filter(fact => fact.phase === 'applied').length, 1)
-  assert.ok(f.facts.filter(fact => ['applied', 'completed', 'triggered'].includes(fact.phase)).every(fact => fact.configRevision === 1))
+  assert.ok(f.facts.filter(fact => ['applied', 'completed', 'triggered'].includes(fact.phase)).every(fact => fact.configRevision === null))
   const history = await f.service.history({ id: 'mvu:initial', scope: { sessionId: 's' } })
   assert.equal(history[0].source.initial, true); assert.equal(history[0].source.messageId, undefined)
   f.start()
@@ -80,17 +80,17 @@ test('initial binding switch-away-and-back stays revoked; fresh binding is requi
   assert.equal((await f.service.cardWrite(request(fresh.capability, 0))).revision, 1)
 })
 
-test('native grant-only and missing or asynchronous policy leases never permit card writes', async t => {
-  for (const decision of [undefined, { enabled: true }, { enabled: true, checkCurrent: async () => true }]) {
-    const f = fixture(t); if (decision) f.service.registerUsage(() => decision)
-    const { capability } = await f.bind()
-    await assert.rejects(f.service.cardWrite(request(capability, 0)))
-    assert.equal((await f.service.read({ id: 'mvu:initial', scope: { sessionId: 's' } })).revision, 0)
-    assert.ok(!f.facts.some(fact => fact.phase === 'applied'))
+test('native and managed bound card variables do not require manager configuration or leases', async t => {
+  for (const managed of [false,true]) for (const decision of [undefined,{enabled:false,reason:'config-unavailable'},{enabled:true,checkCurrent:async()=>true}]) {
+    const f=fixture(t,{managed});let calls=0
+    f.service.registerUsage(()=>{calls++;return decision})
+    const {capability}=await f.bind(),result=await f.service.cardWrite(request(capability,0))
+    assert.equal(result.variables.stat_data.hp,7);assert.equal(calls,0)
+    assert.equal((await f.service.read({id:'mvu:initial',scope:{sessionId:'s'}})).revision,1)
   }
 })
 
-test('final scope await cannot retain an old policy, initial scope, grant or live capability', async t => {
+test('final scope await rejects stale scope/execution; manager reload is not a second card permission', async t => {
   for (const action of ['policy', 'turn', 'model', 'title', 'character', 'membership', 'grant', 'capability', 'abort']) {
     const f = fixture(t); f.allow(); const { capability } = await f.bind(), controller = new AbortController()
     const resolve = f.service.resolveScope; let count = 0
@@ -109,6 +109,7 @@ test('final scope await cannot retain an old policy, initial scope, grant or liv
       }
       return evidence
     }
+    if(action==='policy'){assert.equal((await f.service.cardWrite({...request(capability,0),signal:controller.signal})).revision,1);continue}
     await assert.rejects(f.service.cardWrite({ ...request(capability, 0), signal: controller.signal }), undefined, action)
     assert.equal((await f.service.read({ id: 'mvu:initial', scope: { sessionId: 's' } })).revision, 0, action)
     assert.ok(!f.facts.some(fact => fact.phase === 'applied'), action)

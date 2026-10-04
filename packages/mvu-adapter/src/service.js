@@ -700,14 +700,13 @@ export class MvuService {
     })
     if (rows.length !== 1 || (!initial && (!rows[0].versionKey || rows[0].versionKey !== this.#record(rows[0].id).currentKey))) fail('MVU_READ_ONLY', 'Binding is not the current resource version')
     if (initial && (evidence.mode !== 'initial' || typeof evidence.checkCurrent !== 'function' || evidence.checkCurrent() !== true)) fail('MVU_READ_ONLY', 'Initial scope is no longer current')
-    for (const [key, value] of this.#cardBindings) if (value.expiresAt < Date.now()) this.#cardBindings.delete(key)
     if (this.#cardBindings.size >= 512) fail('MVU_LIMIT', 'Too many live card bindings')
     const snapshot = await this.snapshot(scope)
     signal?.throwIfAborted()
     if (checkGrant() !== true) fail('MVU_WRITE_DENIED', 'Write grant was revoked during binding')
     if (initial && evidence.checkCurrent() !== true) fail('MVU_READ_ONLY', 'Initial scope changed during binding')
     const capability = randomUUID()
-    this.#cardBindings.set(capability, { ...binding, resourceId: rows[0].id, ...(initial ? { scopeLease: evidence.checkCurrent, initialSource: json(evidence.initialSource) } : {}), expiresAt: Date.now() + 30 * 60 * 1000 })
+    this.#cardBindings.set(capability, { ...binding, resourceId: rows[0].id, ...(initial ? { scopeLease: evidence.checkCurrent, initialSource: json(evidence.initialSource) } : {}) })
     return { capability, snapshot }
   }
   #cardResourceActive(resource, scope) {
@@ -730,7 +729,7 @@ export class MvuService {
     const instanceLease = selected?.instance ? await this.#sessionLease(selected.instance.sessionId) : null
     return this.#serial(async () => {
       const binding = this.#cardBindings.get(capability)
-      if (!binding || binding.expiresAt < Date.now()) fail('MVU_WRITE_DENIED', 'Card capability expired or revoked')
+      if (!binding) fail('MVU_WRITE_DENIED', 'Card execution binding stopped')
       if (!['patch', 'replace'].includes(operation) || !['user-interaction', 'interval', 'script'].includes(cause) || typeof operationId !== 'string' || !operationId || operationId.length > 200 || !Number.isSafeInteger(expectedRevision)) fail('MVU_OPERATION', 'Invalid card operation')
       const scope = binding.scope, id = binding.resourceId, resource = this.#configured(id, scope)
       const fact = { id, eventId: operationId, operationId, on: 'card_variable_update', cause, sessionId: scope.sessionId }
@@ -751,10 +750,10 @@ export class MvuService {
         const current = record.versions.find(v => v.key === record.currentKey)
         if (scope.mode !== 'initial' && (!current || current.source.sessionId !== scope.sessionId || current.source.messageSeq !== scope.endEventId || current.source.messageId !== evidence.messageId || (current.sourceFingerprint ?? current.fingerprint) !== evidence.fingerprint)) fail('MVU_READ_ONLY', 'Resource changed outside this message binding')
         const baseline = this.#current(resource)
-        const event = { operationId, expectedRevision, cause, operation, sourceIdentity: binding.sourceIdentity, containsMvuUpdate: true }
-        const decision = await this.#decision('card_variable_update', resource, { ...scope, authority: 'local' }, event, baseline)
-        if (!decision.enabled) fail('MVU_USAGE_DENIED', 'Usage policy denied card update')
-        this.#emit({ ...fact, phase: 'triggered', configRevision: decision.configRevision })
+        // Native card execution follows downloaded sources and saved switches.
+        // Manager policies still govern model/store/retrieve usage, not a
+        // second permission for this bound variable operation.
+        this.#emit({ ...fact, phase: 'triggered', configRevision: null })
         let variables
         if (operation === 'patch') {
           if (!Array.isArray(input)) fail('MVU_PARSE', 'Card patch must be an array')
@@ -771,13 +770,13 @@ export class MvuService {
         signal?.throwIfAborted()
         if (sessionLease && sessionLease() !== true) fail('MVU_READ_ONLY', 'Instance changed during card update')
         if (checkGrant() !== true) fail('MVU_WRITE_DENIED', 'Source write grant was revoked')
-        if (!this.#cardBindings.has(capability) || decision.usageEpoch !== this.#usageEpoch || decision.checkCurrent() !== true) fail('MVU_USAGE_CANCELLED', 'Card binding or usage provider changed')
+        if (!this.#cardBindings.has(capability)) fail('MVU_WRITE_DENIED', 'Card execution binding stopped')
         const revision = record.revision + 1, key = hash({ id, operationId })
         const source = scope.mode === 'initial' ? { ...binding.initialSource, manual: true, card: true, initial: true } : { ...current.source, manual: true, card: true }
         const result = { version: 1, scope: json(scope), revision, currentRevision: revision, status: 'available', variables, resourceId: id }
-        this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source, fingerprint, ...(scope.mode === 'initial' ? {} : { sourceFingerprint: evidence.fingerprint }), variables, revision, operationId, result, parentKey: record.currentKey, configRevision: decision.configRevision }] })
-        if (hash(baseline.stat_data) !== hash(variables.stat_data)) this.#emit({ ...fact, phase: 'applied', revision, configRevision: decision.configRevision, detail: 'state-committed' })
-        this.#emit({ ...fact, phase: 'completed', revision, configRevision: decision.configRevision, detail: 'state-committed' })
+        this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source, fingerprint, ...(scope.mode === 'initial' ? {} : { sourceFingerprint: evidence.fingerprint }), variables, revision, operationId, result, parentKey: record.currentKey, configRevision: null }] })
+        if (hash(baseline.stat_data) !== hash(variables.stat_data)) this.#emit({ ...fact, phase: 'applied', revision, configRevision: null, detail: 'state-committed' })
+        this.#emit({ ...fact, phase: 'completed', revision, configRevision: null, detail: 'state-committed' })
         return cloneMvuReceipt(result)
       } catch (error) {
         const denied = ['MVU_WRITE_DENIED', 'MVU_READ_ONLY', 'MVU_USAGE_DENIED'].includes(error.code)

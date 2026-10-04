@@ -340,7 +340,7 @@ test('cold resume published Host work settles before a management transaction ca
   assert.equal((await service.read({ id: row.id, scope: { sessionId: 'A' } })).content.stat_data.hp, 90)
 })
 
-test('card capability commits only its instance and rejects identity changes during its awaited policy', async t => {
+test('card capability commits only its instance and rejects identity changes during its awaited execution check', async t => {
   const f = fixture(t); f.create('A'); f.create('B'); const reply = await f.turn('A', -1); await f.turn('B', -1)
   const scope = { playthroughId: 'p', sessionId: 'A', nodeId: 'n', variantId: 'v', endEventId: reply, sessionFormatVersion: 4 }, sourceIdentity = { version: 1, sha256: 'a'.repeat(64), scope }
   const { createHash } = await import('node:crypto'), text = f.sessions.get('A').events.find(e => e.seq === reply).data.message.content[0].text
@@ -351,7 +351,8 @@ test('card capability commits only its instance and rejects identity changes dur
   const write = { capability: bound.capability, operation: 'patch', value: [{ op: 'delta', path: '/hp', value: -2 }], expectedRevision: a.revision, operationId: 'card-click', cause: 'user-interaction' }
   const result = await f.service.cardWrite(write); assert.equal(result.resourceId, a.id); assert.equal(result.variables.stat_data.hp, 97); assert.equal((await f.read('B')).content.stat_data.hp, b.content.stat_data.hp)
   const before = readFileSync(join(f.options.storageDir, 'mvu-instances.json'), 'utf8')
-  f.service.registerUsage(input => { if (input.on === 'card_variable_update') f.sessions.get('A').header.createdAt++; return { enabled: true, checkCurrent: () => true } })
+  const authorize=f.service.authorizeCardWrite
+  f.service.authorizeCardWrite=async input=>{const result=await authorize(input);f.sessions.get('A').header.createdAt++;return result}
   await assert.rejects(f.service.cardWrite({ ...write, expectedRevision: result.revision, operationId: 'reused-session' }), { code: 'MVU_READ_ONLY' })
   assert.equal(readFileSync(join(f.options.storageDir, 'mvu-instances.json'), 'utf8'), before)
 })

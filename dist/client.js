@@ -406,9 +406,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js
 var require_xhtml = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/xhtml.js"(exports, module2) {
     module2.exports = {
       quot: '"',
       amp: "&",
@@ -667,9 +667,9 @@ var require_xhtml = __commonJS({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js
 var require_acorn = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, factory(global.acorn = {}));
     })(exports, (function(exports2) {
@@ -6294,9 +6294,9 @@ var require_acorn = __commonJS({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js
 var require_acorn_jsx = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn-jsx/index.js"(exports, module2) {
     "use strict";
     var XHTMLEntities = require_xhtml();
     var hexNumber = /^[\da-fA-F]+$/;
@@ -6717,10 +6717,10 @@ var require_acorn_jsx = __commonJS({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs
 var EvalFlags, IntrinsicsFlags, JSPromiseStateEnum, GetOwnPropertyNamesFlags, IsEqualOp;
 var init_dist = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs"() {
     EvalFlags = { JS_EVAL_TYPE_GLOBAL: 0, JS_EVAL_TYPE_MODULE: 1, JS_EVAL_TYPE_DIRECT: 2, JS_EVAL_TYPE_INDIRECT: 3, JS_EVAL_TYPE_MASK: 3, JS_EVAL_FLAG_STRICT: 8, JS_EVAL_FLAG_STRIP: 16, JS_EVAL_FLAG_COMPILE_ONLY: 32, JS_EVAL_FLAG_BACKTRACE_BARRIER: 64 };
     IntrinsicsFlags = { BaseObjects: 1, Date: 2, Eval: 4, StringNormalize: 8, RegExp: 16, RegExpCompiler: 32, JSON: 64, Proxy: 128, MapSet: 256, TypedArrays: 512, Promise: 1024, BigInt: 2048, BigFloat: 4096, BigDecimal: 8192, OperatorOverloading: 16384, BignumExt: 32768 };
     JSPromiseStateEnum = { Pending: 0, Fulfilled: 1, Rejected: 2 };
@@ -6729,7 +6729,7 @@ var init_dist = __esm({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs
 function debugLog(...args) {
   QTS_DEBUG && console.log("quickjs-emscripten:", ...args);
 }
@@ -6813,7 +6813,7 @@ function applyModuleEvalRuntimeOptions(runtime, options) {
 }
 var __defProp2, __export2, QTS_DEBUG, errors_exports, QuickJSUnwrapError, QuickJSWrongOwner, QuickJSUseAfterFree, QuickJSNotImplemented, QuickJSAsyncifyError, QuickJSAsyncifySuspended, QuickJSMemoryLeakDetected, QuickJSEmscriptenModuleError, QuickJSUnknownIntrinsic, QuickJSPromisePending, QuickJSEmptyGetOwnPropertyNames, AwaitYield, UsingDisposable, SymbolDispose, prototypeAsAny, Lifetime, StaticLifetime, WeakLifetime, Scope3, AbstractDisposableResult, DisposableSuccess, DisposableFail, DisposableResult, QuickJSDeferredPromise, ModuleMemory, DefaultIntrinsics, QuickJSIterator, ContextMemory, QuickJSContext, QuickJSRuntime, QuickJSEmscriptenModuleCallbacks, QuickJSModuleCallbacks, QuickJSWASMModule;
 var init_chunk_JTKJZQYV = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs"() {
     init_dist();
     init_dist();
     __defProp2 = Object.defineProperty;
@@ -7745,7 +7745,7 @@ Attempted to suspend at:`);
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs
 var module_6F3E5H7Y_exports = {};
 __export(module_6F3E5H7Y_exports, {
   QuickJSModuleCallbacks: () => QuickJSModuleCallbacks,
@@ -7754,19 +7754,19 @@ __export(module_6F3E5H7Y_exports, {
   applyModuleEvalRuntimeOptions: () => applyModuleEvalRuntimeOptions
 });
 var init_module_6F3E5H7Y = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs"() {
     init_chunk_JTKJZQYV();
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs
 var ffi_exports = {};
 __export(ffi_exports, {
   QuickJSFFI: () => QuickJSFFI
 });
 var QuickJSFFI;
 var init_ffi = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs"() {
     QuickJSFFI = class {
       constructor(module2) {
         this.module = module2;
@@ -7842,14 +7842,14 @@ var init_ffi = __esm({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs
 var emscripten_module_browser_VTL2UBYQ_exports = {};
 __export(emscripten_module_browser_VTL2UBYQ_exports, {
   default: () => emscripten_module_browser_default
 });
 var import_meta, QuickJSRaw, emscripten_module_browser_default;
 var init_emscripten_module_browser_VTL2UBYQ = __esm({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs"() {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs"() {
     import_meta = {};
     QuickJSRaw = (() => {
       var _scriptName = import_meta.url;
@@ -8146,9 +8146,9 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
   }
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js
 var require_dist = __commonJS({
-  "../dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js"(exports, module2) {
+  "../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/json5/dist/index.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.JSON5 = factory();
     })(exports, (function() {
@@ -9611,7 +9611,7 @@ function updateRenderingAdapter(value, owner, source, mode) {
   return normalizeRenderingAdapters({ schemaVersion: 1, entries: entries2 });
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/acorn/dist/acorn.mjs
 var astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 80, 3, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 343, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 330, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 726, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
 var astralIdentifierStartCodes = [0, 11, 2, 25, 2, 18, 2, 1, 2, 14, 3, 13, 35, 122, 70, 52, 268, 28, 4, 48, 48, 31, 14, 29, 6, 37, 11, 29, 3, 35, 5, 7, 2, 4, 43, 157, 19, 35, 5, 35, 5, 39, 9, 51, 13, 10, 2, 14, 2, 6, 2, 1, 2, 10, 2, 14, 2, 6, 2, 1, 4, 51, 13, 310, 10, 21, 11, 7, 25, 5, 2, 41, 2, 8, 70, 5, 3, 0, 2, 43, 2, 1, 4, 0, 3, 22, 11, 22, 10, 30, 66, 18, 2, 1, 11, 21, 11, 25, 71, 55, 7, 1, 65, 0, 16, 3, 2, 2, 2, 28, 43, 28, 4, 28, 36, 7, 2, 27, 28, 53, 11, 21, 11, 18, 14, 17, 111, 72, 56, 50, 14, 50, 14, 35, 39, 27, 10, 22, 251, 41, 7, 1, 17, 2, 60, 28, 11, 0, 9, 21, 43, 17, 47, 20, 28, 22, 13, 52, 58, 1, 3, 0, 14, 44, 33, 24, 27, 35, 30, 0, 3, 0, 9, 34, 4, 0, 13, 47, 15, 3, 22, 0, 2, 0, 36, 17, 2, 24, 20, 1, 64, 6, 2, 0, 2, 3, 2, 14, 2, 9, 8, 46, 39, 7, 3, 1, 3, 21, 2, 6, 2, 1, 2, 4, 4, 0, 19, 0, 13, 4, 31, 9, 2, 0, 3, 0, 2, 37, 2, 0, 26, 0, 2, 0, 45, 52, 19, 3, 21, 2, 31, 47, 21, 1, 2, 0, 185, 46, 42, 3, 37, 47, 21, 0, 60, 42, 14, 0, 72, 26, 38, 6, 186, 43, 117, 63, 32, 7, 3, 0, 3, 7, 2, 1, 2, 23, 16, 0, 2, 0, 95, 7, 3, 38, 17, 0, 2, 0, 29, 0, 11, 39, 8, 0, 22, 0, 12, 45, 20, 0, 19, 72, 200, 32, 32, 8, 2, 36, 18, 0, 50, 29, 113, 6, 2, 1, 2, 37, 22, 0, 26, 5, 2, 1, 2, 31, 15, 0, 328, 18, 16, 0, 2, 12, 2, 33, 125, 0, 80, 921, 103, 110, 18, 195, 2637, 96, 16, 1071, 18, 5, 26, 3994, 6, 582, 6842, 29, 1763, 568, 8, 30, 18, 78, 18, 29, 19, 47, 17, 3, 32, 20, 6, 18, 433, 44, 212, 63, 129, 74, 6, 0, 67, 12, 65, 1, 2, 0, 29, 6135, 9, 1237, 42, 9, 8936, 3, 2, 6, 2, 1, 2, 290, 16, 0, 30, 2, 3, 0, 15, 3, 9, 395, 2309, 106, 6, 12, 4, 8, 8, 9, 5991, 84, 2, 70, 2, 1, 3, 0, 3, 1, 3, 3, 2, 11, 2, 0, 2, 6, 2, 64, 2, 3, 3, 7, 2, 6, 2, 27, 2, 3, 2, 4, 2, 0, 4, 6, 2, 339, 3, 24, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 7, 1845, 30, 7, 5, 262, 61, 147, 44, 11, 6, 17, 0, 322, 29, 19, 43, 485, 27, 229, 29, 3, 0, 496, 6, 2, 3, 2, 1, 2, 14, 2, 196, 60, 67, 8, 0, 1205, 3, 2, 26, 2, 1, 2, 0, 3, 0, 2, 9, 2, 3, 2, 0, 2, 0, 7, 0, 5, 0, 2, 0, 2, 0, 2, 2, 2, 1, 2, 0, 3, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 1, 2, 0, 3, 3, 2, 6, 2, 3, 2, 3, 2, 0, 2, 9, 2, 16, 6, 2, 2, 4, 2, 16, 4421, 42719, 33, 4153, 7, 221, 3, 5761, 15, 7472, 16, 621, 2467, 541, 1507, 4938, 6, 4191];
 var nonASCIIidentifierChars = "\u200C\u200D\xB7\u0300-\u036F\u0387\u0483-\u0487\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u0610-\u061A\u064B-\u0669\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u06F0-\u06F9\u0711\u0730-\u074A\u07A6-\u07B0\u07C0-\u07C9\u07EB-\u07F3\u07FD\u0816-\u0819\u081B-\u0823\u0825-\u0827\u0829-\u082D\u0859-\u085B\u0897-\u089F\u08CA-\u08E1\u08E3-\u0903\u093A-\u093C\u093E-\u094F\u0951-\u0957\u0962\u0963\u0966-\u096F\u0981-\u0983\u09BC\u09BE-\u09C4\u09C7\u09C8\u09CB-\u09CD\u09D7\u09E2\u09E3\u09E6-\u09EF\u09FE\u0A01-\u0A03\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A66-\u0A71\u0A75\u0A81-\u0A83\u0ABC\u0ABE-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AE2\u0AE3\u0AE6-\u0AEF\u0AFA-\u0AFF\u0B01-\u0B03\u0B3C\u0B3E-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B55-\u0B57\u0B62\u0B63\u0B66-\u0B6F\u0B82\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD7\u0BE6-\u0BEF\u0C00-\u0C04\u0C3C\u0C3E-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C62\u0C63\u0C66-\u0C6F\u0C81-\u0C83\u0CBC\u0CBE-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CE2\u0CE3\u0CE6-\u0CEF\u0CF3\u0D00-\u0D03\u0D3B\u0D3C\u0D3E-\u0D44\u0D46-\u0D48\u0D4A-\u0D4D\u0D57\u0D62\u0D63\u0D66-\u0D6F\u0D81-\u0D83\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DE6-\u0DEF\u0DF2\u0DF3\u0E31\u0E34-\u0E3A\u0E47-\u0E4E\u0E50-\u0E59\u0EB1\u0EB4-\u0EBC\u0EC8-\u0ECE\u0ED0-\u0ED9\u0F18\u0F19\u0F20-\u0F29\u0F35\u0F37\u0F39\u0F3E\u0F3F\u0F71-\u0F84\u0F86\u0F87\u0F8D-\u0F97\u0F99-\u0FBC\u0FC6\u102B-\u103E\u1040-\u1049\u1056-\u1059\u105E-\u1060\u1062-\u1064\u1067-\u106D\u1071-\u1074\u1082-\u108D\u108F-\u109D\u135D-\u135F\u1369-\u1371\u1712-\u1715\u1732-\u1734\u1752\u1753\u1772\u1773\u17B4-\u17D3\u17DD\u17E0-\u17E9\u180B-\u180D\u180F-\u1819\u18A9\u1920-\u192B\u1930-\u193B\u1946-\u194F\u19D0-\u19DA\u1A17-\u1A1B\u1A55-\u1A5E\u1A60-\u1A7C\u1A7F-\u1A89\u1A90-\u1A99\u1AB0-\u1ABD\u1ABF-\u1ACE\u1B00-\u1B04\u1B34-\u1B44\u1B50-\u1B59\u1B6B-\u1B73\u1B80-\u1B82\u1BA1-\u1BAD\u1BB0-\u1BB9\u1BE6-\u1BF3\u1C24-\u1C37\u1C40-\u1C49\u1C50-\u1C59\u1CD0-\u1CD2\u1CD4-\u1CE8\u1CED\u1CF4\u1CF7-\u1CF9\u1DC0-\u1DFF\u200C\u200D\u203F\u2040\u2054\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2CEF-\u2CF1\u2D7F\u2DE0-\u2DFF\u302A-\u302F\u3099\u309A\u30FB\uA620-\uA629\uA66F\uA674-\uA67D\uA69E\uA69F\uA6F0\uA6F1\uA802\uA806\uA80B\uA823-\uA827\uA82C\uA880\uA881\uA8B4-\uA8C5\uA8D0-\uA8D9\uA8E0-\uA8F1\uA8FF-\uA909\uA926-\uA92D\uA947-\uA953\uA980-\uA983\uA9B3-\uA9C0\uA9D0-\uA9D9\uA9E5\uA9F0-\uA9F9\uAA29-\uAA36\uAA43\uAA4C\uAA4D\uAA50-\uAA59\uAA7B-\uAA7D\uAAB0\uAAB2-\uAAB4\uAAB7\uAAB8\uAABE\uAABF\uAAC1\uAAEB-\uAAEF\uAAF5\uAAF6\uABE3-\uABEA\uABEC\uABED\uABF0-\uABF9\uFB1E\uFE00-\uFE0F\uFE20-\uFE2F\uFE33\uFE34\uFE4D-\uFE4F\uFF10-\uFF19\uFF3F\uFF65";
@@ -16346,7 +16346,7 @@ async function tavernFetch(url, options = {}) {
 
 // packages/client/src/play/rendering-write-requests.js
 function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) {
-  const entries2 = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set(), revocations = /* @__PURE__ */ new Map();
+  const entries2 = /* @__PURE__ */ new Set(), listeners = /* @__PURE__ */ new Set(), revocations = /* @__PURE__ */ new Map();
   const emit = () => {
     for (const listener of listeners) listener();
   };
@@ -16362,7 +16362,7 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
     emit();
     try {
       const response = await request2(`${API_V1}/rendering-write-grants/${encodeURIComponent(grant.grantId)}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(1e4) });
-      if (!response.ok) throw Error("Server revocation failed (HTTP " + response.status + ")");
+      if (!response.ok) throw Error("Server execution cleanup failed (HTTP " + response.status + ")");
       revocations.delete(grant.grantId);
     } catch (error) {
       item.error = String(error.message);
@@ -16371,24 +16371,18 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
       emit();
     }
   }
-  function revoke(entry) {
+  function release2(entry, notify2 = true) {
     entry.generation++;
-    clearTimeout(entry.expiryTimer);
     entry.controller?.abort();
     entry.controller = null;
-    if (entry.grant) revokeRemote(entry.grant);
+    if (entry.grant) void revokeRemote(entry.grant);
     entry.grant = null;
-    entry.reviewed = false;
-    entry.onRevoke?.();
-    emit();
+    if (notify2) entry.onRevoke?.();
   }
   return Object.freeze({
     subscribe(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);
-    },
-    list() {
-      return [...entries2.values()].map(({ id, source, sourceIdentity, reviewed, grant, error }) => ({ id, source, sourceIdentity, reviewed, granted: !!grant, error }));
     },
     listRevocations() {
       return [...revocations.values()].map(({ id, pending: pending2, error }) => ({ id, pending: pending2, error }));
@@ -16397,75 +16391,75 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
       const item = [...revocations.values()].find((item2) => item2.id === id);
       return item ? revokeRemote(item.grant) : Promise.resolve();
     },
-    register({ scope, owners, runs, modules, html: html2, adapters = [], schemaDeclarations = [], onRevoke }) {
-      const id = crypto.randomUUID(), source = JSON.stringify({ version: 1, scope, owners, runs, modules, html: html2, adapters, schemaDeclarations });
-      const entry = { id, source, scope, sourceIdentity: null, reviewed: false, grant: null, generation: 0, onRevoke };
-      entries2.set(id, entry);
-      emit();
-      crypto.subtle.digest("SHA-256", new TextEncoder().encode(source)).then((bytes) => {
-        if (!entries2.has(id)) return;
-        entry.sourceIdentity = { version: 1, scope, sha256: [...new Uint8Array(bytes)].map((x2) => x2.toString(16).padStart(2, "0")).join("") };
-        emit();
-      }).catch(() => {
-        if (entries2.has(id)) {
-          entry.error = "Source hashing failed";
-          emit();
+    register({ scope, owners, runs, modules, html: html2, adapters = [], schemaDeclarations = [], downloaded, enabled, onRevoke }) {
+      if (downloaded !== true || enabled !== true) throw Error("Card execution requires available sources and enabled scripts");
+      const source = JSON.stringify({ version: 1, scope, owners, runs, modules, html: html2, adapters, schemaDeclarations });
+      const boundScope = JSON.parse(source).scope;
+      const entry = { grant: null, generation: 0, onRevoke };
+      entries2.add(entry);
+      const identity = crypto.subtle.digest("SHA-256", new TextEncoder().encode(source)).then((bytes) => ({ version: 1, scope: boundScope, sha256: [...new Uint8Array(bytes)].map((x2) => x2.toString(16).padStart(2, "0")).join("") }));
+      identity.catch(() => {
+      });
+      const current4 = () => {
+        if (!entries2.has(entry)) throw new DOMException("Card execution stopped", "AbortError");
+      };
+      let pending2;
+      const acquire2 = async () => {
+        current4();
+        if (entry.grant) return structuredClone(entry.grant);
+        if (pending2) return pending2;
+        const ticket = entry.generation, controller2 = new AbortController();
+        entry.controller = controller2;
+        const work = (async () => {
+          const sourceIdentity = await identity;
+          current4();
+          controller2.signal.throwIfAborted();
+          const response = await request2(`${API_V1}/rendering-write-grants`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller2.signal, body: JSON.stringify({ source, sourceIdentity, downloaded: true, enabled: true }) });
+          const grant = await response.json();
+          if (!response.ok) throw Object.assign(Error(grant.error ?? "Card execution binding failed"), { code: grant.code });
+          if (ticket !== entry.generation || !entries2.has(entry)) {
+            if (typeof grant.grantId === "string") void revokeRemote(grant);
+            throw new DOMException("Card execution stopped", "AbortError");
+          }
+          if (typeof grant.grantId !== "string" || !grant.grantId || grant.sourceIdentity?.version !== 1 || grant.sourceIdentity?.sha256 !== sourceIdentity.sha256 || JSON.stringify(Object.entries(grant.sourceIdentity?.scope ?? {}).sort()) !== JSON.stringify(Object.entries(boundScope).sort())) {
+            if (typeof grant.grantId === "string") void revokeRemote(grant);
+            throw Error("Invalid execution binding response");
+          }
+          entry.grant = { grantId: grant.grantId, sourceIdentity };
+          return structuredClone(entry.grant);
+        })();
+        pending2 = work;
+        try {
+          return await work;
+        } finally {
+          if (pending2 === work) pending2 = null;
+          if (entry.controller === controller2) entry.controller = null;
+        }
+      };
+      return Object.freeze({
+        getGrant: acquire2,
+        peekGrant: () => entry.grant ? structuredClone(entry.grant) : null,
+        async renew() {
+          current4();
+          release2(entry, false);
+          try {
+            await pending2;
+          } catch {
+          }
+          current4();
+          return acquire2();
+        },
+        dispose() {
+          if (!entries2.delete(entry)) return;
+          release2(entry);
         }
       });
-      return { getGrant: () => entry.grant ? structuredClone(entry.grant) : null, dispose: () => {
-        if (!entries2.has(id)) return;
-        revoke(entry);
-        entries2.delete(id);
-        emit();
-      } };
-    },
-    review(id) {
-      const entry = entries2.get(id);
-      if (!entry?.sourceIdentity) throw Error("Source identity unavailable");
-      revoke(entry);
-      entry.reviewed = true;
-      emit();
-    },
-    async authorize(id) {
-      const entry = entries2.get(id);
-      if (!entry?.reviewed || !entry.sourceIdentity) throw Error("Review the complete source bundle first");
-      if (entry.controller) throw Error("Authorization is already pending");
-      const ticket = ++entry.generation, controller2 = new AbortController();
-      entry.controller = controller2;
-      entry.error = null;
-      try {
-        const response = await request2(`${API_V1}/rendering-write-grants`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller2.signal, body: JSON.stringify({ source: entry.source, sourceIdentity: entry.sourceIdentity, reviewed: true, write: true }) });
-        const grant = await response.json();
-        if (!response.ok) throw Error(grant.error ?? "Write authorization failed");
-        if (ticket !== entry.generation || !entries2.has(id)) {
-          if (grant.grantId) revokeRemote(grant);
-          return;
-        }
-        if (!Number.isSafeInteger(grant.expiresAt) || grant.expiresAt <= Date.now() || typeof grant.grantId !== "string" || grant.sourceIdentity?.version !== 1 || grant.sourceIdentity?.sha256 !== entry.sourceIdentity.sha256 || JSON.stringify(Object.entries(grant.sourceIdentity?.scope ?? {}).sort()) !== JSON.stringify(Object.entries(entry.scope).sort())) {
-          if (typeof grant.grantId === "string") void revokeRemote(grant);
-          throw Error("Invalid write grant response");
-        }
-        entry.grant = { grantId: grant.grantId, sourceIdentity: entry.sourceIdentity };
-        entry.expiryTimer = setTimeout(() => revoke(entry), Math.min(30 * 60 * 1e3, grant.expiresAt - Date.now()));
-        emit();
-      } catch (error) {
-        if (ticket === entry.generation) {
-          entry.error = error.message;
-          emit();
-          throw error;
-        }
-      } finally {
-        if (entry.controller === controller2) entry.controller = null;
-      }
-    },
-    revoke(id) {
-      const entry = entries2.get(id);
-      if (entry) revoke(entry);
     },
     clear() {
-      for (const entry of entries2.values()) revoke(entry);
-      entries2.clear();
-      emit();
+      for (const entry of [...entries2]) {
+        entries2.delete(entry);
+        release2(entry);
+      }
     }
   });
 }
@@ -17592,7 +17586,7 @@ var zh_CN_default = Object.freeze({
   "rendering.none": "\u6682\u65E0\u6761\u76EE",
   "rendering.master": "\u5141\u8BB8\u8FD0\u884C\u5361\u7247\u811A\u672C",
   "rendering.masterOff": "\u5DF2\u6682\u505C\u3002\u4FDD\u7559\u9759\u6001\u5185\u5BB9\u548C\u6761\u76EE\u542F\u7528\u9009\u62E9\u3002",
-  "rendering.masterOn": "\u8FD0\u884C\u5DF2\u542F\u7528\u7684\u811A\u672C\uFF1B\u5916\u90E8\u4F9D\u8D56\u4E0B\u8F7D\u540E\u53EF\u7528\uFF0C\u53D8\u91CF\u5199\u5165\u53E6\u884C\u6388\u6743\u3002",
+  "rendering.masterOn": "\u8FD0\u884C\u5DF2\u5F00\u542F\u4E14\u4F9D\u8D56\u5DF2\u4E0B\u8F7D\u7684\u811A\u672C\uFF0C\u53EF\u8BFB\u5199\u5F53\u524D\u7ED1\u5B9A\u53D8\u91CF\u3002",
   "rendering.enableEntry": "\u542F\u7528 {name}",
   "rendering.disabled": "\u5DF2\u7981\u7528",
   "rendering.resetEntry": "\u6062\u590D\u6765\u6E90\u9ED8\u8BA4",
@@ -17603,7 +17597,7 @@ var zh_CN_default = Object.freeze({
   "rendering.bindingChanged": "\u7ED1\u5B9A\u8D44\u6E90\u5DF2\u5207\u6362\uFF1B\u65E7\u8349\u7A3F\u4FDD\u7559\u4F46\u4E0D\u53EF\u4FDD\u5B58\u3002\u5BFC\u51FA\u9700\u8981\u4FDD\u7559\u7684\u8349\u7A3F\uFF0C\u7136\u540E\u91CD\u65B0\u52A0\u8F7D\u5F53\u524D\u8D44\u6E90\u3002",
   "rendering.title": "\u5916\u90E8\u4EE3\u7801\u4E0E Helper",
   "rendering.boundary": "\u4E0B\u8F7D\u8986\u76D6\u5F53\u524D\u542F\u7528\u6765\u6E90\u53CA\u6240\u9009\u9012\u5F52\u4F9D\u8D56\uFF0C\u6700\u591A128\u4E2A\u6587\u4EF6\u30018\u5C42\u300124 MiB\u3002\u7CBE\u786E URL\u3001\u5B57\u8282\u548C\u8C03\u7528\u8BED\u4E49\u5747\u53D7\u652F\u6301\u7684\u6765\u6E90\u81EA\u52A8\u4F7F\u7528\u5185\u7F6E\u517C\u5BB9\u5C42\uFF1B\u4E0D\u5339\u914D\u4F1A\u663E\u793A\u539F\u56E0\uFF0C\u83B7\u53D6\u539F\u56FE\u987B\u660E\u786E\u9009\u62E9\u539F\u4EE3\u7801\u6A21\u5F0F\u3002\u4EC5\u4E0B\u8F7D\u65E0\u51ED\u636E\u3001\u65E0\u91CD\u5B9A\u5411\u7684 HTTPS \u9759\u6001\u6587\u672C\uFF08\u9700 CORS\uFF09\uFF0C\u4E0D\u4F1A\u7ED9\u5361\u7247\u5F00\u653E\u7F51\u7EDC\u6216 Host \u5DE5\u5177\u3002\u53EF\u5C55\u5F00\u6D4F\u89C8\u5B8C\u6574\u539F\u6587\u3002",
-  "rendering.lifetime": "\u4F9D\u8D56\u4FDD\u5B58\u5728\u6B64\u6D4F\u89C8\u5668\u4E0EHost\u5730\u5740\u7684\u4E13\u7528\u7F13\u5B58\u4E2D\uFF0C\u5237\u65B0\u53EF\u6062\u590D\u3002\u91CD\u65B0\u4E0B\u8F7D\u3001\u8D44\u6E90\u53D8\u5316\u6216\u5378\u8F7D\u4F1A\u91CD\u5EFA\u8FD0\u884C\u65F6\uFF1B\u5378\u8F7D\u540C\u65F6\u53D6\u6D88\u4E0B\u8F7D\u5E76\u5220\u9664\u7F13\u5B58\u3002\u7F3A\u5931\u3001\u5931\u8D25\u6216\u4E0D\u517C\u5BB9\u7684\u4F9D\u8D56\u4FDD\u7559\u9759\u6001\u754C\u9762\u5E76\u663E\u793A\u539F\u56E0\u3002\u53D8\u91CF\u5199\u5165\u6743\u9650\u4ECD\u72EC\u7ACB\u3002",
+  "rendering.lifetime": "\u4F9D\u8D56\u4FDD\u5B58\u5728\u6B64\u6D4F\u89C8\u5668\u4E0EHost\u5730\u5740\u7684\u4E13\u7528\u7F13\u5B58\u4E2D\uFF0C\u5237\u65B0\u53EF\u6062\u590D\u3002\u91CD\u65B0\u4E0B\u8F7D\u3001\u8D44\u6E90\u53D8\u5316\u6216\u5378\u8F7D\u4F1A\u91CD\u5EFA\u8FD0\u884C\u65F6\uFF1B\u5378\u8F7D\u540C\u65F6\u53D6\u6D88\u4E0B\u8F7D\u5E76\u5220\u9664\u7F13\u5B58\u3002\u7F3A\u5931\u3001\u5931\u8D25\u6216\u4E0D\u517C\u5BB9\u7684\u4F9D\u8D56\u4FDD\u7559\u9759\u6001\u754C\u9762\u5E76\u663E\u793A\u539F\u56E0\u3002\u4E0B\u8F7D\u5B8C\u6210\u4E14\u811A\u672C\u5F00\u542F\u5373\u53EF\u5728\u5F53\u524D\u7ED1\u5B9A\u4F7F\u7528\u53D8\u91CF\uFF1B\u5173\u95ED\u6216\u5378\u8F7D\u7ACB\u5373\u505C\u6B62\u3002",
   "rendering.sourceDisabled": "\u6765\u6E90\u5DF2\u7981\u7528\uFF1B\u4E0D\u4F1A\u8FD0\u884C\u3002",
   "rendering.source": "\u5B8C\u6574\u6E90\u4EE3\u7801",
   "rendering.unsaved": "\u5B58\u5728\u672A\u4FDD\u5B58\u4FEE\u6539\u6216\u4FDD\u5B58\u4ECD\u5728\u8FDB\u884C\u3002\u786E\u5B9A\u79BB\u5F00\u5E76\u653E\u5F03\u8349\u7A3F\uFF1F",
@@ -17649,7 +17643,7 @@ var zh_CN_default = Object.freeze({
   "appearance.apply": "\u5E94\u7528\u5E76\u4FDD\u5B58",
   "appearance.export": "\u5BFC\u51FA\u6837\u5F0F",
   "appearance.scripts": "\u542F\u7528\u53D7\u9650\u4EA4\u4E92\u5361\u811A\u672C",
-  "appearance.scriptHint": "\u652F\u6301\u5361\u7247\u5185\u6709\u9650\u4EA4\u4E92\uFF1B\u5916\u90E8 JS/\u6A21\u5757\u9700\u5728\u201C\u5916\u90E8\u4EE3\u7801\u201D\u9875\u5355\u72EC\u5BA1\u6838\u3002\u4EC5\u63D0\u4F9B\u7ED1\u5B9A\u4F5C\u7528\u57DF\u7684\u53EA\u8BFB\u53D8\u91CF\uFF0C\u4E0D\u517C\u5BB9\u5B8C\u6574\u52A9\u624B/MVU API\u3002\u53D1\u9001\u5EFA\u8BAE\u4ECD\u9700\u5361\u7247\u5916\u786E\u8BA4\u3002",
+  "appearance.scriptHint": "\u5DF2\u4E0B\u8F7D\u4E14\u5F00\u542F\u7684\u811A\u672C\u652F\u6301\u5361\u7247\u5185\u6709\u9650\u4EA4\u4E92\u548C\u5F53\u524D\u7ED1\u5B9A\u53D8\u91CF\u8BFB\u5199\uFF0C\u4E0D\u517C\u5BB9\u5B8C\u6574\u52A9\u624B/MVU API\u3002\u53D1\u9001\u5EFA\u8BAE\u4ECD\u9700\u5361\u7247\u5916\u786E\u8BA4\u3002",
   "appearance.editAvatar": "\u7F16\u8F91\u663E\u793A\u5934\u50CF",
   "appearance.avatarScopeHint": "\u53EA\u4FEE\u6539\u6B64\u5468\u76EE\u663E\u793A\uFF0C\u4E0D\u4FEE\u6539\u7528\u6237\u8D44\u6E90\u6216\u89D2\u8272\u5361\u6E90\u56FE\u3002\u6574\u5468\u76EE\u66FF\u6362\u4F1A\u6E05\u9664\u6B64\u89D2\u8272\u7684\u5355\u6761\u8986\u76D6\u3002",
   "appearance.scope": "\u5E94\u7528\u8303\u56F4",
@@ -17665,17 +17659,10 @@ var zh_CN_default = Object.freeze({
   "appearance.imageStatus": "\u56FE\u7247\uFF1A\u53EF\u89C1 {visible} \xB7 \u5DF2\u663E\u793A {loaded} \xB7 \u52A0\u8F7D\u4E2D {loading} \xB7 \u4E0D\u53EF\u7528 {failed}",
   "appearance.cardSendAccepted": "\u4EA4\u4E92\u5361\u7684\u53D1\u9001\u8BF7\u6C42\u5DF2\u53D7\u7406\u3002",
   "appearance.scriptsOff": "\u811A\u672C\u5C1A\u672A\u542F\u7528\uFF0C\u6216\u6D88\u606F\u4ECD\u5728\u751F\u6210\u3002\u5F53\u524D\u663E\u793A\u9759\u6001\u5185\u5BB9\u3002",
-  "rendering.writeTitle": "\u53D8\u91CF\u5199\u5165\u6743\u9650",
-  "rendering.writeBoundary": "\u9ED8\u8BA4\u4E0D\u5141\u8BB8\u5199\u5165\u3002\u5148\u6838\u5BF9\u5F53\u524D\u5361\u7247\u5B8C\u6574\u6267\u884C\u4EE3\u7801\uFF0C\u518D\u5355\u72EC\u6388\u6743\u6B64\u7ED1\u5B9A\u3002\u5386\u53F2\u4F5C\u7528\u57DF\u4ECD\u53EA\u8BFB\uFF0C\u6BCF\u6B21\u5199\u5165\u8FD8\u987B\u901A\u8FC7 MVU \u548C manager \u7B56\u7565\u3002\u64A4\u9500\u3001\u91CD\u6302\u6216\u4EE3\u7801\u53D8\u5316\u5747\u4E22\u5F03\u6B64\u6743\u9650\u3002",
-  "rendering.writeGranted": "\u5199\u6388\u6743\u6709\u6548",
-  "rendering.writeOff": "\u7981\u6B62\u5199\u5165",
-  "rendering.reviewBundle": "\u5DF2\u6838\u5BF9\u6574\u4E2A\u6267\u884C\u5305\u7684\u4EE3\u7801",
-  "rendering.allowWrites": "\u5141\u8BB8\u6B64\u7ED1\u5B9A\u5199\u5165\u53D8\u91CF",
-  "rendering.revokeWrites": "\u64A4\u9500\u53D8\u91CF\u5199\u5165",
   "rendering.adapterHelp": "\u5185\u7F6E\u517C\u5BB9\u8BF4\u660E",
-  "rendering.builtinMvu": "\u7531\u5185\u7F6E MVU \u517C\u5BB9\u5C42 v1 \u63D0\u4F9B\uFF0C\u5DF2\u5339\u914D\u7CBE\u786E URL\u3001\u5B57\u8282\u53CA\u652F\u6301\u7684\u8C03\u7528\u5F62\u5F0F\uFF0C\u4E0D\u6267\u884C\u539F\u6A21\u5757\u3002\u8BFB\u53D6\u4E0E\u63D0\u4EA4\u901A\u77E5\u9650\u5B9A\u672C\u7ED1\u5B9A\uFF1B\u5199\u5165\u9700\u72EC\u7ACB\u8BB8\u53EF\u3002\u5B8C\u6574 schema \u58F0\u660E\u8FD0\u884C\u524D\u4ECD\u987B\u5339\u914D\u540E\u7AEF\u539F\u6587\uFF0C\u4E0D\u63D0\u4F9B\u8FD0\u884C\u65F6 Zod\u3002",
-  "rendering.revokePending": "\u672C\u5730\u5199\u5165\u5DF2\u505C\u6B62\uFF1B\u670D\u52A1\u7AEF\u64A4\u9500\u5C1A\u672A\u786E\u8BA4\u3002",
-  "rendering.retryRevoke": "\u91CD\u8BD5\u670D\u52A1\u7AEF\u64A4\u9500",
+  "rendering.builtinMvu": "\u7531\u5185\u7F6E MVU \u517C\u5BB9\u5C42 v1 \u63D0\u4F9B\uFF0C\u5DF2\u5339\u914D\u7CBE\u786E URL\u3001\u5B57\u8282\u53CA\u652F\u6301\u7684\u8C03\u7528\u5F62\u5F0F\uFF0C\u4E0D\u6267\u884C\u539F\u6A21\u5757\u3002\u8BFB\u53D6\u4E0E\u63D0\u4EA4\u901A\u77E5\u9650\u5B9A\u672C\u7ED1\u5B9A\uFF1B\u5DF2\u4E0B\u8F7D\u4E14\u5F00\u542F\u7684\u811A\u672C\u53EF\u5199\u5165\u5F53\u524D\u7ED1\u5B9A\u53D8\u91CF\u3002\u5B8C\u6574 schema \u58F0\u660E\u8FD0\u884C\u524D\u4ECD\u987B\u5339\u914D\u540E\u7AEF\u539F\u6587\uFF0C\u4E0D\u63D0\u4F9B\u8FD0\u884C\u65F6 Zod\u3002",
+  "rendering.revokePending": "\u672C\u5730\u8FD0\u884C\u5DF2\u505C\u6B62\uFF1B\u670D\u52A1\u7AEF\u6E05\u7406\u5C1A\u672A\u5B8C\u6210\u3002",
+  "rendering.retryRevoke": "\u91CD\u8BD5\u6E05\u7406",
   "appearance.pauseCard": "\u6682\u505C\u5361\u7247",
   "appearance.restartCard": "\u542F\u52A8 / \u91CD\u542F\u5361\u7247",
   "appearance.runtimeEvidence": "\u8FD0\u884C\u6E90\u7801\u4E0E\u7F16\u8BD1\u8BC1\u636E",
@@ -17687,7 +17674,7 @@ var zh_CN_default = Object.freeze({
   "appearance.openingEntries": "\u67E5\u770B {count} \u4E2A\u5B8C\u6574\u6761\u76EE",
   "appearance.openingConfirm": "\u786E\u8BA4\u8865\u5165\u5F53\u524D\u5468\u76EE",
   "appearance.identityProposal": "\u786E\u8BA4\u6B64\u6B21\u8EAB\u4EFD\u9009\u62E9",
-  "appearance.identityScope": "\u67E5\u770B\u5B8C\u6574\u53D8\u91CF\u66FF\u6362\u548C\u5F85\u53D1\u9001\u7684\u5F00\u573A\u6587\u672C\u3002\u6B64\u6B21\u786E\u8BA4\u4F7F\u7528\u5F53\u524D\u5361\u5DF2\u6709\u7684\u53D8\u91CF\u5199\u5165\u6743\u9650\uFF1B\u53D1\u9001\u6587\u672C\u8FD8\u9700\u53E6\u884C\u786E\u8BA4\u3002",
+  "appearance.identityScope": "\u67E5\u770B\u5B8C\u6574\u53D8\u91CF\u66FF\u6362\u548C\u5F85\u53D1\u9001\u7684\u5F00\u573A\u6587\u672C\u3002\u786E\u8BA4\u540E\u66F4\u65B0\u5F53\u524D\u5F00\u573A\u7684\u53D8\u91CF\uFF1B\u53D1\u9001\u6587\u672C\u8FD8\u9700\u53E6\u884C\u786E\u8BA4\u3002",
   "appearance.identityCurrent": "\u5F53\u524D\u53D8\u91CF",
   "appearance.identityNormalized": "\u670D\u52A1\u7AEF\u9A8C\u8BC1\u540E\u7684\u9884\u671F\u53D8\u91CF",
   "appearance.identityRaw": "\u6B64\u6B21\u64CD\u4F5C\u63D0\u4EA4\u7684\u7CBE\u786E\u8F93\u5165",
@@ -18587,7 +18574,7 @@ var en_default = Object.freeze({
   "rendering.none": "No entries",
   "rendering.master": "Allow card scripts to run",
   "rendering.masterOff": "Paused. Static content and entry choices are preserved.",
-  "rendering.masterOn": "Run enabled scripts. External dependencies become available after download; variable writes need separate permission.",
+  "rendering.masterOn": "Run enabled scripts with downloaded dependencies and variables in their current binding.",
   "rendering.enableEntry": "Enable {name}",
   "rendering.disabled": "Disabled",
   "rendering.resetEntry": "Restore source default",
@@ -18598,7 +18585,7 @@ var en_default = Object.freeze({
   "rendering.bindingChanged": "The bound resource changed. The old draft is retained and cannot be saved. Export any draft you need, then reload the current resource.",
   "rendering.title": "External code and Helper",
   "rendering.boundary": "Download enabled sources and selected transitive dependencies: at most 128 files, 8 levels and 24 MiB. Supported exact URLs, bytes and invocation semantics automatically use the built-in compatibility layer. Mismatches show a reason; fetching the original graph requires choosing original-code mode. Only static HTTPS text is downloaded without credentials or redirects (CORS required). Cards gain no networking or Host tools. Expand entries to browse complete source.",
-  "rendering.lifetime": "Dependencies are cached for this browser and Host origin and restored on refresh. Downloading again, source changes and uninstalling rebuild runtimes. Uninstall cancels downloads and deletes the cache. Missing, failed or incompatible dependencies retain static content with an explanation. Variable writes remain separately authorized.",
+  "rendering.lifetime": "Dependencies are cached for this browser and Host origin and restored on refresh. Downloading again, source changes and uninstalling rebuild runtimes. Uninstall cancels downloads and deletes the cache. Missing, failed or incompatible dependencies retain static content with an explanation. Downloaded, enabled scripts can use variables in their current binding; disabling or uninstalling stops them.",
   "rendering.sourceDisabled": "Source disabled; it will not run.",
   "rendering.source": "Complete source code",
   "rendering.unsaved": "There are unsaved changes or a save is in progress. Leave and discard drafts?",
@@ -18644,7 +18631,7 @@ var en_default = Object.freeze({
   "appearance.apply": "Apply and save",
   "appearance.export": "Export style",
   "appearance.scripts": "Enable restricted interactive card scripts",
-  "appearance.scriptHint": "Supports limited card-local interaction. Review external JS/modules separately in External code. Only scoped read-only variables are provided; full Helper/MVU APIs are unsupported. Sending suggestions requires confirmation outside the card.",
+  "appearance.scriptHint": "Downloaded, enabled scripts support limited card-local interaction and bound variable operations; full Helper/MVU APIs are unsupported. Sending suggestions requires confirmation outside the card.",
   "appearance.editAvatar": "Edit display avatar",
   "appearance.avatarScopeHint": "Changes this playthrough only, leaving source resources intact. Replace all clears single-message overrides for this role.",
   "appearance.scope": "Scope",
@@ -18660,17 +18647,10 @@ var en_default = Object.freeze({
   "appearance.imageStatus": "Images: {visible} visible \xB7 {loaded} ready \xB7 {loading} loading \xB7 {failed} unavailable",
   "appearance.cardSendAccepted": "The card\u2019s send request was accepted.",
   "appearance.scriptsOff": "Scripts are disabled or the message is still streaming. Showing static content.",
-  "rendering.writeTitle": "Variable write permissions",
-  "rendering.writeBoundary": "Writes default off. Review the complete active card bundle, then separately authorize this exact binding. Historical scopes remain read-only; MVU and manager policies must also allow each write. Revoking, remounting or changing code discards this permission.",
-  "rendering.writeGranted": "Write grant active",
-  "rendering.writeOff": "Writes disabled",
-  "rendering.reviewBundle": "I reviewed all code in this bundle",
-  "rendering.allowWrites": "Allow variable writes for this binding",
-  "rendering.revokeWrites": "Revoke variable writes",
   "rendering.adapterHelp": "Built-in compatibility details",
-  "rendering.builtinMvu": "Provided by built-in MVU compatibility v1 after matching exact URL, bytes and supported invocation forms; the original module is not executed. Reads and committed notifications are scoped; writes require separate permission. Complete schema declarations still require exact backend source confirmation before running; runtime Zod is unsupported.",
-  "rendering.revokePending": "Local writes stopped; server revocation is not yet confirmed.",
-  "rendering.retryRevoke": "Retry server revocation",
+  "rendering.builtinMvu": "Provided by built-in MVU compatibility v1 after matching exact URL, bytes and supported invocation forms; the original module is not executed. Reads and committed notifications are scoped; writes follow downloaded/enabled execution in the current binding. Complete schema declarations still require exact backend source confirmation before running; runtime Zod is unsupported.",
+  "rendering.revokePending": "Local execution stopped; server cleanup is not yet complete.",
+  "rendering.retryRevoke": "Retry cleanup",
   "appearance.pauseCard": "Pause card",
   "appearance.restartCard": "Start / restart card",
   "appearance.runtimeEvidence": "Runtime source and compilation evidence",
@@ -18682,7 +18662,7 @@ var en_default = Object.freeze({
   "appearance.openingEntries": "Review {count} complete entries",
   "appearance.openingConfirm": "Add entries to this playthrough",
   "appearance.identityProposal": "Confirm this identity",
-  "appearance.identityScope": "Review the complete variable replacement and the unsent opening message. This confirmation uses the current card's existing write permission. Sending the message requires a separate confirmation.",
+  "appearance.identityScope": "Review the variable replacement and unsent opening message. Confirming updates this opening\u2019s variables; sending the message requires a separate confirmation.",
   "appearance.identityCurrent": "Current variables",
   "appearance.identityNormalized": "Expected variables after server validation",
   "appearance.identityRaw": "Exact input submitted for this operation",
@@ -20524,8 +20504,8 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
   const [sources, setSources] = (0, import_react2.useState)([]), [error, setError] = (0, import_react2.useState)(""), [version3, setVersion] = (0, import_react2.useState)(0);
   const [revision, setRevision] = (0, import_react2.useState)(renderingTrust.revision), [dependencyRevision, setDependencyRevision] = (0, import_react2.useState)(0);
   const generation = (0, import_react2.useRef)(0);
-  const [, setWriteRevision] = (0, import_react2.useState)(0);
-  (0, import_react2.useEffect)(() => renderingWriteRequests.subscribe(() => setWriteRevision((v2) => v2 + 1)), []);
+  const [, setExecutionRevision] = (0, import_react2.useState)(0);
+  (0, import_react2.useEffect)(() => renderingWriteRequests.subscribe(() => setExecutionRevision((v2) => v2 + 1)), []);
   const bindings = activeRegexBindings(activeSnapshot);
   (0, import_react2.useEffect)(() => renderingDependencies.subscribe(() => setDependencyRevision((value) => value + 1)), []);
   (0, import_react2.useEffect)(() => renderingTrust.subscribe(() => setRevision(renderingTrust.revision())), []);
@@ -20652,38 +20632,12 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     { className: "dtv-rendering-settings", "data-revision": revision + "-" + dependencyRevision },
     (0, import_react2.createElement)("style", null, renderingSettingsStyles),
     (0, import_react2.createElement)("h3", null, translate("rendering.title")),
-    (0, import_react2.createElement)("label", { className: "dtv-script-control" }, (0, import_react2.createElement)("input", { type: "checkbox", checked: settings.interactiveCards === true, disabled: busy2 || !update, onChange: (event) => update({ ...settings, interactiveCards: event.target.checked }) }), translate("rendering.master")),
-    (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate(settings.interactiveCards === true ? "rendering.masterOn" : "rendering.masterOff")),
+    (0, import_react2.createElement)("label", { className: "dtv-script-control" }, (0, import_react2.createElement)("input", { type: "checkbox", checked: settings.interactiveCards !== false, disabled: busy2 || !update, onChange: (event) => update({ ...settings, interactiveCards: event.target.checked }) }), translate("rendering.master")),
+    (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate(settings.interactiveCards !== false ? "rendering.masterOn" : "rendering.masterOff")),
     status?.text ? (0, import_react2.createElement)("p", { className: "dtv-script-meta", role: status.error ? "alert" : "status" }, status.text) : null,
     (0, import_react2.createElement)("section", { className: "dtv-script-group" }, (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.cardScripts")), help(translate("rendering.safetyDetails"), translate("rendering.enablementHelp"))), ...helpers.map(renderHelper), !helpers.length ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
     (0, import_react2.createElement)("section", { className: "dtv-script-group" }, (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.dependencies")), help(translate("rendering.safetyDetails"), translate("rendering.boundary"))), ...owners.map(renderGraph), !owners.length ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
-    (0, import_react2.createElement)(
-      "section",
-      { className: "dtv-script-group dtv-script-operations" },
-      (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.operations")), help(translate("rendering.safetyDetails"), translate("rendering.lifetime"))),
-      ...renderingWriteRequests.listRevocations().map((item) => (0, import_react2.createElement)("div", { key: item.id, role: "alert" }, (0, import_react2.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""), (0, import_react2.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke")))),
-      (0, import_react2.createElement)(
-        "details",
-        { className: "dtv-script-group dtv-write-permissions" },
-        (0, import_react2.createElement)("summary", null, translate("rendering.writeTitle"), " \xB7 ", translate(renderingWriteRequests.list().some((entry) => entry.granted) ? "rendering.writeGranted" : "rendering.writeOff")),
-        (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, help(translate("rendering.writeTitle"), translate("rendering.writeBoundary"))),
-        ...renderingWriteRequests.list().map((entry) => (0, import_react2.createElement)(
-          "details",
-          { key: entry.id, className: "dtv-write-review" },
-          (0, import_react2.createElement)("summary", null, entry.sourceIdentity?.scope?.nodeId ?? entry.id, " \xB7 ", translate(entry.granted ? "rendering.writeGranted" : "rendering.writeOff")),
-          (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, "SHA-256: ", entry.sourceIdentity?.sha256 ?? translate("common.loading")),
-          sourceView(entry.source),
-          (0, import_react2.createElement)(
-            "div",
-            { className: "dtv-script-actions" },
-            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: !entry.sourceIdentity || entry.reviewed, onClick: () => run(() => renderingWriteRequests.review(entry.id)) }, translate("rendering.reviewBundle")),
-            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: !entry.reviewed || entry.granted, onClick: () => run(() => renderingWriteRequests.authorize(entry.id)) }, translate("rendering.allowWrites")),
-            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => renderingWriteRequests.revoke(entry.id) }, translate("rendering.revokeWrites"))
-          ),
-          entry.error ? (0, import_react2.createElement)("p", { role: "alert" }, entry.error) : null
-        ))
-      )
-    ),
+    ...renderingWriteRequests.listRevocations().map((item) => (0, import_react2.createElement)("div", { key: item.id, role: "alert" }, (0, import_react2.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""), (0, import_react2.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke")))),
     error ? (0, import_react2.createElement)("p", { role: "alert" }, error) : null
   );
 }
@@ -28616,7 +28570,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
   }, notifyVariables: (value) => send("variables", value) };
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/dompurify/dist/purify.es.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/dompurify/dist/purify.es.mjs
 function _OverloadYield(e, d2) {
   this.v = e, this.k = d2;
 }
@@ -30614,7 +30568,7 @@ function restrictStaticResources(fragment, { liveImages = false } = {}) {
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/marked/lib/marked.esm.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/marked/lib/marked.esm.js
 function C() {
   return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
 }
@@ -31986,7 +31940,7 @@ function mountStyledHtml(element) {
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/katex/dist/katex.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/katex/dist/katex.mjs
 var ParseError = class _ParseError extends Error {
   // The underlying error message without any context added.
   constructor(message, token) {
@@ -46798,7 +46752,7 @@ var RichText = (0, import_react18.memo)(function RichText2({ text: text3, classN
   });
 });
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/index.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/quickjs-emscripten-core/dist/index.mjs
 init_dist();
 async function newQuickJSWASMModuleFromVariant(variantOrPromise) {
   let variant2 = smartUnwrap(await variantOrPromise), [wasmModuleLoader, QuickJSFFI2, { QuickJSWASMModule: QuickJSWASMModule2 }] = await Promise.all([variant2.importModuleLoader().then(smartUnwrap), variant2.importFFI(), Promise.resolve().then(() => (init_module_6F3E5H7Y(), module_6F3E5H7Y_exports)).then(smartUnwrap)]), wasmModule = await wasmModuleLoader();
@@ -46810,7 +46764,7 @@ function smartUnwrap(val) {
   return val && "default" in val && val.default ? val.default && "default" in val.default && val.default.default ? val.default.default : val.default : val;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/index.mjs
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/index.mjs
 var variant = { type: "sync", importFFI: () => Promise.resolve().then(() => (init_ffi(), ffi_exports)).then((mod) => mod.QuickJSFFI), importModuleLoader: () => Promise.resolve().then(() => (init_emscripten_module_browser_VTL2UBYQ(), emscripten_module_browser_VTL2UBYQ_exports)).then((mod) => mod.default) };
 var src_default = variant;
 
@@ -47445,7 +47399,7 @@ function createFixedIdentityActionModel(source) {
 // packages/mvu-adapter/src/data.js
 var import_json5 = __toESM(require_dist(), 1);
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/identity.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/identity.js
 var ALIAS = /* @__PURE__ */ Symbol.for("yaml.alias");
 var DOC = /* @__PURE__ */ Symbol.for("yaml.document");
 var MAP = /* @__PURE__ */ Symbol.for("yaml.map");
@@ -47481,7 +47435,7 @@ function isNode(node) {
 }
 var hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/visit.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/visit.js
 var BREAK = /* @__PURE__ */ Symbol("break visit");
 var SKIP = /* @__PURE__ */ Symbol("skip children");
 var REMOVE = /* @__PURE__ */ Symbol("remove node");
@@ -47631,7 +47585,7 @@ function replaceNode2(key2, path3, node) {
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/directives.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/directives.js
 var escapeChars = {
   "!": "%21",
   ",": "%2C",
@@ -47794,7 +47748,7 @@ var Directives = class _Directives {
 Directives.defaultYaml = { explicit: false, version: "1.2" };
 Directives.defaultTags = { "!!": "tag:yaml.org,2002:" };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/anchors.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/anchors.js
 function anchorIsValid(anchor) {
   if (/[\x00-\x19\s,[\]{}]/.test(anchor)) {
     const sa = JSON.stringify(anchor);
@@ -47804,7 +47758,7 @@ function anchorIsValid(anchor) {
   return true;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/applyReviver.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/applyReviver.js
 function applyReviver(reviver, obj, key2, val) {
   if (val && typeof val === "object") {
     if (Array.isArray(val)) {
@@ -47848,7 +47802,7 @@ function applyReviver(reviver, obj, key2, val) {
   return reviver.call(obj, key2, val);
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/toJS.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/toJS.js
 function toJS(value, arg, ctx) {
   if (Array.isArray(value))
     return value.map((v2, i3) => toJS(v2, String(i3), ctx));
@@ -47871,7 +47825,7 @@ function toJS(value, arg, ctx) {
   return value;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Node.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Node.js
 var NodeBase = class {
   constructor(type) {
     Object.defineProperty(this, NODE_TYPE2, { value: type });
@@ -47903,7 +47857,7 @@ var NodeBase = class {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Alias.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Alias.js
 var Alias = class extends NodeBase {
   constructor(source) {
     super(ALIAS);
@@ -48010,7 +47964,7 @@ function getAliasCount(doc, node, anchors) {
   return 1;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Scalar.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Scalar.js
 var isScalarValue = (value) => !value || typeof value !== "function" && typeof value !== "object";
 var Scalar = class extends NodeBase {
   constructor(value) {
@@ -48030,7 +47984,7 @@ Scalar.PLAIN = "PLAIN";
 Scalar.QUOTE_DOUBLE = "QUOTE_DOUBLE";
 Scalar.QUOTE_SINGLE = "QUOTE_SINGLE";
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/createNode.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/doc/createNode.js
 var defaultTagPrefix = "tag:yaml.org,2002:";
 function findTagObject(value, tagName, tags) {
   if (tagName) {
@@ -48096,7 +48050,7 @@ function createNode(value, tagName, ctx) {
   return node;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Collection.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Collection.js
 function collectionFromPath(schema5, path3, value) {
   let v2 = value;
   for (let i3 = path3.length - 1; i3 >= 0; --i3) {
@@ -48228,7 +48182,7 @@ var Collection = class extends NodeBase {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyComment.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyComment.js
 var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
 function indentComment(comment, indent) {
   if (/^\n+$/.test(comment))
@@ -48237,7 +48191,7 @@ function indentComment(comment, indent) {
 }
 var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
 var FOLD_FLOW = "flow";
 var FOLD_BLOCK = "block";
 var FOLD_QUOTED = "quoted";
@@ -48364,7 +48318,7 @@ function consumeMoreIndentedLines(text3, i3, indent) {
   return end;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyString.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyString.js
 var getFoldOptions = (ctx, isBlock) => ({
   indentAtStart: isBlock ? ctx.indent.length : ctx.indentAtStart,
   lineWidth: ctx.options.lineWidth,
@@ -48639,7 +48593,7 @@ function stringifyString(item, ctx, onComment, onChompKeep) {
   return res;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringify.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringify.js
 function createStringifyContext(doc, options) {
   const opt = Object.assign({
     blockQuote: true,
@@ -48752,7 +48706,7 @@ function stringify(item, ctx, onComment, onChompKeep) {
 ${ctx.indent}${str}`;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyPair.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyPair.js
 function stringifyPair({ key: key2, value }, ctx, onComment, onChompKeep) {
   const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
   let keyComment = isNode(key2) && key2.comment || null;
@@ -48875,14 +48829,14 @@ ${ctx.indent}`;
   return str;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/log.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/log.js
 function warn(logLevel, warning) {
   if (logLevel === "debug" || logLevel === "warn") {
     console.warn(warning);
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
 var MERGE_KEY = "<<";
 var merge = {
   identify: (value) => value === MERGE_KEY || typeof value === "symbol" && value.description === MERGE_KEY,
@@ -48932,7 +48886,7 @@ function resolveAliasValue(ctx, value) {
   return ctx && isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
 function addPairToJSMap(ctx, map2, { key: key2, value }) {
   if (isNode(key2) && key2.addToJSMap)
     key2.addToJSMap(ctx, map2, value);
@@ -48985,7 +48939,7 @@ function stringifyKey(key2, jsKey, ctx) {
   return JSON.stringify(jsKey);
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Pair.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/Pair.js
 function createPair(key2, value, ctx) {
   const k = createNode(key2, void 0, ctx);
   const v2 = createNode(value, void 0, ctx);
@@ -49014,7 +48968,7 @@ var Pair = class _Pair {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
 function stringifyCollection(collection, ctx, options) {
   const flow = ctx.inFlow ?? collection.flow;
   const stringify4 = flow ? stringifyFlowCollection : stringifyBlockCollection;
@@ -49156,7 +49110,7 @@ function addCommentBefore({ indent, options: { commentString } }, lines, comment
   }
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLMap.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLMap.js
 function findPair(items2, key2) {
   const k = isScalar(key2) ? key2.value : key2;
   for (const it2 of items2) {
@@ -49287,7 +49241,7 @@ var YAMLMap = class extends Collection {
   }
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/map.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/map.js
 var map = {
   collection: "map",
   default: true,
@@ -49301,7 +49255,7 @@ var map = {
   createNode: (schema5, obj, ctx) => YAMLMap.from(schema5, obj, ctx)
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
 var YAMLSeq = class extends Collection {
   static get tagName() {
     return "tag:yaml.org,2002:seq";
@@ -49405,7 +49359,7 @@ function asItemIndex(key2) {
   return typeof idx === "number" && Number.isInteger(idx) && idx >= 0 ? idx : null;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/seq.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/common/seq.js
 var seq = {
   collection: "seq",
   default: true,
@@ -49419,7 +49373,7 @@ var seq = {
   createNode: (schema5, obj, ctx) => YAMLSeq.from(schema5, obj, ctx)
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/json/schema.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/json/schema.js
 function intIdentify(value) {
   return typeof value === "bigint" || Number.isInteger(value);
 }
@@ -49477,7 +49431,7 @@ var jsonError = {
 };
 var schema2 = [map, seq].concat(jsonScalars, jsonError);
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
 function createPairs(schema5, iterable, ctx) {
   const { replacer } = ctx;
   const pairs2 = new YAMLSeq(schema5);
@@ -49510,7 +49464,7 @@ function createPairs(schema5, iterable, ctx) {
   return pairs2;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
 var YAMLOMap = class _YAMLOMap extends YAMLSeq {
   constructor() {
     super();
@@ -49554,7 +49508,7 @@ var YAMLOMap = class _YAMLOMap extends YAMLSeq {
 };
 YAMLOMap.tag = "tag:yaml.org,2002:omap";
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
 var YAMLSet = class _YAMLSet extends YAMLMap {
   constructor(schema5) {
     super(schema5);
@@ -49615,7 +49569,7 @@ var YAMLSet = class _YAMLSet extends YAMLMap {
 };
 YAMLSet.tag = "tag:yaml.org,2002:set";
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
 function parseSexagesimal(str, asBigInt) {
   const sign = str[0];
   const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
@@ -49650,7 +49604,7 @@ var timestamp2 = {
   stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
 };
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/cst-visit.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/cst-visit.js
 var BREAK2 = /* @__PURE__ */ Symbol("break visit");
 var SKIP2 = /* @__PURE__ */ Symbol("skip children");
 var REMOVE2 = /* @__PURE__ */ Symbol("remove item");
@@ -49706,7 +49660,7 @@ function _visit(path3, item, visitor) {
   return typeof ctrl === "function" ? ctrl(item, path3) : ctrl;
 }
 
-// ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/lexer.js
+// ../../../../../../../../private/tmp/dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/parse/lexer.js
 var hexDigits = new Set("0123456789ABCDEFabcdef");
 var tagChars = new Set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$_.!~*'()");
 var flowIndicatorChars = new Set(",[]{}");
@@ -50810,15 +50764,33 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
           variableWriteScope = initialWriteViewScope(writeScope, activeBinding?.getSnapshot());
         } catch {
         }
-        if (variableWriteScope) writeRequest = renderingWriteRequests.register({ scope: variableWriteScope, owners, runs: data3.runs, modules: data3.modules, html: data3.html, adapters: data3.adapters, schemaDeclarations: data3.schemaDeclarations, onRevoke: revokeWrites });
-        const ensureWriteBinding = async () => {
-          const grant = writeRequest?.getGrant();
-          if (!grant) throw Object.assign(Error("Variable writes require separate authorization in conversation settings"), { code: "MVU_WRITE_DENIED" });
+        if (variableWriteScope) writeRequest = renderingWriteRequests.register({ scope: variableWriteScope, owners, runs: data3.runs, modules: data3.modules, html: data3.html, adapters: data3.adapters, schemaDeclarations: data3.schemaDeclarations, downloaded: true, enabled: true, onRevoke: revokeWrites });
+        const ensureWriteBinding = async (refresh = false) => {
+          if (!writeRequest) throw Object.assign(Error("Card variables are not writable in this view"), { code: "MVU_READ_ONLY" });
+          if (refresh) {
+            writeEpoch++;
+            writeController?.abort();
+            writeBinding?.dispose();
+            writeBinding = null;
+            writeLoading = null;
+            await writeRequest.renew();
+          }
           if (!writeBinding) {
             if (!writeLoading) {
               const pendingController = new AbortController();
               writeController = pendingController;
-              writeLoading = createBinding(pendingController.signal, grant).then((next) => {
+              writeLoading = (async () => {
+                let grant = await writeRequest.getGrant();
+                pendingController.signal.throwIfAborted();
+                let next;
+                try {
+                  next = await createBinding(pendingController.signal, grant);
+                } catch (error2) {
+                  if (error2.code !== "MVU_WRITE_DENIED" || pendingController.signal.aborted || cleaned) throw error2;
+                  grant = await writeRequest.renew();
+                  pendingController.signal.throwIfAborted();
+                  next = await createBinding(pendingController.signal, grant);
+                }
                 if (pendingController.signal.aborted || cleaned) {
                   next.dispose();
                   throw Error("Variable write binding cancelled");
@@ -50829,19 +50801,20 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
                 writeBinding = next;
                 stopVariables = next.subscribe((snapshot) => virtualRuntime?.notifyVariables(snapshot));
                 return next;
-              }).finally(() => {
+              })().finally(() => {
                 if (writeController === pendingController) writeLoading = null;
               });
             }
             await writeLoading;
           }
+          if (cleaned || !writeBinding) throw Error("Card execution stopped");
           return writeBinding;
         };
         if (data3.identitySource && openingBridge.current) identityBridge.current = createIdentityActionBridge({
           model: createFixedIdentityActionModel(data3.identitySource),
           prepareBinding: async () => {
-            const bound = await ensureWriteBinding(), epoch = writeEpoch, grantKey = JSON.stringify(writeRequest.getGrant());
-            return { binding: bound, messageLease: { generation: current4, revision: proposalVersion.current }, isCurrent: () => !cleaned && !controller2.signal.aborted && current4 === generation.current && epoch === writeEpoch && writeBinding === bound && JSON.stringify(writeRequest?.getGrant()) === grantKey };
+            const bound = await ensureWriteBinding(), epoch = writeEpoch, grantKey = JSON.stringify(writeRequest.peekGrant());
+            return { binding: bound, messageLease: { generation: current4, revision: proposalVersion.current }, isCurrent: () => !cleaned && !controller2.signal.aborted && current4 === generation.current && epoch === writeEpoch && writeBinding === bound && JSON.stringify(writeRequest?.peekGrant()) === grantKey };
           },
           onState: (value) => {
             if (!cleaned && current4 === generation.current) setIdentityProposal(value);
@@ -50960,7 +50933,16 @@ var InteractiveCard = (0, import_react20.memo)(function InteractiveCard2({ sourc
               signal?.throwIfAborted();
               const snapshot = writeBinding.getSnapshot();
               if (options !== null && options !== void 0 && (typeof options !== "object" || Array.isArray(options) || Object.keys(options).some((key2) => !["type", "message_id"].includes(key2)) || options.type !== void 0 && options.type !== "message" || options.message_id !== void 0 && options.message_id !== snapshot.scope?.messageId)) throw Error("Variable scope is bound to this card");
-              const result = await writeBinding.write({ operation, value, expectedRevision: observedRevision, operationId, cause, signal: signal ? AbortSignal.any([signal, writeController.signal]) : writeController.signal });
+              const submit = () => writeBinding.write({ operation, value, expectedRevision: observedRevision, operationId, cause, signal: signal ? AbortSignal.any([signal, writeController.signal]) : writeController.signal });
+              let result;
+              try {
+                result = await submit();
+              } catch (error2) {
+                if (error2.code !== "MVU_WRITE_DENIED" || signal?.aborted || cleaned || current4 !== generation.current) throw error2;
+                await ensureWriteBinding(true);
+                signal?.throwIfAborted();
+                result = await submit();
+              }
               if (cleaned || current4 !== generation.current) throw Error("Variable write cancelled");
               setError("");
               return result;
@@ -51150,7 +51132,7 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
       "div",
       { className: `dtv-play-chat-bubble dtv-play-chat-${role2}`, style: textBubbleStyle },
       (0, import_react21.createElement)("div", { style: { textAlign: role2 === "user" ? "right" : "left", font: "600 11px system-ui", opacity: 0.65, marginBottom: 6 } }, name2),
-      (0, import_react21.createElement)(MessageContent, { text: text3, writeScope, composer: disabled || context?.busy ? null : context?.composer, createBinding: boundScope ? (signal, writeGrant) => createMvuCardBinding({ client: context.playClient, scope: writeGrant ? writeGrantScope(writeScope, writeGrant) : boundScope, signal, writeGrant }) : void 0, owners: [context?.state?.display?.globalRenderingOwner, ...Object.entries(context?.state?.display?.bindings ?? {}).filter(([, id]) => typeof id === "string" && id).map(([kind, id]) => `${kind === "characterId" ? "character" : "preset"}:${id}`)].filter(Boolean), helpers: (context?.state?.display?.renderingSources ?? []).filter((item) => item.kind === "helper"), enabled: settings.interactiveCards === true && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id, context?.sessionId, messageKey, boundScope, writeScope]), context: { version: 1, role: role2, userName: context?.state?.display?.macros?.user ?? "User", characterName: context?.state?.display?.macros?.character ?? "Assistant", boundGreeting: greetingBinding ? boundGreetingView({ state: context?.state, scope: boundScope, disabled: context?.disabled }) : null }, onSend: disabled || context?.busy ? void 0 : async (text4, options) => {
+      (0, import_react21.createElement)(MessageContent, { text: text3, writeScope, composer: disabled || context?.busy ? null : context?.composer, createBinding: boundScope ? (signal, writeGrant) => createMvuCardBinding({ client: context.playClient, scope: writeGrant ? writeGrantScope(writeScope, writeGrant) : boundScope, signal, writeGrant }) : void 0, owners: [context?.state?.display?.globalRenderingOwner, ...Object.entries(context?.state?.display?.bindings ?? {}).filter(([, id]) => typeof id === "string" && id).map(([kind, id]) => `${kind === "characterId" ? "character" : "preset"}:${id}`)].filter(Boolean), helpers: (context?.state?.display?.renderingSources ?? []).filter((item) => item.kind === "helper"), enabled: settings.interactiveCards !== false && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id, context?.sessionId, messageKey, boundScope, writeScope]), context: { version: 1, role: role2, userName: context?.state?.display?.macros?.user ?? "User", characterName: context?.state?.display?.macros?.character ?? "Assistant", boundGreeting: greetingBinding ? boundGreetingView({ state: context?.state, scope: boundScope, disabled: context?.disabled }) : null }, onSend: disabled || context?.busy ? void 0 : async (text4, options) => {
         await context.playClient.postUserMessage(context.sessionId, text4, options);
         context.changed?.();
       } })
@@ -54380,7 +54362,7 @@ function PlaySessionDock({ session, useSessions, useConversation, useInput, inpu
       composer,
       writeScope: content.initialScope,
       createBinding: content.greetingScope ? (signal, writeGrant) => createMvuCardBinding({ client: playClient, scope: writeGrant ? content.initialScope : content.greetingScope, signal, writeGrant }) : void 0,
-      enabled: displaySettings.interactiveCards === true,
+      enabled: displaySettings.interactiveCards !== false,
       scopeKey: JSON.stringify([sessionId, content.playthrough.id, "greeting", greeting.index, content.greetingScope, content.initialScope]),
       owners: [content.display?.globalRenderingOwner, ...Object.entries(content.display?.bindings ?? {}).filter(([, id]) => typeof id === "string" && id).map(([kind, id]) => `${kind === "characterId" ? "character" : "preset"}:${id}`)].filter(Boolean),
       helpers: (content.display?.renderingSources ?? []).filter((item) => item.kind === "helper"),

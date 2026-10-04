@@ -552,7 +552,7 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 | PUT | `/conversation-settings` | 请求：`{ textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement?, renderingAdapters? }`；返回：同 GET | 已实现 |
 | DELETE | `/conversation-settings` | 请求：无；返回：恢复两个字段为 `1` | 已实现 |
 
-`scriptEnablement` 保存普通本地选择，格式为 `{ schemaVersion: 1, entries: [{ owner, key, enabled }] }`，最多 128 条。owner 使用角色/预设资源 ID；全局依赖使用规范 RP 工作区的 SHA-256 身份。Helper 优先使用原条目唯一 ID，否则按源码 SHA-256 标识唯一内容；重复源码只有名称唯一时才使用源码与名称摘要组合，排序不参与身份。无 ID 源码或用于区分的名称变化后继承来源默认；仍无法区分的重复条目不支持逐条保存覆盖，保持各自来源默认，需先在原卡添加唯一 ID。新资源 ID 与原卡导出不携带本地选择。省略或 DELETE 清除覆盖；外观页的恢复默认操作保留脚本选择及总开关。此设置不持久化内容授权或写许可；来源或选择变化须更新选定依赖，变量写入独立授权。
+`scriptEnablement` 保存普通本地选择，格式为 `{ schemaVersion: 1, entries: [{ owner, key, enabled }] }`，最多 128 条。owner 使用角色/预设资源 ID；全局依赖使用规范 RP 工作区的 SHA-256 身份。Helper 优先使用原条目唯一 ID，否则按源码 SHA-256 标识唯一内容；重复源码只有名称唯一时才使用源码与名称摘要组合，排序不参与身份。无 ID 源码或用于区分的名称变化后继承来源默认；仍无法区分的重复条目不支持逐条保存覆盖，保持各自来源默认，需先在原卡添加唯一 ID。新资源 ID 与原卡导出不携带本地选择。省略或 DELETE 清除覆盖；外观页的恢复默认操作保留脚本选择及总开关。此设置仅持久化开关选择；来源或选择变化须更新选定依赖。已下载且开启的脚本可读写当前绑定变量，内部执行绑定不持久化。
 
 `renderingAdapters` 保存普通兼容模式覆盖，格式为 `{ schemaVersion: 1, entries: [{ owner, source, mode }] }`，最多 128 条；`source` 为 HTTPS 来源，`mode` 为 `builtin` 或 `original`。省略条目默认自动匹配精确 URL、字节与支持的调用语义，`builtin` 明确要求兼容映射、不支持时停止，`original` 选择原代码图。此偏好不含审批、摘要、源码或写许可；仅在下载并核验支持字节后提供兼容映射。owner 隔离、复制不继承，外观恢复保留此偏好，省略或 DELETE 清除覆盖。
 
@@ -656,13 +656,13 @@ Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 
 第三方 DSH 插件、独立 Web 客户端、surface 所有权、原子动作组合与卸载降级的完整说明见 [FRONTEND_INTEGRATION_zh-CN.md](FRONTEND_INTEGRATION_zh-CN.md)。当前没有配置文件一键替换魔丸、frontend provider registry 或动态 bundle loader。
 
-## 渲染写授权原语
+## 渲染执行绑定
 
-源码/写入授权独立于 MVU 的变量存储与 manager 策略；当前 API 未有授予卡代码能力的接口，因此增加精确执行包租约，不提供脚本通用 fetch 或变量写代理。
+这些内部路由把可用且已开启的卡片执行绑定到准确源码和 scope，不建立用户层面的批准状态。
 
-| 方法 | 路径（v1） | 作用 | 状态 |
+| 方法 | 路径（v1 下） | 输入／结果 | 状态 |
 | --- | --- | --- | --- |
-| POST | `/rendering-write-grants` | 可信设置页提交 `{source,sourceIdentity,reviewed:true,write:true}`；source 是完整执行包 JSON 文本，identity 为 `{version:1,sha256,scope}`。Host 重算 SHA-256；返回 `{ok:true,grantId,sourceIdentity,expiresAt}` | 200；格式/身份不符 400；超限 413 |
-| DELETE | `/rendering-write-grants/:grantId` | 永久撤销此租约；重复撤销幂等 | 200 |
+| POST | `/rendering-write-grants` | 可信渲染器提交 `{source,sourceIdentity,downloaded:true,enabled:true}`；source 为完整执行包 JSON，identity 为 `{version:1,sha256,scope}`。Host 重算 SHA-256，返回 `{ok:true,grantId,sourceIdentity}` | 200；格式／身份不符 400；超限 413 |
+| DELETE | `/rendering-write-grants/:grantId` | 停止内部绑定；重复删除幂等 | 200 |
 
-两条写路由沿用本机 peer、Host、Origin/桌面 token 与 JSON 媒体类型检查。Host 服务 `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent(request)` 用于 MVU 最终事务提交前检查。授权最多 64 项、30 分钟有效，loader 卸载全部撤销，不落盘；审批不会替代 MVU 的当前头/CAS/幂等/manager 验证。
+沿用本机 peer、Host、Origin／桌面 token、JSON 媒体类型与 DSH admission 检查。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent` 在 MVU 最终提交前复核。内存最多保留 64 个活动绑定，不保存源码正文；没有批准到期期限，卸载全部清除。脚本开关与运行时清理撤销旧绑定，刷新时从持久下载缓存自动建立当前新绑定。scope、来源 schema、CAS 与幂等仍保留。原生卡片变量发出事实供 manager 观察；manager 的模型/store/retrieve 策略保持独立。详见 [MVU](MVU.md)。

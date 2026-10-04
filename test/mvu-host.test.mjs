@@ -176,7 +176,7 @@ test('real Host empty greeting binding writes state used by the first model requ
     const scope = { mode: 'initial', playthroughId: 'opening', sessionId: agent.id, characterId: 'opening-card', sessionFormatVersion: agent.session.header.version }
     const source = JSON.stringify({ version: 1, scope, runs: [], modules: {}, html: '<div>Synthetic opening</div>' })
     const sourceIdentity = { version: 1, sha256: createHash('sha256').update(source).digest('hex'), scope }
-    const { grantId } = ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, reviewed: true, write: true })
+    const { grantId } = ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, downloaded: true, enabled: true })
     service.registerUsage(request => request.on === 'card_variable_update' ? { enabled: true, configRevision: 1, checkCurrent: () => true } : undefined)
     service.observe(fact => facts.push(fact))
     assert.equal((await service.snapshot(scope)).variables.stat_data.hp, 10)
@@ -271,7 +271,7 @@ test('official persisted empty session resumes through resolveAgent, while resum
     assert.deepEqual(resumed.session.snapshotEvents().find(event => event.type === 'model/selection').data, { provider: 'resume-test', model: 'test' })
     const source = JSON.stringify({ version: 1, scope, runs: [], modules: {}, html: '<div>Synthetic resume</div>' })
     const sourceIdentity = { version: 1, sha256: createHash('sha256').update(source).digest('hex'), scope }
-    const { grantId } = second.ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, reviewed: true, write: true })
+    const { grantId } = second.ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, downloaded: true, enabled: true })
     second.service.registerUsage(() => ({ enabled: true, checkCurrent: () => true }))
     const oldBinding = await second.service.createCardBinding({ scope, sourceIdentity, grantId })
     await second.ctx.sessionController.selectModel({ sessionId, provider: 'resume-test', model: 'test' })

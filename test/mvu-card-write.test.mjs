@@ -21,15 +21,14 @@ async function fixture(t) {
   service.inspect = async () => ({ header: { id: 's', version: 4 }, events })
   return { service, scope, sourceIdentity, facts, grant: () => { granted = true }, revoke: () => { granted = false }, leave: () => { active = false }, bind: () => service.createCardBinding({ scope, grantId: 'grant', sourceIdentity }) }
 }
-test('card writes require separate grant, active binding, manager policy, CAS and idempotency', async t => {
+test('downloaded enabled card writes retain binding/CAS/idempotency without a manager permission gate', async t => {
   const f = await fixture(t), { service, scope } = f
   await assert.rejects(f.bind(), { code: 'MVU_WRITE_DENIED' })
   f.grant(); const { capability } = await f.bind()
   await service.setManagementMode({ id: 'mvu:card', mode: 'managed', scope: { sessionId: 's' }, expectedRevision: 1, operationId: 'manage' })
   const request = { capability, operation: 'patch', value: [{ op: 'delta', path: '/hp', value: -2 }], expectedRevision: 2, operationId: 'click', cause: 'user-interaction' }
-  await assert.rejects(service.cardWrite(request), { code: 'MVU_USAGE_DENIED' })
-  assert.ok(f.facts.some(e => e.phase === 'skipped' && e.on === 'card_variable_update'))
-  const stop = service.registerUsage(input => { assert.equal(input.on, 'card_variable_update'); assert.equal(input.event.cause, 'user-interaction'); return { enabled: true, configRevision: 4, checkCurrent: () => true, strategy: ['validate_card_update', 'apply_card_update'] } })
+  let policyCalls=0
+  const stop=service.registerUsage(()=>{policyCalls++;return {enabled:false,reason:'config-unavailable'}})
   const result = await service.cardWrite(request)
   assert.equal(result.variables.stat_data.hp, 7); assert.equal(result.revision, 3)
   assert.deepEqual(await service.cardWrite(request), result)
@@ -37,7 +36,9 @@ test('card writes require separate grant, active binding, manager policy, CAS an
   assert.equal((await service.snapshot(scope)).variables.stat_data.hp, 7)
   await assert.rejects(service.cardWrite({ ...request, operationId: 'stale' }), { code: 'REVISION_CONFLICT' })
   await assert.rejects(service.cardWrite({ ...request, value: [], expectedRevision: 3 }), { code: 'MVU_IDEMPOTENCY_CONFLICT' })
-  stop(); await assert.rejects(service.cardWrite({ ...request, operationId: 'removed', expectedRevision: 3 }), { code: 'MVU_USAGE_DENIED' })
+  assert.equal(policyCalls,0);stop()
+  const continued=await service.cardWrite({ ...request,operationId:'removed',expectedRevision:3 });assert.equal(continued.variables.stat_data.hp,5)
+  assert.ok(f.facts.filter(e=>e.phase==='applied').every(e=>e.configRevision===null))
   f.revoke(); await assert.rejects(service.cardWrite(request), { code: 'MVU_WRITE_DENIED' })
 })
 test('replace preserves source schema and historical or revoked bindings cannot write', async t => {
@@ -50,12 +51,13 @@ test('replace preserves source schema and historical or revoked bindings cannot 
   f.service.revokeCardBinding(capability)
   await assert.rejects(f.service.cardWrite(request), { code: 'MVU_WRITE_DENIED' })
 })
-test('card cancellation and authority removal while policy awaits leave no candidate commit', async t => {
+test('card cancellation and disabling while scope resolution awaits leave no candidate commit', async t => {
   for (const revoke of [false, true]) {
     const f = await fixture(t); f.grant(); f.service.registerUsage(() => ({ enabled: true, checkCurrent: () => true })); const { capability } = await f.bind()
     let release, entered
     const ready = new Promise(resolve => { entered = resolve })
-    f.service.registerUsage(async () => { entered(); await new Promise(resolve => { release = resolve }); return { enabled: true, checkCurrent: () => true } })
+    const resolve=f.service.resolveScope
+    f.service.resolveScope=async scope=>{const evidence=await resolve(scope);entered();await new Promise(done=>{release=done});return evidence}
     const controller = new AbortController()
     const writing = f.service.cardWrite({ capability, operation: 'patch', value: [{ op: 'delta', path: '/hp', value: -3 }], expectedRevision: 1, operationId: 'pending', cause: 'interval', signal: controller.signal })
     await ready; if (revoke) f.revoke(); else controller.abort(); release()
@@ -79,4 +81,11 @@ test('failed final binding reads do not allocate unreachable capabilities', asyn
   for (let i = 0; i < 513; i++) await assert.rejects(f.bind(), /transient/)
   f.service.resolveScope = resolve
   assert.ok((await f.bind()).capability)
+})
+
+test('current enabled card execution does not expire after thirty minutes',async t=>{
+ const f=await fixture(t);f.grant();const {capability}=await f.bind(),now=Date.now()
+ t.mock.method(Date,'now',()=>now+2*60*60*1000)
+ const result=await f.service.cardWrite({capability,operation:'patch',value:[{op:'delta',path:'/hp',value:1}],expectedRevision:1,operationId:'after-two-hours',cause:'interval'})
+ assert.equal(result.variables.stat_data.hp,10);assert.equal(result.revision,2)
 })

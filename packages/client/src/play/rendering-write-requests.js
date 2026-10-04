@@ -1,9 +1,10 @@
 import {API_V1} from '../../../identity.js'
 import {tavernFetch} from '../api-fetch.js'
 
-// Only trusted React UI and bridge code hold these objects. Never expose to a VM.
+// Internal execution leases. Downloaded source and saved script switches decide
+// execution; these objects and their transport never enter the card VM.
 export function createRenderingWriteRequests({request=tavernFetch}={}) {
- const entries=new Map(),listeners=new Set(),revocations=new Map()
+ const entries=new Set(),listeners=new Set(),revocations=new Map()
  const emit=()=>{for(const listener of listeners)listener()}
  async function revokeRemote(grant) {
   let item=revocations.get(grant.grantId)
@@ -12,40 +13,50 @@ export function createRenderingWriteRequests({request=tavernFetch}={}) {
   item.pending=true;item.error=null;emit()
   try{
    const response=await request(`${API_V1}/rendering-write-grants/${encodeURIComponent(grant.grantId)}`,{method:'DELETE',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(10000)})
-   if(!response.ok)throw Error('Server revocation failed (HTTP '+response.status+')')
+   if(!response.ok)throw Error('Server execution cleanup failed (HTTP '+response.status+')')
    revocations.delete(grant.grantId)
   }catch(error){item.error=String(error.message)}finally{item.pending=false;emit()}
  }
- function revoke(entry){entry.generation++;clearTimeout(entry.expiryTimer);entry.controller?.abort();entry.controller=null;if(entry.grant)revokeRemote(entry.grant);entry.grant=null;entry.reviewed=false;entry.onRevoke?.();emit()}
+ function release(entry,notify=true){entry.generation++;entry.controller?.abort();entry.controller=null;if(entry.grant)void revokeRemote(entry.grant);entry.grant=null;if(notify)entry.onRevoke?.()}
  return Object.freeze({
   subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)},
-  list(){return [...entries.values()].map(({id,source,sourceIdentity,reviewed,grant,error})=>({id,source,sourceIdentity,reviewed,granted:!!grant,error}))},
   listRevocations(){return [...revocations.values()].map(({id,pending,error})=>({id,pending,error}))},
   retryRevocation(id){const item=[...revocations.values()].find(item=>item.id===id);return item?revokeRemote(item.grant):Promise.resolve()},
-  register({scope,owners,runs,modules,html,adapters=[],schemaDeclarations=[],onRevoke}) {
-   const id=crypto.randomUUID(),source=JSON.stringify({version:1,scope,owners,runs,modules,html,adapters,schemaDeclarations})
-   const entry={id,source,scope,sourceIdentity:null,reviewed:false,grant:null,generation:0,onRevoke};entries.set(id,entry);emit()
-   crypto.subtle.digest('SHA-256',new TextEncoder().encode(source)).then(bytes=>{
-    if(!entries.has(id))return
-    entry.sourceIdentity={version:1,scope,sha256:[...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('')};emit()
-   }).catch(()=>{if(entries.has(id)){entry.error='Source hashing failed';emit()}})
-   return {getGrant:()=>entry.grant?structuredClone(entry.grant):null,dispose:()=>{if(!entries.has(id))return;revoke(entry);entries.delete(id);emit()}}
+  register({scope,owners,runs,modules,html,adapters=[],schemaDeclarations=[],downloaded,enabled,onRevoke}) {
+   if(downloaded!==true||enabled!==true)throw Error('Card execution requires available sources and enabled scripts')
+   const source=JSON.stringify({version:1,scope,owners,runs,modules,html,adapters,schemaDeclarations})
+   const boundScope=JSON.parse(source).scope
+   const entry={grant:null,generation:0,onRevoke};entries.add(entry)
+   const identity=crypto.subtle.digest('SHA-256',new TextEncoder().encode(source)).then(bytes=>({version:1,scope:boundScope,sha256:[...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('')}))
+   // Only a variables request reports a hashing failure.
+   identity.catch(()=>{})
+   const current=()=>{if(!entries.has(entry))throw new DOMException('Card execution stopped','AbortError')}
+   let pending
+   const acquire=async()=>{
+    current()
+    if(entry.grant)return structuredClone(entry.grant)
+    if(pending)return pending
+    const ticket=entry.generation,controller=new AbortController();entry.controller=controller
+    const work=(async()=>{
+     const sourceIdentity=await identity;current();controller.signal.throwIfAborted()
+     const response=await request(`${API_V1}/rendering-write-grants`,{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({source,sourceIdentity,downloaded:true,enabled:true})})
+     const grant=await response.json()
+     if(!response.ok)throw Object.assign(Error(grant.error??'Card execution binding failed'),{code:grant.code})
+     if(ticket!==entry.generation||!entries.has(entry)){if(typeof grant.grantId==='string')void revokeRemote(grant);throw new DOMException('Card execution stopped','AbortError')}
+     if(typeof grant.grantId!=='string'||!grant.grantId||grant.sourceIdentity?.version!==1||grant.sourceIdentity?.sha256!==sourceIdentity.sha256||JSON.stringify(Object.entries(grant.sourceIdentity?.scope??{}).sort())!==JSON.stringify(Object.entries(boundScope).sort())){if(typeof grant.grantId==='string')void revokeRemote(grant);throw Error('Invalid execution binding response')}
+     entry.grant={grantId:grant.grantId,sourceIdentity};return structuredClone(entry.grant)
+    })()
+    pending=work
+    try{return await work}finally{if(pending===work)pending=null;if(entry.controller===controller)entry.controller=null}
+   }
+   return Object.freeze({
+    getGrant:acquire,
+    peekGrant:()=>entry.grant?structuredClone(entry.grant):null,
+    async renew(){current();release(entry,false);try{await pending}catch{}current();return acquire()},
+    dispose(){if(!entries.delete(entry))return;release(entry)},
+   })
   },
-  review(id){const entry=entries.get(id);if(!entry?.sourceIdentity)throw Error('Source identity unavailable');revoke(entry);entry.reviewed=true;emit()},
-  async authorize(id) {
-   const entry=entries.get(id);if(!entry?.reviewed||!entry.sourceIdentity)throw Error('Review the complete source bundle first')
-   if(entry.controller)throw Error('Authorization is already pending')
-   const ticket=++entry.generation,controller=new AbortController();entry.controller=controller;entry.error=null
-   try{
-    const response=await request(`${API_V1}/rendering-write-grants`,{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({source:entry.source,sourceIdentity:entry.sourceIdentity,reviewed:true,write:true})})
-    const grant=await response.json();if(!response.ok)throw Error(grant.error??'Write authorization failed')
-    if(ticket!==entry.generation||!entries.has(id)){if(grant.grantId)revokeRemote(grant);return}
-    if(!Number.isSafeInteger(grant.expiresAt)||grant.expiresAt<=Date.now()||typeof grant.grantId!=='string'||grant.sourceIdentity?.version!==1||grant.sourceIdentity?.sha256!==entry.sourceIdentity.sha256||JSON.stringify(Object.entries(grant.sourceIdentity?.scope??{}).sort())!==JSON.stringify(Object.entries(entry.scope).sort())){if(typeof grant.grantId==='string')void revokeRemote(grant);throw Error('Invalid write grant response')}
-    entry.grant={grantId:grant.grantId,sourceIdentity:entry.sourceIdentity};entry.expiryTimer=setTimeout(()=>revoke(entry),Math.min(30*60*1000,grant.expiresAt-Date.now()));emit()
-   }catch(error){if(ticket===entry.generation){entry.error=error.message;emit();throw error}}finally{if(entry.controller===controller)entry.controller=null}
-  },
-  revoke(id){const entry=entries.get(id);if(entry)revoke(entry)},
-  clear(){for(const entry of entries.values())revoke(entry);entries.clear();emit()},
+  clear(){for(const entry of [...entries]){entries.delete(entry);release(entry)}},
  })
 }
 export const renderingWriteRequests=createRenderingWriteRequests()

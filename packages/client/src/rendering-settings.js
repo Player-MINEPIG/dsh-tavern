@@ -19,8 +19,8 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
   const [sources,setSources]=useState([]), [error,setError]=useState(''), [version,setVersion]=useState(0)
   const [revision,setRevision]=useState(renderingTrust.revision), [dependencyRevision,setDependencyRevision]=useState(0)
   const generation=useRef(0)
-  const [,setWriteRevision]=useState(0)
-  useEffect(()=>renderingWriteRequests.subscribe(()=>setWriteRevision(v=>v+1)),[])
+  const [,setExecutionRevision]=useState(0)
+  useEffect(()=>renderingWriteRequests.subscribe(()=>setExecutionRevision(v=>v+1)),[])
   const bindings=activeRegexBindings(activeSnapshot)
   useEffect(()=>renderingDependencies.subscribe(()=>setDependencyRevision(value=>value+1)),[])
   useEffect(()=>renderingTrust.subscribe(()=>setRevision(renderingTrust.revision())),[])
@@ -98,25 +98,11 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
   }
   return h('section',{className:'dtv-rendering-settings','data-revision':revision+'-'+dependencyRevision},
     h('style',null,renderingSettingsStyles),h('h3',null,translate('rendering.title')),
-    h('label',{className:'dtv-script-control'},h('input',{type:'checkbox',checked:settings.interactiveCards===true,disabled:busy||!update,onChange:event=>update({...settings,interactiveCards:event.target.checked})}),translate('rendering.master')),
-    h('p',{className:'dtv-script-meta'},translate(settings.interactiveCards===true?'rendering.masterOn':'rendering.masterOff')),
+    h('label',{className:'dtv-script-control'},h('input',{type:'checkbox',checked:settings.interactiveCards!==false,disabled:busy||!update,onChange:event=>update({...settings,interactiveCards:event.target.checked})}),translate('rendering.master')),
+    h('p',{className:'dtv-script-meta'},translate(settings.interactiveCards!==false?'rendering.masterOn':'rendering.masterOff')),
     status?.text?h('p',{className:'dtv-script-meta',role:status.error?'alert':'status'},status.text):null,
     h('section',{className:'dtv-script-group'},h('div',{className:'dtv-script-actions'},h('h4',null,translate('rendering.cardScripts')),help(translate('rendering.safetyDetails'),translate('rendering.enablementHelp'))),...helpers.map(renderHelper),!helpers.length?h('p',{className:'dtv-script-meta'},translate('rendering.none')):null),
     h('section',{className:'dtv-script-group'},h('div',{className:'dtv-script-actions'},h('h4',null,translate('rendering.dependencies')),help(translate('rendering.safetyDetails'),translate('rendering.boundary'))),...owners.map(renderGraph),!owners.length?h('p',{className:'dtv-script-meta'},translate('rendering.none')):null),
-    h('section',{className:'dtv-script-group dtv-script-operations'},
-      h('div',{className:'dtv-script-actions'},h('h4',null,translate('rendering.operations')),help(translate('rendering.safetyDetails'),translate('rendering.lifetime'))),
-      ...renderingWriteRequests.listRevocations().map(item=>h('div',{key:item.id,role:'alert'},h('p',null,translate('rendering.revokePending'),item.error?' · '+item.error:''),h('button',{type:'button',disabled:item.pending,onClick:()=>run(()=>renderingWriteRequests.retryRevocation(item.id))},translate('rendering.retryRevoke')))),
-      h('details',{className:'dtv-script-group dtv-write-permissions'},
-        h('summary',null,translate('rendering.writeTitle'),' · ',translate(renderingWriteRequests.list().some(entry=>entry.granted)?'rendering.writeGranted':'rendering.writeOff')),
-        h('div',{className:'dtv-script-actions'},help(translate('rendering.writeTitle'),translate('rendering.writeBoundary'))),
-        ...renderingWriteRequests.list().map(entry=>h('details',{key:entry.id,className:'dtv-write-review'},
-          h('summary',null,entry.sourceIdentity?.scope?.nodeId??entry.id,' · ',translate(entry.granted?'rendering.writeGranted':'rendering.writeOff')),
-          h('p',{className:'dtv-script-meta'},'SHA-256: ',entry.sourceIdentity?.sha256??translate('common.loading')),
-          sourceView(entry.source),
-          h('div',{className:'dtv-script-actions'},
-            h('button',{type:'button',className:'dtv-button',disabled:!entry.sourceIdentity||entry.reviewed,onClick:()=>run(()=>renderingWriteRequests.review(entry.id))},translate('rendering.reviewBundle')),
-            h('button',{type:'button',className:'dtv-button',disabled:!entry.reviewed||entry.granted,onClick:()=>run(()=>renderingWriteRequests.authorize(entry.id))},translate('rendering.allowWrites')),
-            h('button',{type:'button',className:'dtv-button',onClick:()=>renderingWriteRequests.revoke(entry.id)},translate('rendering.revokeWrites'))),
-          entry.error?h('p',{role:'alert'},entry.error):null)))),
+    ...renderingWriteRequests.listRevocations().map(item=>h('div',{key:item.id,role:'alert'},h('p',null,translate('rendering.revokePending'),item.error?' · '+item.error:''),h('button',{type:'button',disabled:item.pending,onClick:()=>run(()=>renderingWriteRequests.retryRevocation(item.id))},translate('rendering.retryRevoke')))),
     error?h('p',{role:'alert'},error):null)
 }

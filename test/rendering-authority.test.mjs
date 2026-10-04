@@ -7,37 +7,53 @@ const scope={sessionId:'session',nodeId:'node',variantId:'variant',endEventId:3}
 const bundle={version:1,scope,owners:['character:fixture'],runs:[{code:'Mvu.getMvuData()',name:'fixture.js'}],modules:{},html:'<p>fixture</p>'}
 const source=JSON.stringify(bundle),sourceIdentity={version:1,sha256:createHash('sha256').update(source).digest('hex'),scope}
 
-test('Host write grants require full content identity and separate review/write authorization',async()=>{
- let now=10;const authority=createRenderingAuthority({now:()=>now,ttlMs:50})
- for(const flags of [{},{reviewed:true},{write:true}])assert.throws(()=>authority.grant({source,sourceIdentity,...flags}),/authorization/)
- assert.throws(()=>authority.grant({source:source+' ',sourceIdentity,reviewed:true,write:true}),/identity/)
- const grant=authority.grant({source,sourceIdentity,reviewed:true,write:true})
+test('downloaded and enabled execution binds exact source/scope without review or expiry',async()=>{
+ const authority=createRenderingAuthority()
+ for(const flags of [{},{downloaded:true},{enabled:true},{downloaded:true,enabled:false}])assert.throws(()=>authority.grant({source,sourceIdentity,...flags}),/downloaded/)
+ assert.throws(()=>authority.grant({source:source+' ',sourceIdentity,downloaded:true,enabled:true}),/identity/)
+ const grant=authority.grant({source,sourceIdentity,downloaded:true,enabled:true})
+ assert.equal('expiresAt' in grant,false)
  assert.equal(authority.isCurrent(grant),true);assert.deepEqual(await authority.resolve(grant),{valid:true,write:true,scope})
  assert.equal(await authority.resolve({...grant,sourceIdentity:{...sourceIdentity,scope:{...scope,sessionId:'other'}}}),null)
- const leaseCheck=()=>authority.isCurrent(grant);authority.revoke(grant.grantId);assert.equal(leaseCheck(),false)
- const second=authority.grant({source,sourceIdentity,reviewed:true,write:true});assert.notEqual(second.grantId,grant.grantId)
- now=60;assert.equal(authority.isCurrent(second),false)
- const third=authority.grant({source,sourceIdentity,reviewed:true,write:true});authority.dispose();assert.equal(authority.isCurrent(third),false)
+ authority.revoke(grant.grantId);assert.equal(authority.isCurrent(grant),false)
+ const second=authority.grant({source,sourceIdentity,downloaded:true,enabled:true});assert.notEqual(second.grantId,grant.grantId)
+ authority.dispose();assert.equal(authority.isCurrent(second),false)
 })
 
-test('trusted UI keeps approval separate, revokes on removal and cleans late authorization responses',async()=>{
- const authority=createRenderingAuthority(),deletes=[];let finish,hold=false
+test('enabled downloaded UI execution acquires automatically and disposes late responses',async()=>{
+ const authority=createRenderingAuthority(),deletes=[];let finish,hold=false,posts=0
  const registry=createRenderingWriteRequests({request:async(url,options)=>{
-  if(options.method==='DELETE'){assert.equal(options.headers['Content-Type'],'application/json');const id=url.split('/').at(-1);deletes.push(id);authority.revoke(id);return new Response('{}')}
-  const grant=authority.grant(JSON.parse(options.body));if(hold)await new Promise(resolve=>{finish=resolve});return Response.json({ok:true,...grant})
+  if(options.method==='DELETE'){const id=url.split('/').at(-1);deletes.push(id);authority.revoke(id);return Response.json({ok:true})}
+  posts++;const body=JSON.parse(options.body);assert.equal(body.downloaded,true);assert.equal(body.enabled,true);assert.equal('reviewed' in body,false)
+  const grant=authority.grant(body);if(hold)await new Promise(resolve=>{finish=resolve});return Response.json({ok:true,...grant})
  }})
- const item=registry.register(bundle)
- for(let i=0;i<20&&!registry.list()[0]?.sourceIdentity;i++)await new Promise(r=>setTimeout(r,1))
- const id=registry.list()[0].id
- await assert.rejects(()=>registry.authorize(id),/Review/)
- registry.review(id);assert.equal(item.getGrant(),null);await registry.authorize(id)
- const grant=item.getGrant();assert.equal(authority.isCurrent(grant),true)
+ assert.throws(()=>registry.register(bundle),/available sources/)
+ const item=registry.register({...bundle,downloaded:true,enabled:true})
+ const [grant,same]=await Promise.all([item.getGrant(),item.getGrant()]);assert.deepEqual(grant,same);assert.equal(posts,1)
+ assert.equal(authority.isCurrent(grant),true)
  item.dispose();assert.equal(authority.isCurrent(grant),false);assert.equal(deletes.length,1)
- const pending=registry.register(bundle)
- for(let i=0;i<20&&!registry.list()[0]?.sourceIdentity;i++)await new Promise(r=>setTimeout(r,1))
- const next=registry.list()[0].id;registry.review(next);hold=true;const request=registry.authorize(next)
- for(let i=0;i<20&&!finish;i++)await new Promise(r=>setTimeout(r,1))
- pending.dispose();finish();await request;assert.equal(deletes.length,2);assert.equal(registry.list().length,0)
+ await assert.rejects(item.getGrant(),{name:'AbortError'})
+ hold=true;const pending=registry.register({...bundle,downloaded:true,enabled:true}),request=pending.getGrant()
+ const rejected=assert.rejects(request,{name:'AbortError'})
+ while(!finish)await new Promise(r=>setTimeout(r,1))
+ pending.dispose();finish();await rejected;assert.equal(deletes.length,2)
+})
+
+test('rebuilding and Host restart create fresh automatic bindings; scopes never migrate',async()=>{
+ let authority=createRenderingAuthority()
+ const registry=createRenderingWriteRequests({request:async(url,options)=>{
+  if(options.method==='DELETE'){authority.revoke(url.split('/').at(-1));return Response.json({ok:true})}
+  return Response.json(authority.grant(JSON.parse(options.body)))
+ }})
+ const item=registry.register({...bundle,downloaded:true,enabled:true}),first=await item.getGrant()
+ authority.dispose();authority=createRenderingAuthority()
+ const second=await item.renew();assert.notEqual(first.grantId,second.grantId);assert.equal(authority.isCurrent(second),true)
+ item.dispose()
+ const rebuilt=registry.register({...bundle,downloaded:true,enabled:true}),third=await rebuilt.getGrant();assert.equal(authority.isCurrent(third),true)
+ rebuilt.dispose()
+ const next=registry.register({...bundle,scope:{...scope,sessionId:'next'},downloaded:true,enabled:true}),fourth=await next.getGrant()
+ assert.notEqual(fourth.sourceIdentity.sha256,third.sourceIdentity.sha256);assert.equal(fourth.sourceIdentity.scope.sessionId,'next');assert.equal(authority.isCurrent(third),false)
+ next.dispose();authority.dispose()
 })
 
 test('grant HTTP mutations retain the existing local Origin security boundary',async()=>{
@@ -51,7 +67,7 @@ test('grant HTTP mutations retain the existing local Origin security boundary',a
   const res={statusCode:200,setHeader(){},end(body){resolve({status:res.statusCode,body:JSON.parse(body)})}}
   Promise.resolve(handler(req,res)).catch(reject)
  })
- const url='/pmp-dsh-tavern/api/v1/rendering-write-grants',origin='http://127.0.0.1:8080',body={source,sourceIdentity,reviewed:true,write:true}
+ const url='/pmp-dsh-tavern/api/v1/rendering-write-grants',origin='http://127.0.0.1:8080',body={source,sourceIdentity,downloaded:true,enabled:true}
  assert.equal((await invoke('POST',url,'https://untrusted.example',body)).status,403)
  const response=await invoke('POST',url,origin,body);assert.equal(response.status,200)
  const grant=response.body;assert.equal(authority.isCurrent(grant),true);assert.equal('source'in grant,false)
@@ -78,10 +94,8 @@ test('failed server revocation remains visible after card disposal and retries t
   if(options.method==='DELETE'){deletes.push(url);if(fail)return new Response('{}',{status:503});authority.revoke(url.split('/').at(-1));return Response.json({ok:true})}
   return Response.json(authority.grant(JSON.parse(options.body)))
  }})
- const item=registry.register(bundle)
- while(!registry.list()[0]?.sourceIdentity)await new Promise(r=>setTimeout(r,1))
- const id=registry.list()[0].id;registry.review(id);await registry.authorize(id);const grant=item.getGrant();item.dispose()
- await new Promise(r=>setTimeout(r,0));assert.equal(item.getGrant(),null);assert.equal(registry.list().length,0);assert.equal(authority.isCurrent(grant),true)
+ const item=registry.register({...bundle,downloaded:true,enabled:true}),grant=await item.getGrant();item.dispose()
+ await new Promise(r=>setTimeout(r,0));assert.equal(item.peekGrant(),null);assert.equal(authority.isCurrent(grant),true)
  const pending=registry.listRevocations();assert.equal(pending.length,1);assert.match(pending[0].error,/503/);assert.equal('grant' in pending[0],false)
  fail=false;await registry.retryRevocation(pending[0].id);assert.equal(authority.isCurrent(grant),false);assert.equal(registry.listRevocations().length,0);assert.equal(deletes[0],deletes[1]);authority.dispose()
 })

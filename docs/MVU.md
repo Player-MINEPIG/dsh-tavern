@@ -89,21 +89,19 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。渲染模块负责脚本回调和生命周期。普通开场、导入、流式气泡不能冒充 durable scope；当前角色开场使用下述只读 greeting 模式；空会话写入另用 initial 模式。
 
-## 受授权的卡片写入
+## 已下载且开启的卡片变量
 
-代码审核与变量写授权分别表达。完整执行 bundle 的 sourceIdentity 为 `{version:1,sha256,scope}`。可信设置界面审核 bundle 并单独授予写权限后，可选 `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 `{valid:true,write:true,scope}`。该服务还须提供同步 `isCurrent`，供事务最终提交边界检查 TTL、撤销及同一服务实例；缺失任何能力都拒绝写。
+导入的内嵌脚本遵循保存的启用选择和总开关；总开关未设置时默认开启。外部代码先经导入提示或外观面板下载。内容可用且脚本开启后，受支持的卡片即可读写当前绑定变量；没有源码核对、单独写批准或权限到期步骤。
 
-`POST /pmp-dsh-tavern/api/v1/mvu/card-binding` 接受 `{scope,grantId,sourceIdentity}`，只为当前 timeline 头和当前资源创建短期 opaque capability。`POST .../card-write` 接受 `{capability,operation:'patch'|'replace',value,expectedRevision,operationId,cause}`；`POST .../card-binding/revoke` 撤销 capability。scope 不由写请求再次选择。历史/生成中的消息、过期授权、变更的源身份、冲突版本都拒绝。
+可信渲染器组装完整执行包，通过现有 `rendering-write-grants` 传输提交 `{source,sourceIdentity,downloaded:true,enabled:true}`，自动建立内部绑定。Host 重算 `{version:1,sha256,scope}`，仅保留身份和作用域。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 与同步 `isCurrent` 验证同一执行仍有效；opaque token 不进入卡片代码。关闭、移除或重建运行时会撤销旧绑定；重建后按持久下载缓存和保存的开关自动建立新绑定，不把变量值或 token 移到另一个 session。Host 重启后可自动恢复同一当前执行绑定。
 
-Host `createCardBinding/cardWrite/revokeCardBinding` 为对应事务原语。绑定客户端增加 `writeGrant:{grantId,sourceIdentity}` 与异步 `write(...)`，getSnapshot 仅暴露 writable，不向脚本暴露 grant/capability。Host 从 currentRevision 取得 CAS 版本并生成 operationId；取消、卸载或重审终止尚未提交的候选。
+`POST /pmp-dsh-tavern/api/v1/mvu/card-binding` 接受 `{scope,grantId,sourceIdentity}`，仅绑定当前 timeline 头或经验证的空会话开场。`POST .../card-write` 接受 `{capability,operation:'patch'|'replace',value,expectedRevision,operationId,cause}`；`POST .../card-binding/revoke` 停止绑定。scope、当前选择与成员关系、来源 schema、CAS、幂等、取消及最终同步执行复核仍保留；历史和生成中的消息只读。capability 没有按时间失效的批准门，在执行结束或服务卸载时删除。
 
-native 和 managed 的卡写均要求显式使用策略允许；仅持有 write grant 不够。允许的 usage handler 还须返回可信 Host 私有同步 `checkCurrent:()=>boolean`，捕获配置版本、reload 代次和 provider 生命周期。所有决策的租约在最后一次 await 后、原子保存前必须严格返回 true；缺失、Promise、失效均拒绝。函数不保存到账本，也不传给脚本。配置 reload 开始即使旧租约失效，不能仅报告 configRevision。
+`card_variable_update` 是来源执行事实，不是 manager 的 store/retrieve 许可请求。默认或缺失 manager 配置不会挡住已开启卡片的变量操作。manager 继续观察 started/triggered/applied/completed/skipped/failed；只有实际状态变化产生 `applied` 与 `detail:'state-committed'`，此类原生事实使用 `configRevision:null`。模型请求注入和助手更新仍执行既有 manager 策略及 lease。已有卡写策略声明不授予或拒绝原生卡片执行。
 
-store 使用独立 `card_variable_update`，策略链为 `validate_card_update → apply_card_update`。默认没有写权限；manager enabled 只批准管理策略，不能替代源授权。事件含 operation/operationId/expectedRevision/sourceIdentity/cause，cause 区分 `user-interaction`、`interval`、`script`。有效绑定的权限/策略拒绝发 skipped；真实提交才发 applied，并携 configRevision。无法归属有效资源的坏 capability/参数仅产生带 code 的 HTTP 错误，不能伪造资源触发事实。
+可信 dispatcher 从原生事件或 timer 任务取得 cause（`user-interaction`、`interval`、`script`）；卡片只提交 operation/value 和受限 options。Host 信任已认证 UI 的证据，不声称加密证明人类点击。自动传输恢复保留 Worker 实际看到的 revision 和原 operationId，不改用最新 CAS 或新操作 ID。
 
-renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 cause，VM 只能提供 op/value。服务端信任已认证 Host UI 的该证据，不能独立证明浏览器中发生了人类点击。代码审批不是点击授权，脚本不能自报 cause。
-
-实际观察到的兼容形状为 `getMvuData(options)` 读取完整变量、`updateVariablesWith(JSONPatchArray)` 和 `await replaceMvuData(variables,options)`。回调 updater 形状未验证，不承诺兼容。VARIABLE_UPDATE_ENDED 仅保证本绑定提交后触发无参回调再读取，不宣称上游完整 payload/事件语义。跨消息/latest/chat/character fallback 不能被偷偷解释为当前授权范围。
+已观察的签名仍是返回整份变量的 `Mvu.getMvuData(options?)`、`Mvu.updateVariablesWith(JSONPatchArray)` 与 `await Mvu.replaceMvuData(variables,options?)`；不宣称 callback updater 重载。VARIABLE_UPDATE_ENDED 仅在此绑定提交后提供无参回调。跨 scope fallback 仍拒绝；下载代码不会开放网络、父页面 DOM 或 Host 工具。
 
 ## 开场的当前只读变量
 
