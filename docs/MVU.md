@@ -74,6 +74,8 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 命令在私有副本上逐条处理。普通 schema/缺失路径拒绝记录诊断后继续；解释器预算、非法语法或持久化错误是致命失败，不提交前面的候选变化。成功候选最后一次原子保存；失败可保存未变状态的诊断收据。重复已处理消息不再次应用。
 
+预算区分单份状态和历史集合：每份完整 variables（包含派生的 display_data、delta_data、schema 与诊断）仍受 2 MiB 和结构限制约束；历史、checkpoint、分叉种子和事务收据逐份验证状态，不把整个集合套用单状态预算。所有持久状态与历史仍合计受 32 MiB ledger 上限约束，超限拒绝原子保存并保留原文件及 revision，不自动裁剪。Host checkpoint/ingest 只冻结 MVU 消费的会话身份、事件坐标、回合结束原因、用户来源及 assistant 文本/工具/中断标记；请求装配、provider、媒体及用户正文仍保留在 DSH，不复制进这份投影。文本指纹和持久来源审计不变。
+
 装配来源 ID 为 `tavern.mvu/state`。调用者必须在装配策略中显式选择它，使用 `role:'system', lifetime:'request'`。没有选择时不注入。来源输出 stat_data 和更新指令，诊断绑定资源 revision、配置 revision 和策略版本。DSH 原生消息始终权威；卸载不会改写会话。
 
 ## 气泡只读桥
@@ -143,7 +145,7 @@ initial 写入仍经过独立 grant、使用策略租约、CAS、幂等与 schem
 
 `node --test test/mvu-state-instances.test.mjs` 验证独立身份、fork/swipe checkpoint、只读旧账本、重启、取消和提交竞态。以 `DSH_TAVERN_ASSEMBLY_CORE_ROOT` 指向具备请求装配扩展的官方 runtime，运行 `node --test test/mvu-instance-host.test.mjs`，可验证公开 SessionController 的创建/fork、真实 AgentLoop 请求与失败轮次重生成；它只使用临时数据和合成 provider。
 
-`test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。
+`test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。 `test/mvu-history-budget.test.mjs` 另覆盖跨单状态预算的历史集合、保存超限的原子拒绝、冻结种子与冷恢复；设置上述 runtime 后还验证官方 AgentLoop 八轮请求及 detached Session 恢复。
 
 
 ## Prompt Template 依赖读取

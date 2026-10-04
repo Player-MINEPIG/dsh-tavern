@@ -117,7 +117,7 @@ export function normalizeVariables(input) {
   validate(result.stat_data, result.schema)
   result.initialized_lorebooks ??= {}
   result.display_data ??= json(result.stat_data); result.delta_data ??= {}
-  return result
+  return json(result)
 }
 function applyCommands(variables, commands) {
   const next = normalizeVariables(variables)
@@ -200,6 +200,6 @@ export function applyMvuUpdate(variables, commands) {
     }
   }
   current.update_diagnostics = diagnostics
-  return current
+  return json(current)
 }
 export const containsMvuUpdate = text => typeof text === 'string' && /_\.\w+\s*\(|<json_?patch>/i.test(text)

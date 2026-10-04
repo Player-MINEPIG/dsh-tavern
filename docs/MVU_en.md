@@ -66,6 +66,8 @@ Only the last non-interrupted, non-tool-call assistant message of a completed tu
 
 Commands execute on private candidates. Ordinary schema or missing-path rejection records diagnostics and continues; interpreter budgets, invalid syntax and persistence errors are fatal and do not commit earlier candidates. Accepted candidates persist once atomically. Failures may retain unchanged content with a diagnostic receipt. Duplicate messages do not apply twice.
 
+Budgets distinguish a single state from history collections. Each complete variables object, including derived display_data, delta_data, schema and diagnostics, retains the 2 MiB and structural limits. History, checkpoints, fork seeds and transaction receipts validate each state separately rather than charging the whole collection to one state. The durable ledger still has a combined 32 MiB limit; exceeding it refuses the atomic save and preserves the previous file and revision without trimming history. Host checkpoint/ingest freezes only session identity, event coordinates, turn completion reasons, user origin and assistant text/tool/interruption markers consumed by MVU. Request assembly, provider, media and user bodies remain in DSH and are omitted from this projection. Text fingerprints and durable source auditing are unchanged.
+
 Request source `tavern.mvu/state` must be explicitly selected in an assembly preset with `role:'system', lifetime:'request'`. It emits stat_data and update instructions with resource/config/strategy version diagnostics. Native DSH messages remain authoritative; unloading does not rewrite them.
 
 ## Read-only bubble binding
@@ -135,7 +137,7 @@ String `regex` accepts finite patterns anchored with `^...$`, without flags: lit
 
 Tests `node --test test/mvu-state-instances.test.mjs` verifies separate identities, fork/swipe checkpoints, read-only legacy storage, restart, cancellation and commit races. With `DSH_TAVERN_ASSEMBLY_CORE_ROOT` pointing to an official runtime with request assembly, `node --test test/mvu-instance-host.test.mjs` verifies public SessionController creation/forks, real AgentLoop requests and failed-turn regeneration using only temporary data and a synthetic provider.
 
-`test/mvu-*.test.mjs` cover neutral structural card fixtures, fixed upstream literals, CAS, forks/history, recovery, adversarial budgets, manager removal and binding cancellation. Set `DSH_TAVERN_PROMPT_COMPAT_ROOT` to a DSH runtime with request assembly support and run `node --test test/mvu-host.test.mjs` for real Host checks with temporary storage and a synthetic provider. Full cards, renderer dependencies and final manager integration require separate verification; interpreter fixtures cannot substitute for them.
+`test/mvu-*.test.mjs` cover neutral structural card fixtures, fixed upstream literals, CAS, forks/history, recovery, adversarial budgets, manager removal and binding cancellation. Set `DSH_TAVERN_PROMPT_COMPAT_ROOT` to a DSH runtime with request assembly support and run `node --test test/mvu-host.test.mjs` for real Host checks with temporary storage and a synthetic provider. Full cards, renderer dependencies and final manager integration require separate verification; interpreter fixtures cannot substitute for them. `test/mvu-history-budget.test.mjs` also covers history collections above the single-state budget, atomic refusal at persistence limits, frozen seeds and cold restore. With that runtime configured, it verifies eight official AgentLoop turns and detached Session recovery.
 
 
 ## Prompt Template dependency reads

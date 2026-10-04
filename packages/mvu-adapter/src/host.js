@@ -1,6 +1,7 @@
 import { symbols } from '@deepseek-ai/cordis'
 import { timelineHead } from '../../play/src/timeline-tree.js'
 import { MvuService } from './service.js'
+import { snapshotMvuSession } from './history.js'
 import { fail } from './value.js'
 import { createHash } from 'node:crypto'
 
@@ -171,8 +172,8 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
   const enqueue = task => publish(hostQueue.then(task))
   const freezeSession = session => {
     if (!session?.snapshotEvents) return session
-    const events = JSON.parse(JSON.stringify(session.snapshotEvents())), header = JSON.parse(JSON.stringify(session.header))
-    return { id: session.id, header, inheritedEventCount: session.inheritedEventCount, snapshotEvents: () => events }
+    const snapshot = snapshotMvuSession(session)
+    return { ...snapshot, snapshotEvents: () => snapshot.events }
   }
   for (const event of ['session/created', 'session/disposed']) ctx.on(event, session => sessionEpochs.set(session.id, (sessionEpochs.get(session.id) ?? 0) + 1))
   ctx.on('session/event', (session, event) => {

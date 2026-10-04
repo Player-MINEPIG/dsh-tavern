@@ -7,6 +7,7 @@ import { fail, json } from './value.js'
 import { parseMvuData } from './data.js'
 import { compileMvuSchema, applyMvuSchema } from './schema.js'
 import { sessionIdentity, stateInstanceId, inheritedVersion, textFingerprint } from './instances.js'
+import { snapshotMvuSession, cloneMvuVersion, cloneMvuCheckpoint, cloneMvuReceipt } from './history.js'
 
 const MAX_STORE = 32 * 1024 * 1024
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -74,6 +75,7 @@ export class MvuService {
     for (const record of Object.values(this.#state.resources)) {
       if (!Number.isSafeInteger(record.revision) || !Array.isArray(record.versions)) fail('MVU_VERSION', 'Invalid MVU ledger')
       for (const version of record.versions) normalizeVariables(version.variables)
+      for (const checkpoint of record.checkpoints ?? []) normalizeVariables(checkpoint.variables)
     }
     for (const resource of this.resources) if (!resource.legacy && resource.managementMode === 'managed' && !this.#record(resource.id).managementMode) this.#save(resource.id, { ...this.#record(resource.id), managementMode: 'managed', definition: resource })
   }
@@ -200,7 +202,7 @@ export class MvuService {
         const prefixCut = kind === 'fork' ? atEventId : prefixEndEventId
         const history = prefixCut === undefined ? [] : record.versions.filter(v => v.source.messageSeq <= prefixCut && v.source.messageSeq >= 0 && (checkpointRevision === null || v.revision <= checkpointRevision))
         const checkpoints = prefixCut === undefined ? [] : (record.checkpoints ?? []).filter(c => c.seq <= prefixCut)
-        items.push({ templateId: resource.templateId, managementMode: record.managementMode ?? resource.managementMode ?? 'native', variables: json(variables), history: json(history), checkpoints: json(checkpoints), prefixVersionKey: history.findLast(v => v.source.messageSeq === prefixCut)?.key ?? null, source: { id: resource.id, identity, versionKey, revision: sourceRevision, contentHash: hash(variables), atEventId } })
+        items.push({ templateId: resource.templateId, managementMode: record.managementMode ?? resource.managementMode ?? 'native', variables: json(variables), history: history.map(cloneMvuVersion), checkpoints: checkpoints.map(cloneMvuCheckpoint), prefixVersionKey: history.findLast(v => v.source.messageSeq === prefixCut)?.key ?? null, source: { id: resource.id, identity, versionKey, revision: sourceRevision, contentHash: hash(variables), atEventId } })
       }
       if (!items.length) return null
       if (targetSessionId && (this.resources.some(r => r.instance?.sessionId === targetSessionId) || Object.values(this.#state.seeds ?? {}).some(s => s.targetSessionId === targetSessionId))) fail('MVU_SEED_CONFLICT', 'Target already has state or a creation intent')
@@ -265,7 +267,7 @@ export class MvuService {
   /** Freeze once at the first turn/start, independently of prompt-source inclusion. */
   async checkpoint(session, event) {
     const barrier = this.waitForHost?.()
-    const observed = { id: session.id, header: json(session.header), events: json(session.snapshotEvents()), inheritedEventCount: session.inheritedEventCount }
+    const observed = snapshotMvuSession(session)
     if (barrier) await barrier
     return this.#serial(async () => {
       this.#sessions.set(session.id, observed)
@@ -315,7 +317,7 @@ export class MvuService {
     const usageEpoch = this.#usageEpoch
     for (const registration of [...this.#usage]) {
       let answer
-      try { answer = await registration.handler(json({ on, id: resource.id, scope, event, variables, managementMode })) }
+      try { answer = await registration.handler({ ...json({ on, id: resource.id, scope, event, managementMode }), variables: json(variables) }) }
       catch (error) { if (usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Usage provider changed'); throw error }
       if (usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Usage provider changed')
       if (answer === undefined) { abstained = true; continue }
@@ -473,7 +475,7 @@ export class MvuService {
   async history({ id, scope, signal } = {}) {
     signal?.throwIfAborted(); const resource = this.#configured(id, scope); if (!resource) return []
     await this.#snapshot(resource, scope); signal?.throwIfAborted()
-    return json(this.#record(id).versions.filter(v => v.source.sessionId === scope.sessionId))
+    return this.#record(id).versions.filter(v => v.source.sessionId === scope.sessionId).map(cloneMvuVersion)
   }
   async update({ id, content, expectedRevision, operationId, scope, signal } = {}) {
     const barrier = this.waitForHost?.(); if (barrier) await barrier
@@ -493,9 +495,10 @@ export class MvuService {
       }
       const fingerprint = hash({ content: variables, scope, expectedRevision })
       const prior = record.versions.find(v => v.operationId === operationId)
-      if (prior) { if (prior.fingerprint !== fingerprint) fail('MVU_IDEMPOTENCY_CONFLICT', 'Operation id reused with different input'); return json(prior.result) }
+      if (prior) { if (prior.fingerprint !== fingerprint) fail('MVU_IDEMPOTENCY_CONFLICT', 'Operation id reused with different input'); return cloneMvuReceipt(prior.result) }
       if (record.revision !== expectedRevision) fail('REVISION_CONFLICT', 'MVU revision changed')
       if (variables.mvu_schema) { variables.stat_data = applyMvuSchema(variables.stat_data, variables.mvu_schema); variables.display_data = json(variables.stat_data) }
+      json(variables)
       const previousVersion = record.versions.find(v => v.key === record.currentKey) ?? record.versions.find(v => v.key === record.seed?.anchorKey)
       const source = resource.instance && previousVersion?.source.messageSeq >= 0 ? { ...previousVersion.source, manual: true, card: false }
         : { ...(scope.sessionId ? { sessionId: scope.sessionId } : {}), messageId: `manual:${operationId}`, messageSeq: scope.endEventId ?? record.versions.findLast(v => v.source.sessionId === scope.sessionId)?.source.messageSeq ?? -1, manual: true }
@@ -505,12 +508,12 @@ export class MvuService {
       if (lease && lease() !== true) fail('MVU_READ_ONLY', 'Instance changed before edit')
       this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source, variables, operationId, fingerprint, ...(resource.instance && previousVersion?.source.messageSeq >= 0 ? { sourceFingerprint: previousVersion.sourceFingerprint ?? previousVersion.fingerprint } : {}), revision, result }] })
       this.#emit({ id, eventId: key, phase: 'completed', ...(scope.sessionId ? { sessionId: scope.sessionId } : {}), revision, detail: 'manual-update' })
-      return json(result)
+      return cloneMvuReceipt(result)
     })
   }
   /** Only call with a trusted DSH Session snapshot, never with browser text. */
   ingest(session) {
-    const snapshot = { id: session.id, header: json(session.header), events: json(session.snapshotEvents()), inheritedEventCount: session.inheritedEventCount }
+    const snapshot = snapshotMvuSession(session)
     return this.#serial(() => this.#ingest(snapshot))
   }
   async #ingest(session) {
@@ -641,7 +644,7 @@ export class MvuService {
         if (prior) {
           if (prior.fingerprint !== fingerprint) fail('MVU_IDEMPOTENCY_CONFLICT', 'Operation id reused')
           this.#emit({ ...fact, phase: 'completed', revision: prior.revision, configRevision: prior.configRevision ?? null, detail: 'idempotent-replay' })
-          return json(prior.result)
+          return cloneMvuReceipt(prior.result)
         }
         if (record.revision !== expectedRevision) fail('REVISION_CONFLICT', 'MVU revision changed')
         const current = record.versions.find(v => v.key === record.currentKey)
@@ -660,6 +663,7 @@ export class MvuService {
           if (!baseline.mvu_schema) delete variables.mvu_schema
           if (baseline.mvu_schema) { variables.stat_data = applyMvuSchema(variables.stat_data, baseline.mvu_schema); variables.display_data = json(variables.stat_data) }
         }
+        json(variables)
         const checkGrant = await this.#cardGrant(binding, signal)
         const finalEvidence = await this.resolveScope?.(scope)
         if (!this.#initialBindingCurrent(binding, finalEvidence) || !finalEvidence?.writableHead || finalEvidence.messageId !== evidence.messageId || finalEvidence.fingerprint !== evidence.fingerprint) fail('MVU_READ_ONLY', 'Active message changed during update')
@@ -673,7 +677,7 @@ export class MvuService {
         this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source, fingerprint, ...(scope.mode === 'initial' ? {} : { sourceFingerprint: evidence.fingerprint }), variables, revision, operationId, result, parentKey: record.currentKey, configRevision: decision.configRevision }] })
         if (hash(baseline.stat_data) !== hash(variables.stat_data)) this.#emit({ ...fact, phase: 'applied', revision, configRevision: decision.configRevision, detail: 'state-committed' })
         this.#emit({ ...fact, phase: 'completed', revision, configRevision: decision.configRevision, detail: 'state-committed' })
-        return json(result)
+        return cloneMvuReceipt(result)
       } catch (error) {
         const denied = ['MVU_WRITE_DENIED', 'MVU_READ_ONLY', 'MVU_USAGE_DENIED'].includes(error.code)
         this.#emit({ ...fact, phase: denied ? 'skipped' : 'failed', reason: error.code ?? 'MVU_CARD_UPDATE_FAILED' })
