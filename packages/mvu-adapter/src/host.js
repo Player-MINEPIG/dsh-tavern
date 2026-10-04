@@ -3,7 +3,7 @@ import { timelineHead } from '../../play/src/timeline-tree.js'
 import { MvuService } from './service.js'
 import { snapshotMvuSession } from './history.js'
 import { fail } from './value.js'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 
 export const MVU_SERVICE = 'tavernMvu'
 export const MVU_SOURCE = 'tavern.mvu/state'
@@ -37,6 +37,17 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     || (event.type === 'session/end-seed' && event.data !== null && typeof event.data === 'object'
       && !Array.isArray(event.data) && Object.keys(event.data).length === 0))
   const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+  const viewEpoch = randomUUID()
+  const selectedView = scope => ({ greetingIndex: getSelection(scope.sessionId)?.character?.greetingIndex ?? 0,
+    selectionToken: digest([viewEpoch, scope.sessionId, getSelectionToken(scope.sessionId)]) })
+  const requireSelectedView = scope => {
+    if (scope.greetingIndex !== undefined && (!Number.isSafeInteger(scope.greetingIndex) || scope.greetingIndex < 0)
+      || scope.selectionToken !== undefined && (typeof scope.selectionToken !== 'string' || !/^[a-f0-9]{64}$/.test(scope.selectionToken))) fail('MVU_SCOPE', 'Invalid greeting selection identity')
+    const view = selectedView(scope)
+    if (scope.greetingIndex !== undefined && scope.greetingIndex !== view.greetingIndex
+      || scope.selectionToken !== undefined && scope.selectionToken !== view.selectionToken) fail('MVU_READ_ONLY', 'Greeting selection changed')
+    return view
+  }
   const inspect = async id => { const live = ctx.get('sessions')?.get?.(id); return live ? { header: live.header, events: live.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
   const captureSessionLease = async sessionId => {
     let sessions = ctx.get('sessions'), live = sessions?.get?.(sessionId)
@@ -86,19 +97,21 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         return digest(item)
       }
       member()
+      requireSelectedView(scope)
       if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Greeting character is not selected')
       // This is a current read view, not a historical message or a write capability.
       // Inspect without resuming an Agent just to display a greeting.
       const observed = await inspect(scope.sessionId), header = observed?.header ?? observed?.meta
       if (!header || header.id !== scope.sessionId || !Number.isSafeInteger(header.version)
         || (scope.sessionFormatVersion != null && scope.sessionFormatVersion !== header.version)) fail('MVU_READ_ONLY', 'Greeting session unavailable')
+      const viewIdentity = requireSelectedView(scope)
       const key = member(), lease = memberships.captureLease?.(scope.playthroughId), selection = getSelectionToken(scope.sessionId)
       const checkCurrent = () => {
-        try { return lease?.() === true && member() === key && getSelectionToken(scope.sessionId) === selection && getSelection(scope.sessionId)?.characterCardId === scope.characterId }
+        try { return lease?.() === true && member() === key && digest(selectedView(scope)) === digest(viewIdentity) && getSelectionToken(scope.sessionId) === selection && getSelection(scope.sessionId)?.characterCardId === scope.characterId }
         catch { return false }
       }
       if (!checkCurrent()) fail('MVU_READ_ONLY', 'Greeting scope changed')
-      return { mode: 'greeting', writableHead: false, checkCurrent }
+      return { mode: 'greeting', writableHead: false, checkCurrent, viewIdentity }
     }
     if (scope.mode === 'initial') {
       if (typeof scope.playthroughId !== 'string' || !scope.playthroughId || typeof scope.characterId !== 'string' || !scope.characterId
@@ -110,6 +123,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         if (timeline.nodes.length || timelineHead(timeline)) fail('MVU_READ_ONLY', 'Initial timeline is not empty')
         return digest({ playthrough, timeline })
       }
+      requireSelectedView(scope)
       membership() // Check access before loading; acquire the lease after the official resume lifecycle.
       let live = ctx.get('sessions')?.get?.(scope.sessionId)
       if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Initial character is not selected')
@@ -121,6 +135,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
       // Resume may normalize persisted RP selection. Bind only its completed, revalidated state.
       const memberKey = membership(), memberLease = memberships.captureLease?.(scope.playthroughId)
       if (typeof memberLease !== 'function' || memberLease() !== true) fail('MVU_READ_ONLY', 'Membership mutation lease required')
+      const viewIdentity = requireSelectedView(scope)
       const selectionToken = getSelectionToken(scope.sessionId)
       if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Initial character is not selected')
       const epoch = sessionEpochs.get(scope.sessionId) ?? 0
@@ -132,11 +147,11 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         try {
           const current = ctx.get('sessions')?.get?.(scope.sessionId)
           return (sessionEpochs.get(scope.sessionId) ?? 0) === epoch && current === live && emptyHistory(current.snapshotEvents()) && digest(current.header) === headerKey
-            && memberLease() === true && getSelectionToken(scope.sessionId) === selectionToken && getSelection(scope.sessionId)?.characterCardId === scope.characterId && membership() === memberKey
+            && memberLease() === true && digest(selectedView(scope)) === digest(viewIdentity) && getSelectionToken(scope.sessionId) === selectionToken && getSelection(scope.sessionId)?.characterCardId === scope.characterId && membership() === memberKey
         } catch { return false }
       }
       if (!checkCurrent()) fail('MVU_READ_ONLY', 'Initial scope changed during inspection')
-      return { mode: 'initial', writableHead: true, checkCurrent, initialSource: { sessionId: scope.sessionId, playthroughId: scope.playthroughId,
+      return { mode: 'initial', writableHead: true, checkCurrent, viewIdentity, initialSource: { sessionId: scope.sessionId, playthroughId: scope.playthroughId,
         characterId: scope.characterId, sessionFormatVersion: header.version, ...(header.createdAt === undefined ? {} : { sessionCreatedAt: header.createdAt }) } }
     }
     if (scope.mode !== undefined || scope.characterId !== undefined) fail('MVU_SCOPE', 'Unknown durable scope mode')

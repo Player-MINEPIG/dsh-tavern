@@ -12,7 +12,7 @@ function validateInput(data) {
  if(data.cardStorage){count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope)||!Array.isArray(data.cardStorage.entries))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
-export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onAction=async()=>{throw Error('Card input is unavailable')},onResize=()=>{},onActionEnd=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onIdentityAction=async()=>{throw Error('Identity confirmation unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
+export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onGreetingReady=()=>null,onAction=async()=>{throw Error('Card input is unavailable')},onResize=()=>{},onActionEnd=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onIdentityAction=async()=>{throw Error('Identity confirmation unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
  if(active>=4)throw Error('This card cannot start while four other cards are running.')
@@ -31,7 +31,7 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
   const message=event.data
   if(disposed||message?.nonce!==nonce)return
   if(message.kind==='busy'){if(!busyTimer)busyTimer=setTimeout(()=>fail('Card worker exceeded its response deadline'),1500);return}
-  if(message.kind==='ready'){clearTimeout(startupTimer);startupTimer=null;return}
+  if(message.kind==='ready'){clearTimeout(startupTimer);startupTimer=null;try{const choice=onGreetingReady();if(choice)worker.postMessage({kind:'greetingSelection',nonce,value:{swiped:choice.swiped===true}})}catch{fail('Greeting lifecycle delivery failed')}return}
   if(message.kind==='idle'){clearTimeout(busyTimer);busyTimer=null;const task=tasks.get(message.value?.taskId);if(task)task.composerFinished=true;if(task?.accepted)onActionEnd();return}
   if(message.kind==='error'){fail(String(message.value).slice(0,300));return}
   if(message.kind==='cardStorage'){
