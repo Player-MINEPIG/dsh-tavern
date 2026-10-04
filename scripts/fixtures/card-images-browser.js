@@ -98,7 +98,7 @@ try{
  let doc=container.querySelector('iframe').contentDocument;await pause(200);doc.getElementById('switch').click()
  await until(()=>requests.some(request=>request.url===fixtureUrl('next'))&&doc.querySelector('img[data-dtv-image-state=loaded]'))
  check('script DOM replacement loads only its displayed replacement',doc.querySelector('img').naturalWidth===120&&requests.filter(request=>request.url===fixtureUrl('next')).length===1)
- check('media status is separate from code runtime evidence',container.querySelector('.dtv-card-media')&&CARD_CSP.includes("img-src data:")&&CARD_CSP.includes("connect-src 'none'")&&container.querySelector('iframe').sandbox.value==='allow-same-origin')
+ check('successful media has no normal counter in RP content and keeps its network boundary',!container.querySelector('.dtv-card-media')&&CARD_CSP.includes("img-src data:")&&CARD_CSP.includes("connect-src 'none'")&&container.querySelector('iframe').sandbox.value==='allow-same-origin')
  const virtual=script.replace(fixtureUrl('start'),fixtureUrl('virtual-start')).replace(fixtureUrl('next'),fixtureUrl('virtual-next')).replace('<script>','<script>void document.body.scrollHeight;')
  render(React.createElement(MessageContent,{text:virtual,enabled:true,scopeKey:'virtual-images'}))
  await until(()=>container.querySelector('iframe')?.contentDocument?.querySelector('img[data-dtv-image-state=loaded]'))

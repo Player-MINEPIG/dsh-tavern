@@ -520,7 +520,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     !diagnosticsOutside&&unsupportedMessage ? h('p',{role:'alert'},unsupportedMessage):null,
     !diagnosticsOutside&&error ? h('p',{role:'alert'},error):null,
     !diagnosticsOutside&&photoError ? h('p',{className:'dtv-card-photo-error',role:'alert'},photoError):null,
-    media?.total ? h('small',{className:'dtv-card-media',role:'status'},translate('appearance.imageStatus',{visible:media.visible,loaded:media.loaded,loading:media.loading+media.queued,failed:media.failed})):null,
+    media?.failed > 0 ? h('small',{className:'dtv-card-media',role:'alert'},translate('appearance.imageUnavailable')):null,
     openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,
     openingProposal?h('section',{className:'dtv-card-opening-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},
       h('strong',null,translate('appearance.openingProposal')),
