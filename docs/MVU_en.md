@@ -41,7 +41,8 @@ Use `ctx.get('tavernMvu')` or optional `ctx.inject(['tavernMvu'], ...)`. Package
 | `read({id,scope,signal})` | Null if missing; record includes `id,name,type,authority,scope,content,revision,currentRevision,historical,versionKey,managementMode`, instances also include `templateId,instance,inheritedFrom?`; legacy records include `legacy,sourceError,capabilities` |
 | `update({id,content,expectedRevision,operationId,scope,signal})` | Current-content CAS edit; identical operation/request is idempotent, conflicting reuse rejected; source schema cannot be removed/replaced, candidate transforms once |
 | `copy({id,newId,scope,signal})` | Explicit new entity; existing IDs rejected |
-| `history({id,scope,signal})` | Source versions and success/failure evidence for that session |
+| `history({id,scope,signal,includeBefore?})` | Source versions and success/failure evidence for that session |
+| `facts({id,scope,signal})` | Return bounded, body-free source observations for this session; unavailable metadata never replaces state |
 | `setManagementMode({id,mode,expectedRevision,operationId,scope,signal})` | Persist native/managed mode, with CAS and idempotency |
 | `registerCommandProcessor({id,source})` | Trusted Host registration of one precommit command source; asynchronously returns `{receipt,dispose}`, not a card write API |
 | `registerUsage(handler)` | Trusted decision hook, returns disposer; request is `{on,id,scope,event,variables,managementMode}` |
@@ -74,6 +75,16 @@ Commands execute on private candidates. Ordinary schema or missing-path rejectio
 Budgets distinguish a single state from history collections. Each complete variables object, including derived display_data, delta_data, schema and diagnostics, retains the 2 MiB and structural limits. History, checkpoints, fork seeds and transaction receipts validate each state separately rather than charging the whole collection to one state. The durable ledger still has a combined 32 MiB limit; exceeding it refuses the atomic save and preserves the previous file and revision without trimming history. Host checkpoint/ingest freezes only session identity, event coordinates, turn completion reasons, user origin and assistant text/tool/interruption markers consumed by MVU. Request assembly, provider, media and user bodies remain in DSH and are omitted from this projection. Text fingerprints and durable source auditing are unchanged.
 
 Request source `tavern.mvu/state` must be explicitly selected in an assembly preset with `role:'system', lifetime:'request'`. It emits stat_data and update instructions with resource/config/strategy version diagnostics. Native DSH messages remain authoritative; unloading does not rewrite them.
+
+## Round tables in Tavern Trace
+
+Each Tavern Trace round shows **MVU variables and changes** directly below world-book triggers. The variable table shows JSON pointer, actual value, JSON type and last recorded update turn. Trigger rows show event/turn, source result, before/after values and failure or skip reason. Different attempts of the same reply remain separate; idempotent replay does not claim another variable commit. Inherited snapshots are labelled explicitly and do not claim a new child trigger.
+
+The default view is the exact version recorded for this turn. Missing history or before-value evidence stays unknown, never replaced with current content. The latest Trace entry can explicitly **Edit current variables**: read the current local-session record, edit a JSON value, then submit the observed revision and a fresh operationId. The table displays the source-validated result. CAS conflict preserves the draft and requires a new current read; historical views and running turns cannot save. Editing does not change management mode or enable model/store/retrieve strategies. Switching session or unmounting aborts pending reads/writes.
+
+Authenticated v1 HTTP maps source primitives: `GET /mvu/resources`, `/mvu/resource`, `/mvu/history`, `/mvu/facts`, and `POST /mvu/update`, under `/pmp-dsh-tavern/api/v1`. Reads take JSON `scope` plus `id` where applicable. Current scope requires `{authority:'local',sessionId}`; only `/resource` permits historical `messageId/endEventId`. Update body is `{id,scope,content,expectedRevision,operationId}`. Legacy/error sources reject edits. These Host UI primitives are not exposed to card VMs and do not replace card execution bindings.
+
+`history({includeBefore:true})` optionally adds `beforeAvailable` and verified `before` stat_data from the recorded parent or pre-turn checkpoint. Inherited or missing provenance stays unknown; existing history calls keep their array shape. `mvu-facts.json` retains at most 2,048 body-free trigger metadata rows globally and 1 MiB. Variable/state authority remains the existing MVU ledger. Older or evicted observations do not prove that no trigger occurred. Optional fact persistence failure is shown independently and does not turn a successful state commit into failure.
 
 ## Read-only bubble binding
 
