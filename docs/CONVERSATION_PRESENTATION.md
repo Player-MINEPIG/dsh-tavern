@@ -213,7 +213,7 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 
 内置 MVU 兼容层默认自动匹配 `mvu-builtins.js` 中的精确 URL 与 SHA-256，并检查每个选定引用的调用形式。受支持的副作用 import 或普通 script 初始化只获取根文件用于字节核验，随后不展开原 bundle 的 provider 图。完整 Helper schema 先经共享有界 schema DSL 解释器验证声明语义。无法匹配字节或调用语义时显示不支持；只有明确选择原代码模式才获取原模块图。`renderingAdapters` 仅保存资源限定的模式覆盖，不含审批、摘要或写许可。兼容记录保留原 bundle 身份及限定作用域的 facade 版本，原 bundle 不执行。支持副作用 import 与普通 script 初始化；不冒充具名导出、动态注册或任意运行时 Zod 对象。完整 schema Helper 仅在可用权威快照的 `variables.mvu_schema` 满足 `mvuSchema:1`、`interpreterVersion:1` 且完整 source 精确一致时跳过 VM 执行。显示的 `source-registered` 是快照派生的本地确认，不是注册 API；快照不可用、未知版本及原文不同均明确失败。
 
-传输前及 Worker 内再次限制展开后的初始化：最多 128 个 runs、128 个模块及 24 MiB UTF-8 总量，重复代码仍计费，context/variables 限 256 KiB。早期 timer 的 idle 不取消启动截止。四个运行实例用满时，可用卡片外的暂停和启动/重启按钮释放旧实例。原生待决写入最多 32 项并要求单调 ID；一次可信输入 task 最多归属一次写入。写入等待截止为 30 秒，结果不确定或回传失败会终止运行时并显示 operationId 供回执核查，不自动生成新 ID 重试。本地撤销立即停止写入；服务端撤销失败即使卡片卸载仍保留可见重试项。
+传输前及 Worker 内再次限制展开后的初始化：最多 128 个 runs、128 个模块及 24 MiB UTF-8 总量，重复代码仍计费，context/variables 限 256 KiB。早期 timer 的 idle 不取消启动截止。运行实例上限仍为四个；会话设置中的脚本开关、视图切换与卸载仍能终止所属实例。原生待决写入最多 32 项并要求单调 ID；一次可信输入 task 最多归属一次写入。写入等待截止为 30 秒，结果不确定或回传失败会终止运行时并显示 operationId 供回执核查，不自动生成新 ID 重试。本地撤销立即停止写入；服务端撤销失败即使卡片卸载仍保留可见重试项。
 
 
 ## 卡片内布局读值
