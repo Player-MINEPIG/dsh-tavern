@@ -93,9 +93,9 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 导入的内嵌脚本遵循保存的启用选择和总开关；总开关未设置时默认开启。外部代码先经导入提示或外观面板下载。内容可用且脚本开启后，受支持的卡片即可读写当前绑定变量；没有源码核对、单独写批准或权限到期步骤。
 
-可信渲染器组装完整执行包，通过现有 `rendering-write-grants` 传输提交 `{source,sourceIdentity,downloaded:true,enabled:true}`，自动建立内部绑定。Host 重算 `{version:1,sha256,scope}`，仅保留身份和作用域。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 与同步 `isCurrent` 验证同一执行仍有效；opaque token 不进入卡片代码。关闭、移除或重建运行时会撤销旧绑定；重建后按持久下载缓存和保存的开关自动建立新绑定，不把变量值或 token 移到另一个 session。Host 重启后可自动恢复同一当前执行绑定。
+可信渲染器组装完整执行包，通过现有 `rendering-write-grants` 传输提交 `{source,sourceIdentity,executionId,downloaded:true,enabled:true}`，自动建立内部绑定。Host 重算 `{version:1,sha256,scope}`，仅保留身份和作用域。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 与同步 `isCurrent` 验证同一执行仍有效；opaque token 不进入卡片代码。关闭、移除或重建运行时会撤销旧绑定；重建后按持久下载缓存和保存的开关自动建立新绑定，不把变量值或 token 移到另一个 session。Host 重启后，可重新建立仍有效的持久消息绑定。带选择 token 的开场视图须重新读取并重建，旧 token 不会被自动替换或复活。
 
-`POST /pmp-dsh-tavern/api/v1/mvu/card-binding` 接受 `{scope,grantId,sourceIdentity}`，仅绑定当前 timeline 头或经验证的空会话开场。`POST .../card-write` 接受 `{capability,operation:'patch'|'replace',value,expectedRevision,operationId,cause}`；`POST .../card-binding/revoke` 停止绑定。scope、当前选择与成员关系、来源 schema、CAS、幂等、取消及最终同步执行复核仍保留；历史和生成中的消息只读。capability 没有按时间失效的批准门，在执行结束或服务卸载时删除。
+`POST /pmp-dsh-tavern/api/v1/mvu/card-binding` 接受 `{scope,grantId,sourceIdentity,bindingId?}`，仅绑定当前 timeline 头或经验证的空会话开场。`POST .../card-write` 接受 `{capability,operation:'patch'|'replace',value,expectedRevision,operationId,cause}`；`POST .../card-binding/revoke` 停止绑定。scope、当前选择与成员关系、来源 schema、CAS、幂等、取消及最终同步执行复核仍保留；历史和生成中的消息只读。capability 没有按时间失效的批准门，在执行结束或服务卸载时删除。可信客户端先生成 executionId/bindingId；同一身份同参重放只创建一项，异参拒绝。失联或初次失败仍可用已知身份清理，创建中的撤销在最终 await 后复核；失败清理在当前页面显示并可重试。客户端崩溃或刷新后丢失的内存清理队列不承诺自动回收，Host 卸载清空内存绑定。
 
 `card_variable_update` 是来源执行事实，不是 manager 的 store/retrieve 许可请求。默认或缺失 manager 配置不会挡住已开启卡片的变量操作。manager 继续观察 started/triggered/applied/completed/skipped/failed；只有实际状态变化产生 `applied` 与 `detail:'state-committed'`，此类原生事实使用 `configRevision:null`。模型请求注入和助手更新仍执行既有 manager 策略及 lease。已有卡写策略声明不授予或拒绝原生卡片执行。
 

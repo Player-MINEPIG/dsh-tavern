@@ -51,7 +51,8 @@ function prepareResource(resource) {
 
 export class MvuService {
   protocolVersion = 1
-  #state; #path; #legacy; #listeners = new Set(); #usage = new Set(); #usageEpoch = 0; #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map(); #processors = new Map()
+  #state; #path; #legacy; #listeners = new Set(); #usage = new Set(); #usageEpoch = 0; #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map()
+  #cardCreations = new Map(); #processors = new Map()
   constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, authorizeCardWrite, capturePromptScope, waitForHost, captureSessionLease, resolveCommandHook, captureCommandScope } = {}) {
     if (resources.some(resource => resource.instance)) fail('MVU_CONFIG', 'State instance identity is allocated by the Host, not configuration')
     this.inspect = inspect; this.resolveScope = resolveScope; this.refresh = refresh; this.isActive = isActive; this.authorizeCardWrite = authorizeCardWrite; this.capturePromptScope = capturePromptScope
@@ -679,35 +680,48 @@ export class MvuService {
     const grant = await authority?.({ grantId: binding.grantId, sourceIdentity: binding.sourceIdentity })
     signal?.throwIfAborted()
     if (this.#disposed || authority !== this.authorizeCardWrite) fail('MVU_DISPOSED', 'Card authority changed')
-    if (!grant?.valid || !grant.write || hash(grant.scope) !== hash(binding.scope) || typeof grant.checkCurrent !== 'function' || grant.checkCurrent() !== true) fail('MVU_WRITE_DENIED', 'Explicit source write grant required')
+    if (!grant?.valid || !grant.write || hash(grant.scope) !== hash(binding.scope) || typeof grant.checkCurrent !== 'function' || grant.checkCurrent() !== true) fail('MVU_WRITE_DENIED', 'Current source execution binding required')
     return grant.checkCurrent
   }
-  async createCardBinding({ scope, grantId, sourceIdentity, signal } = {}) {
+  async createCardBinding({ scope, grantId, sourceIdentity, bindingId, signal } = {}) {
     if (scope?.mode === 'initial' && scope.greetingIndex !== undefined && (typeof scope.selectionToken !== 'string' || !/^[a-f0-9]{64}$/.test(scope.selectionToken))) fail('MVU_SCOPE', 'Selected greeting writes require a source view token')
     if (scope?.mode === 'greeting') fail('MVU_READ_ONLY', 'Greeting snapshots cannot grant writes')
     if (typeof grantId !== 'string' || !grantId || !scope || !sourceIdentity || hash(sourceIdentity.scope) !== hash(scope) || sourceIdentity.version !== 1 || !/^[a-f0-9]{64}$/.test(sourceIdentity.sha256)) fail('MVU_SCOPE', 'Execution identity must bind the exact scope')
     const binding = { scope: json(scope), grantId, sourceIdentity: json(sourceIdentity) }
-    const checkGrant = await this.#cardGrant(binding, signal)
-    const evidence = await this.resolveScope?.(scope)
-    if (!evidence?.writableHead) fail('MVU_READ_ONLY', 'Historical or running messages are read-only')
-    const initial = scope.mode === 'initial'
-    const rows = (await this.list({ scope, signal })).filter(row => {
-      const resource = this.resources.find(r => r.id === row.id)
-      if (!this.#cardResourceActive(resource, scope)) return false
-      if (initial) return true
-      const version = this.#record(row.id).versions.find(v => v.key === row.versionKey)
-      return version?.source.messageSeq === scope.endEventId && version?.source.messageId === evidence.messageId && (version?.sourceFingerprint ?? version?.fingerprint) === evidence.fingerprint
-    })
-    if (rows.length !== 1 || (!initial && (!rows[0].versionKey || rows[0].versionKey !== this.#record(rows[0].id).currentKey))) fail('MVU_READ_ONLY', 'Binding is not the current resource version')
-    if (initial && (evidence.mode !== 'initial' || typeof evidence.checkCurrent !== 'function' || evidence.checkCurrent() !== true)) fail('MVU_READ_ONLY', 'Initial scope is no longer current')
-    if (this.#cardBindings.size >= 512) fail('MVU_LIMIT', 'Too many live card bindings')
-    const snapshot = await this.snapshot(scope)
-    signal?.throwIfAborted()
-    if (checkGrant() !== true) fail('MVU_WRITE_DENIED', 'Write grant was revoked during binding')
-    if (initial && evidence.checkCurrent() !== true) fail('MVU_READ_ONLY', 'Initial scope changed during binding')
-    const capability = randomUUID()
-    this.#cardBindings.set(capability, { ...binding, resourceId: rows[0].id, ...(initial ? { scopeLease: evidence.checkCurrent, initialSource: json(evidence.initialSource) } : {}) })
-    return { capability, snapshot }
+    if (bindingId !== undefined && !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(bindingId)) fail('MVU_SCOPE', 'Invalid card binding identity')
+    const capability = bindingId ?? randomUUID(), fingerprint = hash(binding)
+    for (const [key, value] of this.#cardBindings) if (value.grantLease?.() !== true) this.#cardBindings.delete(key)
+    const existing = this.#cardBindings.get(capability)
+    if (existing && existing.requestFingerprint !== fingerprint) fail('MVU_IDEMPOTENCY_CONFLICT', 'Card binding identity changed')
+    let pending = this.#cardCreations.get(capability)
+    if (pending && pending.fingerprint !== fingerprint) fail('MVU_IDEMPOTENCY_CONFLICT', 'Card binding identity changed')
+    if (!pending) {
+      if (this.#cardCreations.size >= 512 || (!existing && this.#cardBindings.size + this.#cardCreations.size >= 512)) fail('MVU_LIMIT', 'Too many live card bindings')
+      pending = { fingerprint, cancelled: false, count: 0 }; this.#cardCreations.set(capability, pending)
+    }
+    pending.count++
+    try {
+      const checkGrant = await this.#cardGrant(binding, signal)
+      const evidence = await this.resolveScope?.(scope)
+      if (!evidence?.writableHead) fail('MVU_READ_ONLY', 'Historical or running messages are read-only')
+      const initial = scope.mode === 'initial'
+      const rows = (await this.list({ scope, signal })).filter(row => {
+        const resource = this.resources.find(r => r.id === row.id)
+        if (!this.#cardResourceActive(resource, scope)) return false
+        if (initial) return true
+        const version = this.#record(row.id).versions.find(v => v.key === row.versionKey)
+        return version?.source.messageSeq === scope.endEventId && version?.source.messageId === evidence.messageId && (version?.sourceFingerprint ?? version?.fingerprint) === evidence.fingerprint
+      })
+      if (rows.length !== 1 || (!initial && (!rows[0].versionKey || rows[0].versionKey !== this.#record(rows[0].id).currentKey))) fail('MVU_READ_ONLY', 'Binding is not the current resource version')
+      if (initial && (evidence.mode !== 'initial' || typeof evidence.checkCurrent !== 'function' || evidence.checkCurrent() !== true)) fail('MVU_READ_ONLY', 'Initial scope is no longer current')
+      const snapshot = await this.snapshot(scope)
+      signal?.throwIfAborted()
+      if (checkGrant() !== true) fail('MVU_WRITE_DENIED', 'Write grant was revoked during binding')
+      if (initial && evidence.checkCurrent() !== true) fail('MVU_READ_ONLY', 'Initial scope changed during binding')
+      if (pending.cancelled) fail('MVU_WRITE_DENIED', 'Card execution binding stopped during creation')
+      this.#cardBindings.set(capability, { ...binding, requestFingerprint: fingerprint, grantLease: checkGrant, resourceId: rows[0].id, ...(initial ? { scopeLease: evidence.checkCurrent, initialSource: json(evidence.initialSource) } : {}) })
+      return { capability, snapshot }
+    } finally { if (--pending.count === 0) this.#cardCreations.delete(capability) }
   }
   #cardResourceActive(resource, scope) {
     return resource && !resource.legacy && !resource.sourceError && (!resource.discovered || !this.isActive || this.isActive(resource, scope.sessionId))
@@ -721,7 +735,7 @@ export class MvuService {
     return evidence?.mode === 'initial' && evidence.writableHead && binding.scopeLease?.() === true && evidence.checkCurrent?.() === true
       && hash(evidence.initialSource) === hash(binding.initialSource) && active.length === 1 && active[0].id === binding.resourceId
   }
-  revokeCardBinding(capability) { this.#cardBindings.delete(capability) }
+  revokeCardBinding(capability) { const pending = this.#cardCreations.get(capability); if (pending) pending.cancelled = true; this.#cardBindings.delete(capability) }
   /** Transport belongs to the authenticated Host dispatcher, never to card code. */
   async cardWrite({ capability, operation, value, expectedRevision, operationId, cause, signal } = {}) {
     const barrier = this.waitForHost?.(); if (barrier) await barrier
@@ -882,5 +896,5 @@ export class MvuService {
       for (const phase of ['started', 'triggered', 'applied', 'completed']) this.#emit({ ...fact, phase })
     }
   }
-  dispose() { this.#disposed = true; for (const entry of this.#processors.values()) entry.dispose(); this.#listeners.clear(); this.#usage.clear(); this.#usageEpoch++; this.#cardBindings.clear() }
+  dispose() { this.#disposed = true; for (const entry of this.#processors.values()) entry.dispose(); this.#listeners.clear(); this.#usage.clear(); this.#usageEpoch++; this.#cardBindings.clear(); for (const pending of this.#cardCreations.values()) pending.cancelled = true }
 }

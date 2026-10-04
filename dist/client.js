@@ -16350,20 +16350,25 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
   const emit = () => {
     for (const listener of listeners) listener();
   };
-  async function revokeRemote(grant) {
-    let item = revocations.get(grant.grantId);
+  async function revokeRemote(grant, remove) {
+    const key2 = (remove ? "mvu:" : "rendering:") + grant.grantId;
+    let item = revocations.get(key2);
     if (item?.pending) return;
     if (!item) {
       item = { id: crypto.randomUUID(), grant, pending: false, error: null };
-      revocations.set(grant.grantId, item);
+      item.remove = remove;
+      revocations.set(key2, item);
     }
     item.pending = true;
     item.error = null;
     emit();
     try {
-      const response = await request2(`${API_V1}/rendering-write-grants/${encodeURIComponent(grant.grantId)}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(1e4) });
-      if (!response.ok) throw Error("Server execution cleanup failed (HTTP " + response.status + ")");
-      revocations.delete(grant.grantId);
+      if (item.remove) await item.remove();
+      else {
+        const response = await request2(`${API_V1}/rendering-write-grants/${encodeURIComponent(grant.grantId)}`, { method: "DELETE", keepalive: true, headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(1e4) });
+        if (!response.ok) throw Error("Server execution cleanup failed (HTTP " + response.status + ")");
+      }
+      revocations.delete(key2);
     } catch (error) {
       item.error = String(error.message);
     } finally {
@@ -16375,7 +16380,9 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
     entry.generation++;
     entry.controller?.abort();
     entry.controller = null;
-    if (entry.grant) void revokeRemote(entry.grant);
+    if (entry.started) void revokeRemote({ grantId: entry.executionId });
+    entry.executionId = crypto.randomUUID();
+    entry.started = false;
     entry.grant = null;
     if (notify2) entry.onRevoke?.();
   }
@@ -16389,13 +16396,16 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
     },
     retryRevocation(id) {
       const item = [...revocations.values()].find((item2) => item2.id === id);
-      return item ? revokeRemote(item.grant) : Promise.resolve();
+      return item ? revokeRemote(item.grant, item.remove) : Promise.resolve();
+    },
+    revokeMvuBinding(capability2, remove) {
+      return revokeRemote({ grantId: capability2 }, remove);
     },
     register({ scope, owners, runs, modules, html: html2, adapters = [], schemaDeclarations = [], downloaded, enabled, onRevoke }) {
       if (downloaded !== true || enabled !== true) throw Error("Card execution requires available sources and enabled scripts");
       const source = JSON.stringify({ version: 1, scope, owners, runs, modules, html: html2, adapters, schemaDeclarations });
       const boundScope = JSON.parse(source).scope;
-      const entry = { grant: null, generation: 0, onRevoke };
+      const entry = { grant: null, generation: 0, onRevoke, executionId: crypto.randomUUID(), started: false };
       entries2.add(entry);
       const identity = crypto.subtle.digest("SHA-256", new TextEncoder().encode(source)).then((bytes) => ({ version: 1, scope: boundScope, sha256: [...new Uint8Array(bytes)].map((x2) => x2.toString(16).padStart(2, "0")).join("") }));
       identity.catch(() => {
@@ -16408,20 +16418,21 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
         current4();
         if (entry.grant) return structuredClone(entry.grant);
         if (pending2) return pending2;
-        const ticket = entry.generation, controller2 = new AbortController();
+        const ticket = entry.generation, executionId = entry.executionId, controller2 = new AbortController();
         entry.controller = controller2;
         const work = (async () => {
           const sourceIdentity = await identity;
           current4();
           controller2.signal.throwIfAborted();
-          const response = await request2(`${API_V1}/rendering-write-grants`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller2.signal, body: JSON.stringify({ source, sourceIdentity, downloaded: true, enabled: true }) });
+          entry.started = true;
+          const response = await request2(`${API_V1}/rendering-write-grants`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller2.signal, body: JSON.stringify({ source, sourceIdentity, executionId, downloaded: true, enabled: true }) });
           const grant = await response.json();
           if (!response.ok) throw Object.assign(Error(grant.error ?? "Card execution binding failed"), { code: grant.code });
           if (ticket !== entry.generation || !entries2.has(entry)) {
             if (typeof grant.grantId === "string") void revokeRemote(grant);
             throw new DOMException("Card execution stopped", "AbortError");
           }
-          if (typeof grant.grantId !== "string" || !grant.grantId || grant.sourceIdentity?.version !== 1 || grant.sourceIdentity?.sha256 !== sourceIdentity.sha256 || JSON.stringify(Object.entries(grant.sourceIdentity?.scope ?? {}).sort()) !== JSON.stringify(Object.entries(boundScope).sort())) {
+          if (grant.grantId !== executionId || grant.sourceIdentity?.version !== 1 || grant.sourceIdentity?.sha256 !== sourceIdentity.sha256 || JSON.stringify(Object.entries(grant.sourceIdentity?.scope ?? {}).sort()) !== JSON.stringify(Object.entries(boundScope).sort())) {
             if (typeof grant.grantId === "string") void revokeRemote(grant);
             throw Error("Invalid execution binding response");
           }
@@ -26855,13 +26866,15 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
   const bound = immutable(copy(scope));
   if (typeof bound.sessionId !== "string" || !bound.sessionId) throw new TypeError("MVU session scope is required");
   const controller2 = new AbortController(), listeners = /* @__PURE__ */ new Set();
-  let disposed = false, timer, current4, polling = false, capability2, generation = 0;
+  const bindingId = writeGrant ? crypto.randomUUID() : void 0;
+  let disposed = false, timer, current4, polling = false, capability2, creating = false, generation = 0;
   const dispose = () => {
-    if (capability2) {
-      const revoked = capability2;
+    if (disposed) return;
+    if (capability2 || creating) {
+      const revoked = capability2 ?? bindingId;
       capability2 = void 0;
-      post("card-binding/revoke", { capability: revoked }, null).catch(() => {
-      });
+      creating = false;
+      void renderingWriteRequests.revokeMvuBinding(revoked, () => post("card-binding/revoke", { capability: revoked }, AbortSignal.timeout(1e4)));
     }
     ;
     disposed = true;
@@ -26872,8 +26885,8 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
   };
   signal?.addEventListener("abort", dispose, { once: true });
   const post = async (path3, body2, requestSignal = controller2.signal) => {
-    if (client?.postMvuOperation) return client.postMvuOperation(path3, body2, { signal: requestSignal });
-    const response = await tavernFetch(`${API_V1}/mvu/${path3}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body2), signal: requestSignal });
+    if (client?.postMvuOperation) return client.postMvuOperation(path3, body2, { signal: requestSignal, keepalive: path3 === "card-binding/revoke" });
+    const response = await tavernFetch(`${API_V1}/mvu/${path3}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body2), signal: requestSignal, keepalive: path3 === "card-binding/revoke" });
     const result = await response.json();
     if (!response.ok) throw Object.assign(new Error(result.error ?? "MVU write rejected"), { code: result.code });
     return result;
@@ -26894,8 +26907,11 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
     current4 = validate2(await read());
     signal?.throwIfAborted();
     if (writeGrant) {
-      const binding = await post("card-binding", { scope: bound, grantId: writeGrant.grantId, sourceIdentity: writeGrant.sourceIdentity });
+      creating = true;
+      const binding = await post("card-binding", { scope: bound, grantId: writeGrant.grantId, sourceIdentity: writeGrant.sourceIdentity, bindingId });
+      if (binding.capability !== bindingId) throw new TypeError("Invalid MVU binding identity");
       capability2 = binding.capability;
+      creating = false;
       current4 = validate2(binding.snapshot);
       signal?.throwIfAborted();
     }

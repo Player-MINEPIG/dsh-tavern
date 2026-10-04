@@ -89,3 +89,23 @@ test('current enabled card execution does not expire after thirty minutes',async
  const result=await f.service.cardWrite({capability,operation:'patch',value:[{op:'delta',path:'/hp',value:1}],expectedRevision:1,operationId:'after-two-hours',cause:'interval'})
  assert.equal(result.variables.stat_data.hp,10);assert.equal(result.revision,2)
 })
+
+test('same native binding identity replays concurrently without consuming capability slots',async t=>{
+ const f=await fixture(t);f.grant();const bindingId=crypto.randomUUID(),request={scope:f.scope,grantId:'grant',sourceIdentity:f.sourceIdentity,bindingId}
+ const results=await Promise.all(Array.from({length:20},()=>f.service.createCardBinding(request)))
+ assert.ok(results.every(result=>result.capability===bindingId))
+ for(let i=0;i<513;i++)assert.equal((await f.service.createCardBinding(request)).capability,bindingId)
+ const changed={...request,sourceIdentity:{...request.sourceIdentity,sha256:'b'.repeat(64)}}
+ await assert.rejects(f.service.createCardBinding(changed),{code:'MVU_IDEMPOTENCY_CONFLICT'})
+ const written=await f.service.cardWrite({capability:bindingId,operation:'patch',value:[{op:'delta',path:'/hp',value:1}],expectedRevision:1,operationId:'unchanged-transaction',cause:'script'})
+ assert.equal(written.revision,2)
+})
+test('revoking known creation identity during final await cannot resurrect a binding',async t=>{
+ const f=await fixture(t);f.grant();const bindingId=crypto.randomUUID(),snapshot=f.service.snapshot.bind(f.service)
+ let enter,release;const ready=new Promise(resolve=>{enter=resolve})
+ f.service.snapshot=async scope=>{const result=await snapshot(scope);enter();await new Promise(resolve=>{release=resolve});return result}
+ const binding=f.service.createCardBinding({scope:f.scope,grantId:'grant',sourceIdentity:f.sourceIdentity,bindingId})
+ await ready;f.service.revokeCardBinding(bindingId);release();await assert.rejects(binding,{code:'MVU_WRITE_DENIED'})
+ await assert.rejects(f.service.cardWrite({capability:bindingId,operation:'patch',value:[],expectedRevision:1,operationId:'revoked',cause:'script'}),{code:'MVU_WRITE_DENIED'})
+ f.service.snapshot=snapshot;assert.ok((await f.bind()).capability)
+})

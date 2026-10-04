@@ -662,7 +662,7 @@ Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 
 | 方法 | 路径（v1 下） | 输入／结果 | 状态 |
 | --- | --- | --- | --- |
-| POST | `/rendering-write-grants` | 可信渲染器提交 `{source,sourceIdentity,downloaded:true,enabled:true}`；source 为完整执行包 JSON，identity 为 `{version:1,sha256,scope}`。Host 重算 SHA-256，返回 `{ok:true,grantId,sourceIdentity}` | 200；格式／身份不符 400；超限 413 |
+| POST | `/rendering-write-grants` | 可信渲染器提交 `{source,sourceIdentity,executionId,downloaded:true,enabled:true}`；source 为完整执行包 JSON，identity 为 `{version:1,sha256,scope}`。Host 重算 SHA-256，返回 `{ok:true,grantId,sourceIdentity}` | 200；格式／身份不符 400；超限 413 |
 | DELETE | `/rendering-write-grants/:grantId` | 停止内部绑定；重复删除幂等 | 200 |
 
 沿用本机 peer、Host、Origin／桌面 token、JSON 媒体类型与 DSH admission 检查。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent` 在 MVU 最终提交前复核。内存最多保留 64 个活动绑定，不保存源码正文；没有批准到期期限，卸载全部清除。脚本开关与运行时清理撤销旧绑定，刷新时从持久下载缓存自动建立当前新绑定。scope、来源 schema、CAS 与幂等仍保留。原生卡片变量发出事实供 manager 观察；manager 的模型/store/retrieve 策略保持独立。详见 [MVU](MVU.md)。

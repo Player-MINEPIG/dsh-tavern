@@ -680,7 +680,7 @@ These internal routes bind available, enabled card execution to its exact source
 
 | Method | Path (under v1) | Input / result | Status |
 | --- | --- | --- | --- |
-| POST | `/rendering-write-grants` | Trusted renderer submits `{source,sourceIdentity,downloaded:true,enabled:true}`. Source is the full execution bundle JSON; identity is `{version:1,sha256,scope}`. Host recomputes SHA-256; returns `{ok:true,grantId,sourceIdentity}` | 200; invalid input/identity 400; oversized request 413 |
+| POST | `/rendering-write-grants` | Trusted renderer submits `{source,sourceIdentity,executionId,downloaded:true,enabled:true}`. Source is the full execution bundle JSON; identity is `{version:1,sha256,scope}`. Host recomputes SHA-256; returns `{ok:true,grantId,sourceIdentity}` | 200; invalid input/identity 400; oversized request 413 |
 | DELETE | `/rendering-write-grants/:grantId` | Stop an internal binding; repeated removal is idempotent | 200 |
 
 Existing local peer, Host, Origin/desktop-token, JSON media-type and DSH admission checks apply. `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` returns null or `{valid:true,write:true,scope}`; synchronous `isCurrent` is checked immediately before MVU commit. At most 64 live execution bindings are held in memory; no source body is stored. Bindings have no approval expiry and are cleared on unload. Script switches/runtime cleanup revoke them; persisted downloads recreate fresh current bindings on refresh. They do not bypass scope, source schema, CAS or idempotency. Native card variables emit facts for manager observation; manager model/store/retrieve policies remain separate. See [MVU](MVU_en.md).

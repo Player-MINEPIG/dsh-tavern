@@ -1,5 +1,6 @@
 import { API_V1 } from '../../../identity.js'
 import { tavernFetch } from '../api-fetch.js'
+import { renderingWriteRequests } from './rendering-write-requests.js'
 
 function copy(value) { return JSON.parse(JSON.stringify(value)) }
 function immutable(value) { if (value && typeof value === 'object') { Object.freeze(value); Object.values(value).forEach(immutable) }; return value }
@@ -10,12 +11,13 @@ export async function createMvuCardBinding({ client, scope, pollMs = 1000, signa
   const bound = immutable(copy(scope))
   if (typeof bound.sessionId !== 'string' || !bound.sessionId) throw new TypeError('MVU session scope is required')
   const controller = new AbortController(), listeners = new Set()
-  let disposed = false, timer, current, polling = false, capability, generation = 0
-  const dispose = () => { if (capability) { const revoked = capability; capability = undefined; post('card-binding/revoke', { capability: revoked }, null).catch(() => {}) }; disposed = true; clearTimeout(timer); listeners.clear(); controller.abort(); signal?.removeEventListener('abort', dispose) }
+  const bindingId = writeGrant ? crypto.randomUUID() : undefined
+  let disposed = false, timer, current, polling = false, capability, creating = false, generation = 0
+  const dispose = () => { if (disposed) return; if (capability || creating) { const revoked = capability ?? bindingId; capability = undefined; creating = false; void renderingWriteRequests.revokeMvuBinding(revoked, () => post('card-binding/revoke', { capability: revoked }, AbortSignal.timeout(10000))) }; disposed = true; clearTimeout(timer); listeners.clear(); controller.abort(); signal?.removeEventListener('abort', dispose) }
   signal?.addEventListener('abort', dispose, { once: true })
   const post = async (path, body, requestSignal = controller.signal) => {
-    if (client?.postMvuOperation) return client.postMvuOperation(path, body, { signal: requestSignal })
-    const response = await tavernFetch(`${API_V1}/mvu/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: requestSignal })
+    if (client?.postMvuOperation) return client.postMvuOperation(path, body, { signal: requestSignal, keepalive: path === 'card-binding/revoke' })
+    const response = await tavernFetch(`${API_V1}/mvu/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: requestSignal, keepalive: path === 'card-binding/revoke' })
     const result = await response.json()
     if (!response.ok) throw Object.assign(new Error(result.error ?? 'MVU write rejected'), { code: result.code })
     return result
@@ -35,7 +37,7 @@ export async function createMvuCardBinding({ client, scope, pollMs = 1000, signa
   }
   try {
     current = validate(await read()); signal?.throwIfAborted()
-    if (writeGrant) { const binding = await post('card-binding', { scope: bound, grantId: writeGrant.grantId, sourceIdentity: writeGrant.sourceIdentity }); capability = binding.capability; current = validate(binding.snapshot); signal?.throwIfAborted() }
+    if (writeGrant) { creating = true; const binding = await post('card-binding', { scope: bound, grantId: writeGrant.grantId, sourceIdentity: writeGrant.sourceIdentity, bindingId }); if (binding.capability !== bindingId) throw new TypeError('Invalid MVU binding identity'); capability = binding.capability; creating = false; current = validate(binding.snapshot); signal?.throwIfAborted() }
   } catch (error) { dispose(); throw error }
   const poll = async () => {
     if (disposed || polling || !listeners.size) return

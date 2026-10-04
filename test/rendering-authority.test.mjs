@@ -36,7 +36,7 @@ test('enabled downloaded UI execution acquires automatically and disposes late r
  hold=true;const pending=registry.register({...bundle,downloaded:true,enabled:true}),request=pending.getGrant()
  const rejected=assert.rejects(request,{name:'AbortError'})
  while(!finish)await new Promise(r=>setTimeout(r,1))
- pending.dispose();finish();await rejected;assert.equal(deletes.length,2)
+ pending.dispose();finish();await rejected;assert.equal(new Set(deletes).size,2)
 })
 
 test('rebuilding and Host restart create fresh automatic bindings; scopes never migrate',async()=>{
@@ -98,4 +98,41 @@ test('failed server revocation remains visible after card disposal and retries t
  await new Promise(r=>setTimeout(r,0));assert.equal(item.peekGrant(),null);assert.equal(authority.isCurrent(grant),true)
  const pending=registry.listRevocations();assert.equal(pending.length,1);assert.match(pending[0].error,/503/);assert.equal('grant' in pending[0],false)
  fail=false;await registry.retryRevocation(pending[0].id);assert.equal(authority.isCurrent(grant),false);assert.equal(registry.listRevocations().length,0);assert.equal(deletes[0],deletes[1]);authority.dispose()
+})
+
+test('lost create responses replay one execution and remain cleanable before an ID is returned',async()=>{
+ const authority=createRenderingAuthority();let lost=true,firstId,posts=0
+ const registry=createRenderingWriteRequests({request:async(url,options)=>{
+  if(options.method==='DELETE'){authority.revoke(url.split('/').at(-1));return Response.json({ok:true})}
+  const body=JSON.parse(options.body);posts++;firstId??=body.executionId;assert.equal(body.executionId,firstId)
+  const grant=authority.grant(body);if(lost)throw Error('Response lost after allocation');return Response.json(grant)
+ }})
+ const item=registry.register({...bundle,downloaded:true,enabled:true})
+ for(let i=0;i<80;i++)await assert.rejects(item.getGrant(),/Response lost/)
+ lost=false;const grant=await item.getGrant();assert.equal(posts,81);assert.equal(grant.grantId,firstId)
+ const other=[];for(let i=0;i<63;i++)other.push(authority.grant({source,sourceIdentity,downloaded:true,enabled:true}))
+ assert.throws(()=>authority.grant({source,sourceIdentity,downloaded:true,enabled:true}),/limit/)
+ item.dispose();await new Promise(r=>setTimeout(r,0));assert.equal(authority.isCurrent(grant),false)
+ assert.ok(authority.grant({source,sourceIdentity,downloaded:true,enabled:true}))
+ for(const g of other)authority.revoke(g.grantId)
+ authority.dispose()
+})
+test('a lost-response execution is disposed by its known identity; cleanup failures remain retryable',async()=>{
+ const authority=createRenderingAuthority();let id,identity,failed=true
+ const registry=createRenderingWriteRequests({request:async(url,options)=>{
+  if(options.method==='DELETE'){if(failed)return new Response('{}',{status:503});authority.revoke(url.split('/').at(-1));return Response.json({ok:true})}
+  const body=JSON.parse(options.body);id=body.executionId;identity=body.sourceIdentity;authority.grant(body);throw Error('Response lost')
+ }})
+ const item=registry.register({...bundle,downloaded:true,enabled:true});await assert.rejects(item.getGrant(),/Response lost/);item.dispose()
+ await new Promise(r=>setTimeout(r,0));assert.equal(authority.isCurrent({grantId:id,sourceIdentity:identity}),true)
+ const [pending]=registry.listRevocations();assert.ok(pending);failed=false;await registry.retryRevocation(pending.id)
+ assert.equal(authority.isCurrent({grantId:id,sourceIdentity:identity}),false);assert.equal(registry.listRevocations().length,0)
+ authority.dispose()
+})
+test('execution identity conflicts never replace the original source binding',()=>{
+ const authority=createRenderingAuthority(),executionId=crypto.randomUUID(),grant=authority.grant({source,sourceIdentity,executionId,downloaded:true,enabled:true})
+ assert.deepEqual(authority.grant({source,sourceIdentity,executionId,downloaded:true,enabled:true}),grant)
+ const changed=source+' ',identity={...sourceIdentity,sha256:createHash('sha256').update(changed).digest('hex')}
+ assert.throws(()=>authority.grant({source:changed,sourceIdentity:identity,executionId,downloaded:true,enabled:true}),/identity changed/)
+ assert.equal(authority.isCurrent(grant),true);authority.dispose()
 })

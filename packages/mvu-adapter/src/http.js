@@ -24,7 +24,7 @@ export function createMvuApi(service) {
       }
       const body = await readBoundedJson(req, 2 * 1024 * 1024)
       let result
-      if (pathname.endsWith('/card-binding')) result = await service.createCardBinding({ scope: validateScope(body.scope), grantId: body.grantId, sourceIdentity: body.sourceIdentity, signal: controller.signal })
+      if (pathname.endsWith('/card-binding')) result = await service.createCardBinding({ scope: validateScope(body.scope), grantId: body.grantId, sourceIdentity: body.sourceIdentity, bindingId: body.bindingId, signal: controller.signal })
       else if (pathname.endsWith('/card-binding/revoke')) { service.revokeCardBinding(body.capability); result = { ok: true } }
       else result = await service.cardWrite({ capability: body.capability, operation: body.operation, value: body.value, expectedRevision: body.expectedRevision, operationId: body.operationId, cause: body.cause, signal: controller.signal })
       return sendJson(res, 200, result)
