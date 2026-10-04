@@ -49214,7 +49214,7 @@ function normalizeVariables(input) {
   result.initialized_lorebooks ??= {};
   result.display_data ??= json(result.stat_data);
   result.delta_data ??= {};
-  return result;
+  return json(result);
 }
 
 // packages/client/src/play/identity-action-bridge.js
