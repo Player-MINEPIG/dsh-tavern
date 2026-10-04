@@ -247,36 +247,14 @@ export function renderRichTextHtml(text, options) {
 
 // Stream updates rerender the conversation; unchanged messages must not repeat
 // Markdown parsing, sanitization, or shadow-template traversal on every chunk.
-// Static authored HTML owns its surface just like an interactive card. Apply
-// conversation prose styling only between those already sanitized boundaries.
-function presentProse(html,textStyle) {
-  if(!textStyle)return {html}
-  const selector='[data-dtv-style-boundary], [data-dtv-html-document]'
-  const template=document.createElement('template');template.innerHTML=html
-  if(!template.content.querySelector(selector))return {html,style:textStyle}
-  const output=document.createElement('template');let prose
-  for(const node of [...template.content.childNodes]){
-    if(node.nodeType===1&&(node.matches(selector)||node.querySelector(selector))){prose=null;output.content.append(node);continue}
-    if(node.nodeType===3&&!node.textContent.trim()){output.content.append(node);continue}
-    if(!prose){
-      prose=document.createElement('div')
-      for(const [key,value] of Object.entries(textStyle))prose.style[key]=typeof value==='number'&&value!==0?`${value}px`:value
-      output.content.append(prose)
-    }
-    prose.append(node)
-  }
-  return {html:output.innerHTML}
-}
-export const RichText = memo(function RichText({ text, className, textStyle }) {
+export const RichText = memo(function RichText({ text, className }) {
   const element = useRef(null)
   const html=useMemo(()=>renderRichTextHtml(text,{liveImages:true}),[text])
-  const presentation=useMemo(()=>presentProse(html,textStyle),[html,textStyle])
-  useLayoutEffect(()=>{mountStyledHtml(element.current);const media=observeImages(element.current,{unavailable:translate('appearance.imageUnavailable')});return()=>media.dispose()},[presentation.html])
+  useLayoutEffect(()=>{mountStyledHtml(element.current);const media=observeImages(element.current,{unavailable:translate('appearance.imageUnavailable')});return()=>media.dispose()},[html])
   return createElement('div', {
     className,
-    style:presentation.style,
     'data-dtv-rich-text': '',
     ref: element,
-    dangerouslySetInnerHTML: { __html: presentation.html },
+    dangerouslySetInnerHTML: { __html: html },
   })
 })

@@ -55,7 +55,7 @@ try{
  check('long text wraps at the center-column maximum without overflowing',longBubble.getBoundingClientRect().width<=container.querySelector('.dtv-message-content').getBoundingClientRect().width&&longBubble.scrollWidth<=longBubble.clientWidth)
  flushSync(()=>root.render(React.createElement(MessageBubble,{text:'Before the card\n\n```html\n<body><button>Card content</button></body>\n```\n\nAfter the card',editable:false})))
  const cardBubble=container.querySelector('.dtv-play-chat-bubble'),textParts=[...container.querySelector('.dtv-play-rich').children].filter(element=>!element.classList.contains('dtv-interactive-card'))
- check('card presentation has no added bubble padding while mixed prose retains the selected style',getComputedStyle(cardBubble).padding==='0px'&&getComputedStyle(cardBubble).borderRadius==='4px'&&textParts.length===2&&textParts.every(element=>getComputedStyle(element).backgroundColor==='rgb(255, 250, 240)'&&getComputedStyle(element).padding==='20px')&&container.textContent.includes('Before the card')&&container.textContent.includes('After the card'))
+ check('cards and mixed prose stay inside one selected RP bubble',getComputedStyle(cardBubble).padding==='20px'&&getComputedStyle(cardBubble).borderRadius==='4px'&&textParts.length===2&&textParts.every(element=>getComputedStyle(element).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(element).padding==='0px')&&container.textContent.includes('Before the card')&&container.textContent.includes('After the card'))
  installPlayChatStyles()
  const greetingText='Greeting text that should share the same maximum width as ordinary message text. '.repeat(10)
  const greeting={text:greetingText,index:1,options:[{index:0},{index:1},{index:2}],characterName:'Guide'}

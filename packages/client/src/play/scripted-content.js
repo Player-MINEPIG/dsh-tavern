@@ -306,7 +306,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected)return
       const content=ownFrame.parentElement.parentElement,boundary=content.parentElement
       const fillsOpening=viewportMode&&content.classList.contains('dtv-play-rich')&&content.children.length===1&&boundary?.matches('.dtv-play-opening-body[data-dtv-card-viewport-boundary]')
-      ownFrame.style.height=viewportMode?(fillsOpening?'100%':'clamp(362px,75dvh,800px)'):`${Math.max(100,Math.min(800,doc.body.scrollHeight))}px`
+      ownFrame.style.height=viewportMode?(fillsOpening?'100%':'clamp(362px,75dvh,800px)'):`${Math.max(1,Math.min(800,doc.body.scrollHeight))}px`
       if(!viewportFrame)viewportFrame=requestAnimationFrame(()=>{
         viewportFrame=0
         if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected||controller.signal.aborted)return
@@ -460,7 +460,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             try{if(cleaned||current!==generation.current)throw Error('Card input generation expired');const result=await composerBridge.request(request);if(!cleaned&&current===generation.current)setError('');return result}
             catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}
           },
-          onResize:height=>{if(!cleaned&&current===generation.current&&frame.current?.contentDocument===doc){if(viewportMode)resize();else frame.current.style.height=`${Math.max(100,Math.min(800,height))}px`}},
+          onResize:height=>{if(!cleaned&&current===generation.current&&frame.current?.contentDocument===doc){if(viewportMode)resize();else frame.current.style.height=`${Math.max(1,Math.min(800,height))}px`}},
           onActionEnd:()=>{if(!cleaned&&current===generation.current)composerBridge.finishRequest()},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
@@ -536,8 +536,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       h('button',{type:'button',onClick:()=>replaceProposal('')},translate('appearance.close'))):null,
   )
 })
-export const MessageContent = memo(function MessageContent({text,textStyle,...props}) {
+export const MessageContent = memo(function MessageContent({text,...props}) {
   return h('div',{className:'dtv-play-rich'},...splitCards(text).map((part,index)=>part.html
     ? h(InteractiveCard,{key:index,source:part.html,...props,scopeKey:JSON.stringify([props.scopeKey,index])})
-    : !part.text.trim()?null:h(RichText,{key:index,text:part.text,textStyle})))
+    : !part.text.trim()?null:h(RichText,{key:index,text:part.text})))
 })

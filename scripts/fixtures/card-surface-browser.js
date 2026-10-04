@@ -16,13 +16,13 @@ import {installPlayChatStyles} from '../../packages/client/src/play/chat.js'
   for(let i=0;i<200&&!container.querySelector('iframe')?.contentDocument?.getElementById('choice');i++)await pause(20)
   await pause(250)
   const bubble=container.querySelector('.dtv-play-chat-bubble'),rich=bubble.querySelector('.dtv-play-rich'),boundary=rich.querySelector('[data-dtv-style-boundary]'),frame=rich.querySelector('iframe'),doc=frame.contentDocument
-  check('static status and interactive option card stay in one rounded message container',bubble.contains(boundary)&&bubble.contains(frame)&&getComputedStyle(bubble).borderRadius==='18px'&&getComputedStyle(bubble).overflow==='hidden')
-  check('shared message surface follows the Host theme without an extra padded card frame',getComputedStyle(bubble).backgroundColor==='rgb(32, 33, 38)'&&getComputedStyle(bubble).padding==='0px'&&getComputedStyle(frame).borderWidth==='0px')
+  check('static status and interactive option card stay inside the original RP message shell',bubble.contains(boundary)&&bubble.contains(frame)&&getComputedStyle(bubble).borderRadius==='18px'&&container.querySelectorAll('.dtv-play-chat-bubble').length===1)
+  check('message shell retains its selected background and padding without a second Host surface',getComputedStyle(bubble).backgroundColor==='rgb(241, 243, 246)'&&getComputedStyle(bubble).padding==='14px'&&getComputedStyle(frame).borderWidth==='0px')
   const plain=[...rich.querySelector('[data-dtv-rich-text]').children].filter(node=>!node.matches('[data-dtv-html-document], [data-dtv-style-boundary]'))
-  check('authored static HTML has no prose bubble wrapper; surrounding prose retains its style',boundary.parentElement.matches('[data-dtv-html-document]')&&getComputedStyle(boundary.parentElement).padding==='0px'&&plain.length===2&&plain.every(node=>getComputedStyle(node).padding==='14px'),{plain:plain.length})
+  check('static HTML and surrounding prose add no nested message bubble',boundary.parentElement.matches('[data-dtv-html-document]')&&getComputedStyle(boundary.parentElement).padding==='0px'&&plain.length===2&&plain.every(node=>getComputedStyle(node).padding==='0px'&&getComputedStyle(node).backgroundColor==='rgba(0, 0, 0, 0)'),{plain:plain.length})
   check('transparent iframe root matches its embedding color scheme',getComputedStyle(doc.documentElement).colorScheme===getComputedStyle(frame).colorScheme&&getComputedStyle(doc.body).backgroundColor==='rgba(0, 0, 0, 0)')
   const surfaceRect=doc.getElementById('surface').getBoundingClientRect();check('flow height includes card margins and preserves the complete panel',surfaceRect.top>=0&&surfaceRect.bottom<=frame.clientHeight,{frame:frame.clientHeight,body:doc.body.scrollHeight,top:surfaceRect.top,bottom:surfaceRect.bottom})
-  const frameRect=frame.getBoundingClientRect();globalThis.__surfacePixel={x:Math.round(frameRect.left+3),y:Math.round(frameRect.top+3),expected:[32,33,38]}
+  const frameRect=frame.getBoundingClientRect();globalThis.__surfacePixel={x:Math.round(frameRect.left+3),y:Math.round(frameRect.top+3),expected:[241,243,246]}
   const button=doc.getElementById('choice').getBoundingClientRect();globalThis.__trustedClick={id:'surface-choice',x:frameRect.left+button.x+button.width/2,y:frameRect.top+button.y+button.height/2}
   for(let i=0;i<100&&doc.getElementById('count').textContent!=='1';i++)await pause(20)
   check('native option input still reaches the isolated runtime',doc.getElementById('count').textContent==='1')
