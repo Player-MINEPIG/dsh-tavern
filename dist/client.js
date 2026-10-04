@@ -6766,8 +6766,8 @@ function scopeFinally(scope, blockError) {
  Then, failed to dispose scope: ${disposeError.message}`, disposeError }), blockError;
   if (blockError || disposeError) throw blockError || disposeError;
 }
-function createDisposableArray(items) {
-  let array = items ? Array.from(items) : [];
+function createDisposableArray(items2) {
+  let array = items2 ? Array.from(items2) : [];
   function disposeAlive() {
     return array.forEach((disposable) => disposable.alive ? disposable.dispose() : void 0);
   }
@@ -15295,12 +15295,12 @@ function compileFiniteRegex({ pattern, flags }, tick) {
   }
   function expression2(depth = 0) {
     if (depth > 16) fail("MVU_LIMIT", "Regex nesting exceeds limit");
-    const choices = [], items = [];
+    const choices = [], items2 = [];
     while (offset2 < text3.length && text3[offset2] !== ")") {
       if (text3[offset2] === "|") {
         offset2++;
-        if (!items.length) invalid();
-        choices.push({ sequence: items.splice(0) });
+        if (!items2.length) invalid();
+        choices.push({ sequence: items2.splice(0) });
         continue;
       }
       let item;
@@ -15337,10 +15337,10 @@ function compileFiniteRegex({ pattern, flags }, tick) {
         offset2++;
         item = { repeat: item, min: 0, max: 1 };
       }
-      items.push(item);
+      items2.push(item);
     }
-    if (!items.length) invalid();
-    choices.push({ sequence: items });
+    if (!items2.length) invalid();
+    choices.push({ sequence: items2 });
     return { choices };
   }
   const root = expression2();
@@ -16164,9 +16164,9 @@ function helperScripts(resource) {
   let helper = raw?.data?.extensions?.tavern_helper ?? raw?.extensions?.tavern_helper;
   if (Array.isArray(helper)) helper = Object.fromEntries(helper.filter((entry) => Array.isArray(entry) && entry.length === 2 && ["scripts", "variables"].includes(entry[0])));
   const result = [];
-  function visit3(items, prefix = "scripts", depth = 0, parentEnabled = true) {
-    if (!Array.isArray(items) || depth > 8) return;
-    items.slice(0, 128).forEach((entry, index) => {
+  function visit3(items2, prefix = "scripts", depth = 0, parentEnabled = true) {
+    if (!Array.isArray(items2) || depth > 8) return;
+    items2.slice(0, 128).forEach((entry, index) => {
       const value = entry?.value && typeof entry.value === "object" ? entry.value : entry;
       if (!value || typeof value !== "object") return;
       const path3 = `${prefix}[${index}]`, enabled = parentEnabled && value.enabled !== false && value.disabled !== true && entry.enabled !== false && entry.disabled !== true;
@@ -16542,6 +16542,98 @@ function createRenderingCacheBudget(limit2 = 64 * 1024 * 1024) {
 }
 var renderingCacheBudget = createRenderingCacheBudget();
 
+// packages/client/src/play/rendering-shared-sources.js
+function uniqueSourceBytes(items2, excluding = []) {
+  const seen = /* @__PURE__ */ new Map();
+  const add = (item) => {
+    const url = item.url ?? item.source;
+    let contents = seen.get(url);
+    if (!contents) seen.set(url, contents = /* @__PURE__ */ new Set());
+    if (contents.has(item.content)) return false;
+    contents.add(item.content);
+    return true;
+  };
+  for (const item of excluding) add(item);
+  let bytes = 0;
+  for (const item of items2) if (add(item)) bytes += new TextEncoder().encode(item.content).byteLength;
+  return bytes;
+}
+function createSharedSourceDownloads({ lookup, download }) {
+  const pending2 = /* @__PURE__ */ new Map(), active2 = /* @__PURE__ */ new Set();
+  let lastDownload = 0;
+  return {
+    async acquire(url, { signal, refresh = false } = {}) {
+      signal?.throwIfAborted();
+      if (!refresh) {
+        const saved = await lookup(url);
+        signal?.throwIfAborted();
+        if (saved) return { ...saved, release() {
+        } };
+      }
+      let entry = refresh ? null : pending2.get(url);
+      if (!entry) {
+        entry = { controller: new AbortController(), users: /* @__PURE__ */ new Set() };
+        active2.add(entry);
+        const current4 = entry;
+        entry.promise = Promise.resolve().then(() => download(url, { signal: current4.controller.signal })).then((content) => {
+          current4.controller.signal.throwIfAborted();
+          if (typeof content !== "string" || new TextEncoder().encode(content).byteLength > MAX_RENDER_SOURCE) throw Error("Source exceeds 8 MiB");
+          lastDownload = Math.max(Date.now(), lastDownload + 1);
+          return { content, downloadedAt: lastDownload };
+        });
+        entry.promise.catch(() => {
+        });
+        pending2.set(url, entry);
+      }
+      const user = {};
+      entry.users.add(user);
+      return new Promise((resolve, reject) => {
+        let settled = false, released = false;
+        const release2 = () => {
+          if (released) return;
+          released = true;
+          signal?.removeEventListener("abort", abort);
+          entry.users.delete(user);
+          if (!entry.users.size) {
+            entry.controller.abort();
+            active2.delete(entry);
+            if (pending2.get(url) === entry) pending2.delete(url);
+          }
+        };
+        const abort = () => {
+          release2();
+          if (!settled) {
+            settled = true;
+            reject(signal.reason ?? Error("Download cancelled"));
+          }
+        };
+        signal?.addEventListener("abort", abort, { once: true });
+        if (signal?.aborted) {
+          abort();
+          return;
+        }
+        entry.promise.then((value) => {
+          if (!settled) {
+            settled = true;
+            resolve({ ...value, release: release2 });
+          }
+        }, (error) => {
+          release2();
+          if (!settled) {
+            settled = true;
+            reject(error);
+          }
+        });
+      });
+    },
+    dispose() {
+      for (const entry of active2) entry.controller.abort();
+      active2.clear();
+      pending2.clear();
+    }
+  };
+}
+
 // packages/client/src/play/rendering-trust.js
 function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU_BUILTINS, budget = createRenderingCacheBudget() } = {}) {
   const installs = /* @__PURE__ */ new Map(), records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), adapters = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
@@ -16556,7 +16648,7 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
   const keyFor = (owner, source) => JSON.stringify([owner, source]);
   const reserveRecords = (values) => {
     const snapshot = budget.snapshot(), old = new Map(snapshot.entries), next = /* @__PURE__ */ new Map([
-      ["executable", values.reduce((sum, item) => sum + new TextEncoder().encode(item.content).byteLength, 0)],
+      ["executable", uniqueSourceBytes(values)],
       ["executable-inactive", inactiveBytes(values)]
     ]);
     const total = snapshot.total + [...next].reduce((sum, [key2, bytes]) => sum + bytes - (old.get(key2) ?? 0), 0);
@@ -16634,7 +16726,7 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
       if (generation !== epoch || installs.get(owner) !== ownerTicket) throw Error("Rendering review was cancelled");
       if (!records.has(key2) && records.size >= RENDERING_CACHE_LIMITS.count) throw Error("Rendering source count exceeds limit");
       const bytes = new TextEncoder().encode(content).byteLength;
-      if (bytes > MAX_RENDER_SOURCE || [...records.entries()].reduce((sum, [id, value]) => sum + (id === key2 ? 0 : new TextEncoder().encode(value.content).byteLength), bytes) > RENDERING_CACHE_LIMITS.bytes) throw Error("Rendering cache exceeds limit");
+      if (bytes > MAX_RENDER_SOURCE || uniqueSourceBytes([...records.values()].filter((item) => keyFor(item.owner, item.source) !== key2).concat({ source, content })) > RENDERING_CACHE_LIMITS.bytes) throw Error("Rendering cache exceeds limit");
       const next = { ticket, owner, source, content, approved: false, digest: null };
       reserveRecords([...records.values()].filter((item) => keyFor(item.owner, item.source) !== key2).concat(next));
       records.set(key2, next);
@@ -16651,31 +16743,32 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
       for (const [key2, value] of records) if (value.owner === owner) records.delete(key2);
       emit();
     },
-    async prepare(owner, items) {
-      if (!Array.isArray(items) || items.length > DEPENDENCY_LIMITS.count || items.reduce((sum, item) => sum + new TextEncoder().encode(item.content ?? "").byteLength, 0) > DEPENDENCY_LIMITS.bytes) throw Error("Rendering dependency graph exceeds limit");
+    async prepare(owner, items2) {
+      if (!Array.isArray(items2) || items2.length > DEPENDENCY_LIMITS.count || items2.reduce((sum, item) => sum + new TextEncoder().encode(item.content ?? "").byteLength, 0) > DEPENDENCY_LIMITS.bytes) throw Error("Rendering dependency graph exceeds limit");
       const epoch = generation, ticket = {};
       installs.set(owner, ticket);
       await cacheReady();
       await budget.ready();
       if (epoch !== generation || installs.get(owner) !== ticket) throw Error("Dependency installation cancelled");
-      const next = await Promise.all(items.map(async (item) => {
+      const next = await Promise.all(items2.map(async (item) => {
         if (externalUrl(item.url) !== item.url || typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE || item.depth !== void 0 && (!Number.isSafeInteger(item.depth) || item.depth < 0 || item.depth > DEPENDENCY_LIMITS.depth)) throw Error("Invalid cached dependency");
         const digest2 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(item.content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+        if (item.contentDigest && item.contentDigest !== digest2) throw Error("Shared dependency content changed");
         if (item.builtin === true && (!builtin2(item.url, digest2) || adapters.get(keyFor(owner, item.url)) === "original")) throw Error("Invalid built-in adapter selection");
         return { owner, source: item.url, content: item.content, depth: item.depth, digest: digest2, approved: true, ...item.builtin === true ? { builtin: true } : {} };
       }));
       return () => {
         if (epoch !== generation || installs.get(owner) !== ticket) throw Error("Dependency installation cancelled");
         const retained = [...records.values()].filter((item) => item.owner !== owner);
-        if (retained.length + next.length > RENDERING_CACHE_LIMITS.count || [...retained, ...next].reduce((sum, item) => sum + new TextEncoder().encode(item.content).byteLength, 0) > RENDERING_CACHE_LIMITS.bytes) throw Error("Rendering cache exceeds limit");
+        if (retained.length + next.length > RENDERING_CACHE_LIMITS.count || uniqueSourceBytes([...retained, ...next]) > RENDERING_CACHE_LIMITS.bytes) throw Error("Rendering cache exceeds limit");
         reserveRecords([...retained, ...next]);
         for (const [key2, value] of records) if (value.owner === owner) records.delete(key2);
         for (const item of next) records.set(keyFor(owner, item.source), item);
         emit();
       };
     },
-    async install(owner, items) {
-      const commit = await this.prepare(owner, items);
+    async install(owner, items2) {
+      const commit = await this.prepare(owner, items2);
       commit();
     },
     inspect(owner, source) {
@@ -16715,14 +16808,248 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
 }
 var renderingTrust = createRenderingTrust({ budget: renderingCacheBudget });
 
+// packages/client/src/play/rendering-dependency-store.js
+var envelope = (value) => value?.fingerprint ? { generation: 0, graph: value } : value ?? { generation: 0 };
+var hash = async (content) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+var sourceKey = (url, digest2) => JSON.stringify([url, digest2]);
+var items = (graph) => [...graph?.items ?? [], ...graph?.retained ?? []];
+var references = (graph) => new Set(items(graph).filter((item) => item.contentDigest).map((item) => sourceKey(item.url, item.contentDigest)));
+var legacy = (graph) => items(graph).some((item) => typeof item.content === "string");
+function dependencyStore(indexedDB = globalThis.indexedDB) {
+  let database, initializing;
+  async function open2() {
+    if (!indexedDB) throw Error("Persistent dependency cache is unavailable");
+    database ??= new Promise((resolve, reject) => {
+      const request2 = indexedDB.open("dtv-rendering-dependencies", 2);
+      let finished = false;
+      request2.onupgradeneeded = () => {
+        const db = request2.result;
+        if (!db.objectStoreNames.contains("graphs")) db.createObjectStore("graphs");
+        if (!db.objectStoreNames.contains("sources")) db.createObjectStore("sources").createIndex("url", "url");
+      };
+      request2.onsuccess = () => {
+        const db = request2.result;
+        if (finished) {
+          db.close();
+          return;
+        }
+        ;
+        finished = true;
+        db.onversionchange = () => {
+          db.close();
+          database = null;
+          initializing = null;
+        };
+        resolve(db);
+      };
+      request2.onerror = () => {
+        if (finished) return;
+        finished = true;
+        database = null;
+        reject(request2.error);
+      };
+      request2.onblocked = () => {
+        if (finished) return;
+        finished = true;
+        database = null;
+        reject(Error("Dependency cache upgrade is blocked; reload other Tavern tabs"));
+      };
+    });
+    return database;
+  }
+  async function pack(graph) {
+    if (!graph) return { graph, sources: /* @__PURE__ */ new Map() };
+    if (!Array.isArray(graph.items) || graph.items.length > MAX_DEPENDENCY_IDENTITIES || graph.retained !== void 0 && (!Array.isArray(graph.retained) || graph.retained.length > RENDERING_CACHE_LIMITS.count)) throw Error("Invalid dependency cache size");
+    const identities = /* @__PURE__ */ new Map();
+    for (const item of items(graph)) if (item.content !== void 0) {
+      if (externalUrl(item.url) !== item.url || typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE) throw Error("Invalid dependency cache source");
+      if (identities.has(item.url) && identities.get(item.url).content !== item.content) throw Error("Conflicting dependency cache source versions");
+      identities.set(item.url, item);
+    }
+    if (identities.size > RENDERING_CACHE_LIMITS.count || uniqueSourceBytes([...identities.values()]) > RENDERING_CACHE_LIMITS.bytes) throw Error("Dependency cache exceeds limit");
+    const sources = /* @__PURE__ */ new Map(), known = /* @__PURE__ */ new Map();
+    const convert = async (item) => {
+      if (item.content === void 0) return { ...item };
+      if (externalUrl(item.url) !== item.url || typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE) throw Error("Invalid dependency cache source");
+      let contents = known.get(item.url);
+      if (!contents) known.set(item.url, contents = /* @__PURE__ */ new Map());
+      let digest2 = contents.get(item.content);
+      if (!digest2) {
+        digest2 = await hash(item.content);
+        contents.set(item.content, digest2);
+      }
+      if (item.contentDigest && item.contentDigest !== digest2) throw Error("Shared dependency content changed");
+      const key2 = sourceKey(item.url, digest2), source = { url: item.url, digest: digest2, content: item.content, downloadedAt: Number.isSafeInteger(item.downloadedAt) ? item.downloadedAt : 0 };
+      sources.set(key2, source);
+      const { content, ...metadata } = item;
+      return { ...metadata, contentDigest: digest2 };
+    };
+    const [active2, retained] = await Promise.all([Promise.all((graph.items ?? []).map(convert)), Promise.all((graph.retained ?? []).map(convert))]);
+    return { graph: { ...graph, items: active2, ...graph.retained !== void 0 ? { retained } : {} }, sources };
+  }
+  function failure(transaction, error, state) {
+    state.error = error;
+    transaction.abort();
+  }
+  function replace(transaction, owner, saved, record, sources, state, done = () => {
+  }) {
+    const graphs = transaction.objectStore("graphs"), bytes = transaction.objectStore("sources"), old = references(saved.graph), next = references(record.graph);
+    const keys = /* @__PURE__ */ new Set([...old, ...next]);
+    let remaining = keys.size;
+    for (const key2 of keys) {
+      const request2 = bytes.get(key2);
+      request2.onsuccess = () => {
+        try {
+          const prior = request2.result, incoming = sources.get(key2), delta = Number(next.has(key2)) - Number(old.has(key2));
+          if (incoming && prior && prior.content !== incoming.content) throw Error("Shared dependency content changed");
+          if (!prior && !incoming) {
+            if (next.has(key2)) throw Error("Shared dependency bytes are missing");
+          } else {
+            const count = (prior?.references ?? 0) + delta;
+            if (count <= 0) bytes.delete(key2);
+            else {
+              const value = prior ?? incoming;
+              bytes.put({ ...value, downloadedAt: Math.max(value.downloadedAt ?? 0, incoming?.downloadedAt ?? 0), references: count }, key2);
+            }
+          }
+          if (!--remaining) done();
+        } catch (error) {
+          failure(transaction, error, state);
+        }
+      };
+    }
+    graphs.put(record, owner);
+    if (!remaining) done();
+  }
+  function hydrate(transaction, saved, done, state) {
+    const record = structuredClone(envelope(saved)), requests = items(record.graph).filter((item) => item.contentDigest);
+    let remaining = requests.length;
+    if (!remaining) {
+      done(record);
+      return;
+    }
+    for (const item of requests) {
+      const request2 = transaction.objectStore("sources").get(sourceKey(item.url, item.contentDigest));
+      request2.onsuccess = () => {
+        try {
+          const source = request2.result;
+          if (!source || source.url !== item.url || source.digest !== item.contentDigest || typeof source.content !== "string") throw Error("Shared dependency bytes are missing");
+          item.content = source.content;
+          if (!--remaining) done(record);
+        } catch (error) {
+          failure(transaction, error, state);
+        }
+      };
+    }
+  }
+  function transactionResult(transaction, state) {
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve(state.result);
+      transaction.onerror = () => reject(state.error ?? transaction.error);
+      transaction.onabort = () => reject(state.error ?? transaction.error ?? Error("Dependency cache transaction aborted"));
+    });
+  }
+  async function migrate(db) {
+    const state = { result: [] }, transaction = db.transaction("graphs", "readonly"), request2 = transaction.objectStore("graphs").openCursor();
+    request2.onsuccess = () => {
+      const cursor = request2.result;
+      if (cursor) {
+        const saved = envelope(cursor.value);
+        if (legacy(saved.graph)) state.result.push({ owner: cursor.key, saved });
+        cursor.continue();
+      }
+    };
+    const entries2 = await transactionResult(transaction, state);
+    if (!entries2.length) return;
+    const prepared = await Promise.all(entries2.map(async (entry) => ({ ...entry, ...await pack(entry.saved.graph) })));
+    const write = db.transaction(["graphs", "sources"], "readwrite"), result = {};
+    const next = (index) => {
+      const entry = prepared[index];
+      if (!entry) return;
+      const read = write.objectStore("graphs").get(entry.owner);
+      read.onsuccess = () => {
+        try {
+          const current4 = envelope(read.result);
+          if (current4.generation === entry.saved.generation && current4.pending === entry.saved.pending && legacy(current4.graph)) replace(write, entry.owner, current4, { ...current4, graph: entry.graph }, entry.sources, result, () => next(index + 1));
+          else next(index + 1);
+        } catch (error) {
+          failure(write, error, result);
+        }
+      };
+    };
+    next(0);
+    await transactionResult(write, result);
+  }
+  async function ready() {
+    const db = await open2();
+    initializing ??= migrate(db).catch((error) => {
+      initializing = null;
+      throw error;
+    });
+    await initializing;
+    return db;
+  }
+  async function operation(owner, change, read) {
+    const db = await ready(), transaction = db.transaction(["graphs", "sources"], change ? "readwrite" : "readonly"), state = { result: owner === void 0 ? [] : void 0 };
+    const graphs = transaction.objectStore("graphs"), request2 = owner === void 0 ? graphs.openCursor() : graphs.get(owner);
+    request2.onsuccess = () => {
+      try {
+        if (owner === void 0) {
+          const cursor = request2.result;
+          if (cursor) {
+            const key2 = cursor.key;
+            hydrate(transaction, cursor.value, (saved2) => state.result.push({ owner: key2, ...saved2 }), state);
+            cursor.continue();
+          }
+          ;
+          return;
+        }
+        const saved = envelope(request2.result);
+        if (change) {
+          const next = change(saved);
+          state.result = next.result;
+          if (next.record) replace(transaction, owner, saved, next.record, next.sources ?? /* @__PURE__ */ new Map(), state);
+          return;
+        }
+        hydrate(transaction, saved, (value) => {
+          state.result = read ? read(value) : value;
+        }, state);
+      } catch (error) {
+        failure(transaction, error, state);
+      }
+    };
+    return transactionResult(transaction, state);
+  }
+  const advance2 = (owner, pending2) => operation(owner, (saved) => ({ record: { generation: saved.generation + 1, pending: pending2, ...pending2 && saved.graph ? { graph: saved.graph } : {} }, result: saved.generation + 1 }));
+  return {
+    list: () => operation(void 0),
+    get: (owner) => operation(owner),
+    readCurrent: (owner, snapshot, accept) => operation(owner, null, (saved) => saved.generation === snapshot.generation && saved.pending === snapshot.pending ? accept(saved) !== false : false),
+    begin: (owner) => advance2(owner, true),
+    remove: (owner) => advance2(owner, false),
+    async publish(owner, generation, graph) {
+      const packed = await pack(graph);
+      return operation(owner, (saved) => saved.generation === generation && saved.pending ? { record: { generation, graph: packed.graph, pending: false }, sources: packed.sources, result: true } : { result: false });
+    },
+    async source(url) {
+      const db = await ready(), transaction = db.transaction("sources", "readonly"), state = {}, request2 = transaction.objectStore("sources").index("url").getAll(url);
+      request2.onsuccess = () => {
+        state.result = request2.result.filter((value) => value.references > 0).sort((a, b2) => (b2.downloadedAt ?? 0) - (a.downloadedAt ?? 0))[0] ?? null;
+      };
+      const source = await transactionResult(transaction, state);
+      if (source && (externalUrl(source.url) !== source.url || typeof source.content !== "string" || new TextEncoder().encode(source.content).byteLength > MAX_RENDER_SOURCE || await hash(source.content) !== source.digest)) throw Error("Shared dependency content changed");
+      return source ? { content: source.content, contentDigest: source.digest, downloadedAt: source.downloadedAt } : null;
+    }
+  };
+}
+
 // packages/client/src/play/rendering-dependencies.js
 var digest = async (value) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)))].map((v2) => v2.toString(16).padStart(2, "0")).join("");
-var envelope = (value) => value?.fingerprint ? { generation: 0, graph: value } : value ?? { generation: 0 };
 function discovery(limits) {
-  const identities = /* @__PURE__ */ new Set(), items = [], excluded = [], byKey = /* @__PURE__ */ new Map();
+  const identities = /* @__PURE__ */ new Set(), items2 = [], excluded = [], byKey = /* @__PURE__ */ new Map();
   let capped = false, files = 0;
   return {
-    items,
+    items: items2,
     excluded,
     add(dependencies, depth) {
       for (const dependency of dependencies) {
@@ -16755,11 +17082,11 @@ function discovery(limits) {
         }
         const error = dependency.blocked ? "Blocked or unresolved dependency" : depth > limits.depth ? "Dependency depth exceeds limit" : null;
         const item = { key: key2, url: dependency.url, depth, status: error ? "failed" : "queued", error, origins, adapterSupport: dependency.adapterSupport ?? null };
-        items.push(item);
+        items2.push(item);
         byKey.set(key2, item);
       }
     },
-    metadata: () => ({ discovered: identities.size, discoveryCapped: capped, omitted: identities.size - items.length })
+    metadata: () => ({ discovered: identities.size, discoveryCapped: capped, omitted: identities.size - items2.length })
   };
 }
 function directGraph(sources, limits, trust) {
@@ -16768,8 +17095,8 @@ function directGraph(sources, limits, trust) {
   return { items: graph.items, excluded: graph.excluded, ...graph.metadata(), complete: false };
 }
 async function cachedDepths(sources, graph, limits, trust, owner) {
-  const items = graph.items.filter((item) => item.status === "ready"), byUrl = new Map(items.map((item) => [item.url, item])), depths = /* @__PURE__ */ new Map(), queue = [], support = /* @__PURE__ */ new Map(), replacements = /* @__PURE__ */ new Set();
-  if (byUrl.size !== items.length) throw Error("Invalid dependency cache identities");
+  const items2 = graph.items.filter((item) => item.status === "ready"), byUrl = new Map(items2.map((item) => [item.url, item])), depths = /* @__PURE__ */ new Map(), queue = [], support = /* @__PURE__ */ new Map(), replacements = /* @__PURE__ */ new Set();
+  if (byUrl.size !== items2.length) throw Error("Invalid dependency cache identities");
   const add = (dependencies, depth) => {
     for (const dependency of dependencies) {
       if (dependency.selected === false) continue;
@@ -16792,16 +17119,16 @@ async function cachedDepths(sources, graph, limits, trust, owner) {
       replacements.add(url);
     } else add(dependencyReferences(item.content, url, { owner, key: url, kind: "dependency", origins: item.origins ?? [] }, trust), depth + 1);
   }
-  return items.map((item) => {
+  return items2.map((item) => {
     const depth = depths.get(item.url);
     if (depth === void 0 || item.depth !== void 0 && item.depth !== depth) throw Error("Invalid dependency cache depth");
     if (replacements.has(item.url) && support.get(item.url) !== true) throw Error("Unsupported built-in adapter invocation");
     return { ...item, depth, builtin: replacements.has(item.url) };
   });
 }
-function retainedCache(items, active2 = []) {
+function retainedCache(items2, active2 = []) {
   const activeUrls = new Set(active2.map((item) => item.url)), byUrl = /* @__PURE__ */ new Map();
-  for (const item of items ?? []) if (item.content !== void 0) {
+  for (const item of items2 ?? []) if (item.content !== void 0) {
     if (externalUrl(item.url) !== item.url || typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE) throw Error("Invalid inactive dependency cache");
     if (!activeUrls.has(item.url)) byUrl.set(item.url, item);
   }
@@ -16811,85 +17138,25 @@ function retainedCache(items, active2 = []) {
   return retained;
 }
 function dependencyProgress(graph) {
-  const items = graph?.items ?? [];
+  const items2 = graph?.items ?? [];
   return {
-    ready: items.filter((item) => item.status === "ready").length,
-    failed: items.filter((item) => item.status === "failed").length,
-    discovered: graph?.discovered ?? items.length,
+    ready: items2.filter((item) => item.status === "ready").length,
+    failed: items2.filter((item) => item.status === "failed").length,
+    discovered: graph?.discovered ?? items2.length,
     omitted: graph?.omitted ?? 0,
     complete: graph?.complete === true,
     capped: graph?.discoveryCapped === true
   };
 }
-function dependencyStore(indexedDB = globalThis.indexedDB) {
-  let database;
-  async function operation(owner, change, read) {
-    if (!indexedDB) throw Error("Persistent dependency cache is unavailable");
-    database ??= new Promise((resolve, reject) => {
-      const request2 = indexedDB.open("dtv-rendering-dependencies", 1);
-      request2.onupgradeneeded = () => request2.result.createObjectStore("graphs");
-      request2.onsuccess = () => resolve(request2.result);
-      request2.onerror = () => reject(request2.error);
-    });
-    const db = await database;
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction("graphs", change ? "readwrite" : "readonly"), store = transaction.objectStore("graphs"), request2 = owner === void 0 ? store.openCursor() : store.get(owner);
-      let result, callbackError;
-      if (owner === void 0) result = [];
-      request2.onsuccess = () => {
-        try {
-          if (owner === void 0) {
-            const cursor = request2.result;
-            if (cursor) {
-              result.push({ owner: cursor.key, ...envelope(cursor.value) });
-              cursor.continue();
-            }
-            ;
-            return;
-          }
-          const saved = envelope(request2.result);
-          if (!change) {
-            result = read ? read(saved) : saved;
-            return;
-          }
-          const next = change(saved);
-          result = next.result;
-          if (next.record) store.put(next.record, owner);
-        } catch (error) {
-          callbackError = error;
-          transaction.abort();
-        }
-      };
-      transaction.oncomplete = () => resolve(result);
-      transaction.onerror = () => reject(callbackError ?? transaction.error);
-      transaction.onabort = () => reject(callbackError ?? transaction.error ?? Error("Dependency cache transaction aborted"));
-    });
-  }
-  const advance2 = (owner, pending2) => operation(owner, (saved) => {
-    const generation = saved.generation + 1;
-    return { record: { generation, pending: pending2 }, result: generation };
-  });
-  return {
-    list: () => operation(void 0),
-    get: (owner) => operation(owner),
-    // Acceptance runs synchronously while this readonly transaction excludes
-    // a concurrent generation change. Hashing/preparation must happen first.
-    readCurrent: (owner, snapshot, accept) => operation(owner, null, (saved) => saved.generation === snapshot.generation && saved.pending === snapshot.pending ? accept(saved) !== false : false),
-    begin: (owner) => advance2(owner, true),
-    remove: (owner) => advance2(owner, false),
-    publish: (owner, generation, graph) => operation(owner, (saved) => saved.generation === generation && saved.pending ? { record: { generation, graph, pending: false }, result: true } : { result: false })
-  };
-}
 function createRenderingDependencies({ trust = renderingTrust, store = dependencyStore(), download = downloadRenderingSource, limits = DEPENDENCY_LIMITS, timeout = 15e3, channelFactory = () => typeof window !== "undefined" && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("dtv-rendering-dependencies") : null } = {}) {
   const states = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set(), cachedOwners = /* @__PURE__ */ new Map(), cacheGenerations = /* @__PURE__ */ new Map();
   let channel, disposed = false, accounted = false, initializing = null;
-  const account = (records) => {
-    let bytes = 0;
-    for (const [owner, items] of cachedOwners) for (const item of items) {
-      if (!records.some((record) => record.owner === owner && record.source === item.url && record.content === item.content)) bytes += new TextEncoder().encode(item.content).byteLength;
-    }
-    return bytes;
-  };
+  const account = (records) => uniqueSourceBytes([...cachedOwners.values()].flat(), records);
+  const shared = createSharedSourceDownloads({ download, lookup: async (url) => {
+    if (store.source) return store.source(url);
+    const matches = [...cachedOwners.values()].flat().filter((item) => item.url === url);
+    return matches.sort((a, b2) => (b2.downloadedAt ?? 0) - (a.downloadedAt ?? 0))[0] ?? null;
+  } });
   trust.accountInactive?.(account, ensureCacheAccounted);
   const cacheItems = (graph) => {
     if (!graph) return [];
@@ -16898,6 +17165,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     const values = /* @__PURE__ */ new Map();
     for (const item of all) if (item.content !== void 0) {
       if (externalUrl(item.url) !== item.url || typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE) throw Error("Invalid dependency cache source");
+      if (values.has(item.url) && values.get(item.url).content !== item.content) throw Error("Conflicting dependency cache source versions");
       values.set(item.url, item);
     }
     retainedCache([...values.values()].map((item) => ({ ...item, status: "ready" })));
@@ -16932,12 +17200,12 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       }
       const previous = new Map(cachedOwners);
       cachedOwners.clear();
-      for (const [owner, items] of nextOwners) cachedOwners.set(owner, items);
+      for (const [owner, items2] of nextOwners) cachedOwners.set(owner, items2);
       try {
         trust.reaccount?.();
       } catch (error) {
         cachedOwners.clear();
-        for (const [owner, items] of previous) cachedOwners.set(owner, items);
+        for (const [owner, items2] of previous) cachedOwners.set(owner, items2);
         throw error;
       }
       cacheGenerations.clear();
@@ -17048,7 +17316,10 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     if (channel) return;
     channel = channelFactory();
     if (channel) channel.onmessage = ({ data: data3 }) => {
-      if (data3 && typeof data3.owner === "string") void refresh(data3.owner);
+      if (data3 && typeof data3.owner === "string") {
+        accounted = false;
+        void refresh(data3.owner);
+      }
     };
   };
   async function sync(sources, owners = []) {
@@ -17084,7 +17355,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       return state.ready;
     }));
   }
-  async function acquire2(owner) {
+  async function acquire2(owner, { refresh: forceDownload } = {}) {
     await ensureCacheAccounted();
     const previous = states.get(owner);
     if (previous) await sync(previous.sources, [owner]);
@@ -17092,6 +17363,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     if (!original) throw Error("Dependency resource is unavailable");
     await original.ready;
     if (!current4(original)) throw Error("Dependency resource changed");
+    forceDownload ??= original.cacheItems.length > 0;
     original.controller?.abort();
     const pending2 = discovery(limits);
     for (const source of original.sources) pending2.add(dependencyReferences(source.content, void 0, source, trust), 0);
@@ -17099,6 +17371,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     states.set(owner, state);
     trust.removeOwner(owner);
     emit();
+    const leases = [];
     try {
       state.cacheGeneration = await store.begin(owner);
       state.starting = false;
@@ -17125,7 +17398,11 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
         state.controller.signal.addEventListener("abort", abort, { once: true });
         const timer = setTimeout(abort, timeout);
         try {
-          const content = await download(item.url, { signal: controller2.signal });
+          const source = await shared.acquire(item.url, { signal: controller2.signal, refresh: forceDownload });
+          leases.push(source);
+          const content = source.content;
+          item.downloadedAt = source.downloadedAt ?? 0;
+          if (source.contentDigest) item.contentDigest = source.contentDigest;
           controller2.signal.throwIfAborted();
           if (!current4(state)) return;
           bytes += new TextEncoder().encode(content).byteLength;
@@ -17191,6 +17468,8 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
         emit();
         broadcast(owner);
       }
+    } finally {
+      for (const lease of leases) lease.release();
     }
   }
   async function uninstall(owner) {
@@ -17229,6 +17508,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     return () => listeners.delete(listener);
   }, dispose() {
     disposed = true;
+    shared.dispose();
     for (const state of states.values()) state.controller?.abort();
     states.clear();
     cachedOwners.clear();
@@ -19634,19 +19914,19 @@ function applyGreetingDisplayRegex(text3, rules, bindings, context = {}) {
 }
 
 // packages/preset/src/client-state.js
-function reorder(items, from, to) {
-  if (!Array.isArray(items)) throw new TypeError("items must be an array");
-  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return items;
-  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
-  const result = [...items];
+function reorder(items2, from, to) {
+  if (!Array.isArray(items2)) throw new TypeError("items must be an array");
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return items2;
+  if (from === to || from < 0 || to < 0 || from >= items2.length || to >= items2.length) return items2;
+  const result = [...items2];
   const [moved] = result.splice(from, 1);
   result.splice(to, 0, moved);
   return result;
 }
-function reorderAtBoundary(items, from, boundary) {
-  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items;
+function reorderAtBoundary(items2, from, boundary) {
+  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items2.length) return items2;
   const destination = boundary > from ? boundary - 1 : boundary;
-  return reorder(items, from, destination);
+  return reorder(items2, from, destination);
 }
 
 // packages/client/src/import-failure.js
@@ -20317,7 +20597,7 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     );
   };
   const renderGraph = (owner) => {
-    const graph = renderingDependencies.inspect(owner), state = graph?.status ?? "loading", items = graph?.items ?? [];
+    const graph = renderingDependencies.inspect(owner), state = graph?.status ?? "loading", items2 = graph?.items ?? [];
     const working = state === "downloading" || state === "loading";
     const progress = dependencyProgress(graph), count = progress.discovered + (progress.capped ? "+" : "");
     const label = !graph ? translate("rendering.graph.unknown") : progress.complete ? progress.ready + " / " + count + " \xB7 " + translate("rendering.graph.complete") : ["waiting", "changed", "loading", "remote"].includes(state) ? "0 / " + count + " \xB7 " + translate("rendering.graph.roots") : translate("rendering.graph.discovered", { ready: progress.ready, count }) + " \xB7 " + translate(state === "downloading" ? "rendering.graph.discovering" : "rendering.graph.incomplete");
@@ -20334,10 +20614,10 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
       (0, import_react2.createElement)(
         "div",
         { className: "dtv-script-actions" },
-        (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: working, onClick: () => run(() => renderingDependencies.acquire(owner)) }, translate(state === "waiting" ? "rendering.acquire" : state === "changed" ? "rendering.acquireUpdate" : "rendering.redownload")),
+        (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: working, onClick: () => run(() => renderingDependencies.acquire(owner, { refresh: state !== "waiting" })) }, translate(state === "waiting" ? "rendering.acquire" : state === "changed" ? "rendering.acquireUpdate" : "rendering.redownload")),
         (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: state === "loading", onClick: () => run(() => renderingDependencies.uninstall(owner)) }, translate(state === "downloading" ? "rendering.cancel" : "rendering.uninstall"))
       ),
-      (0, import_react2.createElement)("div", { className: "dtv-dependency-items" }, ...[...items, ...graph?.excluded ?? []].map((item) => {
+      (0, import_react2.createElement)("div", { className: "dtv-dependency-items" }, ...[...items2, ...graph?.excluded ?? []].map((item) => {
         const enabled = renderingTrust.isEnabled(owner, item.url), selected = item.status !== "disabled", candidate = builtinCandidate(item.url);
         const cached = graph?.retained?.find((record) => record.url === item.url), content = item.content ?? cached?.content;
         const displayUrl = item.url ? new URL(item.url).hostname + new URL(item.url).pathname : item.key;
@@ -22658,9 +22938,9 @@ function sourceColor(plugin) {
   if (!plugin) return "#999999";
   if (plugin === "DSH") return "#8192ad";
   if (plugin === "pmp-dsh-tavern" || plugin?.startsWith("pmp-dsh-tavern/")) return "#6495ed";
-  let hash = 0;
-  for (const c of plugin ?? "unknown") hash = hash * 31 + c.charCodeAt(0) | 0;
-  return `hsl(${Math.abs(hash) % 360} 60% 62%)`;
+  let hash2 = 0;
+  for (const c of plugin ?? "unknown") hash2 = hash2 * 31 + c.charCodeAt(0) | 0;
+  return `hsl(${Math.abs(hash2) % 360} 60% 62%)`;
 }
 async function request(path3 = "", method = "GET", body2) {
   const res = await tavernFetch(`${API_V1}/assembly-presets${path3}`, { method, headers: { "Content-Type": "application/json" }, ...body2 === void 0 ? {} : { body: JSON.stringify(body2) } });
@@ -22702,7 +22982,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     if (confirmation) dialog.current?.querySelector(".dta-confirm button")?.focus();
   }, [confirmation]);
   const [sources, setSources] = (0, import_react7.useState)([]), [addKind, setAddKind] = (0, import_react7.useState)("custom");
-  const [items, setItems] = (0, import_react7.useState)([]), [draft, setDraft] = (0, import_react7.useState)(null), [selection, setSelection] = (0, import_react7.useState)(null), [capable, setCapable] = (0, import_react7.useState)(false);
+  const [items2, setItems] = (0, import_react7.useState)([]), [draft, setDraft] = (0, import_react7.useState)(null), [selection, setSelection] = (0, import_react7.useState)(null), [capable, setCapable] = (0, import_react7.useState)(false);
   const [status, setStatus] = (0, import_react7.useState)(""), [error, setError] = (0, import_react7.useState)(false), [busy2, setBusy] = (0, import_react7.useState)(false), [tab, setTab] = (0, import_react7.useState)("rules"), [preview, setPreview] = (0, import_react7.useState)(null), [dirty, setDirty] = (0, import_react7.useState)(false), [expanded, setExpanded] = (0, import_react7.useState)({});
   const file = (0, import_react7.useRef)(), stage = (0, import_react7.useRef)(), dialog = (0, import_react7.useRef)(), generation = (0, import_react7.useRef)(0), mounted = (0, import_react7.useRef)(true);
   (0, import_react7.useLayoutEffect)(() => {
@@ -23019,16 +23299,16 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("select"), (0, import_react7.createElement)("select", { value: draft.id ?? "", disabled: busy2, onChange: async (e) => {
           const id = e.target.value;
           if (await discard()) {
-            setDraft(items.find((p) => p.id === id));
+            setDraft(items2.find((p) => p.id === id));
             setDirty(false);
             setPreview(null);
           }
-        } }, !draft.id && (0, import_react7.createElement)("option", { value: "" }, draft.name), ...items.map((p) => (0, import_react7.createElement)("option", { key: p.id, value: p.id }, p.name)))), (0, import_react7.createElement)("label", null, t("name"), (0, import_react7.createElement)("input", { value: draft.name, disabled: draft.builtin, onChange: (e) => edit({ name: e.target.value }) }))),
+        } }, !draft.id && (0, import_react7.createElement)("option", { value: "" }, draft.name), ...items2.map((p) => (0, import_react7.createElement)("option", { key: p.id, value: p.id }, p.name)))), (0, import_react7.createElement)("label", null, t("name"), (0, import_react7.createElement)("input", { value: draft.name, disabled: draft.builtin, onChange: (e) => edit({ name: e.target.value }) }))),
         (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("save", () => run(() => save())), button("copy", () => run(() => save(true))), button("remove", () => run(async () => {
           if (!await confirm(t("confirmDelete"))) return;
           await api6(`/${draft.id}`, "DELETE");
           setItems((i3) => i3.filter((p) => p.id !== draft.id));
-          setDraft(items[0]);
+          setDraft(items2[0]);
           setDirty(false);
           setPreview(null);
         }), !draft.id || draft.builtin), dirty && (0, import_react7.createElement)("span", null, t("dirty"))),
@@ -23044,7 +23324,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
           run(async () => {
             const data3 = await api6("/selection", "PUT", { sessionId, id: "builtin-st" });
             setSelection(data3.selection);
-            setDraft(items.find((p) => p.id === "builtin-st"));
+            setDraft(items2.find((p) => p.id === "builtin-st"));
             setDirty(false);
             setPreview(null);
             setTab("rules");
@@ -23666,13 +23946,13 @@ async function api2(path3, options = {}) {
 function Field3({ label, children }) {
   return h9("label", { className: "dcc-field" }, h9("span", { className: "dcc-label" }, label), children);
 }
-function DiagnosticList({ titleKey, items }) {
-  if (!Array.isArray(items) || items.length === 0) return null;
+function DiagnosticList({ titleKey, items: items2 }) {
+  if (!Array.isArray(items2) || items2.length === 0) return null;
   return h9(
     "details",
     { className: "dcc-detail" },
-    h9("summary", null, uiMessage(titleKey, { count: items.length })),
-    h9("ul", { className: "dcc-diags" }, ...items.map((item, index) => h9("li", { key: `${item.code}-${index}` }, rawText(`${item.message}${item.path ? ` [${item.path}]` : ""}`))))
+    h9("summary", null, uiMessage(titleKey, { count: items2.length })),
+    h9("ul", { className: "dcc-diags" }, ...items2.map((item, index) => h9("li", { key: `${item.code}-${index}` }, rawText(`${item.message}${item.path ? ` [${item.path}]` : ""}`))))
   );
 }
 function patchDraft(setter, field, value) {
@@ -25599,8 +25879,8 @@ function sourceMetadata(source) {
   if (identity) values.push(unwrapText(uiMessage("trace.v4.sourceIdentity", { value: identity })));
   return rawText(values.join(" \xB7 "));
 }
-function segments(items, kind, legacySnapshot) {
-  return (items ?? []).map((part, index) => h13(
+function segments(items2, kind, legacySnapshot) {
+  return (items2 ?? []).map((part, index) => h13(
     "details",
     { key: `${kind}-${index}`, className: "dttrace-book" },
     h13("summary", null, uiMessage("trace.v3.part", { index: part.index + 1, name: part.name, count: part.characters })),
@@ -25923,7 +26203,7 @@ function TemplateEditor({ selection, onChange, catalogs: catalogs2, disabled }) 
   const patch = (value) => onChange((current4) => ({ ...current4, ...value }));
   const nested = (key2, value) => patch({ [key2]: { ...selection[key2], ...value } });
   const field = (label, control) => h14("label", { className: "dtv-field" }, h14("span", { className: "dtv-label" }, uiMessage(label)), control);
-  const resourceSelect = (key2, label, items) => field(label, h14(
+  const resourceSelect = (key2, label, items2) => field(label, h14(
     "select",
     {
       className: "dtv-select",
@@ -25932,8 +26212,8 @@ function TemplateEditor({ selection, onChange, catalogs: catalogs2, disabled }) 
       onChange: (event) => patch({ [key2]: event.target.value || null })
     },
     h14("option", { value: "" }, uiMessage("common.none")),
-    selection[key2] && !items.some((item) => item.id === selection[key2]) ? h14("option", { value: selection[key2] }, uiMessage("template.missingReference", { id: selection[key2] })) : null,
-    ...items.map((item) => h14("option", { key: item.id, value: item.id }, rawText(item.name)))
+    selection[key2] && !items2.some((item) => item.id === selection[key2]) ? h14("option", { value: selection[key2] }, uiMessage("template.missingReference", { id: selection[key2] })) : null,
+    ...items2.map((item) => h14("option", { key: item.id, value: item.id }, rawText(item.name)))
   ));
   const toggle = (label, checked, change) => h14(
     "label",
@@ -26349,18 +26629,18 @@ function catalog(snapshot, ...keys) {
   }
   return [];
 }
-function findResourceById(items, id) {
-  return items.find((item) => isRecord4(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
+function findResourceById(items2, id) {
+  return items2.find((item) => isRecord4(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
 }
 function selectionIds(value) {
   if (!Array.isArray(value)) return [];
   const ids = value.map((item) => isRecord4(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
   return ids.filter((id, index) => ids.findIndex((item) => String(item) === String(id)) === index);
 }
-function singleStatus({ id, resource, items, emptyTitleKey }) {
+function singleStatus({ id, resource, items: items2, emptyTitleKey }) {
   const bound = id !== null && id !== void 0 && id !== "";
   const directResource = isRecord4(resource) && (resource.id === void 0 || String(resource.id) === String(id)) ? resource : null;
-  const resolved = firstRecord(directResource, bound ? findResourceById(items, id) : null);
+  const resolved = firstRecord(directResource, bound ? findResourceById(items2, id) : null);
   return {
     bound,
     title: bound ? resourceTitle(resolved, String(id)) : null,
@@ -28015,10 +28295,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
         if (disposed || action !== ticket) return;
         action = null;
         clearTimeout(ticket.timer);
-        if (value.operation === "send" && result?.status === "accepted") {
-          task.accepted = true;
-          task.at = performance.now();
-        }
+        if (value.operation === "send" && result?.status === "accepted") task.accepted = true;
         busyTimer = setTimeout(() => fail3("Card worker exceeded its response deadline"), 1500);
         respond({ value: result });
       }, (error) => {
@@ -48643,13 +48920,13 @@ function stringifyCollection(collection, ctx, options) {
   const stringify4 = flow ? stringifyFlowCollection : stringifyBlockCollection;
   return stringify4(collection, ctx, options);
 }
-function stringifyBlockCollection({ comment, items }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
+function stringifyBlockCollection({ comment, items: items2 }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
   const { indent, options: { commentString } } = ctx;
   const itemCtx = Object.assign({}, ctx, { indent: itemIndent, type: null });
   let chompKeep = false;
   const lines = [];
-  for (let i3 = 0; i3 < items.length; ++i3) {
-    const item = items[i3];
+  for (let i3 = 0; i3 < items2.length; ++i3) {
+    const item = items2[i3];
     let comment2 = null;
     if (isNode(item)) {
       if (!chompKeep && item.spaceBefore)
@@ -48692,7 +48969,7 @@ ${indent}${line}` : "\n";
     onChompKeep();
   return str;
 }
-function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
+function stringifyFlowCollection({ items: items2 }, ctx, { flowChars, itemIndent }) {
   const { indent, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
   itemIndent += indentStep;
   const itemCtx = Object.assign({}, ctx, {
@@ -48703,8 +48980,8 @@ function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
   let reqNewline = false;
   let linesAtValue = 0;
   const lines = [];
-  for (let i3 = 0; i3 < items.length; ++i3) {
-    const item = items[i3];
+  for (let i3 = 0; i3 < items2.length; ++i3) {
+    const item = items2[i3];
     let comment = null;
     if (isNode(item)) {
       if (item.spaceBefore)
@@ -48735,7 +49012,7 @@ function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
       reqNewline = true;
     let str = stringify(item, itemCtx, () => comment = null);
     reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
-    if (i3 < items.length - 1) {
+    if (i3 < items2.length - 1) {
       str += ",";
     } else if (ctx.options.trailingComma) {
       if (ctx.options.lineWidth > 0) {
@@ -48780,9 +49057,9 @@ function addCommentBefore({ indent, options: { commentString } }, lines, comment
 }
 
 // ../dsh-tavern-ui-review.sFGRSN/node_modules/yaml/browser/dist/nodes/YAMLMap.js
-function findPair(items, key2) {
+function findPair(items2, key2) {
   const k = isScalar(key2) ? key2.value : key2;
-  for (const it2 of items) {
+  for (const it2 of items2) {
     if (isPair(it2)) {
       if (it2.key === key2 || it2.key === k)
         return it2;
@@ -49340,8 +49617,8 @@ function deriveSchema(value, inherited = false, old = {}) {
   if (Array.isArray(value)) {
     const metadata = value.find((v2) => v2?.$arrayMeta === true && v2.$meta)?.$meta ?? {};
     const marker = value.includes("$__META_EXTENSIBLE__$");
-    const items = value.filter((v2) => v2 !== "$__META_EXTENSIBLE__$" && !(v2?.$arrayMeta === true && v2.$meta));
-    value.splice(0, value.length, ...items);
+    const items2 = value.filter((v2) => v2 !== "$__META_EXTENSIBLE__$" && !(v2?.$arrayMeta === true && v2.$meta));
+    value.splice(0, value.length, ...items2);
     const extensible = metadata.extensible === true || marker || inherited || old.extensible === true;
     const recursive = inherited || old.recursiveExtensible === true;
     const node = { type: "array", extensible, recursiveExtensible: recursive, elementType: old.elementType ?? { type: "any" } };
@@ -54876,9 +55153,9 @@ function comparablePath(value) {
   const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
   return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
 }
-function projectRpWorkspaceSetting({ workspace, items = [] } = {}) {
+function projectRpWorkspaceSetting({ workspace, items: items2 = [] } = {}) {
   const currentPath = pathOf(workspace?.rootPath === null ? null : { path: workspace?.rootPath });
-  const available = (Array.isArray(items) ? items : []).filter((item) => isRecord5(item) && pathOf(item) !== null).map((item) => ({
+  const available = (Array.isArray(items2) ? items2 : []).filter((item) => isRecord5(item) && pathOf(item) !== null).map((item) => ({
     id: item.workspaceId ?? item.id ?? pathOf(item),
     path: pathOf(item),
     title: titleOf(item)
