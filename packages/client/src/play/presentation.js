@@ -9,6 +9,7 @@ import { updateTimeline } from './mutations.js'
 import { useConversationDisplaySettings } from './display-settings.js'
 import { MessageContent } from './scripted-content.js'
 import { MessageRow, messageAvatarStyle, messageBubbleStyle } from './message-layout.js'
+import {CardDiagnosticBoundary} from './card-diagnostics.js'
 
 const Presentation = createContext(null)
 export function ConversationPresentation({ state, playthrough, playClient, sessionId, disabled, busy, changed, children }) {
@@ -48,10 +49,10 @@ export function MessageBubble({ text, role = 'assistant', messageKey, editable =
     avatar: h('button', { className: 'dtv-message-avatar', type: 'button', disabled, title: translate('appearance.editAvatar'), 'aria-label': `${translate('appearance.editAvatar')} · ${name}`, style: { ...messageAvatarStyle, cursor: disabled ? 'default' : 'pointer' }, onClick: () => { setAvatar(image?.startsWith('data:') ? image : null); setEditing(true) } },
       image && failedImage !== image ? h('img', { src: image, alt: name, width: 42, height: 42, style: { objectFit: 'cover' }, onError: () => setFailedImage(image) }) : name.slice(0, 1)),
     },
-    h('div', { className: `dtv-play-chat-bubble dtv-play-chat-${role}`, style: messageBubbleStyle(settings.bubbleStyle, role) },
+    h(CardDiagnosticBoundary,null,h('div', { className: `dtv-play-chat-bubble dtv-play-chat-${role}`, style: messageBubbleStyle(settings.bubbleStyle, role) },
       h('div', { style: { textAlign: role === 'user' ? 'right' : 'left', font: '600 11px system-ui', opacity: 0.65, marginBottom: 6 } }, name),
       h(MessageContent, { text, writeScope, createBinding: boundScope ? (signal,writeGrant) => createMvuCardBinding({client:context.playClient,scope:writeGrant?writeScope:boundScope,signal,writeGrant}) : undefined, owners: [context?.state?.display?.globalRenderingOwner,...Object.entries(context?.state?.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean), helpers: (context?.state?.display?.renderingSources ?? []).filter(item=>item.kind==='helper'), enabled: settings.interactiveCards === true && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id,context?.sessionId,messageKey,boundScope,writeScope]), context: { version: 1, role, userName: context?.state?.display?.macros?.user ?? 'User', characterName: context?.state?.display?.macros?.character ?? 'Assistant' }, onSend: disabled || context?.busy ? undefined : async text => { await context.playClient.postUserMessage(context.sessionId, text); context.changed?.() } }),
-    ),
+    )),
     editing ? h('dialog', { className: 'dtv-avatar-dialog', ref: element => { if (element && !element.open) element.showModal() }, onCancel: event => { event.preventDefault(); if (!busy) setEditing(false) }, role: 'dialog', 'aria-modal': true, 'aria-label': translate('appearance.editAvatar'), style: { position: 'fixed', inset: 0, width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none', margin: 0, border: 0, boxSizing: 'border-box', zIndex: 2147483500, background: '#0008', display: 'grid', placeItems: 'center' }, onKeyDown: event => { if (event.key === 'Escape' && !busy) setEditing(false) } },
       h('div', { style: { width: 'min(420px,90vw)', maxHeight: '85vh', overflow: 'auto', padding: 22, borderRadius: 16, background: 'var(--dsw-alias-bg-base,#fff)', color: 'var(--dsw-alias-label-primary,#222)', display: 'grid', gap: 12 } },
         h('h3', null, translate('appearance.editAvatar')),

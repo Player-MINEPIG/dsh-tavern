@@ -1,4 +1,5 @@
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
+import {useCardDiagnostics} from './card-diagnostics.js'
 import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBUTE } from './card-images.js'
 import { selectedPhoto } from './card-photo.js'
 import {createPhotoPickerDiagnostic} from './card-photo-diagnostic.js'
@@ -257,6 +258,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     try { if(!enabled)return cardDocument(source);const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
+  const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):''
+  const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,error,photoError].filter(Boolean))
   useLayoutEffect(()=>{replaceProposal('');setError('');setAudit(null);setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); replaceProposal('');setIdentityProposal(null)
@@ -477,9 +480,9 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       h('button',{type:'button',disabled:paused,onClick:()=>{generation.current++;cleanup.current();setPaused(true)}},translate('appearance.pauseCard')),
       h('button',{type:'button',onClick:()=>{generation.current++;cleanup.current();setPaused(false);setRestart(value=>value+1)}},translate('appearance.restartCard'))):null,
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
-    data.unsupported.length ? h('p',{role:'alert'},data.unsupported.map(reason => reason.startsWith('appearance.') ? translate(reason) : reason).join(' ') + ' ' + translate('appearance.cardStaticFallback')):null,
-    error ? h('p',{role:'alert'},error):null,
-    photoError ? h('p',{className:'dtv-card-photo-error',role:'alert'},photoError):null,
+    !diagnosticsOutside&&unsupportedMessage ? h('p',{role:'alert'},unsupportedMessage):null,
+    !diagnosticsOutside&&error ? h('p',{role:'alert'},error):null,
+    !diagnosticsOutside&&photoError ? h('p',{className:'dtv-card-photo-error',role:'alert'},photoError):null,
     media?.total ? h('small',{className:'dtv-card-media',role:'status'},translate('appearance.imageStatus',{visible:media.visible,loaded:media.loaded,loading:media.loading+media.queued,failed:media.failed})):null,
     audit ? h('details',{className:'dtv-card-audit'},h('summary',null,translate('appearance.runtimeEvidence')),h('pre',{style:{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}},JSON.stringify(audit,null,2))):null,
     openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,

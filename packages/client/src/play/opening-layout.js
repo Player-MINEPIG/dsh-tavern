@@ -5,7 +5,7 @@ import {MowanChatView} from './chat.js'
 export const OPENING_SESSION_SLOT='pmp-dsh-tavern.opening.session'
 const Opening=createContext(null)
 const css=`
-.dtv-rp-opening-shell{height:100%;min-height:0;min-width:0;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}
+.dtv-rp-opening-shell{flex:1;width:100%;height:100%;min-height:0;min-width:0;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}
 .dtv-rp-opening-header{flex:none;display:flex;align-items:center;gap:12px;padding:12px 72px 12px 16px;border-bottom:1px solid var(--dsw-alias-border-l3);min-width:0}
 .dtv-rp-opening-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .dtv-rp-opening-tabs{flex:none;display:flex;gap:6px}.dtv-rp-opening-header button{font:inherit;font-size:12px;padding:7px 10px;border:0;border-radius:8px;color:inherit;background:transparent;cursor:pointer;white-space:nowrap}.dtv-rp-opening-header [aria-selected=true]{background:var(--dsw-alias-interactive-bg-selected);color:var(--dsw-alias-state-business-primary)}
