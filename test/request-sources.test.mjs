@@ -56,7 +56,7 @@ test('third-party macros and references consume their source and use the same lo
   const registry = createDefaultRegistry()
   registry.register(memory(() => ({ blocks: [{ type: 'text', id: 'memory', text: 'REMEMBER' }], macros: { recalled: 'memory' } })))
   registry.register({ id: 'example.template', pluginId: 'example.template', name: 'Template', dependencies: ['example.memory/recalled'], resolve: () => ({ blocks: [{ type: 'text', id: 'prompt', text: 'PREFIX {{recalled}}' }] }) })
-  const preset = withRule('example.memory/recalled'); preset.rules.push({ id: 'template', kind: 'example.template' })
+  const preset = { ...BUILTINS[1], rules: [...BUILTINS[1].rules, { id: 'template', kind: 'example.template' }] }
   const result = await assembleRequestAsync({ registry, preset })
   assert.deepEqual(result.messages.map(textOf), ['PREFIX REMEMBER'])
   assert.equal(result.nodes[0].children[0].source.plugin, 'example.memory')

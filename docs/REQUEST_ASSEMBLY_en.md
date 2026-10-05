@@ -185,3 +185,8 @@ Custom text uses an explicit `user/system/assistant` role and defaults to `user`
 
 
 [Prompt templates and managed sources](PROMPT_TEMPLATE_en.md)
+
+
+## List ownership and source text
+
+In module-list placement, a source explicitly listed in the strategy owns its output position and depth; slots and inline source macros cannot move or re-enable it. Remove a source rule to leave its placement to authored references. A source not listed is only resolved when another source declares it as a dependency; registration does not inject it automatically. Reference-only fields (such as character PHI) remain available to the PHI owner. In ST placement, authored slots and depths remain authoritative. At equal depths, preset injection_order is applied in ascending order; this does not implement full ST role grouping or token budgeting. Tavern custom text uses the same history/input/world-info reference parser as preset text. Native modules may be absent from a strategy; durable history remains unchanged.

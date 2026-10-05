@@ -51,14 +51,14 @@ test('ST history marker owns native blocks and authored role/depth is executed',
   assert.ok(result.nodes.some(n => n.module === 'history' && n.locked))
 })
 test('macro references consume fallback fields and expose locked source children', () => {
-  const result = assembleRequest({ preset: BUILTINS[1], nativeMessages: native, assets: { ...assets, preset: { prompts: [{ enabled: true, identifier: 'main', content: 'Before {{description}} after {{lastusermessage}}' }] } } })
+  const result = assembleRequest({ preset: { ...BUILTINS[1], rules: BUILTINS[1].rules.filter(r => r.kind !== 'character') }, nativeMessages: native, assets: { ...assets, preset: { prompts: [{ enabled: true, identifier: 'main', content: 'Before {{description}} after {{lastusermessage}}' }] } } })
   assert.equal(texts(result).filter(t => t.includes('CHAR')).length, 1)
   const child = result.nodes.find(n => n.module === 'preset').children[0]
   assert.equal(child.locked, true); assert.equal(child.source.resourceId, 'card')
   assert.ok(texts(result).some(t => t.endsWith('after u2')))
 })
 test('inline history and input references occupy their authored positions exactly once', () => {
-  const result = assembleRequest({ preset: BUILTINS[1], nativeMessages: native, inputIds: ['u2'], assets: {
+  const result = assembleRequest({ preset: BUILTINS[0], nativeMessages: native, inputIds: ['u2'], assets: {
     preset: { prompts: [{ enabled: true, identifier: 'main', content: 'BEFORE{{history}}MIDDLE{{input}}AFTER', role: 'system' }] },
   } })
   assert.deepEqual(texts(result), ['s', 'BEFORE', 'u1', 'a1', 'MIDDLE', 'u2', 'AFTER'])
@@ -121,7 +121,7 @@ test('native blocks can be reordered while complete output budgets and built-in 
   const reordered = assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'], assets })
   assert.ok(texts(reordered).indexOf('u2') < texts(reordered).indexOf('u1'))
   assert.throws(() => assembleRequest({ preset: BUILTINS[1], assets, maxBytes: 10 }), /exceeds/)
-  assert.throws(() => normalizePreset({ ...BUILTINS[1], rules: [] }), /Missing native/)
+  assert.deepEqual(normalizePreset({ ...BUILTINS[1], rules: [] }).rules, [])
 })
 test('applied presets are immutable snapshots and survive resource edits and restart', () => {
   const root = mkdtempSync(join(tmpdir(), 'assembly-presets-'))
@@ -221,4 +221,27 @@ test('explicit character depth remains authoritative and late greetings are diag
   preset.rules.find(r => r.kind === 'character').role = 'user'
   const userGreeting = assembleRequest({ ...input, preset })
   assert.ok(!userGreeting.diagnostics.some(d => d.code === 'GREETING_AFTER_INPUT'))
+})
+
+// A list rule governs placement only when the source is explicitly listed.
+test('listed sources retain list position across slots, macros and disabled rules', () => {
+  const preset = structuredClone(BUILTINS[1])
+  const input = { preset, nativeMessages: native, inputIds: ['u2'], assets: { ...assets, preset: { prompts: [{ enabled: true, identifier: 'main', content: 'P{{description}}{{history}}{{input}}Q' }] } } }
+  assert.deepEqual(texts(assembleRequest(input)), ['s', 'P', 'Q', 'CHAR', 'u1', 'a1', 'u2', 'LORE', 'PHI'])
+  preset.rules.find(r => r.kind === 'character').enabled = false
+  assert.ok(!texts(assembleRequest(input)).some(t => t.includes('CHAR')))
+  preset.rules = preset.rules.filter(r => r.kind !== 'character' && r.kind !== 'history' && r.kind !== 'input')
+  assert.deepEqual(texts(assembleRequest(input)), ['s', 'PCHAR', 'u1', 'a1', 'u2', 'Q', 'LORE', 'PHI'])
+})
+test('custom Tavern text uses preset reference parsing for unlisted dependencies', () => {
+  const preset = { ...BUILTINS[1], rules: [{ id: 's', kind: 'native-system' }, { id: 'c', kind: 'custom', text: 'A{{history}}B{{input}}C', role: 'user' }] }
+  const result = assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'] })
+  assert.deepEqual(texts(result), ['s', 'A', 'u1', 'a1', 'B', 'u2', 'C'])
+  assert.ok(result.nodes.filter(n => n.module === 'history' || n.module === 'input').every(n => n.locked))
+})
+test('authored depth order is ascending and list mode overrides authored depth', () => {
+  const prompt = (identifier, order) => ({ identifier, enabled: true, role: 'user', content: identifier, injectionPosition: 1, injectionDepth: 0, st: { injection_order: order } })
+  const input = { nativeMessages: native, inputIds: ['u2'], assets: { preset: { prompts: [prompt('LOW', 10), prompt('HIGH', 200)] } } }
+  assert.deepEqual(texts(assembleRequest({ ...input, preset: BUILTINS[0] })).slice(-2), ['LOW', 'HIGH'])
+  assert.deepEqual(texts(assembleRequest({ ...input, preset: BUILTINS[1] })).slice(0, 3), ['s', 'LOW', 'HIGH'])
 })

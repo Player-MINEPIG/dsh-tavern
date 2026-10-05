@@ -48,6 +48,7 @@ export async function assembleRequestAsync(options) {
 function assembleResolved({ preset: suppliedPreset, previous = null, snapshots = [], maxBytes = 2 * 1024 * 1024 }, request, resolution) {
   const { preset, assets, nativeMessages, inputIds, preview } = request
   const rules = preset.rules.filter(r => r.enabled), entries = resolution.resolved
+  const listed = new Set(preset.rules.map(rule => rule.id)), listPlacement = preset.placement === 'modules'
   const byRule = new Map(entries.map(e => [e.rule.id, e])), bySource = new Map(entries.map(e => [e.descriptor.id, e]))
   const enabled = kind => rules.some(r => r.kind === kind)
   const diagnostics = structuredClone(assets.diagnostics ?? []).filter(d => !(preset.placement === 'st' && d.code === 'WORLD_BOOK_POSITION_APPROXIMATED' && d.originalPosition === 'at_depth'))
@@ -63,6 +64,7 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
     if (!block || macros.has(name)) throw new TypeError(`Invalid or duplicate source macro: ${name}`)
     macros.set(name, { entry, block })
   }
+  const macroAllowed = target => !(listPlacement && listed.has(target.entry.rule.id) && !target.block.referenceOnly)
   const roots = rules.flatMap(rule => (byRule.get(rule.id)?.blocks ?? []).filter(b => !b.referenceOnly).map(block => ({ entry: byRule.get(rule.id), block })))
   // Claims are determined before list placement. A reference has the same effect
   // whether its fallback source is before or after it in the user's strategy.
@@ -73,14 +75,18 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
       if (item && !claims.has(key(target, item))) claims.set(key(target, item), owner)
     }
     if (block.type === 'text') for (const match of block.text.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)) {
-      const target = macros.get(match[1]); if (target && !claims.has(key(target.entry, target.block))) claims.set(key(target.entry, target.block), owner)
+      const target = macros.get(match[1]); if (target && macroAllowed(target) && !claims.has(key(target.entry, target.block))) claims.set(key(target.entry, target.block), owner)
     }
   }
   const missingReferences = new Set()
   function targets(block) {
     const entry = bySource.get(block.sourceId)
     if (!entry) { if (!missingReferences.has(block.sourceId)) { missingReferences.add(block.sourceId); diagnostics.push({ code: 'ASSEMBLY_REFERENCE_UNAVAILABLE', sourceId: block.sourceId }) }; return [] }
-    if (block.honorEnabled !== false && !enabled(block.sourceId)) return []
+    // A source shown in the list owns its position in list mode. References
+    // cannot relocate it or bypass its disabled list rule. Unlisted dependency
+    // sources still belong to the source's authored reference position.
+    if (listPlacement && listed.has(entry.rule.id) && !block.useOwnerRule) return entry.blocks.filter(b => b.referenceOnly && block.blockIds?.includes(b.id)).map(block => ({ entry, block }))
+    if (block.honorEnabled !== false && listed.has(entry.rule.id) && !enabled(block.sourceId)) return []
     return entry.blocks.filter(b => (!block.blockIds || block.blockIds.includes(b.id)) && (!block.group || b.group === block.group) && (block.blockIds || !b.referenceOnly)).map(b => ({ entry, block: b }))
   }
   function claimReferences(entry, block, path = new Set()) {
@@ -119,6 +125,7 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
       const expanded = block.text.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (whole, name) => {
         const target = macros.get(name)
         if (!target) return whole
+        if (!macroAllowed(target)) return ''
         children.push({ id: `${identity}:${name}:${children.length}`, name: target.block.id, locked: true, lockReason: `macro:${name}`, source: origin(target.entry, target.block), text: target.block.text, stability: target.entry.descriptor.stability, lifetime: 'request' })
         return target.block.text
       })
@@ -129,10 +136,15 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
       lifetime = targetRule.lifetime; contentHash = hash({ text: rendered, role })
       messages = [message(role, rendered, `tavern-${hash({ id: identity, contentHash }).slice(0, 32)}`)]
     }
-    const depth = block.depth ?? targetRule.depth
+    const placementRule = block.targetSourceId ? targetRule : entry.rule
+    const controlled = listPlacement && listed.has(placementRule.id)
+    // Native block depth can anchor immutable system updates within native
+    // history. Moving a module must not rewrite that internal message order.
+    const depth = controlled && block.type !== 'native' ? placementRule.depth
+      : block.depth ?? (listed.has(entry.rule.id) ? targetRule.depth : entry.rule.depth)
     const node = { id: identity, ruleId: targetRule.id, module: targetRule.kind, name: block.name || block.id, role, text: rendered, messages, source: origin(entry, block),
       stability: /\{\{\s*(random::|roll |getvar::)/i.test(block.text ?? '') ? 'evaluation' : /last(user|char)message/i.test(block.text ?? '') ? 'conversation' : block.stability ?? entry.descriptor.stability,
-      lifetime, recorded: true, locked: reference?.locked ?? false, lockReason: reference?.locked ? reference.reason : null, children, hash: contentHash, depth, changed: previous?.nodes?.find(n => n.id === identity)?.hash !== contentHash }
+      lifetime, recorded: true, locked: reference?.locked ?? false, lockReason: reference?.locked ? reference.reason : null, children, hash: contentHash, depth, order: block.order ?? 100, changed: previous?.nodes?.find(n => n.id === identity)?.hash !== contentHash }
     if (depth != null) deferred.push(node)
     else (plans.get(block.targetSourceId ? targetRule.id : reference?.placementRule ?? targetRule.id) ?? []).push(node)
   }
@@ -140,7 +152,11 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
   for (const { entry, block } of roots) emit(entry, block)
   for (const rule of rules) nodes.push(...plans.get(rule.id))
   // Resolve placement before lifetime so depth rules and list rules share retention.
-  for (const node of deferred) {
+  // Preserve authored order within each depth, independent of the preset list.
+  const depthGroups = new Map()
+  for (const node of deferred) { if (!depthGroups.has(node.depth)) depthGroups.set(node.depth, []); depthGroups.get(node.depth).push(node) }
+  for (const group of depthGroups.values()) group.sort((a, b) => a.order - b.order)
+  for (const node of [...depthGroups.values()].flat()) {
     const flat = nodes.flatMap(n => n.messages)
     const nativePositions = flat.flatMap((m, i) => nativeMessages.some(n => n.id === m.id) && m.role !== 'system' ? [i] : [])
     const requested = node.depth === 0 ? flat.length : nativePositions[Math.max(0, nativePositions.length - node.depth)] ?? flat.length

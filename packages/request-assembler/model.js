@@ -26,7 +26,6 @@ export function normalizePreset(value) {
     if (typeof (rule.text ?? '') !== 'string' || (rule.text ?? '').length > 524288) throw new TypeError('Custom text exceeds limit')
     return { id: rule.id, kind: rule.kind, enabled: rule.enabled !== false, role, lifetime, depth: rule.depth ?? null, text: rule.text ?? '', name: typeof rule.name === 'string' ? rule.name.slice(0, 200) : '' }
   })
-  for (const kind of ['native-system', 'history', 'input']) if (!kinds.has(kind)) throw new TypeError(`Missing native module: ${kind}`)
   return { format: FORMAT, version: 1, name: value.name.trim(), placement: value.placement === 'st' ? 'st' : 'modules', rules }
 }
 export const BUILTINS = Object.freeze([
