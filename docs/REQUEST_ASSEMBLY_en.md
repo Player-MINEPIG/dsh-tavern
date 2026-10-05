@@ -68,7 +68,7 @@ Every result is stored as a log-only `request/assembly` DSH event. It does not e
 
 After removing Tavern, native user messages, replies and tool results remain usable. Request-only content and retained Tavern snapshots stop being injected, but recorded bodies remain in the log. The event's `ignorable:true` permits the stock core to retain it without projecting it. Removing only the core extension while retaining an applied layout fails explicitly; disable the strategy first.
 
-Preview uses current assets and readable durable history, excluding unsent input. Native instructions are freshly assembled by the core instead of reusing historical system messages containing old loader bodies. World-book matches can differ from the next real input. Frozen actual requests remain authoritative.
+Preview uses current assets and readable durable history, excluding unsent input. Native instructions are freshly assembled by the core instead of reusing historical system messages containing old loader bodies. World-book matches can differ from the next real input. A cold session supplies provider/model variables from its detached Session's pending model projection, latest request header, or official default model metadata, without resuming an Agent, preparing a model call, or changing selection. If model metadata is unavailable and native instructions reference these variables, preview returns `NATIVE_PREVIEW_VARIABLE_UNAVAILABLE` (HTTP 409) without an assembled result. Frozen actual requests remain authoritative.
 
 ## Core extension and installation boundary
 

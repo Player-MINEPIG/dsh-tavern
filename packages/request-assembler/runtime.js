@@ -4,6 +4,17 @@ import { normalizePreset } from './model.js'
 import { createHash } from 'node:crypto'
 import { projectSystemSnapshots } from './system-snapshots.js'
 
+function previewAgent(ctx, agent) {
+  if (!agent || agent.options !== undefined) return agent
+  // A cold preview has a detached Session, not an Agent. Official prompt
+  // variables still expect options; use the same read-only selection order
+  // as SessionController without resuming or preparing a model request.
+  const selected = ctx.get('sessionProjections')?.stateOf?.(agent.session, 'modelSelection')?.pending
+    ?? agent.session?.requestHeader?.()?.config
+    ?? ctx.get('agentDefaultModel')?.currentSelection?.()
+  return { ...agent, options: selected ? { provider: selected.provider, model: selected.model } : {} }
+}
+
 export class RequestAssembler {
   constructor({ ctx, store, resources, registry = createDefaultRegistry() }) { this.ctx = ctx; this.store = store; this.resources = resources; this.registry = registry }
   sources() { return this.registry.list() }
@@ -41,6 +52,7 @@ export class RequestAssembler {
     return { messages, metadata: { owner: 'pmp-dsh-tavern', assembly: metadata, upstream: base.metadata ?? null } }
   }
   async preview({ preset, agent, sessionId, signal }) {
+    agent = previewAgent(this.ctx, agent)
     const snapshot = this.resources.compile({ agent, sessionId, resolveOnly: true })
     // Historical system messages may still contain the old loader's assets.
     // Preview current core assembly independently, without committing any event.
@@ -52,7 +64,7 @@ export class RequestAssembler {
       const current = await systemPrompt.assemble({ agent, scope: agent, tavernAssemblyPreview: true })
       officialSections = current.sections
       const text = current.sections.map(section => section.interpolate === false ? section.text : section.text.replace(/\{\{([^{}]*)\}\}/g, (_, key) => {
-        if (!/^[a-z][a-z0-9_]*$/.test(key) || typeof current.variables?.[key] !== 'string') throw new Error('Unresolved native preview variable')
+        if (!/^[a-z][a-z0-9_]*$/.test(key) || typeof current.variables?.[key] !== 'string') throw Object.assign(new Error(`Native preview variable "${key}" is unavailable in the current session configuration`), { code: 'NATIVE_PREVIEW_VARIABLE_UNAVAILABLE', status: 409 })
         return current.variables[key]
       })).filter(Boolean).join('\n\n')
       if (text) nativeMessages.unshift({ id: 'preview-native-system', role: 'system', content: [{ type: 'text', text }], source: { kind: 'system-prompt' } })
