@@ -414,11 +414,14 @@ export function TavernTraceView({ sessionId, useSession, useChat }) {
 }
 
 export function installTavernTraceStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-trace"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-trace`
-  style.textContent = css
-  document.head.append(style)
+  let style = document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-trace"]`)
+  if (!style) {
+    style = document.createElement('style')
+    style.dataset.pluginCss = `${PLUGIN_ID}-trace`
+    document.head.append(style)
+  }
+  // Reuse our owned node, but refresh its content after a plugin hot reload.
+  if (style.textContent !== css) style.textContent = css
 }
 
 export function registerTavernTraceView(ctx) {
