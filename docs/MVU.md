@@ -208,4 +208,6 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 
 来源通过 `resolvePromptDependency` 发出 `usage:'world-book-variable'`，consumer 为真实 `tavern.world-books` 资源。省略 id 时仅可解析当前已选会话唯一实例；branch/swipe 使用各自 session 状态，不借用父会话最新值。实际发送带 turn 时使用该轮持久 checkpoint，较旧 turn 不可读取后续轮回复。预览读取显式当前会话。原生与新装配都复用同一次激活和同一来源策略过滤；最终 await 后同步复核状态、绑定、注册和策略租约。
 
+fork 时间线可以保留同一祖先 session 的引用。当前会话的提示词读取与来源默认规则允许这些引用，但每个引用都必须确认同一来源角色卡，读取仍绑定显式 session 和状态实例；跨卡引用或缺少来源角色身份的多重引用仍拒绝。任何目录或 timeline 变更都会使旧租约失效，须重新读取。此规则不授予历史卡片写权限，也不将旧会话重定向到当前周目。
+
 `getManagementDefaults({id,scope?})` 是同步可信 Host 接口，返回 null 或 `{protocolVersion:1,revision,configuration,scopePolicy:'source-bound',checkCurrent}`。configuration 仅含 type/store/retrieve；MVU 默认支持助手提交 parse/validate/apply 和模型读取 read/render/provide。默认许可只适用于来源已验证绑定，不是 wildcard、卡片写 grant 或自动提示词注入。注册、卸载、来源变化或绑定变化使租约失效。管理器应以来源默认 → 本地覆盖 → 既有 preset 优先级组成同一配置；显式空名单、空 store/retrieve 和拒绝规则仍拒绝。注册但配置错误仍为 managed 并拒绝执行，卸载后恢复来源默认；通用来源 handler 的显式拒绝仍生效。

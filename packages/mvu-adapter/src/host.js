@@ -91,7 +91,11 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     const catalog = memberships.readCatalog({ allowMissing: true })?.catalog
     const members = (catalog?.playthroughs ?? []).filter(play => play.ext?.pmpDshTavern?.rootSessionId === scope.sessionId
       || memberships.readTimeline(play).timeline.nodes.some(node => node.variants.some(variant => variant.sessionId === scope.sessionId)))
-    if (members.length > 1 || (resource.characterId && members.some(play => play.ext?.pmpDshTavern?.characterId !== resource.characterId))) return null
+    // Fork timelines can retain the same ancestor session. A current read is
+    // still session/instance-bound when every reference confirms its card.
+    // Unqualified or cross-card memberships remain ambiguous.
+    if ((members.length > 1 && !resource.characterId)
+      || (resource.characterId && members.some(play => play.ext?.pmpDshTavern?.characterId !== resource.characterId))) return null
     // The context lease also covers other timelines, absent catalogs and workspace ABA.
     return () => ctx.get(MVU_SERVICE) === service && getSelectionToken(scope.sessionId) === selection
       && getSelection(scope.sessionId)?.characterCardId === selected && contextLease() === true

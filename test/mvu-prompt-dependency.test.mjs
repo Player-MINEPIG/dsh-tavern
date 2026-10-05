@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {mkdtempSync,mkdirSync,rmSync,writeFileSync} from 'node:fs'
+import {mkdtempSync,mkdirSync,rmSync,writeFileSync,readFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join,resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
@@ -133,7 +133,7 @@ test('every registered policy source must lease its dependency decision, includi
 test('all membership evidence is leased, including other timelines that introduce a conflicting membership',async t=>{
  const f=await fixture(t);f.allow()
  const catalog=JSON.parse(f.store.readFile('catalog.json').content)
- catalog.playthroughs.push({id:'q',path:'q/timeline.json',ext:{pmpDshTavern:{rootSessionId:'other',characterId:'c'}}})
+ catalog.playthroughs.push({id:'q',path:'q/timeline.json',ext:{pmpDshTavern:{rootSessionId:'other',characterId:'conflicting-card'}}})
  f.put('q/timeline.json',JSON.stringify({nodes:[]}));f.put('catalog.json',JSON.stringify(catalog))
  const result=await f.service.resolvePromptDependency(input());assert.equal(result.checkCurrent(),true)
  f.put('q/timeline.json',JSON.stringify({nodes:[{id:'n',kind:'qa',parentVariantId:null,adoptedVariantId:'v',variants:[{id:'v',sessionId:'s',startEventId:0,endEventId:1}]}]}))
@@ -199,4 +199,56 @@ test('a shared world-book checkpoint lease expires when its session enters anoth
  f.append({type:'turn/start',data:{turn:2}});await f.service.flush()
  assert.equal((await f.read()).revision,revision,'checkpoint changes need not change the state revision')
  assert.equal(result.checkCurrent(),false)
+})
+
+test('same-card fork references preserve ancestor defaults and current dependency reads with fresh leases',async t=>{
+ for(const managed of [false,true]){
+  const f=await fixture(t,{managed,shared:false});if(managed)f.allow()
+  const instance=(await f.service.list({scope:{sessionId:'s'}}))[0],request={...input(),id:instance.id}
+  const before=await f.service.resolvePromptDependency(request),revision=instance.revision
+  const catalog=JSON.parse(f.store.readFile('catalog.json').content)
+  catalog.playthroughs.push({id:'fork',path:'fork/timeline.json',ext:{pmpDshTavern:{rootSessionId:'child',characterId:'c'}}})
+  f.put('fork/timeline.json',JSON.stringify({nodes:[{id:'ancestor',kind:'qa',parentVariantId:null,adoptedVariantId:'old',variants:[{id:'old',sessionId:'s',startEventId:0,endEventId:1}]}]}));f.put('catalog.json',JSON.stringify(catalog))
+  assert.equal(before.checkCurrent(),false,'a reference change expires the old lease even when compatible')
+  const defaults=f.service.getManagementDefaults({id:instance.id,scope:request.scope})
+  assert.equal(defaults.checkCurrent(),true)
+  const current=await f.service.resolvePromptDependency(request);assert.equal(current.id,instance.id);assert.equal(current.content.stat_data.hp,7);assert.equal(current.checkCurrent(),true)
+  assert.equal((await f.service.read({id:instance.id,scope:request.scope})).revision,revision,'prompt/default reads never migrate state')
+  catalog.playthroughs[1].ext.pmpDshTavern.characterId='foreign-card';f.put('catalog.json',JSON.stringify(catalog))
+  assert.equal(defaults.checkCurrent(),false);assert.equal(current.checkCurrent(),false)
+  assert.equal(f.service.getManagementDefaults({id:instance.id,scope:request.scope}),null)
+  assert.equal(await f.service.resolvePromptDependency(request),null,'cross-card references remain rejected')
+  catalog.playthroughs[1].ext.pmpDshTavern.characterId='c';f.put('catalog.json',JSON.stringify(catalog))
+  delete f.service.resources.find(resource=>resource.id===instance.id).characterId
+  assert.equal(f.service.getManagementDefaults({id:instance.id,scope:request.scope}),null)
+  assert.equal(await f.service.resolvePromptDependency(request),null,'multiple references without a source card identity remain ambiguous')
+ }
+})
+
+test('actual manager uses ancestor source defaults across same-card fork references without configuration or state writes',{skip:!managerRoot},async t=>{
+ const load=path=>import(pathToFileURL(join(resolve(managerRoot),path)).href)
+ const {MemoryManager}=await load('src/manager.js'),{Usage}=await load('src/usage.js'),{installMvu:installAdapter}=await load('src/adapters/mvu.js')
+ const f=await fixture(t,{managed:false,shared:false}),instance=(await f.service.list({scope:{sessionId:'s'}}))[0]
+ const dir=mkdtempSync(join(tmpdir(),'mvu-fork-defaults-'));t.after(()=>rmSync(dir,{recursive:true,force:true}))
+ const configPath=join(dir,'config.json');writeFileSync(configPath,JSON.stringify({schemaVersion:1,revision:1,presets:{},entries:[]}))
+ const manager=await new MemoryManager({configPath}).init(),usage=new Usage(manager),stop=installAdapter(manager,f.service,usage)
+ t.after(async()=>{stop();await manager.dispose()})
+ await manager.query({scope:{sessionId:'s'}})
+ const request={id:instance.id,scope:{authority:'local',sessionId:'s'},event:{preview:true,usage:'world-book-variable',consumer:{adapterId:'tavern.world-books',id:'world-book:character:c:embedded-world-book'}}}
+ const bytes=readFileSync(configPath),before=await f.service.resolvePromptDependency(request),row=await f.service.read({id:instance.id,scope:request.scope})
+ assert.notEqual(before,null)
+ assert.equal(before.checkCurrent(),true)
+ const catalog=JSON.parse(f.store.readFile('catalog.json').content)
+ catalog.playthroughs.push({id:'fork',path:'fork/timeline.json',ext:{pmpDshTavern:{rootSessionId:'child',characterId:'c'}}})
+ f.put('fork/timeline.json',JSON.stringify({nodes:[{id:'ancestor',kind:'qa',parentVariantId:null,adoptedVariantId:'old',variants:[{id:'old',sessionId:'s',startEventId:0,endEventId:1}]}]}));f.put('catalog.json',JSON.stringify(catalog))
+ assert.equal(before.checkCurrent(),false)
+ const configuration=manager.configurationSnapshot({id:instance.id,adapterId:'tavern.mvu',sessionId:'s'})
+ assert.equal(configuration.sourceDefault.available,true);assert.equal(configuration.scopePolicy,'source-bound')
+ const fresh=await f.service.resolvePromptDependency(request);assert.equal(fresh.checkCurrent(),true);assert.equal(fresh.content.stat_data.hp,7)
+ assert.deepEqual(readFileSync(configPath),bytes);assert.deepEqual((await f.service.read({id:instance.id,scope:request.scope})).content,row.content)
+ assert.equal((await f.service.read({id:instance.id,scope:request.scope})).revision,row.revision)
+ assert.equal(manager.traces.filter(fact=>fact.phase==='applied').length,0,'dependency access does not invent model delivery')
+ catalog.playthroughs[1].ext.pmpDshTavern.characterId='foreign-card';f.put('catalog.json',JSON.stringify(catalog))
+ assert.equal(fresh.checkCurrent(),false);assert.equal(manager.configurationSnapshot({id:instance.id,adapterId:'tavern.mvu',sessionId:'s'}).sourceDefault.available,false)
+ assert.equal(await f.service.resolvePromptDependency(request),null)
 })
