@@ -66,8 +66,18 @@ export class MvuService {
     this.#path = join(storageDir, 'mvu-instances.json')
     this.#state = existsSync(this.#path) ? readJsonFile(this.#path, MAX_STORE) : { version: 1, resources: {} }
     if (this.#state?.version !== 1 || !this.#state.resources) fail('MVU_VERSION', 'Unsupported MVU storage version')
+    const templates = { ...(this.#state.templates ?? {}) }
+    let changedDefaults = false
+    for (const [id, template] of Object.entries(templates)) {
+      // Discovery used to mark every template managed. Templates have no
+      // management API; this corrects only the default for future instances.
+      // Existing instances, explicit configuration and inherited ownership stay put.
+      if (template.discovered === true && template.managementMode === 'managed' && !resources.some(resource => resource.id === id)) {
+        templates[id] = { ...template, managementMode: 'native' }; changedDefaults = true
+      }
+    }
     const definitions = [...resources, ...Object.values(this.#state.resources).filter(r => r.definition && !resources.some(input => input.id === r.definition.id)).map(r => r.definition)]
-    this.templates = [...Object.values(this.#state.templates ?? {}).map(template => { const stored = { ...template }; delete stored.schemaSource; return stored }), ...resources.filter(r => r.sharing !== 'shared' && !(r.id in (this.#state.templates ?? {})))].map(prepareResource)
+    this.templates = [...Object.values(templates).map(template => { const stored = { ...template }; delete stored.schemaSource; return stored }), ...resources.filter(r => r.sharing !== 'shared' && !(r.id in templates))].map(prepareResource)
     this.resources = definitions.filter(r => r.instance || r.sharing === 'shared').map(prepareResource)
     for (const [id, record] of Object.entries(this.#legacy.resources)) {
       const definition = record.definition ?? resources.find(r => r.id === id) ?? { id, sessionIds: [...new Set(record.versions.map(v => v.source?.sessionId).filter(Boolean))], initial: record.versions[0]?.variables ?? { stat_data: {} } }
@@ -83,9 +93,10 @@ export class MvuService {
       for (const version of record.versions) normalizeVariables(version.variables)
       for (const checkpoint of record.checkpoints ?? []) normalizeVariables(checkpoint.variables)
     }
+    if (changedDefaults) this.#saveLedger({ templates })
     for (const resource of this.resources) if (!resource.legacy && resource.managementMode === 'managed' && !this.#record(resource.id).managementMode) this.#save(resource.id, { ...this.#record(resource.id), managementMode: 'managed', definition: resource })
   }
-  /** Trusted Host discovery only. New discoveries are managed and disabled until a usage decision. */
+  /** Trusted Host discovery only. Selected cards use native state unless explicitly managed. */
   async discover({ definition, sessionId }) {
     return this.#serial(async () => {
       const existing = this.templates.find(r => r.id === definition.id)
@@ -93,8 +104,9 @@ export class MvuService {
       let resource
       if (existing && (!existing.sourceError || definition.sourceError || this.resources.some(r => r.templateId === existing.id && this.#record(r.id).versions.length))) resource = { ...existing }
       else {
-        try { resource = prepareResource({ ...definition, sessionIds: existing?.sessionIds ?? [], managementMode: 'managed', discovered: true }) }
-        catch (error) { resource = prepareResource({ id: definition.id, name: definition.name, characterId: definition.characterId, sessionIds: [], managementMode: 'managed', discovered: true, sourceError: error.code ?? 'MVU_INITIALIZATION_INVALID', initial: { stat_data: {} } }) }
+        const managementMode = existing?.managementMode ?? 'native'
+        try { resource = prepareResource({ ...definition, sessionIds: existing?.sessionIds ?? [], managementMode, discovered: true }) }
+        catch (error) { resource = prepareResource({ id: definition.id, name: definition.name, characterId: definition.characterId, sessionIds: [], managementMode, discovered: true, sourceError: error.code ?? 'MVU_INITIALIZATION_INVALID', initial: { stat_data: {} } }) }
         delete resource.schemaSource
       }
       if (existing?.sourceError && !resource.sourceError) {

@@ -3,7 +3,7 @@ import { mvuResourceFromCharacter } from './character.js'
 
 export const characterMvuId = characterId => `mvu:character-${createHash('sha256').update(characterId).digest('hex').slice(0, 32)}`
 
-/** Host-only discovery. No card execution, automatic enablement or wildcard grants. */
+/** Host-only discovery. Native state is scoped to the selected card, never a wildcard grant. */
 export function createCharacterDiscovery({ characters, selections, service }) {
   return async sessionId => {
     const selected = sessionId ? selections.get(sessionId)?.characterCardId : null
@@ -14,7 +14,7 @@ export function createCharacterDiscovery({ characters, selections, service }) {
       if (existing && !existing.sourceError) {
         continue
       }
-      const options = { id, name: summary.name, characterId: summary.id, sessionIds: [], managementMode: 'managed' }
+      const options = { id, name: summary.name, characterId: summary.id, sessionIds: [], managementMode: 'native' }
       let definition
       try { definition = mvuResourceFromCharacter(characters.get(summary.id), options) }
       catch (error) {

@@ -1,11 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { MvuService, createCharacterDiscovery, characterMvuId, stateInstanceId } from '../packages/mvu-adapter/src/index.js'
 
-test('character discovery exposes managed session instances; templates never alias current state', async t => {
+test('character discovery exposes native session instances; templates never alias current state', async t => {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-discovery-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
   const entries = new Map([['card', { data: { character_book: { entries: [{ comment: '[initvar]', content: 'hp: 100' }] } } }]])
   const characters = { list: () => [...entries.keys()].map(id => ({ id, name: id })), get: id => entries.get(id) }
@@ -21,7 +21,7 @@ test('character discovery exposes managed session instances; templates never ali
   assert.equal(await service.read({ id: templateId, scope: { sessionId: 'unselected' } }), null)
   selected.set('A', 'card')
   assert.equal((await service.read({ id, scope: { sessionId: 'A' } })).content.stat_data.hp, 100)
-  assert.equal((await service.resolveRequest({ sessionId: 'A' })).blocks.length, 0)
+  assert.equal((await service.resolveRequest({ sessionId: 'A' })).blocks.length, 1)
   const stop = service.registerUsage(() => ({ enabled: true }))
   assert.equal((await service.resolveRequest({ sessionId: 'A' })).blocks.length, 1)
   const current = await service.read({ id, scope: { authority: 'local' } })
@@ -34,11 +34,84 @@ test('character discovery exposes managed session instances; templates never ali
   assert.equal((await service.read({ id, scope: { sessionId: 'A' } })).content.stat_data.hp, 70)
   selected.delete('A')
   assert.equal((await service.resolveRequest({ sessionId: 'A' })).blocks.length, 0)
-  stop(); assert.equal((await service.resolveRequest({ sessionId: 'B' })).blocks.length, 0)
+  stop(); assert.equal((await service.resolveRequest({ sessionId: 'B' })).blocks.length, 1)
   service.dispose()
   const restored = new MvuService({ storageDir, inspect })
   const record = await restored.read({ id, scope: { authority: 'local' } })
-  assert.equal(record.content.stat_data.hp, 70); assert.equal(record.managementMode, 'managed')
+  assert.equal(record.content.stat_data.hp, 70); assert.equal(record.managementMode, 'native')
+  restored.dispose()
+})
+
+test('discovered cards apply committed JSONPatch without manager configuration and keep explicit policy decisions', async t => {
+  const storageDir = mkdtempSync(join(tmpdir(), 'mvu-native-discovery-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
+  const events = [], session = { id: 's', header: { id: 's', version: 4, createdAt: 1 }, snapshotEvents: () => events }
+  const card = { data: { character_book: { entries: [{ comment: '[initvar]', content: 'world:\n  time: before\ncharacter:\n  thought: before' }] } } }
+  let service
+  const refresh = createCharacterDiscovery({ characters: { list: () => [{ id: 'card', name: 'Synthetic card' }], get: () => card }, selections: { get: () => ({ characterCardId: 'card' }) }, service: () => service })
+  service = new MvuService({ storageDir, refresh, inspect: async () => ({ header: session.header, events }), captureSessionLease: async () => () => true })
+  t.after(() => service.dispose())
+  await refresh('s')
+  const facts = []; service.observe(fact => facts.push(fact))
+  const row = async () => (await service.list({ scope: { sessionId: 's' } }))[0]
+  const turn = async n => {
+    const start = { seq: events.length, type: 'turn/start', data: { turn: n } }; events.push(start); await service.checkpoint(session, start)
+    const text = `<UpdateVariable><JSONPatch>[{"op":"replace","path":"/world/time","value":"time-${n}"},{"op":"replace","path":"/character/thought","value":"thought-${n}"}]</JSONPatch></UpdateVariable>`
+    events.push({ seq: events.length, type: 'assistant/message', data: { turn: n, message: { id: `reply-${n}`, content: [{ type: 'text', text }] } } })
+    events.push({ seq: events.length, type: 'turn/end', data: { turn: n, reason: { kind: 'completed' } } })
+    await service.ingest(session)
+  }
+  await turn(1)
+  assert.deepEqual((await row()).content.stat_data, { world: { time: 'time-1' }, character: { thought: 'thought-1' } })
+  // An installed optional manager can abstain for unconfigured native state.
+  const stop = service.registerUsage(() => undefined)
+  await turn(2)
+  assert.equal((await row()).content.stat_data.world.time, 'time-2')
+  stop()
+  const deny = service.registerUsage(() => ({ enabled: false, reason: 'rule', checkCurrent: () => true }))
+  await turn(3)
+  assert.equal((await row()).content.stat_data.world.time, 'time-2')
+  assert(facts.some(fact => fact.turn === 3 && fact.phase === 'skipped' && fact.reason === 'rule'))
+  deny()
+  const current = await row()
+  await service.setManagementMode({ id: current.id, mode: 'managed', scope: { sessionId: 's' }, expectedRevision: current.revision, operationId: 'explicit-delegation' })
+  await turn(4)
+  assert.equal((await row()).managementMode, 'managed')
+  assert.equal((await row()).content.stat_data.world.time, 'time-2')
+  assert(facts.some(fact => fact.turn === 4 && fact.phase === 'skipped' && fact.reason === 'usage-policy'))
+  const revision = (await row()).revision
+  await service.ingest(session)
+  assert.equal((await row()).revision, revision)
+})
+
+test('old automatic template defaults change only future instances, preserving every existing ownership record', async t => {
+  const storageDir = mkdtempSync(join(tmpdir(), 'mvu-default-migration-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
+  const templateId = characterMvuId('card'), explicitId = 'mvu:explicit-template'
+  const template = { id: templateId, characterId: 'card', discovered: true, managementMode: 'managed', sessionIds: ['old'], initial: { stat_data: { hp: 100 } } }
+  const records = Object.fromEntries(['automatic', 'explicit', 'forked', 'copied'].map((kind, index) => {
+    const sessionId = `old-${kind}`, instance = { sessionId, createdAt: sessionId }, id = stateInstanceId(templateId, instance)
+    return [id, { revision: index, currentKey: null, versions: [], managementMode: 'managed', definition: { ...template, id, templateId, instance, sessionIds: [sessionId] },
+      ...(kind === 'explicit' ? { managementOperations: [{ id: 'manage', fingerprint: 'synthetic', result: { id, revision: index, managementMode: 'managed' } }] } : {}),
+      ...(kind === 'forked' ? { seed: { kind: 'fork', source: { id: 'mvu:parent' } } } : {}),
+      ...(kind === 'copied' ? { copiedFrom: { id: 'mvu:parent', revision: 1 } } : {}) }]
+  }))
+  const explicit = { ...template, id: explicitId }
+  const path = join(storageDir, 'mvu-instances.json'), original = { version: 1, resources: records, templates: { [templateId]: template, [explicitId]: explicit } }
+  writeFileSync(path, JSON.stringify(original))
+  const options = { storageDir, resources: [explicit], inspect: async id => ({ header: { id, version: 4, createdAt: id }, events: [] }), isActive: () => true }
+  let service = new MvuService(options)
+  assert.equal(service.templates.find(item => item.id === templateId).managementMode, 'native')
+  assert.equal(service.templates.find(item => item.id === explicitId).managementMode, 'managed')
+  const migrated = JSON.parse(readFileSync(path, 'utf8'))
+  assert.deepEqual(migrated.resources, original.resources)
+  assert.deepEqual(migrated.templates[explicitId], original.templates[explicitId])
+  assert.deepEqual(migrated.templates[templateId], { ...template, managementMode: 'native' })
+  const fresh = (await service.list({ scope: { sessionId: 'fresh' } })).find(item => item.templateId === templateId)
+  assert.equal(fresh.managementMode, 'native'); assert.equal(fresh.content.stat_data.hp, 100)
+  const after = readFileSync(path, 'utf8')
+  service.dispose(); service = new MvuService(options)
+  assert.equal(readFileSync(path, 'utf8'), after)
+  assert.deepEqual(JSON.parse(after).resources[Object.keys(records)[0]], records[Object.keys(records)[0]])
+  service.dispose()
 })
 
 test('selection activation boundaries survive restart and never replay another character history', async t => {

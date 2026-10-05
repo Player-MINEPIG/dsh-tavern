@@ -8,7 +8,9 @@ MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（�
 
 Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模板。`characterMvuId(characterId)` 是模板 ID，不是可编辑的状态资源。实际选择该卡后，来源按模板与可信 DSH session 的 `id + createdAt` 分配独立 `mvu:instance-*` ID；记录包含 `templateId` 与 `instance` 身份。新 branch 和 reply swipe 创建不同 session，也就拥有不同状态 ID、current、CAS revision 与幂等记录。模板不作为 manager 的 current 资源展示。
 
-发现实例默认 managed 且未启用；只有实际选择该卡的会话获访问范围。选择/取消/重选持久记录激活事件边界，不能把旧角色回复重新应用到新角色。切回同一角色恢复该会话原实例；重新选卡和源卡编辑不重置初始化/schema。发现不授予 wildcard 权限，不执行脚本。初始化失败显示 sourceError 并阻止执行。缺失或变化的 durable session 身份拒绝分配与读取。
+新发现实例默认 native，由来源处理已完成助手回复中的变量更新，不依赖可选管理器或额外 allow 规则；只有实际选择该卡的会话获访问范围。选择/取消/重选持久记录激活事件边界，不能把旧角色回复重新应用到新角色。切回同一角色恢复该会话原实例；重新选卡和源卡编辑不重置初始化/schema。发现不授予 wildcard 权限，不执行脚本。初始化失败显示 sourceError 并阻止执行。缺失或变化的 durable session 身份拒绝分配与读取。
+
+加载旧账本时，只把自动发现模板的默认模式修正为 native，供后续新实例使用；显式配置的模板保持原模式。所有已有实例（包括自动发现、显式托管、复制与继承实例）的模式、管理操作、变量和历史均保持原样。来源自己的管理 API 不以模板为操作目标。已有 managed 实例仍须通过带 CAS 的 `setManagementMode` 明确切换，不凭缺少管理操作或历史配置版本推断用户没有规则，也不重放已处理的回复。
 
 也可由 Loader 的 `mvu.resources` 显式声明资源，例如：
 
@@ -35,9 +37,9 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 角色侧栏的“新周目”明确创建独立会话和状态，不复用尚无 DSH 对话但已初始化的旧周目。旧周目、旧状态和历史仍保留。
 如需恢复其中已确认的数据，可信 Host 调用方可用现有原语：`read({id:旧资源ID,scope:{authority:'local',sessionId:旧会话ID}})` 读取只读记录，创建新周目后 `list`/`read` 确认其独立实例 ID 和当前 revision，再显式选择要恢复的 `stat_data`，以该新 ID、scope、`expectedRevision` 和新 `operationId` 调 `update`。不要把旧完整 envelope 或旧 schema 当作目标内容。
-这是经目标 schema 验证的数据恢复；目标 schema 可转换或拒绝内容，CAS 冲突须重新读取并确认。它不迁移旧历史、schema、管理策略、授权或幂等记录，不改变旧账本；新发现实例仍默认 managed，使用与卡片写权限需分别配置。当前不提供自动历史迁移或专用迁移向导。
+这是经目标 schema 验证的数据恢复；目标 schema 可转换或拒绝内容，CAS 冲突须重新读取并确认。它不迁移旧历史、schema、管理策略、授权或幂等记录，不改变旧账本；新发现实例默认 native，卡片执行与模型装配仍使用各自既有配置。当前不提供自动历史迁移或专用迁移向导。
 
-发现不等于启用。来源许可和宿主权限不能由卡片脚本自行提升。
+发现不自动把状态加入模型请求。来源许可和宿主权限不能由卡片脚本自行提升。
 
 ## Host 服务
 
@@ -55,7 +57,7 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 | `registerCommandProcessor({id,source})` | 可信 Host 注册单个提交前命令来源；异步返回 `{receipt,dispose}`，不是卡片写 API |
 | `registerUsage(handler)` | 注册可信使用决策，返回 disposer；handler 收到 `{on,id,scope,event,variables,managementMode}` |
 | `observe(listener)` | 注册提交与请求事实监听，返回 disposer；监听器不能参与状态写事务 |
-| `discover({definition,sessionId?})` | 可信 Host 发现接口；稳定模板身份、默认托管及显式会话访问 |
+| `discover({definition,sessionId?})` | 可信 Host 发现接口；稳定模板身份、原生默认及显式会话访问 |
 | `validateConfig(config)` | 检查 `type:'mvu-state'`、store/retrieve 触发及支持的策略链 |
 | `captureSessionSeed({sessionId,kind,atEventId,prefixEndEventId?,targetSessionId?,signal?})` | 可信创建路径冻结来源，返回 opaque ticket 或无状态时 null；kind 为 fork / reply-swipe，首轮 swipe 必须预先指定目标 session ID，后续 swipe 必须给出 prefixEndEventId |
 | `installSessionSeed({ticket,sessionId,signal?})` | 官方创建返回后校验子身份/父来源/继承消息，原子安装；同 ticket 同目标幂等，冲突拒绝 |
@@ -159,7 +161,7 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 
 | 能力 | 实现与边界 |
 | --- | --- |
-| 初始化 | 有界 YAML/JSON5、拒绝 tag/alias、顺序合并；支持显式配置与卡源自动发现，发现不等于启用 |
+| 初始化 | 有界 YAML/JSON5、拒绝 tag/alias、顺序合并；支持显式配置与卡源自动发现，原生默认不授予跨会话访问 |
 | 命令 | set/add/insert/assign/remove/unset/delete；JSONPatch replace/delta/insert/add/remove/move；安全 dot/bracket/JSON pointer 路径 |
 | 原生元数据 | extensible/recursiveExtensible/required、对象/数组模板、arrayMeta、扩展标记；按值/索引删除；严格/兼容 VWD 设置 |
 | schema 声明 | object/array/record/enum/literal/union、number/string/boolean/any/unknown、coerce、default/prefault/optional/nullable、min/max/int、strict/passthrough/strip、transform、custom superRefine、有限 regex |

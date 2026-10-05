@@ -112,12 +112,10 @@ test('official SessionController creates fresh state beside an initialized legac
     assert.equal(store.sessionSelections.get(cardRun.sessionId).characterCardId, 'legacy-card')
     const cardIdentity = { sessionId: cardRun.sessionId, createdAt: ctx.sessions.get(cardRun.sessionId).header.createdAt }
     const cardId = stateInstanceId(cardTemplateId, cardIdentity)
-    service.registerUsage(request => request.id === cardId && request.scope.sessionId === cardRun.sessionId
-      ? { enabled: true, checkCurrent: () => true } : undefined)
     await turn(cardRun.sessionId)
     const cardState = await service.read({ id: cardId, scope: { sessionId: cardRun.sessionId } })
     assert.equal(cardState.content.stat_data.hp, 99)
-    assert.equal(cardState.managementMode, 'managed')
+    assert.equal(cardState.managementMode, 'native')
     assert.notEqual(cardState.id, cardTemplateId)
     const restored = new MvuService({ storageDir: join(directory, 'tavern'), inspect: id => ctx.sessionController.inspect(id) })
     assert.equal((await restored.read({ id: (await row(child.sessionId)).id, scope: { sessionId: child.sessionId } })).content.stat_data.hp, 68)
