@@ -17,7 +17,9 @@ function eventStatus(event) {
   return event.phases.length ? 'started' : 'unknown'
 }
 function CellValue({ present, known = true, value }) {
-  return known ? present ? h('pre', { className: 'dtmvu-value' }, rawText(valueText(value))) : uiMessage('trace.mvu.absent') : uiMessage('trace.mvu.notRecorded')
+  // React evaluates this component after the parent's localized element
+  // factory, so its direct return must be a renderable node or string.
+  return known ? present ? h('pre', { className: 'dtmvu-value' }, rawText(valueText(value))) : translate('trace.mvu.absent') : translate('trace.mvu.notRecorded')
 }
 export function MvuEventsTable({ events }) {
   return events.length ? h('div', { className: 'dtmvu-scroll' },

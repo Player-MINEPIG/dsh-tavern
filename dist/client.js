@@ -25926,7 +25926,7 @@ function eventStatus(event) {
   return event.phases.length ? "started" : "unknown";
 }
 function CellValue({ present, known = true, value }) {
-  return known ? present ? h13("pre", { className: "dtmvu-value" }, rawText(valueText(value))) : uiMessage("trace.mvu.absent") : uiMessage("trace.mvu.notRecorded");
+  return known ? present ? h13("pre", { className: "dtmvu-value" }, rawText(valueText(value))) : translate("trace.mvu.absent") : translate("trace.mvu.notRecorded");
 }
 function MvuEventsTable({ events }) {
   return events.length ? h13(

@@ -13,7 +13,7 @@ import { createMvuApi, isMvuApiPath } from '../packages/mvu-adapter/src/http.js'
 import { editVariable, flattenVariables, roundEvents, roundSnapshot, rowsAt, variableChanges, mvuRequest } from '../packages/tavern-trace/src/mvu-data.js'
 import { MvuVariablesTable, MvuEventsTable } from '../packages/tavern-trace/src/mvu-view.js'
 import { TraceRecordContent } from '../packages/tavern-trace/src/client.js'
-import { setClientUiSettings } from '../packages/client/src/i18n.js'
+import { getClientUiSettings, setClientUiSettings, uiMessage } from '../packages/client/src/i18n.js'
 
 const root = '/pmp-dsh-tavern/api/v1/mvu/'
 const scope = { authority: 'local', sessionId: 's' }
@@ -140,6 +140,38 @@ test('MVU tables render literal data and historical mode has no edit button', ()
   const event = { eventId: 'e', turn: 1, on: 'card_variable_update', phases: ['started', 'skipped'], reason: 'MVU_WRITE_DENIED', changes: [] }
   const events = renderToStaticMarkup(MvuEventsTable({ events: [event] }))
   assert.ok(events.includes('跳过 / 拒绝')); assert.ok(events.includes('MVU_WRITE_DENIED'))
+})
+test('source comparison cells render absent values as labels, including added and removed fields', async t => {
+  const previous = getClientUiSettings()
+  t.after(() => setClientUiSettings(previous, { announce: false }))
+  const { service } = fixture(t, { resources: [{ sharing: 'shared', id: 'mvu:trace', sessionIds: ['s'], initial: { stat_data: { $meta: { extensible: true }, removed: false, changed: null } } }] })
+  await service.ingest(session(['<JSONPatch>[{"op":"add","path":"/added","value":"<img src=x onerror=alert(1)>"},{"op":"remove","path":"/removed"},{"op":"replace","path":"/changed","value":false}]</JSONPatch>']))
+  const history = (await request(service, 'history', null, { id: 'mvu:trace' })).data.versions
+  const facts = (await request(service, 'facts', null, { id: 'mvu:trace' })).data.records
+  const events = roundEvents(history, facts, 1), before = JSON.stringify({ history, facts })
+  assert.equal(events[0].changes.filter(change => !change.beforePresent).length, 1)
+  assert.equal(events[0].changes.filter(change => !change.afterPresent).length, 1)
+  for (const [locale, label] of [['zh-CN', '不存在'], ['en', 'Absent']]) {
+    setClientUiSettings({ locale }, { announce: false })
+    assert.deepEqual(Object.keys(uiMessage('trace.mvu.absent')), ['value', 'toString'], 'use the real text wrapper that React must never receive as a component return')
+    const html = renderToStaticMarkup(MvuEventsTable({ events }))
+    assert.equal(html.split(label).length - 1, 2)
+    assert.ok(html.includes('&lt;img')); assert.ok(!html.includes('<img'))
+    assert.ok(html.includes('null')); assert.ok(html.includes('false'))
+    assert.ok(!html.includes('[object Object]'))
+  }
+  assert.equal(JSON.stringify({ history, facts }), before, 'rendering never rewrites source data or metadata')
+})
+test('unknown comparison provenance renders its own label rather than a wrapped React child', () => {
+  const previous = getClientUiSettings()
+  try {
+    for (const [locale, label] of [['zh-CN', '未记录'], ['en', 'Not recorded']]) {
+      setClientUiSettings({ locale }, { announce: false })
+      const events = [{ eventId: 'unknown-comparison', phases: ['completed'], changes: [{ path: '/stat_data/known', beforeKnown: false, beforePresent: true, before: 'MUST NOT DISPLAY', afterPresent: true, after: 'known value' }] }]
+      const html = renderToStaticMarkup(MvuEventsTable({ events }))
+      assert.ok(html.includes(label)); assert.ok(html.includes('known value')); assert.ok(!html.includes('MUST NOT DISPLAY'))
+    }
+  } finally { setClientUiSettings(previous, { announce: false }) }
 })
 test('MVU is inserted immediately below world-book details inside each Trace round', () => {
   const node = TraceRecordContent({ record: { audit: {} }, sessionId: 's', turn: 2, latest: false })
