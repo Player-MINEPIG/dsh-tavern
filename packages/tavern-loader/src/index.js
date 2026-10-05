@@ -82,6 +82,7 @@ import { createMemorySources, installMemorySources } from '../../memory-sources/
 import { OpeningWorldBookService, OPENING_WORLD_BOOK_SERVICE, createOpeningWorldBookHandler, isOpeningWorldBookPath } from '../../opening-worldbook/index.js'
 import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
 import { createScopeCatalog, installScopeCatalog } from '../../scope-catalog/index.js'
+import { createSessionReadContext } from '../../request-assembler/session-read-context.js'
 import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
 
 export const name = PLUGIN_ID
@@ -319,6 +320,8 @@ export function apply(ctx, config = {}) {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
+  const sessionReads = createSessionReadContext(id => ctx.get('sessions')?.get?.(id))
+  ctx.effect(() => () => sessionReads.dispose())
   migrateCharacterSelections(characterStore, selections)
   const openingWorldBooks = new OpeningWorldBookService({ storageDir, characters: characterStore,
     getSelection: id => selections.get(id), getSelectionRevision: id => selections.selectionRevision(id),
@@ -327,7 +330,7 @@ export function apply(ctx, config = {}) {
   ctx.effect(() => () => openingWorldBooks.dispose())
   installScopeCatalog(ctx, createScopeCatalog({ sources: { characterId: characterStore, presetId: store, userId: userStore },
     getSelection: id => selections.get(id), getSelectionRevision: id => `${selections.selectionRevision(id)}:${store.selectionEpoch}`,
-    getSession: id => ctx.get('sessions')?.get?.(id) ?? null }))
+    getSession: sessionReads.getSession }))
   const rpMode = new RpModeController({
     selections,
     uiSettings: uiSettingsStore,
@@ -383,7 +386,7 @@ export function apply(ctx, config = {}) {
   })
   const assemblyPresets = new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
   const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [],
-    getSession: id => ctx.get('sessions')?.get?.(id), getMvu: () => ctx.get('tavernMvu'),
+    getSession: sessionReads.getSession, getMvu: () => ctx.get('tavernMvu'),
     resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
     getSelection: sessionId => {
       const selected = selections.get(sessionId)
@@ -398,7 +401,7 @@ export function apply(ctx, config = {}) {
         selectionRevision: `${selections.selectionRevision(sessionId)}:${openingWorldBooks.revision()}` }
     } })
   const registry = createDefaultRegistry({ worldbookPolicy: (context, output) => memorySources.worldBooks.filter(context, output), worldbookValidateResolved: memorySources.worldBooks.validateResolved })
-  const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry })
+  const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry, sessionReads })
   installMemorySources(ctx, memorySources, registry)
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
@@ -412,6 +415,8 @@ export function apply(ctx, config = {}) {
   let mvu
   const refreshMvu = createCharacterDiscovery({ characters: characterStore, selections, service: () => mvu })
   mvu = installMvu(ctx, { storageDir, resources: mvuResources,
+    getPreviewSession: sessionReads.getSession,
+    isPreviewRead: sessionReads.isActive,
     resolveCommandHook: resource => {
       if (!resource.characterId) return null
       const metadata = characterStore.scopeMetadata()

@@ -21,6 +21,7 @@ export function createAssemblyApi({ store, runtime, agents, sessions, inspect, n
           const record = await inspect(id)
           session = sessions().get(id) ?? sessions().prepare(id, { seed: record.events, meta: record.meta, inheritedEventCount: record.inheritedEventCount, eventState: 'detached' })
         }
+        if (id && !session) throw Object.assign(new Error('Session is unavailable'), { code: 'SCOPE_CATALOG_NOT_FOUND', status: 404 })
         const agent = live ?? (session ? { id, session } : undefined)
         return send(res, 200, { ok: true, preview: await runtime.preview({ preset: body.preset ?? store.get(body.presetId), agent, sessionId: id }) })
       }
@@ -36,6 +37,6 @@ export function createAssemblyApi({ store, runtime, agents, sessions, inspect, n
       if (part && method === 'PUT') return send(res, 200, { ok: true, preset: store.save(await read(req), part) })
       if (part && method === 'DELETE') { store.remove(part); return send(res, 200, { ok: true }) }
       return send(res, 405, { ok: false, error: 'Method not allowed' })
-    } catch (error) { return send(res, error.status ?? (error instanceof TypeError || error instanceof SyntaxError ? 400 : 500), { ok: false, error: error.message, code: error.code }) }
+    } catch (error) { return send(res, error.status ?? (error.code === 'SESSION_QUERY_SESSION_NOT_FOUND' || error.code === 'SCOPE_CATALOG_NOT_FOUND' || error.constructor?.name === 'ApiSessionNotFound' ? 404 : error instanceof TypeError || error instanceof SyntaxError ? 400 : 500), { ok: false, error: error.message, code: error.code }) }
   }
 }

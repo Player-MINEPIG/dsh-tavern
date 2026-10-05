@@ -57,9 +57,9 @@ export class MvuService {
   protocolVersion = 1
   #state; #path; #legacy; #facts; #listeners = new Set(); #usage = new UsageLifecycle(); #requestChecks = new WeakMap(); #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map()
   #cardCreations = new Map(); #processors = new Map()
-  constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, authorizeCardWrite, capturePromptScope, waitForHost, captureSessionLease, resolveCommandHook, captureCommandScope } = {}) {
+  constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, isPreviewRead, authorizeCardWrite, capturePromptScope, waitForHost, captureSessionLease, resolveCommandHook, captureCommandScope } = {}) {
     if (resources.some(resource => resource.instance)) fail('MVU_CONFIG', 'State instance identity is allocated by the Host, not configuration')
-    this.inspect = inspect; this.resolveScope = resolveScope; this.refresh = refresh; this.isActive = isActive; this.authorizeCardWrite = authorizeCardWrite; this.capturePromptScope = capturePromptScope
+    this.inspect = inspect; this.resolveScope = resolveScope; this.refresh = refresh; this.isActive = isActive; this.isPreviewRead = isPreviewRead; this.authorizeCardWrite = authorizeCardWrite; this.capturePromptScope = capturePromptScope
     this.captureCommandScope = captureCommandScope; this.resolveCommandHook = resolveCommandHook; this.waitForHost = waitForHost; this.captureSessionLease = captureSessionLease
     // The previous shared ledger is never rewritten or silently redistributed.
     this.#facts = new MvuFacts(storageDir)
@@ -422,6 +422,7 @@ export class MvuService {
   }
   #saveLedger(extra) {
     if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed before commit')
+    if (this.isPreviewRead?.() === true) throw Object.assign(new Error('MVU state requires initialization or repair outside preview'), { code: 'MVU_PREVIEW_STATE_UNAVAILABLE', status: 409 })
     const next = { ...this.#state, ...extra }
     try { atomicJson(this.#path, next, MAX_STORE) } catch (error) { this.#fatal = error; throw error }
     this.#fatal = undefined
@@ -902,8 +903,8 @@ export class MvuService {
     }
     const resource = this.#configured(id, scope)
     if (!resource || resource.sourceError || (resource.characterId && this.isActive?.(resource, scope.sessionId) !== true)) return null
-    const instanceLease = worldBook ? await this.#sessionLease(scope.sessionId, { allowRequestMetadata: true })
-      : resource.instance ? await this.#sessionLease(resource.instance.sessionId) : null
+    const instanceLease = worldBook ? await this.#sessionLease(scope.sessionId, { allowRequestMetadata: true, readOnly: event.preview })
+      : resource.instance ? await this.#sessionLease(resource.instance.sessionId, { readOnly: event.preview }) : null
     const scopeLease = this.capturePromptScope?.(scope, resource)
     if (typeof scopeLease !== 'function' || scopeLease() !== true) return null
     const definition = hash(resource), revision = this.#record(id).revision, usageEpoch = this.#usage.epoch

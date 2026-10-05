@@ -16,7 +16,7 @@ function previewAgent(ctx, agent) {
 }
 
 export class RequestAssembler {
-  constructor({ ctx, store, resources, registry = createDefaultRegistry() }) { this.ctx = ctx; this.store = store; this.resources = resources; this.registry = registry }
+  constructor({ ctx, store, resources, registry = createDefaultRegistry(), sessionReads }) { this.ctx = ctx; this.store = store; this.resources = resources; this.registry = registry; this.sessionReads = sessionReads }
   sources() { return this.registry.list() }
   available() { return this.ctx.get('agentLoop')?.requestAssemblyVersion === 1 }
   requireAvailable() {
@@ -52,6 +52,10 @@ export class RequestAssembler {
     return { messages, metadata: { owner: 'pmp-dsh-tavern', assembly: metadata, upstream: base.metadata ?? null } }
   }
   async preview({ preset, agent, sessionId, signal }) {
+    if (agent?.session && this.sessionReads) return this.sessionReads.run(agent.session, () => this.#preview({ preset, agent, sessionId, signal }))
+    return this.#preview({ preset, agent, sessionId, signal })
+  }
+  async #preview({ preset, agent, sessionId, signal }) {
     agent = previewAgent(this.ctx, agent)
     const snapshot = this.resources.compile({ agent, sessionId, resolveOnly: true })
     // Historical system messages may still contain the old loader's assets.

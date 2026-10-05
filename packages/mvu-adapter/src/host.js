@@ -9,7 +9,7 @@ export const MVU_SERVICE = 'tavernMvu'
 export const MVU_SOURCE = 'tavern.mvu/state'
 
 /** Install with public Cordis/DSH seams. No Helper runtime or manager dependency. */
-export function installMvu(ctx, { storageDir, resources = [], sources, memberships, refresh, isActive, getSelection, getSelectionToken, resolveCommandHook, onError = () => {} } = {}) {
+export function installMvu(ctx, { storageDir, resources = [], sources, memberships, refresh, isActive, getSelection, getSelectionToken, getPreviewSession, isPreviewRead, resolveCommandHook, onError = () => {} } = {}) {
   const sessionEpochs = new Map()
   const promptSessionEpochs = new Map()
   let hostQueue = Promise.resolve()
@@ -49,14 +49,23 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
       || scope.selectionToken !== undefined && scope.selectionToken !== view.selectionToken) fail('MVU_READ_ONLY', 'Greeting selection changed')
     return view
   }
-  const inspect = async id => { const live = ctx.get('sessions')?.get?.(id); return live ? { header: live.header, events: live.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
+  const inspect = async id => { const session = ctx.get('sessions')?.get?.(id) ?? getPreviewSession?.(id); return session ? { header: session.header, events: session.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
   const requestMetadata = event => (event.type === 'system/message' && event.data?.message?.role === 'system'
     && Number.isSafeInteger(event.data.turn) && Number.isSafeInteger(event.data.step))
     || (event.type === 'request/context' && typeof event.data?.provider === 'string' && typeof event.data?.model === 'string'
       && Object.keys(event.data).every(key => ['provider', 'model', 'contextWindow', 'systemPromptUpdate'].includes(key)))
   const preparationType = event => requestMetadata(event) || ['step/start', 'user/message', 'request/header'].includes(event.type)
-  const captureSessionLease = async (sessionId, { allowRequestMetadata = false } = {}) => {
+  const captureSessionLease = async (sessionId, { allowRequestMetadata = false, readOnly = false } = {}) => {
     let sessions = ctx.get('sessions'), live = sessions?.get?.(sessionId)
+    if (!live && readOnly) {
+      const observed = getPreviewSession?.(sessionId)
+      if (!observed?.snapshotEvents) return null
+      const sessionsIdentity = sessions?.[symbols.original] ?? sessions
+      const epoch = sessionEpochs.get(sessionId) ?? 0, header = digest(observed.header), events = digest(observed.snapshotEvents())
+      return () => ctx.get(MVU_SERVICE) === service && (ctx.get('sessions')?.[symbols.original] ?? ctx.get('sessions')) === sessionsIdentity
+        && getPreviewSession?.(sessionId) === observed && !ctx.get('sessions')?.get?.(sessionId)
+        && (sessionEpochs.get(sessionId) ?? 0) === epoch && digest(observed.header) === header && digest(observed.snapshotEvents()) === events
+    }
     if (!live) {
       await ctx.get('sessionController')?.resolveAgent?.(sessionId)
       sessions = ctx.get('sessions'); live = sessions?.get?.(sessionId)
@@ -100,7 +109,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     return () => ctx.get(MVU_SERVICE) === service && getSelectionToken(scope.sessionId) === selection
       && getSelection(scope.sessionId)?.characterCardId === selected && contextLease() === true
   }
-  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, resolveCommandHook, capturePromptScope, captureSessionLease, captureCommandScope: session => {
+  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, isPreviewRead, resolveCommandHook, capturePromptScope, captureSessionLease, captureCommandScope: session => {
     const epoch = sessionEpochs.get(session.id) ?? 0, live = ctx.get('sessions')?.get?.(session.id)
     const header = live && digest(live.header), events = live?.snapshotEvents && digest(live.snapshotEvents())
     return () => ctx.get(MVU_SERVICE) === service && (sessionEpochs.get(session.id) ?? 0) === epoch
