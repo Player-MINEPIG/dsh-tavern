@@ -96,7 +96,7 @@ Host 可选服务 `tavernOpeningWorldBooks` 提供 `prepare` 与 `commit`，类�
 
 可信父界面显示提案并单独取得世界书写入确认后，调用 `commit({proposalId,expectedRevision,operationId,sourceIdentity,reviewed:true,write:true})`。这不复用 MVU 变量授权；guest VM 只能请求受控 opening ID 和等待回执，不能获得确认动作、来源文本读取、fetch 或任意 Host 调用。提案最多 64 项、10 分钟有效，来源/选择 ABA/会话实例/卸载变化撤销。变更经 CAS 后原子保存，会话资源的 operationId 重试返回原回执，冲突重用拒绝；空跳过不创建资源，空回执仅在本次 Host 生命周期内可重试。
 
-回执为 `{ok:true,inserted,existing,updated,targetWorldbook,method:'session-local',receiptId,resourceId,revision}`，空选择另有 `skipped:true` 与 `resourceId:null`。书仅写入插件的会话专属存储，原卡、全局书和全局绑定保持原值。资源 ID 为 `world-book:session-opening-<digest>`，在 `tavernMemorySources` 世界书 adapter 下仅对该 session scope 可读/列出。当前选择匹配时由原生世界书激活链处理关键词、启用、概率、预算和位置；转为 managed 后需要原有当前 manager retrieve 策略，缺 manager/deny 拒绝装配，不因写入回执自动授权 prompt 使用。回执证明本地提交，不证明模型发送或 provider 接收。
+回执为 `{ok:true,inserted,existing,updated,targetWorldbook,method:'session-local',receiptId,resourceId,revision}`，空选择另有 `skipped:true` 与 `resourceId:null`。书仅写入插件的会话专属存储，原卡、全局书和全局绑定保持原值。资源 ID 为 `world-book:session-opening-<digest>`，在 `tavernMemorySources` 世界书 adapter 下仅对该 session scope 可读/列出。当前选择匹配时由原生世界书激活链处理关键词、启用、概率、预算和位置；实际管理方由当前可信 manager 注册决定；注册期间使用来源默认和显式 retrieve 覆盖，缺决策或 deny 拒绝装配，卸载恢复来源默认，不因写入回执自动授权 prompt 使用。回执证明本地提交，不证明模型发送或 provider 接收。
 
 ## 可选 Host scope 目录
 

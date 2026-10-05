@@ -120,7 +120,8 @@ function ResourceVariables({ item, scope, turn, latest, running, refresh }) {
   const choose = key => { setSelectedKey(key); setCurrent(null); setEditing(null); setError(''); setNotice(''); setPage(0) }
   return h('div', { className: 'dtmvu-resource dttrace-card' },
     h('div', { className: 'dtmvu-heading' },
-      h('div', { className: 'dtmvu-identity' }, h('strong', null, rawText(record.name)), h('div', { className: 'dttrace-meta' }, rawText(record.id))),
+      h('div', { className: 'dtmvu-identity' }, h('strong', null, rawText(record.name)), h('div', { className: 'dttrace-meta' }, rawText(record.id)),
+        h('div', { className: 'dttrace-meta', 'data-management-mode': record.managementMode }, uiMessage(`trace.mvu.management.${record.managementMode ?? 'unknown'}`))),
       h('label', { className: 'dtmvu-source' }, uiMessage('trace.mvu.snapshot'), h('select', { className: 'dtmvu-select', value: selectedKey, disabled: saving || !!editing, onChange: event => choose(event.target.value) },
         currentAvailable || currentMode ? h('option', { value: 'current' }, uiMessage('trace.mvu.current')) : null,
         h('option', { value: '' }, uiMessage('trace.mvu.roundSnapshot')),

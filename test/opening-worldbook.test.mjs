@@ -62,10 +62,11 @@ test('session-local source cannot be read or selected in another session, and ma
   const activate = requestAssembly => adapter.resolve({ sessionId: 's', selection: { worldBookIds: [id] }, conversationText: 'trigger', requestAssembly })
   const native = activate(true); assert.equal(native.loreEntries.length, 1)
   const row = source.read({ id: receipt.resourceId, scope: { sessionId: 's' } }); source.setManagementMode({ id: receipt.resourceId, scope: { sessionId: 's' }, mode: 'managed', expectedRevision: row.revision, operationId: 'manage' })
-  assert.equal(activate(false).loreEntries.length, 0)
+  assert.equal(activate(false).loreEntries.length, 1)
   const context = { sessionId: 's', assets: { character: f.characters.get(f.card.id), worldBookIds: [id], worldBookRevisions: { [id]: native.resources[0].revision } } }, output = { blocks: [{ id: 'lore', source: { resourceId: id }, text: native.loreEntries[0].content }] }
-  assert.equal((await source.filter(context, output)).blocks.length, 0)
-  const dispose = source.registerUsage(() => ({ enabled: true, strategy: [{ operation: 'worldbook.activate' }, { operation: 'worldbook.emit' }], checkCurrent: () => true }))
+  const unconfigured = source.registerUsage(() => undefined, { providerId: 'dsh-memory-manager' })
+  assert.equal((await source.filter(context, output)).blocks.length, 0); unconfigured()
+  const dispose = source.registerUsage(() => ({ enabled: true, strategy: [{ operation: 'worldbook.activate' }, { operation: 'worldbook.emit' }], checkCurrent: () => true }), { providerId: 'dsh-memory-manager' })
   assert.equal((await source.filter(context, output)).blocks.length, 1); dispose(); assert.throws(() => source.validateResolved(context), { code: 'SOURCE_POLICY_CHANGED' })
 })
 test('protected HTTP requires DSH admission and rejects route/session mismatch', async t => {

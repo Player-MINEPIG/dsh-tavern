@@ -62,7 +62,7 @@ test('discovered cards apply committed JSONPatch without manager configuration a
   }
   await turn(1)
   assert.deepEqual((await row()).content.stat_data, { world: { time: 'time-1' }, character: { thought: 'thought-1' } })
-  // An installed optional manager can abstain for unconfigured native state.
+  // An ordinary optional observer can abstain for native state.
   const stop = service.registerUsage(() => undefined)
   await turn(2)
   assert.equal((await row()).content.stat_data.world.time, 'time-2')
@@ -74,10 +74,11 @@ test('discovered cards apply committed JSONPatch without manager configuration a
   deny()
   const current = await row()
   await service.setManagementMode({ id: current.id, mode: 'managed', scope: { sessionId: 's' }, expectedRevision: current.revision, operationId: 'explicit-delegation' })
+  service.registerUsage(() => undefined, { providerId: 'dsh-memory-manager' })
   await turn(4)
   assert.equal((await row()).managementMode, 'managed')
   assert.equal((await row()).content.stat_data.world.time, 'time-2')
-  assert(facts.some(fact => fact.turn === 4 && fact.phase === 'skipped' && fact.reason === 'usage-policy'))
+  assert(facts.some(fact => fact.turn === 4 && fact.phase === 'skipped' && fact.reason === 'manager-decision-required'))
   const revision = (await row()).revision
   await service.ingest(session)
   assert.equal((await row()).revision, revision)
@@ -106,15 +107,15 @@ test('old discovered templates preserve ownership for existing and future instan
   await service.discover({ definition: { ...template, managementMode: 'native' } })
   assert.equal(readFileSync(path, 'utf8'), before, 'rediscovery must not reinterpret a stored managed template')
   const fresh = (await service.list({ scope: { sessionId: 'fresh' } })).find(item => item.templateId === templateId)
-  assert.equal(fresh.managementMode, 'managed'); assert.equal(fresh.content.stat_data.hp, 100)
-  assert.equal((await service.resolveRequest({ sessionId: 'fresh' })).blocks.length, 0, 'stored managed ownership still requires a policy decision')
+  assert.equal(fresh.managementMode, 'native'); assert.equal(fresh.storedManagementMode, 'managed'); assert.equal(fresh.content.stat_data.hp, 100)
+  assert.equal((await service.resolveRequest({ sessionId: 'fresh' })).blocks.filter(block => block.source.resourceId === fresh.id).length, 1, 'no installed manager uses source defaults while saved ownership remains intact')
   const stored = JSON.parse(readFileSync(path, 'utf8'))
   assert.deepEqual(stored.templates, original.templates)
   for (const [id, record] of Object.entries(records)) assert.deepEqual(stored.resources[id], record)
   const after = readFileSync(path, 'utf8')
   service.dispose(); service = new MvuService(options)
   assert.equal(readFileSync(path, 'utf8'), after)
-  assert.equal((await service.read({ id: fresh.id, scope: { sessionId: 'fresh' } })).managementMode, 'managed')
+  assert.equal((await service.read({ id: fresh.id, scope: { sessionId: 'fresh' } })).storedManagementMode, 'managed')
   service.dispose()
 })
 
@@ -130,8 +131,8 @@ test('repairing a stored discovery template cannot replace its managed ownership
   assert.equal(service.templates[0].sourceError, undefined)
   assert.equal(service.templates[0].managementMode, 'managed')
   const [row] = await service.list({ scope: { sessionId: 'fresh' } })
-  assert.equal(row.managementMode, 'managed')
-  assert.equal((await service.resolveRequest({ sessionId: 'fresh' })).blocks.length, 0)
+  assert.equal(row.storedManagementMode, 'managed')
+  assert.equal((await service.resolveRequest({ sessionId: 'fresh' })).blocks.length, 1)
   assert.equal(JSON.parse(readFileSync(path, 'utf8')).templates[id].managementMode, 'managed')
 })
 

@@ -578,7 +578,7 @@ function appendCharacterFallbacks(body, fields, consumed, context, diagnostics) 
 
 function loreText(entries, context) {
   return entries.map((entry) => {
-    const rendered = renderSillyTavernMacros(entry.content, context)
+    const rendered = renderSillyTavernMacros(entry.content, context, new Map(), { literalMacros: entry.literalMacros })
     return rendered === '' ? '' : rendered
   }).filter(Boolean).join('\n\n')
 }

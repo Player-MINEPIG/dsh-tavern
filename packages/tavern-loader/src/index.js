@@ -29,7 +29,7 @@ import {
 } from '../../user/src/index.js'
 import { PresetParameterFallback } from './preset-parameter-fallback.js'
 import { PresetRuntime } from './preset-runtime.js'
-import { TavernProfileLoader } from './profile-loader.js'
+import { TavernProfileLoader, compileTavernProfile } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
 import { UserWorldBookBindingStore, composeWorldBookSelection } from './user-world-book-policy.js'
 import { ResourceWorldBookBindingStore } from './resource-world-book-policy.js'
@@ -423,14 +423,20 @@ export function apply(ctx, config = {}) {
     getSelection: sessionId => selections.get(sessionId), getSelectionToken: sessionId => selections.selectionRevision(sessionId),
     memberships: playMemberships, onError: error => recordFailure('mvu.update', error) })
   runtime.requestAssemblyEnabled = sessionId => {
-    if (!requestAssembler.available() && !requestAssembler.selected(sessionId)) return false
-    if (requestAssembler.selected(sessionId)) requestAssembler.requireAvailable()
-    return true
+    const selected = requestAssembler.selected(sessionId)
+    if (selected) requestAssembler.requireAvailable()
+    return Boolean(selected)
   }
+  const requestContexts = new WeakMap()
   ctx.on('agent/assemble-request', async (payload, next) => {
-    const result = await requestAssembler.execute(payload, next)
-    memorySources.validateAssembly(result.metadata?.assembly)
-    return result
+    requestContexts.set(payload.agent, payload)
+    try {
+      const result = await requestAssembler.execute(payload, next)
+      const nativeContext = runtime.assembledFor(payload.agent)?.memoryContext
+      if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext)
+      memorySources.validateAssembly(result.metadata?.assembly)
+      return result
+    } finally { requestContexts.delete(payload.agent) }
   })
   runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
@@ -634,6 +640,20 @@ export function apply(ctx, config = {}) {
 
   ctx.on('system-prompt/assemble', async (assembly, context, next) => {
     const snapshot = runtime.forAssembleContext(context)
+    let contributions = snapshot.sections
+    if (!context.tavernAssemblyPreview && !runtime.requestAssemblyEnabled(snapshot.audit.sessionId) && assembly.sections.some(section => section.name === PROFILE_SECTION && section.text === snapshot.registeredProfileText)) {
+      const request = context.agent && requestContexts.get(context.agent)
+      const turn = context.agent?.session?.snapshotEvents?.().findLast(event => event.type === 'turn/start')?.data.turn
+      const sourceContext = { sessionId: snapshot.audit.sessionId, assets: snapshot.assemblyInput, preview: context.tavernAssemblyPreview === true,
+        turn: request?.turn ?? turn ?? null, step: request?.step ?? null, signal: request?.signal ?? context.signal }
+      const loreEntries = await memorySources.worldBooks.prepareNative(sourceContext)
+      const compiled = compileTavernProfile({ ...snapshot.assemblyInput, loreEntries })
+      const literalEntries = new Set(loreEntries.filter(entry => entry.literalMacros).map(entry => entry.id))
+      contributions = compiled.sections.map(section => ({ ...section,
+        ...(section.sources?.some(source => source.kind === 'worldbook' && literalEntries.has(source.qualifiedEntryId)) ? { interpolate: false } : {}) }))
+      snapshot.memoryContext = sourceContext
+      memorySources.worldBooks.validateResolved(sourceContext)
+    }
     const contexts = snapshot.runtimeContexts.length === 0
       ? assembly.contexts
       : [...assembly.contexts, ...snapshot.runtimeContexts]
@@ -643,7 +663,7 @@ export function apply(ctx, config = {}) {
       if (section.name !== PROFILE_SECTION) return [section]
       if (section.text !== snapshot.registeredProfileText) return [section]
       const imported = snapshot.importedContext
-      return [...snapshot.sections.map(({ name, text }) => ({ name, text })),
+      return [...contributions.map(({ name, text, interpolate }) => ({ name, text, ...(interpolate === false ? { interpolate } : {}) })),
         ...(imported ? [{ name: PROFILE_SECTION, text: imported }] : [])]
     })
     const selected = snapshot.systemPromptMode === 'replace'
@@ -654,6 +674,7 @@ export function apply(ctx, config = {}) {
     assembly.sections = selected
     assembly.contexts = contexts
     const result = await next()
+    if (snapshot.memoryContext) memorySources.worldBooks.validateResolved(snapshot.memoryContext)
     // Ancestor transforms and complete-section enforcement may still follow.
     snapshot.officialAssembly = structuredClone(result)
     return result

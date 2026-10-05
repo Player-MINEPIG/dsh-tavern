@@ -122,8 +122,8 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
         children.push({ id: `${identity}:${name}:${children.length}`, name: target.block.id, locked: true, lockReason: `macro:${name}`, source: origin(target.entry, target.block), text: target.block.text, stability: target.entry.descriptor.stability, lifetime: 'request' })
         return target.block.text
       })
-      for (const m of expanded.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)) if (!/^(user|char|lastusermessage|lastcharmessage|trim|random::|roll |setvar::|getvar::|\/\/)/i.test(m[1])) diagnostics.push({ code: 'UNSUPPORTED_MACRO', macro: m[1], owner: identity })
-      rendered = renderSillyTavernMacros(expanded, context, variables)
+      for (const m of expanded.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)) if (!Object.hasOwn(block.literalMacros ?? {}, m[1]) && !/^(user|char|lastusermessage|lastcharmessage|trim|random::|roll |setvar::|getvar::|\/\/)/i.test(m[1])) diagnostics.push({ code: 'UNSUPPORTED_MACRO', macro: m[1], owner: identity })
+      rendered = renderSillyTavernMacros(expanded, context, variables, { literalMacros: block.literalMacros })
       if (!rendered) return
       role = targetRule.role === 'preserve' ? block.role ?? 'system' : targetRule.role
       lifetime = targetRule.lifetime; contentHash = hash({ text: rendered, role })

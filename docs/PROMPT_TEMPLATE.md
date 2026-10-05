@@ -82,21 +82,21 @@ Host 服务 `tavernMemorySources` 暴露 `{protocolVersion:1, adapters:[...]}`�
 }
 ```
 
-配置不转移管理权。`setManagementMode({id,mode:'managed'|'native',scope,expectedRevision,operationId,signal})` 使用来源 revision CAS；模板 `update` 使用相同 revision 与 operationId。CAS 冲突不写入。管理模式原子保存，manager 卸载/重启不自动恢复 native。读取的 `content`、外层 `on/rule` 与 `strategy` 产出的正文保持分离。
+实际管理方由可信 Host 当前注册决定：无 manager 为来源 native，manager 注册后为 managed，卸载恢复来源默认。保存的旧偏好通过 `storedManagementMode` 保留；CAS `setManagementMode` 不代表当前委托。内容编辑与配置覆盖互不替代。
 
-`registerUsage(handler)` 请求为 `{id,on,scope,event,managementMode}`。managed 需要返回 `{enabled:true,configRevision,strategy,checkCurrent}`；无决策、拒绝、错误、来源变化或过期租约阻断相应输出。来源在最后 await 后及全部来源解析完毕后同步复核；注册表可选 `validateResolved(context)` 钩子必须同步且只读。manager 必须跳过 `strategyOwner:'source'` 的通用执行，否则会重复输出。这里的来源策略名称仅为声明，不注册 manager 通用操作。
+`registerUsage(handler,{providerId:'dsh-memory-manager'})` 请求为 `{id,on,scope,event,managementMode}`。managed 需要返回 `{enabled:true,configRevision,strategy,checkCurrent}`；无决策、拒绝、错误、来源变化或过期租约阻断相应输出。来源在最后 await 后及全部来源解析完毕后同步复核；注册表可选 `validateResolved(context)` 钩子必须同步且只读。manager 必须跳过 `strategyOwner:'source'` 的通用执行，否则会重复输出。这里的来源策略名称仅为声明，不注册 manager 通用操作。通用来源 handler 无此标记，不改变实际管理方；它的显式拒绝仍有效。`getManagementDefaults({id,scope?})` 公开固定来源链及 source-bound 同步租约，配置只含 type/retrieve。
 
 实际 `llm/stream` 请求必须与 durable `request/assembly` 内容相符、且包含对应来源节点，才发 `applied` 观察。预览不发 applied；该状态不代表提供方网络送达。原文放在模板节点的 `children` 中，展开文本在节点 `text` 中。
 
 ## 世界书管理权
 
-native 沿既有绑定、关键词、概率、预算与位置规则激活；managed 仍只处理已绑定的资源，由 Tavern 激活一次，并在异步来源阶段检查 manager 的外层条件与租约。聚合来源名称不被伪装成单一资源。内嵌世界书也逐书列出并可转移管理权；只有当前选中角色的内嵌书参与请求，条目仍使用原生激活一次。manager 不编辑角色内嵌正文，既有角色世界书 API 继续拥有编辑能力。
+native 沿既有绑定、关键词、概率、预算与位置规则激活；managed 仍只处理已绑定的资源，由 Tavern 激活一次，并在异步来源阶段检查 manager 的外层条件与租约。聚合来源名称不被伪装成单一资源。内嵌世界书也逐书列出，实际管理方遵循同一注册生命周期；只有当前选中角色的内嵌书参与请求，条目仍使用原生激活一次。manager 不编辑角色内嵌正文，既有角色世界书 API 继续拥有编辑能力。
 
-旧核心/旧 loader 无法执行 managed 策略，明确抑制 managed 独立及内嵌世界书并诊断，不回退为 native。managed 世界书必须使用 request 保留方式；实际请求发现已保留的 native snapshot 时拒绝装配，要求改为 request，防止旧快照绕过撤销。切换管理模式不会绑定未选资源或自动修改装配策略。现有递归扫描/vector/不支持位置的限制仍然有效，不因 manager 选项而扩展。
+原生路径和新装配均在一次激活后使用同一异步策略过滤。managed 世界书必须使用 request 保留方式，已保留的 native snapshot 不能绕过当前撤销。来源默认不绑定未选资源、不添加装配规则；现有递归扫描、vector 和位置限制仍然有效。
 
 ## 模板依赖使用合同
 
-依赖使用由可信 Host 根据实际 helper 读取发起，不能由模板声明权限。目标来源收到 `{id,on:"before_model_request",scope,event,managementMode}`；`event.usage` 为 `prompt-template-dependency`，`event.consumer` 记录真实模板 `{adapterId,id}`。consumer 只用于条件上下文，不继承其白名单或许可；目标资源仍验证自身管理模式、配置、scope、rule 与固定策略。managed 依赖没有 retrieve 配置、被拒或 manager 卸载时失败，不回退 native 或 raw read。native 依赖在无监听器时保留来源许可；已注册监听器必须逐个提供明确 native 许可及可撤销租约，不能用 undefined 代替。此许可不应用 managed 配置、不转移管理权；普通 native 装配行为不变。
+依赖使用由可信 Host 根据实际 helper 读取发起，不能由模板声明权限。目标来源收到 `{id,on:"before_model_request",scope,event,managementMode}`；`event.usage` 为 `prompt-template-dependency`，`event.consumer` 记录真实模板 `{adapterId,id}`。consumer 只用于条件上下文，不继承其白名单或许可；目标资源仍验证自身管理模式、配置、scope、rule 与固定策略。managed 依赖检索被禁用、被拒或缺少已注册管理器许可时失败，不回退 native 或 raw read；卸载使旧租约失效，新的读取恢复来源默认。native 依赖在无监听器时保留来源许可；已注册监听器必须逐个提供明确 native 许可及可撤销租约，不能用 undefined 代替。此许可不应用 managed 配置、不转移管理权；普通 native 装配行为不变。
 
 来源的 `resolvePromptDependency` 返回 Host 内部 `{id,adapterId,content,revision,configRevision,checkCurrent}`，不把租约暴露给 VM。MVU 使用自身只读请求策略；世界书复用本次原生激活记录并检查正文版本，只提供已激活条目，不另执行概率抽签。因此 `getwi` 不能读取被激活规则排除的条目，与上游任意导入行为存在明确差异。
 
@@ -113,4 +113,4 @@ npm test
 npm run verify:2.0
 ```
 
-完整 Host 验收应显式指定隔离 documentsDirectory，用自写模板和合成 provider 验证 native/managed 各一次、规则拒绝、原文/历史分离、来源 revision、manager 卸载拒绝及 Tavern 卸载后原生会话继续。真实卡片脚本、模型提供方、ST 完整生命周期与 manager UI 需各自授权和独立证据；上述测试不能代表这些场景。运行记录放在 Git 忽略的 `.local/`。
+完整 Host 验收应显式指定隔离 documentsDirectory，用自写模板和合成 provider 验证 native/managed 各一次、规则拒绝、原文/历史分离、来源 revision、manager 卸载使旧许可失效并恢复来源默认，以及 Tavern 卸载后原生会话继续。真实卡片脚本、模型提供方、ST 完整生命周期与 manager UI 需各自授权和独立证据；上述测试不能代表这些场景。运行记录放在 Git 忽略的 `.local/`。

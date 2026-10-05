@@ -10,7 +10,7 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 全新发现的模板默认 native，其实例由来源处理已完成助手回复中的变量更新，不依赖可选管理器或额外 allow 规则；只有实际选择该卡的会话获访问范围。选择/取消/重选持久记录激活事件边界，不能把旧角色回复重新应用到新角色。切回同一角色恢复该会话原实例；重新选卡和源卡编辑不重置初始化/schema。发现不授予 wildcard 权限，不执行脚本。初始化失败显示 sourceError 并阻止执行。缺失或变化的 durable session 身份拒绝分配与读取。
 
-加载旧账本时，保留所有已存模板与实例的管理模式，包括发现、修复初始化和重启后的再次选择；旧 managed 模板后来创建的实例仍为 managed。`discovered` 和缺少管理操作、历史配置版本都不能证明用户未曾管理该资源。已有模式、管理操作、变量和历史不自动迁移，也不重放已处理的回复。现有实例的模式切换仍使用明确选择和带 CAS 的 `setManagementMode`；来源管理 API 不以模板为操作目标。
+加载旧账本时，保留已存模板与实例的模式、管理操作、变量和历史，不自动迁移或重放。实际管理方由可信 Host 的当前 manager 注册统一决定：未安装或卸载后为 Tavern（native），注册后为管理器（managed）。旧模式通过 `storedManagementMode` 保留，仅作已存偏好；它不代表当前管理方。`setManagementMode` 仍支持显式 CAS 保存该偏好，不替代管理器策略或来源权限。Trace 与执行读取同一个生命周期。
 
 也可由 Loader 的 `mvu.resources` 显式声明资源，例如：
 
@@ -31,13 +31,13 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 同一状态 ID 始终只有一份 current；scope 不把不同分支内容藏在同一 ID 下。确需跨会话共享的人工逻辑实体必须显式声明 `sharing:'shared'`，其配置 ID 直接作为状态 ID。`copy` 创建新的人工资源，保留访问范围但不作为 branch/swipe 继承操作。多个资源匹配同一气泡时，快照返回 `MVU_AMBIGUOUS`。
 
-正常 fork 在调用官方创建操作前冻结具体来源实例、versionKey、revision 与内容 hash，之后原子安装子实例。子实例继承当时完整 variables/schema 和可验证的只读历史，不重放祖先更新或 schema transform。reply swipe 继承被重生成回复的持久请求前 checkpoint，包含当时开场配置；后续父状态变化不改变种子。首轮 swipe 使用新空会话；后续 swipe 分别绑定历史截断坐标 `prefixEndEventId` 和被替换回复坐标 `atEventId`，保留官方历史前缀，以目标 checkpoint 作为 current，排除之后的编辑。普通 fork 仍继承截断坐标的状态。新实例不继承 manager 策略、grant、capability 或 operationId。来源已托管时子实例保持 managed，包含后来切到托管的显式配置来源；子策略缺失不能自动启用 native 执行。Host 首请求等待初始化及 checkpoint 完成；缺失 seed 或 checkpoint 拒绝继续。
+正常 fork 在调用官方创建操作前冻结具体来源实例、versionKey、revision 与内容 hash，之后原子安装子实例。子实例继承当时完整 variables/schema 和可验证的只读历史，不重放祖先更新或 schema transform。reply swipe 继承被重生成回复的持久请求前 checkpoint，包含当时开场配置；后续父状态变化不改变种子。首轮 swipe 使用新空会话；后续 swipe 分别绑定历史截断坐标 `prefixEndEventId` 和被替换回复坐标 `atEventId`，保留官方历史前缀，以目标 checkpoint 作为 current，排除之后的编辑。普通 fork 仍继承截断坐标的状态。新实例不继承 manager 策略、grant、capability 或 operationId。子实例保留来源的已存模式；实际管理方仍由当前注册决定，管理器注册期间缺失许可会拒绝执行。Host 首请求等待初始化及 checkpoint 完成；缺失 seed 或 checkpoint 拒绝继续。
 
 新状态写入 `mvu-instances.json`。旧 `mvu-state.json` 保留原字节，只作为带 `MVU_MIGRATION_REQUIRED` 的只读资源，不能更新、复制、提供给模型或作为继承来源。旧共享账本可能已串写，不按 session 自动拆分。绑定旧状态的会话需显式处理；新会话可独立从模板开始。
 
 角色侧栏的“新周目”明确创建独立会话和状态，不复用尚无 DSH 对话但已初始化的旧周目。旧周目、旧状态和历史仍保留。
 如需恢复其中已确认的数据，可信 Host 调用方可用现有原语：`read({id:旧资源ID,scope:{authority:'local',sessionId:旧会话ID}})` 读取只读记录，创建新周目后 `list`/`read` 确认其独立实例 ID 和当前 revision，再显式选择要恢复的 `stat_data`，以该新 ID、scope、`expectedRevision` 和新 `operationId` 调 `update`。不要把旧完整 envelope 或旧 schema 当作目标内容。
-这是经目标 schema 验证的数据恢复；目标 schema 可转换或拒绝内容，CAS 冲突须重新读取并确认。它不迁移旧历史、schema、管理策略、授权或幂等记录，不改变旧账本；全新发现模板默认 native，已存模板保持原管理模式；卡片执行与模型装配仍使用各自既有配置。当前不提供自动历史迁移或专用迁移向导。
+这是经目标 schema 验证的数据恢复；目标 schema 可转换或拒绝内容，CAS 冲突须重新读取并确认。它不迁移旧历史、schema、管理策略、授权或幂等记录，不改变旧账本；全新发现模板保存 native 偏好，已存模板保留原偏好；实际管理方均由当前可信注册决定；卡片执行与模型装配仍使用各自既有配置。当前不提供自动历史迁移或专用迁移向导。
 
 发现不自动把状态加入模型请求。来源许可和宿主权限不能由卡片脚本自行提升。
 
@@ -53,9 +53,9 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 | `copy({id,newId,scope,signal})` | 显式新资源，拒绝已有 ID |
 | `history({id,scope,signal,includeBefore?})` | 返回该会话来源版本及成功/失败证据 |
 | `facts({id,scope,signal})` | 返回本会话有界、无正文的来源观察事实；元数据不可用不改变变量状态 |
-| `setManagementMode({id,mode,expectedRevision,operationId,scope,signal})` | 持久切换 `native` / `managed`，CAS 与幂等；配置初始 managed 也持久保存 |
+| `setManagementMode({id,mode,expectedRevision,operationId,scope,signal})` | CAS 与幂等保存偏好；回执返回实际 managementMode 与 storedManagementMode |
 | `registerCommandProcessor({id,source})` | 可信 Host 注册单个提交前命令来源；异步返回 `{receipt,dispose}`，不是卡片写 API |
-| `registerUsage(handler)` | 注册可信使用决策，返回 disposer；handler 收到 `{on,id,scope,event,variables,managementMode}` |
+| `registerUsage(handler,{providerId?})` | 可信使用决策；manager 必须标记 providerId 为 dsh-memory-manager，disposer 撤销委托 |
 | `observe(listener)` | 注册提交与请求事实监听，返回 disposer；监听器不能参与状态写事务 |
 | `discover({definition,sessionId?})` | 可信 Host 发现接口；稳定模板身份、原生默认及显式会话访问 |
 | `validateConfig(config)` | 检查 `type:'mvu-state'`、store/retrieve 触发及支持的策略链 |
@@ -185,7 +185,7 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 
 可信 Host 可调用 `tavernMvu.resolvePromptDependency({id,scope:{authority:'local',sessionId},event:{preview,turn?,step?,usage:'prompt-template-dependency',consumer:{adapterId:'tavern.prompt-templates',id}},signal?})`。consumer.id 必须是实际选定模板 ID；VM 不能自行选择来源、scope 或 consumer。类型定义见 `packages/mvu-adapter/src/prompt-dependency.d.ts`。
 
-来源缺失、不可用或策略拒绝时返回 `null`，允许时返回 `{id,adapterId:'tavern.mvu',content,revision,configRevision,checkCurrent}`；无效 scope、取消与配置错误抛出异常。content 是包含 stat_data 的完整变量对象副本，不是历史快照。读取经过 MVU 自己的 `before_model_request` 策略和固定 read/render/provide 链；managed 来源必须获得明确许可；对这个依赖接口，每个已注册策略 handler（包括原生来源上的 handler）都必须返回带同步租约的允许决策，`undefined` 弃权会拒绝释放内容。没有策略 handler 的 native 来源保持原生许可，旧 `resolveRequest` 语义不变。管理接口 `read` 成功不等于允许模型检索。
+来源缺失、不可用或策略拒绝时返回 `null`，允许时返回 `{id,adapterId:'tavern.mvu',content,revision,configRevision,checkCurrent}`；无效 scope、取消与配置错误抛出异常。content 是包含 stat_data 的完整变量对象副本；世界书发送读取可返回该轮持久请求前 checkpoint。读取经过 MVU 自己的 `before_model_request` 策略和固定 read/render/provide 链；managed 来源必须获得明确许可；对这个依赖接口，每个已注册策略 handler（包括原生来源上的 handler）都必须返回带同步租约的允许决策，`undefined` 弃权会拒绝释放内容。没有策略 handler 的 native 来源保持原生许可。普通 `resolveRequest` 保留通用 handler 的原有弃权规则，但已注册管理器必须独立决定，最终装配复核其许可及角色绑定租约。管理接口 `read` 成功不等于允许模型检索。
 
 仅供 Host 保存的同步 `checkCurrent()` 会在来源 revision、角色选择、catalog/timeline 成员关系 ABA、manager reload/卸载、取消或来源卸载后拒绝旧结果。Host 必须能够核实会话选择和成员关系，无法核实时拒绝。`PlayMembershipService.captureContextLease()` 使用 `PlayWorkspaceStore.captureMutationLease()` 核实全部公开文件写入、目录创建及工作区身份变更，包含缺失 catalog、未绑定工作区和成员关系 ABA；因此无需为原生会话创建 catalog。该保守租约也会因无关文件写入失效，调用方需重新读取。调用方应在模板实际读取变量时才调用，将租约留在 VM 外，并在最终装配处无间隔 await 地再次检查。取得依赖不会产生 applied 事实或声称已提供给模型；此接口不增加 HTTP 路由或写权限。
 
@@ -201,3 +201,11 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 记录及绑定快照可含 `commandProcessor:{protocolVersion:1,registered:true,registrationId,source,sha256,listenerCount}`。渲染端严格比较完整 source，收到真实回执后才替代该 Helper；原脚本不再在每个显示 VM 中重复执行。回执仅证明处理器已注册，不证明状态变更。只有原子保存之后的 applied/completed 才证明提交；已提交 source key 的重放在调用处理器前结束。
 
 事件顺序与命令参数以固定版本的 [MVU 更新流程](https://github.com/MagicalAstrogy/MagVarUpdate/blob/438f9ffcba95e6c54497fa8d4223f0f48506d35a/src/function/update_variables.ts) 和 [事件类型](https://github.com/MagicalAstrogy/MagVarUpdate/blob/438f9ffcba95e6c54497fa8d4223f0f48506d35a/src/variable_def.ts) 为依据；该实现是受限的独立适配器，不复制外部 Helper 实现。
+
+## 世界书消息变量宏与来源默认
+
+已激活世界书条目里的 `{{format_message_variable::stat_data}}` 在原条目位置展开：来源校验当前绑定和自身模型检索策略后读取 MVU，输出 YAML，递归去除以 `$` 开头的对象字段。变量里的宏字符按字面保留，多行值按宏前缀缩进。未激活或不引用该宏的条目不读取 MVU；拒绝或缺失依赖终止装配，不回退 raw read。此路径不添加独立 MVU preset，也不重复注入卡片既有更新说明。
+
+来源通过 `resolvePromptDependency` 发出 `usage:'world-book-variable'`，consumer 为真实 `tavern.world-books` 资源。省略 id 时仅可解析当前已选会话唯一实例；branch/swipe 使用各自 session 状态，不借用父会话最新值。实际发送带 turn 时使用该轮持久 checkpoint，较旧 turn 不可读取后续轮回复。预览读取显式当前会话。原生与新装配都复用同一次激活和同一来源策略过滤；最终 await 后同步复核状态、绑定、注册和策略租约。
+
+`getManagementDefaults({id,scope?})` 是同步可信 Host 接口，返回 null 或 `{protocolVersion:1,revision,configuration,scopePolicy:'source-bound',checkCurrent}`。configuration 仅含 type/store/retrieve；MVU 默认支持助手提交 parse/validate/apply 和模型读取 read/render/provide。默认许可只适用于来源已验证绑定，不是 wildcard、卡片写 grant 或自动提示词注入。注册、卸载、来源变化或绑定变化使租约失效。管理器应以来源默认 → 本地覆盖 → 既有 preset 优先级组成同一配置；显式空名单、空 store/retrieve 和拒绝规则仍拒绝。注册但配置错误仍为 managed 并拒绝执行，卸载后恢复来源默认；通用来源 handler 的显式拒绝仍生效。

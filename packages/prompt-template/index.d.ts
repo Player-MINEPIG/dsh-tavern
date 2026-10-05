@@ -25,7 +25,8 @@ export class PromptTemplateService {
   update(args: {id: string; content: string; expectedRevision: string; operationId: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Record<string, unknown>;
   copy(args: {id: string; newId: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Record<string, unknown>;
   setManagementMode(args: {id: string; mode: 'native' | 'managed'; expectedRevision: string; operationId: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Record<string, unknown>;
-  registerUsage(handler: (request: Record<string, unknown>) => unknown): () => void;
+  getManagementDefaults(args: import('../memory-sources/index.js').ResourceAccess): import('../memory-sources/index.js').SourceManagementDefaults | null;
+  registerUsage(handler: (request: Record<string, unknown>) => unknown, options?: {providerId: 'dsh-memory-manager'}): () => void;
   observe(handler: (event: Record<string, unknown>) => void): () => void;
   resolve(context: SourceContext): Promise<SourceOutput>;
   validateResolved(context: SourceContext): void;

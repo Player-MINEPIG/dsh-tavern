@@ -1,4 +1,7 @@
 export default Object.freeze({
+  "trace.mvu.management.native": "管理方：Tavern",
+  "trace.mvu.management.managed": "管理方：记忆管理器",
+  "trace.mvu.management.unknown": "管理方：未记录",
   "trace.mvu.currentChanged": "来源已更新到 r{revision}，草稿仍基于 r{draftRevision}。草稿已保留；请取消编辑并刷新，核对后再保存。",
   "trace.mvu.snapshotHelpText": "“本轮最后状态”是该轮最后记录的变量版本，不是请求前状态。“助手回复更新”是那次助手回复提交后保存的版本；跳过、失败或没有更新时，变量值可能不变。“当前变量”另行读取最新版本，仅在最新轮可编辑。",
   "trace.mvu.snapshotHelp": "这些状态有什么区别？",

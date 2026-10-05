@@ -97,11 +97,11 @@ test('seed copy never re-evaluates a schema transform or transfers policy, grant
   const f = fixture(t, { resources: [{ id: 'mvu:template', sessionIds: ['*'], managementMode: 'managed', initial: { stat_data: { hp: 0 } }, schemaSource: 'const Schema=z.object({hp:z.number().transform(v=>v+1)});' }] })
   f.create('root'); const reply = await f.turn('root', 0), root = await f.read('root')
   await f.fork('root', 'child', reply)
-  const child = await f.read('child'); assert.deepEqual(child.content, root.content); assert.equal(child.revision, 0); assert.equal(child.managementMode, 'managed')
+  const child = await f.read('child'); assert.deepEqual(child.content, root.content); assert.equal(child.revision, 0); assert.equal(child.storedManagementMode, 'managed')
   const ledger = JSON.parse(readFileSync(join(f.options.storageDir, 'mvu-instances.json'))).resources[child.id]
   assert(ledger.versions.every(v => !v.operationId && !v.result))
   f.service.dispose(); const noPolicy = new MvuService(f.options)
-  assert.equal((await noPolicy.resolveRequest({ sessionId: 'child' })).blocks.length, 0)
+  assert.equal((await noPolicy.resolveRequest({ sessionId: 'child' })).blocks.length, 1)
   assert.equal(await noPolicy.createCardBinding({}).catch(e => e.code), 'MVU_SCOPE')
   noPolicy.dispose()
 })
@@ -149,7 +149,7 @@ test('an initialized legacy empty playthrough can start a separate new run and e
   assert.equal(created.reused, false); assert.equal(created.sessionId, 'new')
   assert.deepEqual(catalog.playthroughs[0], previous)
   const fresh = await f.read('new')
-  assert.equal(fresh.content.stat_data.hp, 100); assert.equal(fresh.revision, 0); assert.equal(fresh.managementMode, 'managed')
+  assert.equal(fresh.content.stat_data.hp, 100); assert.equal(fresh.revision, 0); assert.equal(fresh.storedManagementMode, 'managed')
   const legacy = await f.service.read({ id: 'mvu:template', scope: { sessionId: 'old' } })
   assert.equal(legacy.revision, 7); assert.equal(legacy.content.stat_data.hp, 50); assert.equal(legacy.capabilities.edit, false)
   // Explicit data recovery composes existing primitives; it is not history or permission migration.
@@ -160,14 +160,14 @@ test('an initialized legacy empty playthrough can start a separate new run and e
   const restored = await f.read('new')
   assert.equal(restored.content.stat_data.hp, 50); assert.equal(restored.revision, 1)
   assert.deepEqual(restored.content.mvu_schema, fresh.content.mvu_schema)
-  assert.equal(restored.managementMode, 'managed')
+  assert.equal(restored.storedManagementMode, 'managed')
   const record = JSON.parse(readFileSync(join(storageDir, 'mvu-instances.json'))).resources[fresh.id]
   assert.deepEqual(record.versions.map(v => v.operationId), ['explicit-restore'])
   assert.equal(record.seed, undefined)
   assert.equal(readFileSync(path, 'utf8'), bytes)
   f.service.dispose()
   const noPolicy = new MvuService(f.options); t.after(() => noPolicy.dispose())
-  assert.equal((await noPolicy.resolveRequest({ sessionId: 'new' })).blocks.length, 0)
+  assert.equal((await noPolicy.resolveRequest({ sessionId: 'new' })).blocks.length, 1)
 })
 
 test('one instance is allocated under concurrent refresh and caller-provided content never enters a seed', async t => {
@@ -313,12 +313,12 @@ test('non-root swipe baseline retains valid prefix provenance for editing and an
   assert.equal((await f.read('C')).content.stat_data.hp, 50)
 })
 
-test('switching a configured parent to managed cannot create a native child by forking', async t => {
+test('fork preserves a parent saved mode while execution follows current manager registration', async t => {
   const f = fixture(t); f.create('A'); const reply = await f.turn('A', -1), parent = await f.read('A')
   await f.service.setManagementMode({ id: parent.id, scope: { sessionId: 'A' }, mode: 'managed', operationId: 'manage', expectedRevision: parent.revision })
-  await f.fork('A', 'B', reply); assert.equal((await f.read('B')).managementMode, 'managed')
+  await f.fork('A', 'B', reply); assert.equal((await f.read('B')).storedManagementMode, 'managed')
   f.service.dispose(); const restored = new MvuService(f.options)
-  assert.equal((await restored.resolveRequest({ sessionId: 'B' })).blocks.length, 0); restored.dispose()
+  assert.equal((await restored.resolveRequest({ sessionId: 'B' })).blocks.length, 1); restored.dispose()
 })
 
 test('cold resume published Host work settles before a management transaction captures its session lease', async t => {

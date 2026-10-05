@@ -17,9 +17,9 @@ const row = managementMode => ({ id: 'world-book:fixture', revision: 'same', man
 const dependency = { sessionId: 's', dependencyEvent: { usage: 'prompt-template-dependency' } }
 
 test('stale usage disposer cannot remove a replacement managed allow registration', async t => {
-  const source = policy(t), old = source.registerUsage(allow)
+  const source = policy(t), old = source.registerUsage(allow, { providerId: 'dsh-memory-manager' })
   old()
-  const stop = source.registerUsage(allow)
+  const stop = source.registerUsage(allow, { providerId: 'dsh-memory-manager' })
   const before = await source.decision(row('managed'), dependency, () => 'same')
   assert.equal(before.enabled, true)
   old()
@@ -27,7 +27,7 @@ test('stale usage disposer cannot remove a replacement managed allow registratio
   assert.equal((await source.decision(row('managed'), dependency, () => 'same')).enabled, true)
   stop()
   assert.equal(before.checkCurrent(), false)
-  assert.equal((await source.decision(row('managed'), dependency, () => 'same')).enabled, false)
+  assert.equal((await source.decision(row('managed'), dependency, () => 'same')).enabled, true)
 })
 
 test('stale usage disposer cannot turn a replacement native dependency deny into allow', async t => {
@@ -42,7 +42,7 @@ test('stale usage disposer cannot turn a replacement native dependency deny into
 })
 
 test('same callback registrations have independent lifetimes', async t => {
-  const source = policy(t), first = source.registerUsage(allow), second = source.registerUsage(allow)
+  const source = policy(t), first = source.registerUsage(allow, { providerId: 'dsh-memory-manager' }), second = source.registerUsage(allow, { providerId: 'dsh-memory-manager' })
   const before = await source.decision(row('managed'), dependency, () => 'same')
   first()
   assert.equal(before.checkCurrent(), false)

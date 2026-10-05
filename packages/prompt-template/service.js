@@ -29,7 +29,12 @@ export class PromptTemplateService {
     this.resolveVariables = resolveVariables; this.worldBooks = worldBooks
   }
   observe = listener => this.policy.observe(listener)
-  registerUsage = listener => this.policy.registerUsage(listener)
+  registerUsage = (listener, options) => this.policy.registerUsage(listener, options)
+  getManagementDefaults({ id, scope = {} } = {}) {
+    scope = structuredClone(scope)
+    const resource = this.#definition(id, scope)
+    return resource ? this.policy.defaults(id, () => !this.#boundDisposed && this.#definition(id, scope) === resource) : null
+  }
   validateConfig = config => validateConfig('prompt-template', config)
   #definition(id, scope = {}) {
     localScope(scope)
@@ -41,7 +46,7 @@ export class PromptTemplateService {
   read({ id, scope, signal } = {}) {
     signal?.throwIfAborted()
     const resource = this.#definition(id, scope)
-    return resource ? { id, name: resource.name, type: 'prompt-template', authority: 'local', content: resource.content, revision: this.policy.revision(id, resource), managementMode: this.policy.mode(id), enabled: resource.enabled, metadata: inspectTemplateMetadata({name:resource.name,content:resource.content}),
+    return resource ? { id, name: resource.name, type: 'prompt-template', authority: 'local', content: resource.content, revision: this.policy.revision(id, resource), managementMode: this.policy.mode(id), storedManagementMode: this.policy.storedMode(id), enabled: resource.enabled, metadata: inspectTemplateMetadata({name:resource.name,content:resource.content}),
       execution: { owner: 'source', event: 'before_model_request', sourceId: TEMPLATE_SOURCE, isolation: 'quickjs', sideEffects: false, requiresAssemblySelection: true } } : null
   }
   list({ scope = {}, signal } = {}) {
@@ -54,8 +59,8 @@ export class PromptTemplateService {
     const rows = this.state.resources.filter(r => r.sessionIds.includes('*') || r.sessionIds.includes(scope.sessionId)).map(resource => ({
       id: resource.id, adapterId: this.id, name: resource.name, type: 'prompt-template', revision: this.policy.revision(resource.id, resource), managementMode: this.policy.mode(resource.id), enabled: resource.enabled,
       binding: { sessionId: scope.sessionId, kind: resource.sessionIds.includes('*') ? 'all-sessions' : 'session' } }))
-    const revision = hash(rows), checkCurrent = () => {
-      try { return !this.#boundDisposed && hash(this.state.resources.filter(r => r.sessionIds.includes('*') || r.sessionIds.includes(scope.sessionId)).map(resource => ({
+    const revision = hash(rows), lifecycle = this.policy.captureLifecycle(), checkCurrent = () => {
+      try { return !this.#boundDisposed && lifecycle() && hash(this.state.resources.filter(r => r.sessionIds.includes('*') || r.sessionIds.includes(scope.sessionId)).map(resource => ({
         id: resource.id, adapterId: this.id, name: resource.name, type: 'prompt-template', revision: this.policy.revision(resource.id, resource), managementMode: this.policy.mode(resource.id), enabled: resource.enabled,
         binding: { sessionId: scope.sessionId, kind: resource.sessionIds.includes('*') ? 'all-sessions' : 'session' } }))) === revision } catch { return false }
     }

@@ -13,7 +13,7 @@ test('source policy skip carries the evaluated identity/reason and emits only fo
  const service=createMemorySources({storageDir,store});t.after(()=>service.dispose())
  const id='world-book:'+doc.id,original=service.worldBooks.read({id})
  service.worldBooks.setManagementMode({id,mode:'managed',expectedRevision:original.revision,operationId:'explicit-fixture-management'})
- service.worldBooks.registerUsage(()=>({enabled:false,reason:'config-unavailable'}))
+ service.worldBooks.registerUsage(()=>({enabled:false,reason:'config-unavailable'}),{providerId:'dsh-memory-manager'})
  const revision=service.worldBooks.read({id}).revision
  const output=await service.worldBooks.filter({sessionId:'s',assets:{worldBookRevisions:{[doc.id]:hash(doc)}}},{blocks:[{id:'entry',text:'CANDIDATE_ONLY',source:{resourceId:doc.id}}]})
  assert.deepEqual(output.blocks,[])

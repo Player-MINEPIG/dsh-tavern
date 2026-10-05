@@ -28,6 +28,8 @@ export interface BlockBase {
 }
 export interface TextBlock extends BlockBase {
   type: 'text'; text: string; role?: Exclude<Role, 'preserve'>;
+  /** Source-validated literal text inserted after ordinary macro expansion, without recursive evaluation. */
+  literalMacros?: Record<string, string>;
   claims?: Array<{ sourceId: string; blockId: string }>;
   targetSourceId?: string;
 }

@@ -2,18 +2,29 @@ import { join } from 'node:path'
 import { embeddedWorldBookDocument } from './embedded-document.js'
 import { SourcePolicy, hash, fail, localScope, validateConfig, optionCatalog } from './policy.js'
 import { boundScope, boundSnapshot } from './bound-metadata.js'
+import { MESSAGE_STATE_MACRO, hasMessageStateMacro, formatMessageState } from './message-variable.js'
 export class WorldBookMemorySource {
   #checks = new WeakMap()
   #boundDisposed = false
   id = 'tavern.world-books'; name = '世界书 / World books'; authority = 'local'; strategyOwner = 'source'
   optionCatalog = optionCatalog('world-book', '世界书激活与装配 / Activate and assemble world book', 'tavern.worldbook')
-  constructor({ storageDir, store, characters, getSelection, sessionBooks }) {
+  constructor({ storageDir, store, characters, getSelection, sessionBooks, getMvu }) {
     this.store = store; this.characters = characters; this.getSelection = getSelection
     this.sessionBooks = sessionBooks
+    this.getMvu = getMvu
     this.policy = new SourcePolicy(join(storageDir, 'world-book-ownership.json'), 'world-book')
   }
   observe = listener => this.policy.observe(listener)
-  registerUsage = listener => this.policy.registerUsage(listener)
+  registerUsage = (listener, options) => this.policy.registerUsage(listener, options)
+  getManagementDefaults({ id, scope = {} } = {}) {
+    localScope(scope)
+    scope = structuredClone(scope)
+    if (!this.#document(id, scope)) return null
+    if (!scope.sessionId) return this.policy.defaults(id)
+    const bound = this.listBound({ scope })
+    if (!bound.items.some(row => row.id === id)) return null
+    return this.policy.defaults(id, bound.checkCurrent)
+  }
   validateConfig = config => validateConfig('world-book', config)
   #document(id, scope = {}) {
     if (typeof id !== 'string' || !id.startsWith('world-book:')) return null
@@ -24,10 +35,10 @@ export class WorldBookMemorySource {
   read({ id, scope, signal } = {}) {
     localScope(scope); signal?.throwIfAborted()
     const document = this.#document(id, scope)
-    return document ? { id, name: document.name, type: 'world-book', authority: 'local', content: document, revision: this.policy.revision(id, document), managementMode: this.policy.mode(id),
+    return document ? { id, name: document.name, type: 'world-book', authority: 'local', content: document, revision: this.policy.revision(id, document), managementMode: this.policy.mode(id), storedManagementMode: this.policy.storedMode(id),
       origin: document.ownerSessionId ? { kind: 'session-opening-book', sessionId: document.ownerSessionId, characterId: document.ownerCharacterId, sourceIdentity: document.openingSourceIdentity } : document.ownerCharacterId ? { kind: 'embedded-character-book', characterId: document.ownerCharacterId } : { kind: 'standalone' },
-      execution: { owner: 'source', event: 'before_model_request', sourceId: 'worldbook', activation: 'tavern-world-book-policy', managedRequiresAssembly: true,
-        nativeSuppressedWhenManaged: true, unavailableManager: 'deny', bindingRequired: true, managementModes: ['native', 'managed'], dependencyRead: 'activated-entries-only' } } : null
+      execution: { owner: 'source', event: 'before_model_request', sourceId: 'worldbook', activation: 'tavern-world-book-policy', managedRequiresAssembly: false,
+        nativeSuppressedWhenManaged: false, unavailableManager: 'source-default', bindingRequired: true, managementModes: ['native', 'managed'], dependencyRead: 'activated-entries-only' } } : null
   }
   list({ scope, signal } = {}) {
     localScope(scope)
@@ -50,8 +61,8 @@ export class WorldBookMemorySource {
           ...(selected.worldBookBindings?.[doc.id]?.includes('preset') ? { presetId: selected.presetId } : {}),
           ...(selected.worldBookBindings?.[doc.id]?.includes('user') ? { userId: selected.userId } : {}) } }] : []
     })
-    const rows = rowsNow(), revision = hash(rows), checkCurrent = () => {
-      try { return !this.#boundDisposed && hash(this.getSelection(scope.sessionId)) === token && hash(rowsNow()) === revision } catch { return false }
+    const rows = rowsNow(), revision = hash(rows), lifecycle = this.policy.captureLifecycle(), checkCurrent = () => {
+      try { return !this.#boundDisposed && lifecycle() && hash(this.getSelection(scope.sessionId)) === token && hash(rowsNow()) === revision } catch { return false }
     }
     if (!checkCurrent()) fail('SOURCE_BOUND_CHANGED', 'Bound world books changed during lookup')
     return boundSnapshot(rows, revision, checkCurrent)
@@ -63,7 +74,8 @@ export class WorldBookMemorySource {
     this.policy.setMode(args, document)
     return this.read(args)
   }
-  allowNative(id, requestAssembly) { return this.policy.mode(`world-book:${id}`) !== 'managed' || requestAssembly === true }
+  // Activation remains native. The same async filter governs both delivery paths.
+  allowNative() { return true }
   selectionLease(context) {
     if (!this.getSelection) return () => true
     const current = this.getSelection(context.sessionId), token = hash(current)
@@ -97,6 +109,11 @@ export class WorldBookMemorySource {
     return { id, adapterId:this.id, content:row.content.book.entries.filter(e => active.has(String(e.uid))).map(e=>({uid:e.uid,content:e.content})), revision:row.revision, configRevision:decision.configRevision, checkCurrent }
   }
   validateResolved = context => { if ((this.#checks.get(context) ?? []).some(check => !check())) fail('SOURCE_POLICY_CHANGED', 'World-book policy changed before assembly') }
+  async prepareNative(context) {
+    const entries = context.assets.loreEntries ?? []
+    const output = await this.filter(context, { blocks: entries.map((entry, index) => ({ type: 'text', id: String(index), text: entry.content, source: { resourceId: entry.resourceId } })) })
+    return output.blocks.map(block => ({ ...entries[Number(block.id)], literalMacros: block.literalMacros }))
+  }
   async filter(context, output) {
     const blocks = [], diagnostics = [...(output.diagnostics ?? [])], checks = []
     const ids = [...new Set(output.blocks.map(b => b.source?.resourceId))]
@@ -114,7 +131,19 @@ export class WorldBookMemorySource {
       const checkCurrent = () => selectionCurrent() && decision.checkCurrent()
       if (!checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'World-book policy changed before provide')
       checks.push(checkCurrent)
-      blocks.push(...sourceBlocks)
+      let variables
+      if (sourceBlocks.some(block => hasMessageStateMacro(block.text))) {
+        const mvu = this.getMvu?.()
+        variables = await mvu?.resolvePromptDependency?.({ scope: { authority: 'local', sessionId: context.sessionId }, signal: context.signal,
+          event: { usage: 'world-book-variable', preview: context.preview === true, turn: context.turn ?? null, step: context.step ?? null, consumer: { adapterId: this.id, id: resourceId } } })
+        if (!variables || variables.adapterId !== 'tavern.mvu' || typeof variables.id !== 'string' || !variables.content?.stat_data
+          || typeof variables.checkCurrent !== 'function' || variables.checkCurrent() !== true) fail('WORLD_BOOK_VARIABLE_DENIED', 'World-book variable dependency is unavailable or denied')
+        const variableCurrent = () => this.getMvu?.() === mvu && variables.checkCurrent() === true
+        checks.push(variableCurrent)
+      }
+      blocks.push(...sourceBlocks.map(block => hasMessageStateMacro(block.text) ? { ...block, literalMacros: { [MESSAGE_STATE_MACRO]: formatMessageState(variables.content) } } : block))
+      if (variables) for (const block of sourceBlocks.filter(block => hasMessageStateMacro(block.text))) diagnostics.push({ code: 'WORLD_BOOK_MVU_VARIABLE_VERSION', resourceId: variables.id,
+        blockId: block.id, blockResourceId: id, worldBookId: resourceId, revision: variables.revision, configRevision: variables.configRevision })
       for (const block of sourceBlocks) diagnostics.push({ code: 'TAVERN_MEMORY_RESOURCE_VERSION', adapterId: this.id, sourceId: 'worldbook', resourceId, blockResourceId: id, blockId: block.id, revision: row.revision, configRevision: decision.configRevision })
     }
     context.signal?.throwIfAborted()

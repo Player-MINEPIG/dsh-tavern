@@ -59,15 +59,16 @@ test('resource list/read, CAS, idempotency, original text and restart ownership'
   assert.deepEqual(service.update(args), edited)
   assert.throws(() => service.update({ ...args, operationId: 'stale' }), { code: 'REVISION_CONFLICT' })
   service.setManagementMode({ id: row.id, mode: 'managed', expectedRevision: edited.revision, operationId: 'manage' })
-  assert.equal((await service.resolve(context)).blocks.length, 0)
-  const stop = service.registerUsage(() => lease('prompt-template'))
+  const unconfigured = service.registerUsage(() => undefined, { providerId: 'dsh-memory-manager' })
+  assert.equal((await service.resolve(context)).blocks.length, 0); unconfigured()
+  const stop = service.registerUsage(() => lease('prompt-template'), { providerId: 'dsh-memory-manager' })
   const output = await service.resolve(context)
   assert.equal(output.blocks[0].text, 'changed 3')
   assert.equal(output.blocks[0].children[0].text, args.content)
   stop()
   const restored = new PromptTemplateService({ storageDir, resources: [] })
-  assert.equal(restored.read({ id: row.id }).managementMode, 'managed')
-  assert.equal((await restored.resolve(context)).blocks.length, 0)
+  assert.equal(restored.read({ id: row.id }).storedManagementMode, 'managed')
+  assert.equal((await restored.resolve(context)).blocks.length, 1)
 })
 
 test('policy lease is rechecked after async variable reads and every resource', async t => {
@@ -85,26 +86,28 @@ test('catalog presets validate and unsupported lifecycle/strategy/store remain r
   for (const config of [{ store: {} },{ retrieve: { on:'render',strategy:chain('prompt-template') } },{ retrieve:{ on:'before_model_request',strategy:[{operation:'execute'}] } }]) assert.throws(() => service.validateConfig(config))
 })
 
-test('world-book ownership gates existing activation once, and suppresses old loader', async t => {
+test('world-book delivery policy gates both paths after one native activation', async t => {
   const storageDir = temp(t), store = new WorldBookStore(storageDir)
   const doc = store.import({ entries: { 0: { uid:0,key:['key'],content:'LORE',constant:true } } }, { name: 'Book' })
   const service = new WorldBookMemorySource({ storageDir, store }), id = `world-book:${doc.id}`
   const row = service.read({ id })
   service.setManagementMode({ id, mode:'managed',expectedRevision:row.revision,operationId:'manage' })
   const adapter = createWorldBookAdapter(store, { allowResource: (id,c) => service.allowNative(id,c.requestAssembly) })
-  assert.equal(adapter.resolve({ selection:{worldBookIds:[doc.id]} }).loreEntries.length, 0)
+  assert.equal(adapter.resolve({ selection:{worldBookIds:[doc.id]} }).loreEntries.length, 1)
   const projected = adapter.resolve({ selection:{worldBookIds:[doc.id]},requestAssembly:true })
   assert.equal(projected.loreEntries.length, 1)
   const input = { ...context, assets: { loreEntries: projected.loreEntries, worldBookIds:[doc.id], worldBookRevisions:{[doc.id]:hash(doc)} } }
   const registry = createDefaultRegistry({ worldbookPolicy:(c,o)=>service.filter(c,o) })
   const preset = structuredClone(BUILTINS[0])
+  const unconfigured = service.registerUsage(() => undefined, { providerId: 'dsh-memory-manager' })
   let output = await assembleRequestAsync({ ...input, preset, registry })
   assert.equal(output.messages.length, 0)
-  const stop = service.registerUsage(() => lease('world-book'))
+  unconfigured()
+  const stop = service.registerUsage(() => lease('world-book'), { providerId: 'dsh-memory-manager' })
   output = await assembleRequestAsync({ ...input, preset, registry })
   assert.equal(output.messages.filter(m=>m.content[0]?.text==='LORE').length,1)
   stop()
-  assert.equal((await assembleRequestAsync({ ...input,preset,registry })).messages.length,0)
+  assert.equal((await assembleRequestAsync({ ...input,preset,registry })).messages.length,1)
 })
 
 test('world-book stale activation cannot be attributed to a changed resource', async t => {
@@ -143,5 +146,6 @@ test('managed world books cannot retain snapshots from native execution', t => {
   const storageDir=temp(t),store=new WorldBookStore(storageDir),doc=store.import({entries:{0:{uid:0,content:'one',constant:true}}})
   const service=createMemorySources({storageDir,store}),id=`world-book:${doc.id}`,row=service.worldBooks.read({id})
   service.worldBooks.setManagementMode({id,mode:'managed',expectedRevision:row.revision,operationId:'manage'})
+  service.worldBooks.registerUsage(() => undefined, { providerId: 'dsh-memory-manager' })
   assert.throws(()=>service.validateAssembly({snapshots:[{source:{sourceId:'worldbook',resourceId:doc.id}}]}),{code:'MANAGED_WORLD_BOOK_SNAPSHOT_UNSUPPORTED'})
 })

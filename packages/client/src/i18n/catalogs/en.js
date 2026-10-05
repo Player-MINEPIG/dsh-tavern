@@ -1,4 +1,7 @@
 export default Object.freeze({
+  "trace.mvu.management.native": "Managed by Tavern",
+  "trace.mvu.management.managed": "Managed by memory manager",
+  "trace.mvu.management.unknown": "Management owner not recorded",
   "trace.mvu.currentChanged": "The source is now at r{revision}; your retained draft is based on r{draftRevision}. Cancel editing and refresh, then review before saving.",
   "trace.mvu.snapshotHelpText": "“Last recorded state this turn” is this turn’s final recorded variable version, not its pre-request state. “Assistant reply update” is the version saved after that reply was committed; skipped, failed, or no-op updates may leave values unchanged. “Current variables” reads the latest version separately and is editable only in the latest turn.",
   "trace.mvu.snapshotHelp": "What do these states mean?",

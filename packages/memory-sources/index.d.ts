@@ -2,6 +2,10 @@ import type { RequestSourceRegistry, SourceContext, SourceOutput } from '../requ
 import type { TemplateResource, PromptTemplateService } from '../prompt-template/index.js'
 export const MEMORY_SOURCE_SERVICE: 'tavernMemorySources'
 export interface ResourceAccess { id: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal }
+export interface SourceManagementDefaults {
+  protocolVersion: 1; revision: string; configuration: {type: string; store?: Record<string, unknown>; retrieve?: Record<string, unknown>};
+  scopePolicy: 'source-bound'; checkCurrent(): boolean;
+}
 export interface BoundResourceMetadata {
   readonly id: string; readonly adapterId: string; readonly name: string; readonly type: 'world-book' | 'prompt-template' | 'mvu-state';
   readonly revision: string | number; readonly managementMode: 'native' | 'managed'; readonly enabled?: boolean; readonly sourceError?: string;
@@ -17,7 +21,8 @@ export interface MemorySourceAdapter {
   listBound(args: BoundResourceRequest): BoundResourceSnapshot;
   validateConfig(config: Record<string, unknown>): void;
   setManagementMode(args: ResourceAccess & {mode: 'native' | 'managed'; expectedRevision: string; operationId: string}): Record<string, unknown>;
-  registerUsage(handler: (request: Record<string, unknown>) => unknown): () => void;
+  getManagementDefaults(args: Omit<ResourceAccess, 'signal'>): SourceManagementDefaults | null;
+  registerUsage(handler: (request: Record<string, unknown>) => unknown, options?: {providerId: 'dsh-memory-manager'}): () => void;
   observe(handler: (event: Record<string, unknown>) => void): () => void;
   dispose(): void;
 }
@@ -31,5 +36,5 @@ export interface MemorySources {
 }
 export function createMemorySources(options: { storageDir: string; store: unknown; resources?: TemplateResource[]; characters?: unknown;
   getSelection?: (sessionId:string) => {worldBookIds:string[];characterId:string|null;selectionRevision:number|string}; getSession?: (sessionId:string) => unknown;
-  getMvu?: () => {listBound(args:BoundResourceRequest):BoundResourceSnapshot|Promise<BoundResourceSnapshot>}|undefined; resolveVariables?: (args: unknown) => unknown }): MemorySources
+  getMvu?: () => {listBound(args:BoundResourceRequest):BoundResourceSnapshot|Promise<BoundResourceSnapshot>; resolvePromptDependency?(args:import('../mvu-adapter/src/prompt-dependency.js').MvuPromptDependencyRequest):Promise<import('../mvu-adapter/src/prompt-dependency.js').MvuPromptDependencyResult|null>}|undefined; resolveVariables?: (args: unknown) => unknown }): MemorySources
 export function installMemorySources(ctx: unknown, service: MemorySources, registry: RequestSourceRegistry): void

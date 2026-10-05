@@ -11,6 +11,7 @@ export const MVU_SOURCE = 'tavern.mvu/state'
 /** Install with public Cordis/DSH seams. No Helper runtime or manager dependency. */
 export function installMvu(ctx, { storageDir, resources = [], sources, memberships, refresh, isActive, getSelection, getSelectionToken, resolveCommandHook, onError = () => {} } = {}) {
   const sessionEpochs = new Map()
+  const promptSessionEpochs = new Map()
   let hostQueue = Promise.resolve()
   // DSH permission presets pin these exact configuration facts before publishing a new session.
   // No prefix/category match: messages, turns, inbox activity and unknown events close this window.
@@ -49,7 +50,12 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     return view
   }
   const inspect = async id => { const live = ctx.get('sessions')?.get?.(id); return live ? { header: live.header, events: live.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
-  const captureSessionLease = async sessionId => {
+  const requestMetadata = event => (event.type === 'system/message' && event.data?.message?.role === 'system'
+    && Number.isSafeInteger(event.data.turn) && Number.isSafeInteger(event.data.step))
+    || (event.type === 'request/context' && typeof event.data?.provider === 'string' && typeof event.data?.model === 'string'
+      && Object.keys(event.data).every(key => ['provider', 'model', 'contextWindow', 'systemPromptUpdate'].includes(key)))
+  const preparationType = event => requestMetadata(event) || ['step/start', 'user/message', 'request/header'].includes(event.type)
+  const captureSessionLease = async (sessionId, { allowRequestMetadata = false } = {}) => {
     let sessions = ctx.get('sessions'), live = sessions?.get?.(sessionId)
     if (!live) {
       await ctx.get('sessionController')?.resolveAgent?.(sessionId)
@@ -59,9 +65,22 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     // Public resume can publish fresh discovery/ingest work after the caller's entry barrier.
     await hostQueue
     const sessionsIdentity = sessions[symbols.original] ?? sessions
-    const epoch = sessionEpochs.get(sessionId) ?? 0, header = digest(live.header), events = digest(live.snapshotEvents())
+    const epochs = allowRequestMetadata ? promptSessionEpochs : sessionEpochs
+    const epoch = epochs.get(sessionId) ?? 0, header = digest(live.header), prefix = live.snapshotEvents(), prefixLength = prefix.length, events = digest(prefix)
+    const turn = prefix.findLast(event => event.type === 'turn/start')?.data.turn
+    const loggedUsers = new Set(prefix.filter(event => event.type === 'user/message').map(event => event.data?.id))
+    const claimedUsers = new Map(prefix.filter(event => event.type === 'agent/inbox/spliced').flatMap(event => event.data?.inserted ?? [])
+      .filter(message => message?.role === 'user' && typeof message.id === 'string' && !loggedUsers.has(message.id)).map(message => [message.id, digest(message)]))
+    const preparationCurrent = event => (requestMetadata(event) && (event.type !== 'system/message' || event.data.turn === turn))
+      || (event.type === 'step/start' && event.data?.turn === turn && Number.isSafeInteger(event.data.step))
+      || (event.type === 'user/message' && claimedUsers.get(event.data?.id) === digest(event.data))
+      || (event.type === 'request/header' && event.data?.header && Object.keys(event.data).every(key => ['header', 'reason'].includes(key)))
+    const historyCurrent = () => {
+      const current = live.snapshotEvents()
+      return allowRequestMetadata ? current.length >= prefixLength && digest(current.slice(0, prefixLength)) === events && current.slice(prefixLength).every(preparationCurrent) : digest(current) === events
+    }
     return () => ctx.get(MVU_SERVICE) === service && (ctx.get('sessions')?.[symbols.original] ?? ctx.get('sessions')) === sessionsIdentity && ctx.get('sessions')?.get?.(sessionId) === live
-      && (sessionEpochs.get(sessionId) ?? 0) === epoch && digest(live.header) === header && digest(live.snapshotEvents()) === events
+      && (epochs.get(sessionId) ?? 0) === epoch && digest(live.header) === header && historyCurrent()
   }
   const capturePromptScope = (scope, resource) => {
     if (!memberships || !getSelection || !getSelectionToken) return null
@@ -195,9 +214,13 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     const snapshot = snapshotMvuSession(session)
     return { ...snapshot, snapshotEvents: () => snapshot.events }
   }
-  for (const event of ['session/created', 'session/disposed']) ctx.on(event, session => sessionEpochs.set(session.id, (sessionEpochs.get(session.id) ?? 0) + 1))
+  for (const event of ['session/created', 'session/disposed']) ctx.on(event, session => {
+    sessionEpochs.set(session.id, (sessionEpochs.get(session.id) ?? 0) + 1)
+    promptSessionEpochs.set(session.id, (promptSessionEpochs.get(session.id) ?? 0) + 1)
+  })
   ctx.on('session/event', (session, event) => {
     sessionEpochs.set(session.id, (sessionEpochs.get(session.id) ?? 0) + 1)
+    if (!preparationType(event)) promptSessionEpochs.set(session.id, (promptSessionEpochs.get(session.id) ?? 0) + 1)
     if (event.type === 'turn/start') publish(service.checkpoint(session, event))
     if (event.type === 'turn/end') { const snapshot = freezeSession(session); enqueue(() => schedule(snapshot)) }
   })
@@ -214,7 +237,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     service.observeRequest(options, ctx.get('sessions')?.get?.(options.sessionId))
     yield* next()
   })
-  ctx.effect(() => sources.register({ id: MVU_SOURCE, pluginId: 'pmp-dsh-tavern', name: 'MVU state', stability: 'conversation', roles: ['system'], lifetimes: ['request'], depth: true, resolve: context => service.resolveRequest(context) }))
+  ctx.effect(() => sources.register({ id: MVU_SOURCE, pluginId: 'pmp-dsh-tavern', name: 'MVU state', stability: 'conversation', roles: ['system'], lifetimes: ['request'], depth: true, resolve: context => service.resolveRequest(context), validateResolved: context => service.validateResolved(context) }))
   ctx.effect(() => () => service.dispose())
   return service
 }

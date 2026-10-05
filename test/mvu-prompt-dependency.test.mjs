@@ -11,7 +11,7 @@ import {SessionSelectionStore} from '../packages/tavern-loader/src/session-polic
 
 const input=()=>({id:'mvu:state',scope:{authority:'local',sessionId:'s'},event:{preview:false,turn:1,step:1,usage:'prompt-template-dependency',consumer:{adapterId:'tavern.prompt-templates',id:'prompt-template:display'}}})
 const strategy=['read_content','render_state_and_update_instructions','provide_to_model']
-async function fixture(t,{managed=true}={}){
+async function fixture(t,{managed=true,shared=true}={}){
  const dir=mkdtempSync(join(tmpdir(),'mvu-prompt-dependency-'));t.after(()=>rmSync(dir,{recursive:true,force:true}))
  const storageDir=join(dir,'storage'),root=join(dir,'play');mkdirSync(root)
  const store=new PlayWorkspaceStore(storageDir);await store.bindRoot(root)
@@ -19,21 +19,23 @@ async function fixture(t,{managed=true}={}){
  const put=(path,content)=>{let revision=null;try{revision=store.readFile(path).revision}catch{}return store.writeFile(path,content,{expectedRevision:revision,expectedRevisionPresent:true})}
  await store.createDir('p');put('p/timeline.json',JSON.stringify({nodes:[]}));put('catalog.json',catalog)
  const selections=new SessionSelectionStore(storageDir);selections.set('s',{characterCardId:'c'})
- const session={id:'s',header:{id:'s',version:4},snapshotEvents:()=>[]},services=new Map([['sessions',new Map([['s',session]])]])
- const ctx={get:name=>services.get(name),provide:(name,value)=>services.set(name,value),on(){},effect:fn=>fn()}
+ const events=[],handlers=new Map(),session={id:'s',header:{id:'s',version:4,createdAt:1},snapshotEvents:()=>events},services=new Map([['sessions',new Map([['s',session]])]])
+ const ctx={get:name=>services.get(name),provide:(name,value)=>services.set(name,value),on(name,fn){const list=handlers.get(name)??[];list.push(fn);handlers.set(name,list);return()=>{}},effect:fn=>fn()}
  const memberships=new PlayMembershipService(store)
- const service=installMvu(ctx,{storageDir,resources:[{sharing: 'shared', id:'mvu:state',characterId:'c',sessionIds:['s'],managementMode:managed?'managed':'native',initial:{stat_data:{hp:7}}}],sources:{register:()=>()=>{}},memberships,getSelection:id=>selections.get(id),getSelectionToken:id=>selections.selectionRevision(id),isActive:(r,id)=>r.characterId===selections.get(id).characterCardId})
+ const service=installMvu(ctx,{storageDir,resources:[{...(shared?{sharing:'shared'}:{}), id:'mvu:state',characterId:'c',sessionIds:['s'],managementMode:managed?'managed':'native',initial:{stat_data:{hp:7}}}],sources:{register:()=>()=>{}},memberships,getSelection:id=>selections.get(id),getSelectionToken:id=>selections.selectionRevision(id),isActive:(r,id)=>r.characterId===selections.get(id).characterCardId})
  t.after(()=>service.dispose())
  let policy={revision:4,enabled:true};const requests=[],facts=[];service.observe(f=>facts.push(f))
- const allow=()=>service.registerUsage(request=>{requests.push(request);const current=policy;return{enabled:current.enabled,configRevision:current.revision,strategy,checkCurrent:()=>current===policy}})
- return {service,ctx,store,memberships,selections,requests,facts,allow,put,restore:()=>put('catalog.json',catalog),reload:()=>{policy={revision:5,enabled:false}},read:()=>service.read({id:'mvu:state',scope:{sessionId:'s'}})}
+ const allow=()=>service.registerUsage(request=>{requests.push(request);const current=policy;return{enabled:current.enabled,configRevision:current.revision,strategy,checkCurrent:()=>current===policy}},{providerId:'dsh-memory-manager'})
+ const append=event=>{event={seq:events.length,...event};events.push(event);for(const handler of handlers.get('session/event')??[])handler(session,event);return event}
+ return {service,ctx,append,events,store,memberships,selections,requests,facts,allow,put,restore:()=>put('catalog.json',catalog),reload:()=>{policy={revision:5,enabled:false}},read:()=>service.read({id:'mvu:state',scope:{sessionId:'s'}})}
 }
 const update=async f=>{const row=await f.read();await f.service.update({id:'mvu:state',scope:{sessionId:'s'},expectedRevision:row.revision,operationId:'update-'+row.revision,content:{stat_data:{hp:8}}})}
 
 test('managed dependency uses MVU before-model policy, exact chain and trusted consumer, without applied facts',async t=>{
  const f=await fixture(t)
  assert.equal((await f.read()).content.stat_data.hp,7)
- assert.equal(await f.service.resolvePromptDependency(input()),null,'raw management read does not grant retrieval')
+ const unconfigured=f.service.registerUsage(()=>undefined,{providerId:'dsh-memory-manager'})
+ assert.equal(await f.service.resolvePromptDependency(input()),null,'installed manager without a decision never permits raw reads');unconfigured()
  f.allow();const result=await f.service.resolvePromptDependency(input())
  assert.equal(result.id,'mvu:state');assert.equal(result.adapterId,'tavern.mvu');assert.equal(result.content.stat_data.hp,7);assert.equal(result.revision,0);assert.equal(result.configRevision,4);assert.equal(result.checkCurrent(),true)
  assert.equal(f.requests[0].on,'before_model_request');assert.deepEqual(f.requests[0].event,input().event)
@@ -102,7 +104,7 @@ test('actual optional manager gates MVU dependency and invalidates it on real co
  const configPath=join(dir,'config.json');let revision=0
  const policy=rule=>({id:'mvu:state',adapterId:'tavern.mvu',type:'mvu-state',whitelist:[{sessionId:'s'}],blacklist:[],retrieve:{on:'before_model_request',rule,strategy:strategy.map(operation=>({operation}))}})
  const write=entries=>writeFileSync(configPath,JSON.stringify({schemaVersion:1,revision:++revision,presets:{},entries}))
- write([]);const manager=await new MemoryManager({configPath}).init(),usage=new Usage(manager),stop=installAdapter(manager,f.service,usage)
+ write([{...policy(true),retrieve:{}}]);const manager=await new MemoryManager({configPath}).init(),usage=new Usage(manager),stop=installAdapter(manager,f.service,usage)
  t.after(async()=>{stop();await manager.dispose()})
  assert.equal(await f.service.resolvePromptDependency(input()),null)
  write([policy(true)]);await manager.reload()
@@ -115,7 +117,7 @@ test('actual optional manager gates MVU dependency and invalidates it on real co
  const pending=f.service.resolvePromptDependency(input());await waiting
  write([policy(false)]);await manager.reload();release();assert.equal(await pending,null)
  write([policy(true)]);await manager.reload();const accepted=await f.service.resolvePromptDependency(input());stop();assert.equal(accepted.checkCurrent(),false)
- assert.equal(await f.service.resolvePromptDependency(input()),null)
+ assert.equal((await f.service.resolvePromptDependency(input())).checkCurrent(),true,'unload restores source defaults')
  assert.equal(manager.traces.filter(f=>f.phase==='applied').length,0)
 })
 
@@ -158,4 +160,43 @@ test('creating a directory that replaces absent catalog evidence expires the lea
  const empty=join(f.store.get().rootPath,'empty-directory');mkdirSync(empty);await f.store.bindRoot(empty)
  const result=await f.service.resolvePromptDependency(input());assert.equal(result.checkCurrent(),true)
  await f.store.createDir('catalog.json');assert.equal(result.checkCurrent(),false)
+})
+
+
+test('world-book request lease accepts only the known claimed input and official preparation records; future/unknown messages revoke it',async t=>{
+ for(const change of ['prepared','unclaimed-user','future-reply','next-turn','prefix-change']){
+  const f=await fixture(t,{managed:false,shared:false}),user={id:'claimed-user',role:'user',source:{kind:'user'},content:[{type:'text',text:'authored input'}]}
+  f.append({type:'agent/inbox/spliced',data:{target:'next-turn',start:0,inserted:[user]}})
+  f.append({type:'turn/start',data:{turn:1}})
+  const result=await f.service.resolvePromptDependency({scope:{authority:'local',sessionId:'s'},event:{preview:false,turn:1,usage:'world-book-variable',consumer:{adapterId:'tavern.world-books',id:'world-book:character:c:embedded-world-book'}}})
+  assert.equal(result.checkCurrent(),true)
+  f.append({type:'step/start',data:{turn:1,step:0}})
+  f.append({type:'system/message',data:{turn:1,step:0,message:{id:'system',role:'system',content:[{type:'text',text:'authored system'}]}}})
+  f.append({type:'user/message',data:change==='unclaimed-user'?{...user,id:'other'}:user})
+  f.append({type:'request/header',data:{header:{config:{}},reason:'changed'}})
+  f.append({type:'request/context',data:{provider:'fixture',model:'fixture',systemPromptUpdate:'in-history'}})
+  if(change==='future-reply')f.append({type:'assistant/message',data:{turn:1,message:{id:'future',role:'assistant',content:[]}}})
+  if(change==='next-turn')f.append({type:'turn/start',data:{turn:2}})
+  if(change==='prefix-change')f.events[0]={...f.events[0],data:{...f.events[0].data,start:1}}
+  assert.equal(result.checkCurrent(),change==='prepared',change)
+  await f.service.flush()
+ }
+})
+
+test('an installed Host rejects a stale character scope for the MVU preset source',async t=>{
+ const f=await fixture(t,{managed:false,shared:false})
+ await f.service.list({scope:{sessionId:'s'}})
+ f.selections.set('s',{characterCardId:'other'})
+ await assert.rejects(f.service.resolveRequest({sessionId:'s'}),{code:'MVU_USAGE_CANCELLED'})
+})
+
+test('a shared world-book checkpoint lease expires when its session enters another turn',async t=>{
+ const f=await fixture(t,{managed:false,shared:true})
+ f.append({type:'turn/start',data:{turn:1}});await f.service.flush()
+ const result=await f.service.resolvePromptDependency({scope:{authority:'local',sessionId:'s'},event:{preview:false,turn:1,usage:'world-book-variable',consumer:{adapterId:'tavern.world-books',id:'world-book:one'}}})
+ assert.equal(result.checkCurrent(),true)
+ const revision=(await f.read()).revision
+ f.append({type:'turn/start',data:{turn:2}});await f.service.flush()
+ assert.equal((await f.read()).revision,revision,'checkpoint changes need not change the state revision')
+ assert.equal(result.checkCurrent(),false)
 })
