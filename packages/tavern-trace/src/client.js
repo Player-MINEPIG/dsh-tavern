@@ -1,4 +1,5 @@
 import { MvuRoundSection, mvuStyles } from './mvu-view.js'
+import { worldBookRequestOutcome } from './world-book-request.js'
 import {
   createElement,
   useCallback,
@@ -123,12 +124,18 @@ function decisionMeta(value) {
   return rawText(parts.join(' · '))
 }
 
-function WorldBookAudit({ book }) {
+function WorldBookAudit({ book, record }) {
+  const outcome = worldBookRequestOutcome(record, book)
   const name = book.resource?.name || book.resource?.id
   const decisionCount = translate(book.decisions.length === 1 ? 'trace.decisionCount.one' : 'trace.decisionCount.other', { count: book.decisions.length })
   return h('div', { className: 'dttrace-book' },
     h('div', { className: 'dttrace-section-title' }, name ? rawText(name) : uiMessage('nav.worldBook')),
     h('div', { className: 'dttrace-meta' }, uiMessage('trace.bookBudget', { used: book.budget.used, limit: book.budget.limit === null ? '' : ` / ${book.budget.limit}`, decisionCount })),
+    h('div', { className: 'dttrace-meta', 'data-worldbook-request': outcome?.applied ? 'applied' : outcome?.skipped ? 'skipped' : 'unrecorded' },
+      uiMessage('trace.worldBook.request'), ' ',
+      outcome?.applied ? uiMessage('trace.worldBook.applied') : outcome?.skipped ? null : uiMessage('trace.worldBook.unrecorded'),
+      outcome?.skipped ? h('span', null, outcome.applied ? ' · ' : '', uiMessage('trace.worldBook.policySkipped'), ' · ',
+        rawText(outcome.reasons.map(reason => reason ?? translate('trace.worldBook.reasonUnrecorded')).join(' / '))) : null),
     ...book.decisions.map((item, index) => {
       const keywordState = keywords(item)
       return h('div', {
@@ -136,7 +143,7 @@ function WorldBookAudit({ book }) {
       'data-included': item.decision === 'included',
       key: `${item.entryId ?? 'entry'}-${index}`,
     },
-    h('div', { className: 'dttrace-decision-state' }, item.decision === 'included' ? uiMessage('trace.inserted') : uiMessage('trace.rejected')),
+    h('div', { className: 'dttrace-decision-state' }, item.decision === 'included' ? uiMessage('trace.worldBook.candidate') : uiMessage('trace.rejected')),
     h('div', null,
       h('div', null, item.entryName ? rawText(item.entryName) : uiMessage('world.entry.fallback', { id: String(item.entryId ?? index + 1) })),
       h('div', { className: 'dttrace-meta' }, reasonLabels[item.reason] ? uiMessage(reasonLabels[item.reason]) : rawText(item.reason)),
@@ -291,12 +298,13 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
     h('details', { className: 'dttrace-disclosure' },
       h('summary', null, uiMessage('trace.v3.worldBookDetails')),
       h('div', { className: 'dttrace-disclosure-body' },
+        h('p', { className: 'dttrace-note' }, uiMessage('trace.worldBook.activationNote')),
         audit.activation ? h('div', { className: 'dttrace-meta' }, audit.activation.pendingMessageCount > 0
           ? uiMessage('trace.activationPending', { included: audit.activation.includedPendingMessageCount,
             pending: audit.activation.pendingMessageCount, truncated: audit.activation.truncated ? translate('trace.truncated') : '' })
           : uiMessage('trace.historyOnly')) : null,
         books === undefined ? h('p', { className: 'dttrace-note' }, unavailable())
-          : books.length ? books.map((book, index) => h(WorldBookAudit, { book, key: index }))
+          : books.length ? books.map((book, index) => h(WorldBookAudit, { book, record, key: index }))
             : h('p', { className: 'dttrace-note' }, uiMessage('trace.noSource')),
       ),
     ),

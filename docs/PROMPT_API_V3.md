@@ -247,6 +247,8 @@ metadata 和官方引用，不保存新的 section/context/system-message/source
 
 ## UI 与第三方边界
 
+世界书 `included` 仅表示通过激活判定的候选，不保证最终注入。Trace 分别展示激活候选与同次已核验 `requestAssembly` 中的结果：带匹配来源节点和版本诊断的已观察请求可显示已进入请求；`WORLD_BOOK_POLICY_SKIPPED` 显示策略跳过及当次原因。旧诊断缺原因时显示具体原因未记录，无法唯一关联资源或缺请求记录时不推断最终使用情况。读取不重跑激活、不改写历史或 manager journal。
+
 Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 loader 装配。段落/context
 正文可验证恢复时显示；schema 4 来源只显示 metadata/hash/counts，不显示 `source.text`，旧 schema 3 记录仍可能包含标为旧快照的来源正文。无法恢复时显示
 具体不可用原因。当前 v1 资源可辅助排查当前配置，但 UI 不把它标为历史原文。

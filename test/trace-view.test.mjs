@@ -148,3 +148,32 @@ test('schema-3 body copies are identified as historical snapshots', () => {
   assert.ok(all.includes('INPUT'))
   assert.ok(!text(result, true).includes('正文引用已解析'))
 })
+
+test('world-book activation candidates are separate from verified request policy skips, including old reasonless diagnostics',()=>{
+ const same={...record,schemaVersion:4,status:'request-observed',turn:5,step:0,requestAssembly:{turn:5,step:0,metadata:{owner:'pmp-dsh-tavern',assembly:{nodes:[],diagnostics:[{code:'WORLD_BOOK_POLICY_SKIPPED',resourceId:'world-book:w'}]}}}}
+ let all=text(body(same))
+ assert.ok(all.includes('激活候选'));assert.ok(all.includes('策略跳过'));assert.ok(all.includes('具体原因未记录'));assert.ok(!all.includes('已插入'));assert.ok(!all.includes('已进入请求'))
+ same.requestAssembly.metadata.assembly.diagnostics[0].reason='config-unavailable'
+ all=text(body(same));assert.ok(all.includes('config-unavailable'));assert.ok(!all.includes('具体原因未记录'))
+ const en=text(body(same,'en'));assert.ok(en.includes('Activation candidate'));assert.ok(en.includes('Skipped by policy'))
+ for(const change of [value=>{delete value.requestAssembly},value=>{value.requestAssembly.turn++},value=>{value.requestAssembly.metadata.owner='other'},value=>{value.requestAssembly.metadata.assembly.preview=true},value=>{value.requestAssembly.metadata.assembly.diagnostics[0].resourceId='world-book:other'}]){
+  const bad=structuredClone(same);change(bad);const output=text(body(bad));assert.ok(!output.includes('策略跳过'));assert.ok(output.includes('最终使用情况未记录'))
+ }
+})
+
+test('world-book applied display requires the same observed request source diagnostic and matching node',()=>{
+ const same={...record,schemaVersion:4,status:'request-observed',turn:5,step:0,requestAssembly:{turn:5,step:0,metadata:{owner:'pmp-dsh-tavern',assembly:{nodes:[{id:'worldbook:block',source:{sourceId:'worldbook',resourceId:'w'}}],diagnostics:[{code:'TAVERN_MEMORY_RESOURCE_VERSION',adapterId:'tavern.world-books',sourceId:'worldbook',resourceId:'world-book:w',blockResourceId:'w',blockId:'block'}]}}}}
+ assert.ok(text(body(same)).includes('已进入请求'))
+ for(const change of [value=>{value.status='assembled'},value=>{value.requestAssembly.metadata.assembly.nodes=[]},value=>{value.requestAssembly.metadata.assembly.diagnostics=[]},value=>{value.requestAssembly.metadata.assembly.nodes[0].source.resourceId='different'}]){
+  const bad=structuredClone(same);change(bad);assert.ok(!text(body(bad)).includes('已进入请求'))
+ }
+})
+
+test('world-book request correlation refuses duplicate or truncated audit IDs and preserves dependency application',()=>{
+ const make=()=>({...record,status:'request-observed',turn:5,step:0,requestAssembly:{turn:5,step:0,metadata:{owner:'pmp-dsh-tavern',assembly:{nodes:[],diagnostics:[{code:'WORLD_BOOK_POLICY_SKIPPED',resourceId:'world-book:w'}]}}}})
+ const duplicate=make();duplicate.audit=structuredClone(record.audit);duplicate.audit.worldBooks.push(duplicate.audit.worldBooks[0]);assert.ok(!text(body(duplicate)).includes('策略跳过'))
+ const clipped=make();clipped.audit=structuredClone(record.audit);clipped.audit.worldBooks[0].resource.id='w…';clipped.requestAssembly.metadata.assembly.diagnostics[0].resourceId='world-book:w…';assert.ok(!text(body(clipped)).includes('策略跳过'))
+ const dependency=make();dependency.requestAssembly.metadata.assembly.nodes=[{id:'template:block',source:{sourceId:'prompt-template',resourceId:'prompt-template:fixture'}}]
+ dependency.requestAssembly.metadata.assembly.diagnostics.push({code:'TAVERN_MEMORY_DEPENDENCY_VERSION',adapterId:'tavern.world-books',resourceId:'world-book:w',sourceId:'prompt-template',consumerId:'prompt-template:fixture',blockId:'block'})
+ const output=text(body(dependency));assert.ok(output.includes('已进入请求'));assert.ok(output.includes('策略跳过'))
+})

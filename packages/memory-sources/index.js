@@ -36,13 +36,28 @@ export function createMemorySources(options) {
       }
     },
     observeRequest(request, session) {
+      if (!session?.id || (request.sessionId && request.sessionId !== session.id)) return
       const event = session?.snapshotEvents?.().findLast(e => e.type === 'request/assembly')
-      if (!event || event.data.metadata?.owner !== 'pmp-dsh-tavern' || hash(event.data.messages) !== hash(request.messages)) return
+      if (!Number.isSafeInteger(event?.seq) || event.data.metadata?.owner !== 'pmp-dsh-tavern' || hash(event.data.messages) !== hash(request.messages)) return
       const assembly = event.data.metadata.assembly
-      if (assembly.preview) return
+      if (!assembly || assembly.preview) return
       const flatten = nodes => nodes.flatMap(n => [n, ...flatten(n.children ?? [])])
       const nodes = flatten(assembly.nodes ?? [])
       for (const fact of assembly.diagnostics ?? []) {
+        if (fact.code === 'WORLD_BOOK_POLICY_SKIPPED') {
+          // Only current source-authored diagnostics carry enough identity and
+          // revision evidence for a receipt. Older incomplete diagnostics remain
+          // readable in Trace, but are never replayed into the manager journal.
+          if (fact.adapterId === worldBooks.id && fact.sourceId === 'worldbook' && typeof fact.resourceId === 'string'
+            && fact.resourceId.startsWith('world-book:') && typeof fact.revision === 'string' && typeof fact.reason === 'string') {
+            const requestId = `${session.id}:${event.seq}`
+            worldBooks.policy.emit({ id: fact.resourceId, eventId: `${requestId}:worldbook-policy:${fact.resourceId}`, requestId,
+              phase: 'skipped', reason: fact.reason, code: fact.code, sessionId: session.id, turn: event.data.turn, turnKind: 'unknown',
+              revision: fact.revision, managementMode: fact.managementMode, configRevision: fact.configRevision ?? null,
+              detail: `World-book request contribution skipped by source policy: ${fact.reason}` })
+          }
+          continue
+        }
         if (!['TAVERN_MEMORY_RESOURCE_VERSION', 'TAVERN_MEMORY_DEPENDENCY_VERSION'].includes(fact.code)) continue
         const source = [worldBooks, templates].find(a => a.id === fact.adapterId)
         if (!source || !nodes.some(n => n.source?.sourceId === fact.sourceId && n.source?.resourceId === (fact.consumerId ?? fact.blockResourceId ?? fact.resourceId) && (n.id?.endsWith(`:${fact.blockId}`) || n.name === fact.blockId))) continue

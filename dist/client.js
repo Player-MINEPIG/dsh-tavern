@@ -18556,6 +18556,13 @@ var zh_CN_default = Object.freeze({
   "trace.resource.preset": "Preset",
   "trace.resource.character": "Character",
   "trace.resource.user": "User",
+  "trace.worldBook.activationNote": "\u6FC0\u6D3B\u5019\u9009\u662F\u5173\u952E\u8BCD\u3001\u6982\u7387\u548C\u9884\u7B97\u9636\u6BB5\u7684\u7ED3\u679C\uFF1B\u6700\u7EC8\u662F\u5426\u8FDB\u5165\u8BF7\u6C42\uFF0C\u4EE5\u4E0B\u65B9\u672C\u6B21\u8BF7\u6C42\u8BB0\u5F55\u4E3A\u51C6\u3002",
+  "trace.worldBook.request": "\u672C\u6B21\u8BF7\u6C42\uFF1A",
+  "trace.worldBook.applied": "\u5DF2\u8FDB\u5165\u8BF7\u6C42",
+  "trace.worldBook.unrecorded": "\u6700\u7EC8\u4F7F\u7528\u60C5\u51B5\u672A\u8BB0\u5F55",
+  "trace.worldBook.policySkipped": "\u7B56\u7565\u8DF3\u8FC7",
+  "trace.worldBook.reasonUnrecorded": "\u5177\u4F53\u539F\u56E0\u672A\u8BB0\u5F55",
+  "trace.worldBook.candidate": "\u6FC0\u6D3B\u5019\u9009",
   "trace.inserted": "\u5DF2\u63D2\u5165",
   "trace.rejected": "\u5DF2\u62D2\u7EDD",
   "trace.noConfiguredKeywords": "\u65E0\u914D\u7F6E\u5173\u952E\u8BCD",
@@ -18568,7 +18575,7 @@ var zh_CN_default = Object.freeze({
   "trace.config.inconsistent": "\u4E0D\u4E00\u81F4",
   "trace.config.consistent": "\u4E00\u81F4\u6216\u65E0\u5B57\u6BB5",
   "trace.position.approximate": "\uFF08\u8FD1\u4F3C\uFF09",
-  "trace.position.notInserted": " \u2192 \u672A\u63D2\u5165",
+  "trace.position.notInserted": " \u2192 \u65E0\u5019\u9009\u4F4D\u7F6E",
   "trace.position.applied": " \u2192 {position}{approximate}",
   "trace.storage.total": "\u603B\u8BA1\u6700\u591A {value}",
   "trace.storage.perSession": "\u6BCF\u4F1A\u8BDD\u6700\u591A {value} \u6761",
@@ -19608,6 +19615,13 @@ var en_default = Object.freeze({
   "trace.resource.preset": "Preset",
   "trace.resource.character": "Character",
   "trace.resource.user": "User",
+  "trace.worldBook.activationNote": "Activation candidates reflect keyword, probability and budget evaluation. Final use is reported separately from this request\u2019s recorded evidence.",
+  "trace.worldBook.request": "This request:",
+  "trace.worldBook.applied": "Included in request",
+  "trace.worldBook.unrecorded": "Final usage not recorded",
+  "trace.worldBook.policySkipped": "Skipped by policy",
+  "trace.worldBook.reasonUnrecorded": "Specific reason not recorded",
+  "trace.worldBook.candidate": "Activation candidate",
   "trace.inserted": "Inserted",
   "trace.rejected": "Rejected",
   "trace.noConfiguredKeywords": "No configured keywords",
@@ -19620,7 +19634,7 @@ var en_default = Object.freeze({
   "trace.config.inconsistent": "Inconsistent",
   "trace.config.consistent": "Consistent or no fields",
   "trace.position.approximate": " (approximate)",
-  "trace.position.notInserted": " \u2192 not inserted",
+  "trace.position.notInserted": " \u2192 no candidate position",
   "trace.position.applied": " \u2192 {position}{approximate}",
   "trace.storage.total": "up to {value} total",
   "trace.storage.perSession": "up to {value} entries per session",
@@ -22929,6 +22943,7 @@ var labels = {
   "deployment:persona-prefix": ["\u90E8\u7F72\u524D\u7F6E\u6307\u4EE4", "Deployment prefix"],
   "deployment:persona-suffix": ["\u90E8\u7F72\u540E\u7F6E\u6307\u4EE4", "Deployment suffix"],
   "rp:policy": ["Tavern \u89D2\u8272\u626E\u6F14\u89C4\u5219", "Tavern roleplay policy"],
+  "tavern.mvu/state": ["MVU \u72B6\u6001\u4E0E\u66F4\u65B0\u6307\u4EE4", "MVU state and update instructions"],
   main: ["\u4E3B\u63D0\u793A\u8BCD", "Main prompt"],
   jailbreak: ["\u540E\u7F6E\u6307\u4EE4", "Post-history instructions"],
   charDescription: ["\u89D2\u8272\u63CF\u8FF0", "Character description"],
@@ -22956,10 +22971,9 @@ var labels = {
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
   noActual: ["\u6682\u65E0\u65B0\u7248\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No request assembly record yet"],
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
-  addSource: ["\u6DFB\u52A0\u6765\u81EA\u4E8E", "Add custom content from"],
+  addSource: ["\u6DFB\u52A0\u6765\u6E90\uFF08\u5DF2\u6CE8\u518C\uFF0C\u672A\u52A0\u5165\u5F53\u524D\u7B56\u7565\uFF09", "Add a source (registered, not in this strategy)"],
   chooseSource: ["\u9009\u62E9\u6765\u6E90\u2026", "Choose source\u2026"],
-  customSuffix: ["\u7684\u81EA\u5B9A\u4E49\u5185\u5BB9", ""],
-  sourceHelp: ["\u53EF\u5728\u8FD9\u91CC\u586B\u5199\u81EA\u5B9A\u4E49\u6587\u672C\u548C\u5B8F\u3002\u81EA\u52A8\u8BFB\u53D6 MVU\u3001\u8BB0\u5FC6\u7B49\u52A8\u6001\u6570\u636E\u7684\u6765\u6E90\uFF0C\u9700\u8981\u76F8\u5E94\u63D2\u4EF6\u901A\u8FC7\u6765\u6E90 API \u6CE8\u518C\uFF1B\u9009\u62E9\u6765\u6E90\u4E0D\u4F1A\u6539\u53D8\u5176\u6240\u5C5E\u63D2\u4EF6\u3002", "Write custom text and macros here. Sources that retrieve MVU or memory data must be registered by their plugin through the source API; selection does not change source ownership."],
+  sourceHelp: ["\u9009\u62E9\u6765\u6E90\u5E76\u6DFB\u52A0\u3001\u4FDD\u5B58\u89C4\u5219\u3001\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u540E\uFF0C\u6765\u6E90\u5185\u5BB9\u624D\u4F1A\u8FDB\u5165\u540E\u7EED\u8BF7\u6C42\uFF1B\u5B9E\u9645\u8F93\u51FA\u4ECD\u9075\u5FAA\u6765\u6E90\u81EA\u8EAB\u7684\u89C4\u5219\u3002\u81EA\u5B9A\u4E49\u5185\u5BB9\u53EF\u586B\u5199\u6587\u672C\u548C\u5B8F\u3002", "Select and add a source, save the rules, then apply them to the current session to include its content in future requests. Actual output still follows the source\u2019s own rules. Custom content accepts text and macros."],
   missingSource: ["\u6765\u6E90\u63D2\u4EF6\u672A\u5B89\u88C5\u6216\u672A\u6CE8\u518C\uFF1B\u672C\u6B21\u8BF7\u6C42\u8DF3\u8FC7\u6B64\u6A21\u5757\u3002", "Source unavailable; this module is omitted from the request."],
   title: ["\u63D0\u793A\u8BCD\u88C5\u914D\u7B56\u7565", "Prompt assembly strategy"],
   intro: ["\u5B89\u6392\u5185\u5BB9\u5982\u4F55\u8FDB\u5165\u6BCF\u6B21\u6A21\u578B\u8BF7\u6C42\u3002\u9884\u89C8\u5F53\u524D\u8D44\u4EA7\u3001\u5B8F\u5F15\u7528\u548C\u5B9E\u9645\u987A\u5E8F\u3002", "Arrange each model request. Preview assets, macro references and message order."],
@@ -23446,7 +23460,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
           setTab("expanded");
         }), false, void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),
         (0, import_react7.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react7.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
-        tab === "rules" ? (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), draft.placement === "st" && (0, import_react7.createElement)("small", null, t("stHelp")), ...draft.rules.flatMap((row, i3) => [placeholder(i3), ruleRow(row, i3)]), placeholder(draft.rules.length), (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react7.createElement)("select", { id: "dta-add-source", value: addKind, onChange: (e) => setAddKind(e.target.value) }, ...sources.filter((s) => s.multiple || !draft.rules.some((r) => r.kind === s.id)).map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), (0, import_react7.createElement)("span", null, t("customSuffix")), button("add", () => {
+        tab === "rules" ? (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), draft.placement === "st" && (0, import_react7.createElement)("small", null, t("stHelp")), ...draft.rules.flatMap((row, i3) => [placeholder(i3), ruleRow(row, i3)]), placeholder(draft.rules.length), (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react7.createElement)("select", { id: "dta-add-source", value: addKind, onChange: (e) => setAddKind(e.target.value) }, ...sources.filter((s) => s.multiple || !draft.rules.some((r) => r.kind === s.id)).map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => {
           const source = sourceDescriptor2(addKind);
           if (!source || !source.multiple && draft.rules.some((r) => r.kind === source.id)) return;
           const id = `source-${crypto.randomUUID()}`;
@@ -26207,6 +26221,17 @@ var mvuStyles = `
 @media(max-width:760px){.dtmvu-source{width:100%}.dtmvu-source select{flex:1;max-width:100%}.dtmvu-filter input{flex:1;width:100%}}
 `;
 
+// packages/tavern-trace/src/world-book-request.js
+function worldBookRequestOutcome(record, book) {
+  const id = book.resource?.id, request2 = record.requestAssembly, assembly = request2?.metadata?.assembly;
+  if (typeof id !== "string" || !id || id.endsWith("\u2026") || request2?.metadata?.owner !== "pmp-dsh-tavern" || !assembly || assembly.preview || request2.turn !== record.turn || request2.step !== record.step || (record.audit?.worldBooks ?? []).filter((row) => row.resource?.id === id).length !== 1) return null;
+  const flatten = (nodes2) => nodes2.flatMap((node) => [node, ...flatten(node.children ?? [])]);
+  const nodes = flatten(assembly.nodes ?? []), diagnostics = assembly.diagnostics ?? [];
+  const skips = diagnostics.filter((fact) => fact.code === "WORLD_BOOK_POLICY_SKIPPED" && fact.resourceId === `world-book:${id}`);
+  const applied = record.status === "request-observed" && diagnostics.some((fact) => ["TAVERN_MEMORY_RESOURCE_VERSION", "TAVERN_MEMORY_DEPENDENCY_VERSION"].includes(fact.code) && fact.adapterId === "tavern.world-books" && fact.resourceId === `world-book:${id}` && nodes.some((node) => node.source?.sourceId === fact.sourceId && node.source?.resourceId === (fact.consumerId ?? fact.blockResourceId ?? fact.resourceId) && (node.id?.endsWith(`:${fact.blockId}`) || node.name === fact.blockId)));
+  return { applied, skipped: skips.length > 0, reasons: [...new Set(skips.map((fact) => typeof fact.reason === "string" && fact.reason ? fact.reason : null))] };
+}
+
 // packages/tavern-trace/src/client.js
 var import_react14 = require("react");
 var h14 = createLocalizedElement(import_react14.createElement);
@@ -26305,7 +26330,8 @@ function decisionMeta(value) {
   }
   return rawText(parts.join(" \xB7 "));
 }
-function WorldBookAudit({ book }) {
+function WorldBookAudit({ book, record }) {
+  const outcome = worldBookRequestOutcome(record, book);
   const name2 = book.resource?.name || book.resource?.id;
   const decisionCount = translate(book.decisions.length === 1 ? "trace.decisionCount.one" : "trace.decisionCount.other", { count: book.decisions.length });
   return h14(
@@ -26313,6 +26339,21 @@ function WorldBookAudit({ book }) {
     { className: "dttrace-book" },
     h14("div", { className: "dttrace-section-title" }, name2 ? rawText(name2) : uiMessage("nav.worldBook")),
     h14("div", { className: "dttrace-meta" }, uiMessage("trace.bookBudget", { used: book.budget.used, limit: book.budget.limit === null ? "" : ` / ${book.budget.limit}`, decisionCount })),
+    h14(
+      "div",
+      { className: "dttrace-meta", "data-worldbook-request": outcome?.applied ? "applied" : outcome?.skipped ? "skipped" : "unrecorded" },
+      uiMessage("trace.worldBook.request"),
+      " ",
+      outcome?.applied ? uiMessage("trace.worldBook.applied") : outcome?.skipped ? null : uiMessage("trace.worldBook.unrecorded"),
+      outcome?.skipped ? h14(
+        "span",
+        null,
+        outcome.applied ? " \xB7 " : "",
+        uiMessage("trace.worldBook.policySkipped"),
+        " \xB7 ",
+        rawText(outcome.reasons.map((reason) => reason ?? translate("trace.worldBook.reasonUnrecorded")).join(" / "))
+      ) : null
+    ),
     ...book.decisions.map((item, index) => {
       const keywordState = keywords2(item);
       return h14(
@@ -26322,7 +26363,7 @@ function WorldBookAudit({ book }) {
           "data-included": item.decision === "included",
           key: `${item.entryId ?? "entry"}-${index}`
         },
-        h14("div", { className: "dttrace-decision-state" }, item.decision === "included" ? uiMessage("trace.inserted") : uiMessage("trace.rejected")),
+        h14("div", { className: "dttrace-decision-state" }, item.decision === "included" ? uiMessage("trace.worldBook.candidate") : uiMessage("trace.rejected")),
         h14(
           "div",
           null,
@@ -26477,12 +26518,13 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
       h14(
         "div",
         { className: "dttrace-disclosure-body" },
+        h14("p", { className: "dttrace-note" }, uiMessage("trace.worldBook.activationNote")),
         audit.activation ? h14("div", { className: "dttrace-meta" }, audit.activation.pendingMessageCount > 0 ? uiMessage("trace.activationPending", {
           included: audit.activation.includedPendingMessageCount,
           pending: audit.activation.pendingMessageCount,
           truncated: audit.activation.truncated ? translate("trace.truncated") : ""
         }) : uiMessage("trace.historyOnly")) : null,
-        books === void 0 ? h14("p", { className: "dttrace-note" }, unavailable()) : books.length ? books.map((book, index) => h14(WorldBookAudit, { book, key: index })) : h14("p", { className: "dttrace-note" }, uiMessage("trace.noSource"))
+        books === void 0 ? h14("p", { className: "dttrace-note" }, unavailable()) : books.length ? books.map((book, index) => h14(WorldBookAudit, { book, record, key: index })) : h14("p", { className: "dttrace-note" }, uiMessage("trace.noSource"))
       )
     ),
     sessionId && Number.isSafeInteger(turn) ? h14(MvuRoundSection, { sessionId, turn, latest, running, lastVisibleSeq }) : null,

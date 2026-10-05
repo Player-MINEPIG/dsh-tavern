@@ -109,7 +109,8 @@ export class WorldBookMemorySource {
       if (context.assets.worldBookRevisions?.[id] !== hash(row.content)) fail('SOURCE_CONTENT_CHANGED', 'World book changed after activation')
       const selectionCurrent = this.selectionLease(context)
       const decision = await this.policy.decision(row, context, () => this.read({ id: resourceId, scope })?.revision)
-      if (!decision.enabled) { diagnostics.push({ code: 'WORLD_BOOK_POLICY_SKIPPED', resourceId }); continue }
+      if (!decision.enabled) { diagnostics.push({ code: 'WORLD_BOOK_POLICY_SKIPPED', adapterId: this.id, sourceId: 'worldbook', resourceId,
+        revision: row.revision, managementMode: row.managementMode, configRevision: decision.configRevision ?? null, reason: decision.reason ?? 'lease-unavailable' }); continue }
       const checkCurrent = () => selectionCurrent() && decision.checkCurrent()
       if (!checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'World-book policy changed before provide')
       checks.push(checkCurrent)

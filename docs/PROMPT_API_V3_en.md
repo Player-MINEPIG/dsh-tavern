@@ -284,6 +284,8 @@ DSH history. Protect the local data directory and API as DSH Session data.
 
 ## UI and third-party boundary
 
+World-book `included` means an activation candidate, not confirmed final injection. Trace separately displays candidates and evidence from the same verified `requestAssembly`: observed requests with matching source nodes and version diagnostics can show inclusion; `WORLD_BOOK_POLICY_SKIPPED` shows the policy skip and its recorded reason. Older diagnostics without a reason remain explicitly unrecorded; ambiguous resource identities or missing request records do not establish final use. Reading does not rerun activation or write history or the manager journal.
+
 Tavern Trace first shows captured configuration/resource summaries, then lazily expands lore
 decisions and loader assembly. Verified section/context bodies are displayed when recoverable.
 Schema 4 sources show metadata, hashes, and counts without `source.text`; older schema 3 records may still include source bodies labeled as legacy snapshots. Explicit reasons are
