@@ -1,4 +1,4 @@
-import type { RequestSourceRegistry, SourceContext, SourceOutput } from '../request-assembler/index.js'
+import type { RequestSourceRegistry, SourceContext, SourceOutput } from 'dsh-prompt-assembler'
 import type { TemplateResource, PromptTemplateService } from '../prompt-template/index.js'
 export const MEMORY_SOURCE_SERVICE: 'tavernMemorySources'
 export interface ResourceAccess { id: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal }

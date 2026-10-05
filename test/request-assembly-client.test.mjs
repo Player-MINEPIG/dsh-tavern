@@ -53,3 +53,42 @@ for (const [locale, label, sourceName, help, add] of [
   assert.deepEqual(presets, original)
   assert(calls.length > 0 && calls.every(call => call.method === 'GET'))
 })
+
+// Integration of the extracted component: source descriptors drive parser discovery.
+for (const nativeOnly of [false, true]) test(`extracted view exposes one parser editor and resets the available default: native=${nativeOnly}`, async t => {
+  const { AssemblyPanel: Panel } = await import('dsh-prompt-assembler/client')
+  const { createDshRegistry, BUILTINS: NATIVE } = await import('dsh-prompt-assembler')
+  const keys = ['window', 'document', 'fetch', 'getComputedStyle', 'IS_REACT_ACT_ENVIRONMENT']
+  const previous = Object.fromEntries(keys.map(key => [key, globalThis[key]]))
+  const { window, document } = parseHTML('<html><body><div id="root"></div></body></html>')
+  Object.assign(globalThis, { window, document, getComputedStyle: () => ({ display: 'block' }), IS_REACT_ACT_ENVIRONMENT: true })
+  const registry = nativeOnly ? createDshRegistry() : createDefaultRegistry()
+  const presets = structuredClone(nativeOnly ? NATIVE : BUILTINS), calls = []
+  const fetcher = async (url, options = {}) => {
+    calls.push({ url, ...options })
+    const body = options.body ? JSON.parse(options.body) : {}
+    return new Response(JSON.stringify(options.method === 'PUT' ? { selection: presets.find(p => p.id === body.id) } : { presets, sources: registry.list(), defaultPresetId: presets[0].id, selection: presets[0], capability: true }), { headers: { 'Content-Type': 'application/json' } })
+  }
+  const container = document.getElementById('root'), root = createRoot(container)
+  t.after(async () => { await act(() => root.unmount()); for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value } })
+  await act(() => root.render(h(Panel, { sessionId: 'fixture', fetcher, close() {} })))
+  const chooser = container.querySelector('#dta-add-source')
+  assert.equal(chooser.value, nativeOnly ? 'dsh.text' : 'custom')
+  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '添加')))
+  const row = [...container.querySelectorAll('.dta-row')].at(-1)
+  const mode = [...row.querySelectorAll('select')].find(e => [...e.querySelectorAll('option')].some(o => o.value === 'source'))
+  assert(mode)
+  await act(() => Simulate.change(mode, { target: { value: 'text' } }))
+  assert.equal(row.querySelectorAll('textarea').length, 1)
+  // Saved strategies have no draft edits: reload the session component before reset.
+  await act(() => root.render(h(Panel, { sessionId: 'fresh-fixture', fetcher, close() {} })))
+  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '应用默认装配策略')))
+  assert.equal(JSON.parse(calls.findLast(c => c.method === 'PUT').body).id, presets[0].id)
+  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '创建')))
+  assert.equal(container.querySelectorAll('.dta-row').length, presets[0].rules.length, 'new strategy starts from the available default')
+  assert.equal(container.querySelector('.dta-grid label input').disabled, false, 'new strategies can be named')
+  assert(!container.textContent.includes('内置策略不能改名或删除'))
+  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '根据当前配置预览')))
+  const created = JSON.parse(calls.findLast(c => c.url.endsWith('/preview')).body).preset
+  assert.equal(created.format, presets[0].format); assert.equal(created.rules.length, presets[0].rules.length)
+})

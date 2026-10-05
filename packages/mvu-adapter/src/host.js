@@ -1,3 +1,4 @@
+import { registerTavernMvuSource } from 'dsh-prompt-assembler/adapters/tavern'
 import { symbols } from '@deepseek-ai/cordis'
 import { timelineHead } from '../../play/src/timeline-tree.js'
 import { MvuService } from './service.js'
@@ -250,7 +251,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     service.observeRequest(options, ctx.get('sessions')?.get?.(options.sessionId))
     yield* next()
   })
-  ctx.effect(() => sources.register({ id: MVU_SOURCE, pluginId: 'pmp-dsh-tavern', name: 'MVU state', stability: 'conversation', roles: ['system'], lifetimes: ['request'], depth: true, resolve: context => service.resolveRequest(context), validateResolved: context => service.validateResolved(context) }))
+  ctx.effect(() => registerTavernMvuSource(sources, service))
   ctx.effect(() => () => service.dispose())
   return service
 }

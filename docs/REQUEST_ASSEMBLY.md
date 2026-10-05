@@ -104,9 +104,13 @@ node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-buil
 导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。实际请求复用 v3 assemblies detail 的 `requestAssembly`，没有第二套历史查询接口。
 
 
+## 独立 assembler 与 adapter
+
+实现现位于独立 dsh-prompt-assembler 包。Tavern 单向依赖该包，保留旧包入口、服务别名、存储和 HTTP 路径。adapter 在 assembler 仓库维护，来源状态和解析服务仍由来源拥有。DSH 目录新增 dsh.text 自定义文本；提供 parseText 的来源显示用户手填解析模式，其他来源继续提供资源内容。第三方正文使用自己的 parser/renderer，不再自动解释 ST 语法。见[拆分与接入指南](ASSEMBLER_INTEGRATION.md)。
+
 ## 统一内容来源 API（协议 1）
 
-Host 服务 `tavernRequestSources` 提供 `version`、`register(definition)` 和 `list()`。包入口为 `pmp-dsh-tavern/request-assembler`，附带 TypeScript 声明。原生指令、历史、本步输入、预设、角色、用户、世界书、PHI、自定义文本全部通过相同的 `register` 注册；引擎不按这些来源名称分发特殊装配路径。旧规则的 `kind` 保留为来源 ID，外部来源使用自己的命名空间，例如 `example.memory/recalled`。
+Host 服务 `dshPromptSources`（兼容别名 `tavernRequestSources`）提供 `version`、`register(definition)` 和 `list()`。独立包入口为 `dsh-prompt-assembler`，旧 `pmp-dsh-tavern/request-assembler` 为兼容转发，附带 TypeScript 声明。原生指令、历史、本步输入、预设、角色、用户、世界书、PHI、自定义文本全部通过相同的 `register` 注册；引擎不按这些来源名称分发特殊装配路径。旧规则的 `kind` 保留为来源 ID，外部来源使用自己的命名空间，例如 `example.memory/recalled`。
 
 插件注册只是声明可选来源，不会自动修改用户策略或启用内容。设置页的「添加来自于 [来源] 的自定义内容」读取同一目录；名称、颜色、稳定性、角色、保留方式和深度限制均来自注册描述。缺失插件的规则可以导入和保存，显示缺失状态；实际请求跳过其内容及旧保留快照，并记录 `ASSEMBLY_SOURCE_UNAVAILABLE`。插件返回错误或非法内容会使本次装配失败，不发送半成品。无关、未启用且未被依赖的来源不会解析。
 
@@ -148,7 +152,7 @@ export function apply(ctx) {
 
 | 块类型 | 字段与用途 |
 | --- | --- |
-| `text` | `id/text` 必填；可附 name、role、stability、source.resourceId/field；正文使用统一宏展开、角色、深度和保留流程 |
+| `text` | `id/text` 必填；可附 name、role、stability、source.resourceId/field；正文使用来源自己的 renderer，统一管理角色、深度和保留流程 |
 | `native` | `id/messageIds` 引用本次原生消息，不复制或重写工具事务；原生来源也使用此类型 |
 | `reference` | `id/sourceId`，可用 blockIds 或 group 筛选；占据引用位置并锁定，避免目标回退块重复；被引用来源须在 dependencies 中声明 |
 
@@ -179,11 +183,11 @@ Host 检查验证三轮发送、请求冻结、durable 快照、Trace 引用恢�
 
 装配页占据会话标题和标签栏下方的对话区域。它与资源/设置侧栏独立保持打开，侧栏显示在其上方，两边可同时编辑而不丢失草稿；关闭装配页本身时才检查其未保存修改。仅通用规则支持拖拽，当前配置预览与实际请求均只读，并显示每项的历史深度；未指定深度时显示按列表位置。ST marker 在界面称为「预设插槽」，是预设列表中独立的有序条目，用于插入角色、世界书或历史等内容。它与写在正文内的 `{{description}}` 等宏不同，后者在消息正文位置展开。
 
-前端可以创建自定义文本并使用受支持的宏，不需要编写插件。动态读取 MVU 或记忆系统等数据仍需插件注册解析器；前端不能把手填文本伪装为另一个插件生成的来源。已注册第三方来源可接收规则的名称和文本，如何解释由其解析器决定。
+前端可以创建自定义文本并使用受支持的宏，不需要编写插件。动态读取 MVU 或记忆系统等数据仍需插件注册解析器；前端只能通过来源声明的 parseText 解析手填内容，不能伪造来源身份。已注册第三方来源可接收规则的名称和文本，如何解释由其解析器决定。
 
-「添加来源」保存所选解析器的 `kind`，不是把所有选择转换成自定义文本。提示词模板、MVU 和管理器来源从自己的资源生成正文，不读取此装配规则的名称/正文输入；界面因此显示对应来源说明，保留角色、位置、保留方式与删除操作。自定义内容及其他第三方来源仍可编辑规则文本。
+「添加来源」保存所选解析器的 `kind`，不是把所有选择转换成自定义文本。提示词模板、MVU 和管理器来源从自己的资源生成正文，默认不读取此装配规则的名称/正文输入；界面因此显示对应来源说明，保留角色、位置、保留方式与删除操作。自定义内容及其他第三方来源仍可编辑规则文本。
 
-来源解析先运行，再由统一装配器处理 text 块的宏。来源可以注册文本引用宏（例如角色的 `{{description}}`、`{{personality}}`、`{{scenario}}`、`{{mesexamples}}` 和用户的 `{{persona}}`）；普通文本支持 `{{user}}`、`{{char}}`、最近用户/助手消息、`trim`、注释、`random::`、`roll`，以及仅在本次装配中使用的 `setvar/getvar`。这些 `getvar` 不读取持久 MVU。提示词模板先通过独立受限 EJS 解析器展开 `<%…%>`，其只读 `getvar(path)` 才使用模板绑定的变量快照；世界书的 `{{format_message_variable::stat_data}}` 由来源先取得 MVU 使用许可并格式化，数据作为字面值插入。管理器按自己的检索策略提供文本，MVU 来源提供状态及更新指令；选择它们不会让任意 EJS 或脚本自动执行。未知普通宏会产生诊断，不建立额外兼容能力。
+来源解析先运行，再由各来源的 renderer 处理 text 块语法。Tavern 来源明确使用 ST renderer；第三方未声明 renderer 时保持原文。来源可以注册文本引用宏（例如角色的 `{{description}}`、`{{personality}}`、`{{scenario}}`、`{{mesexamples}}` 和用户的 `{{persona}}`）；普通文本支持 `{{user}}`、`{{char}}`、最近用户/助手消息、`trim`、注释、`random::`、`roll`，以及仅在本次装配中使用的 `setvar/getvar`。这些 `getvar` 不读取持久 MVU。提示词模板先通过独立受限 EJS 解析器展开 `<%…%>`，其只读 `getvar(path)` 才使用模板绑定的变量快照；世界书的 `{{format_message_variable::stat_data}}` 由来源先取得 MVU 使用许可并格式化，数据作为字面值插入。管理器按自己的检索策略提供文本，MVU 来源提供状态及更新指令；选择它们不会让任意 EJS 或脚本自动执行。未知普通宏会产生诊断，不建立额外兼容能力。
 
 自定义文本必须选择明确的 `user/system/assistant` 角色，新建默认 `user`。旧自定义规则的 `preserve` 按原先实际语义归一为 `system`，不会悄悄改成用户消息。只保留自定义内容时至少设置一条非空用户消息：DeepSeek 将纯系统内容移入独立 `system` 字段，只有系统指令会导致线上的 `messages` 为空。预览对此给出诊断；完全空的装配在本地阻止执行。关闭原生历史和本步输入不会删掉 DSH 保存的原生消息，也不会由装配器偷偷补回请求。
 

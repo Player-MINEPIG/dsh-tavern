@@ -1,3 +1,4 @@
+import { registerTavernTemplateSource } from 'dsh-prompt-assembler/adapters/tavern'
 import { hash, fail } from './policy.js'
 import { WorldBookMemorySource } from './world-books.js'
 import { PromptTemplateService, TEMPLATE_SOURCE } from '../prompt-template/service.js'
@@ -68,8 +69,7 @@ export function createMemorySources(options) {
 }
 export function installMemorySources(ctx, service, registry) {
   ctx.provide(MEMORY_SOURCE_SERVICE, service)
-  ctx.effect(() => registry.register({ id: TEMPLATE_SOURCE, pluginId: 'pmp-dsh-tavern', name: '提示词模板 / Prompt Template (read-only subset)', stability: 'evaluation', lifetimes: ['request'],
-    resolve: context => service.templates.resolve(context), validateResolved: service.templates.validateResolved }))
+  ctx.effect(() => registerTavernTemplateSource(registry, service.templates))
   ctx.on('llm/stream', async function* (request, next) { service.observeRequest(request, ctx.get('sessions')?.get(request.sessionId)); yield* next() })
   ctx.effect(() => () => service.dispose())
 }

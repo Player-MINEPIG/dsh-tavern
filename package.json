@@ -72,7 +72,9 @@
     "docs/MVU.md",
     "docs/MVU_en.md",
     "docs/PROMPT_TEMPLATE.md",
-    "docs/PROMPT_TEMPLATE_en.md"
+    "docs/PROMPT_TEMPLATE_en.md",
+    "docs/ASSEMBLER_INTEGRATION.md",
+    "docs/ASSEMBLER_INTEGRATION_en.md"
   ],
   "dsh": {
     "bundle": {
@@ -100,7 +102,8 @@
     "verify:2.0": "node scripts/verify-2.0.mjs && npm run build && npm run pack:check",
     "pack:check": "npm pack --dry-run --cache .npm-cache",
     "plugin:install": "node scripts/install.mjs",
-    "plugin:uninstall": "node scripts/uninstall.mjs"
+    "plugin:uninstall": "node scripts/uninstall.mjs",
+    "pack:with-assembler": "node scripts/pack-with-assembler.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -124,6 +127,7 @@
     "acorn": "8.15.0",
     "acorn-jsx": "5.3.2",
     "dompurify": "3.4.16",
+    "dsh-prompt-assembler": "file:.local/dsh-prompt-assembler",
     "json5": "2.2.3",
     "katex": "0.16.47",
     "linkedom": "0.18.12",

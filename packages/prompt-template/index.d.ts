@@ -1,4 +1,4 @@
-import type { SourceContext, SourceOutput } from '../request-assembler/index.js'
+import type { SourceContext, SourceOutput } from 'dsh-prompt-assembler'
 export interface TemplateResource {
   id: `prompt-template:${string}`; name: string; content: string; enabled: boolean;
   sessionIds: string[]; variables?: unknown; variableResourceId?: `mvu:${string}`;

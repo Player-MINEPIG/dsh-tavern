@@ -80,6 +80,7 @@ import { RequestAssembler } from '../../request-assembler/runtime.js'
 import { createDefaultRegistry } from '../../request-assembler/builtin-sources.js'
 import { createMemorySources, installMemorySources } from '../../memory-sources/index.js'
 import { OpeningWorldBookService, OPENING_WORLD_BOOK_SERVICE, createOpeningWorldBookHandler, isOpeningWorldBookPath } from '../../opening-worldbook/index.js'
+import { connectMemoryManager } from 'dsh-prompt-assembler/adapters/memory-manager'
 import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
 import { createScopeCatalog, installScopeCatalog } from '../../scope-catalog/index.js'
 import { createSessionReadContext } from '../../request-assembler/session-read-context.js'
@@ -406,6 +407,8 @@ export function apply(ctx, config = {}) {
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
   ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
+  ctx.provide('tavernRequestSources', requestAssembler.registry) // Protocol-1 compatibility alias.
+  if (typeof ctx.inject === 'function') connectMemoryManager(ctx, requestAssembler.registry)
   const renderingAuthority=createRenderingAuthority()
   ctx.provide('tavernRenderingAuthority',renderingAuthority)
   ctx.effect(()=>()=>renderingAuthority.dispose(),'dsh-tavern: rendering write authority')
