@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { MvuService, createCharacterDiscovery, characterMvuId, stateInstanceId } from '../packages/mvu-adapter/src/index.js'
+import { MvuService, createCharacterDiscovery, characterMvuId, stateInstanceId, normalizeVariables } from '../packages/mvu-adapter/src/index.js'
 
 test('character discovery exposes native session instances; templates never alias current state', async t => {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-discovery-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
@@ -83,10 +83,10 @@ test('discovered cards apply committed JSONPatch without manager configuration a
   assert.equal((await row()).revision, revision)
 })
 
-test('old automatic template defaults change only future instances, preserving every existing ownership record', async t => {
-  const storageDir = mkdtempSync(join(tmpdir(), 'mvu-default-migration-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
+test('old discovered templates preserve ownership for existing and future instances without inferring user intent', async t => {
+  const storageDir = mkdtempSync(join(tmpdir(), 'mvu-preserve-ownership-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
   const templateId = characterMvuId('card'), explicitId = 'mvu:explicit-template'
-  const template = { id: templateId, characterId: 'card', discovered: true, managementMode: 'managed', sessionIds: ['old'], initial: { stat_data: { hp: 100 } } }
+  const template = { id: templateId, characterId: 'card', discovered: true, managementMode: 'managed', sessionIds: ['old'], initial: normalizeVariables({ stat_data: { hp: 100 } }) }
   const records = Object.fromEntries(['automatic', 'explicit', 'forked', 'copied'].map((kind, index) => {
     const sessionId = `old-${kind}`, instance = { sessionId, createdAt: sessionId }, id = stateInstanceId(templateId, instance)
     return [id, { revision: index, currentKey: null, versions: [], managementMode: 'managed', definition: { ...template, id, templateId, instance, sessionIds: [sessionId] },
@@ -96,22 +96,43 @@ test('old automatic template defaults change only future instances, preserving e
   }))
   const explicit = { ...template, id: explicitId }
   const path = join(storageDir, 'mvu-instances.json'), original = { version: 1, resources: records, templates: { [templateId]: template, [explicitId]: explicit } }
-  writeFileSync(path, JSON.stringify(original))
+  const before = JSON.stringify(original)
+  writeFileSync(path, before)
   const options = { storageDir, resources: [explicit], inspect: async id => ({ header: { id, version: 4, createdAt: id }, events: [] }), isActive: () => true }
   let service = new MvuService(options)
-  assert.equal(service.templates.find(item => item.id === templateId).managementMode, 'native')
+  assert.equal(service.templates.find(item => item.id === templateId).managementMode, 'managed')
   assert.equal(service.templates.find(item => item.id === explicitId).managementMode, 'managed')
-  const migrated = JSON.parse(readFileSync(path, 'utf8'))
-  assert.deepEqual(migrated.resources, original.resources)
-  assert.deepEqual(migrated.templates[explicitId], original.templates[explicitId])
-  assert.deepEqual(migrated.templates[templateId], { ...template, managementMode: 'native' })
+  assert.equal(readFileSync(path, 'utf8'), before)
+  await service.discover({ definition: { ...template, managementMode: 'native' } })
+  assert.equal(readFileSync(path, 'utf8'), before, 'rediscovery must not reinterpret a stored managed template')
   const fresh = (await service.list({ scope: { sessionId: 'fresh' } })).find(item => item.templateId === templateId)
-  assert.equal(fresh.managementMode, 'native'); assert.equal(fresh.content.stat_data.hp, 100)
+  assert.equal(fresh.managementMode, 'managed'); assert.equal(fresh.content.stat_data.hp, 100)
+  assert.equal((await service.resolveRequest({ sessionId: 'fresh' })).blocks.length, 0, 'stored managed ownership still requires a policy decision')
+  const stored = JSON.parse(readFileSync(path, 'utf8'))
+  assert.deepEqual(stored.templates, original.templates)
+  for (const [id, record] of Object.entries(records)) assert.deepEqual(stored.resources[id], record)
   const after = readFileSync(path, 'utf8')
   service.dispose(); service = new MvuService(options)
   assert.equal(readFileSync(path, 'utf8'), after)
-  assert.deepEqual(JSON.parse(after).resources[Object.keys(records)[0]], records[Object.keys(records)[0]])
+  assert.equal((await service.read({ id: fresh.id, scope: { sessionId: 'fresh' } })).managementMode, 'managed')
   service.dispose()
+})
+
+test('repairing a stored discovery template cannot replace its managed ownership with the new default', async t => {
+  const storageDir = mkdtempSync(join(tmpdir(), 'mvu-repair-ownership-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
+  const id = characterMvuId('card')
+  const template = { id, characterId: 'card', discovered: true, managementMode: 'managed', sessionIds: [], sourceError: 'MVU_INITIALIZATION_INVALID', initial: { stat_data: {} } }
+  const path = join(storageDir, 'mvu-instances.json')
+  writeFileSync(path, JSON.stringify({ version: 1, resources: {}, templates: { [id]: template } }))
+  const service = new MvuService({ storageDir, inspect: async sessionId => ({ header: { id: sessionId, version: 4, createdAt: sessionId }, events: [] }), isActive: () => true })
+  t.after(() => service.dispose())
+  await service.discover({ definition: { id, characterId: 'card', sessionIds: [], managementMode: 'native', initial: { stat_data: { hp: 100 } } } })
+  assert.equal(service.templates[0].sourceError, undefined)
+  assert.equal(service.templates[0].managementMode, 'managed')
+  const [row] = await service.list({ scope: { sessionId: 'fresh' } })
+  assert.equal(row.managementMode, 'managed')
+  assert.equal((await service.resolveRequest({ sessionId: 'fresh' })).blocks.length, 0)
+  assert.equal(JSON.parse(readFileSync(path, 'utf8')).templates[id].managementMode, 'managed')
 })
 
 test('selection activation boundaries survive restart and never replay another character history', async t => {
