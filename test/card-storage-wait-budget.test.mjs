@@ -98,9 +98,9 @@ test('wrong nonce, request ID and duplicate old ack do not settle a newer wait',
  assert.equal(result.message.kind,'idle');assert.deepEqual(requests,[1,2])
 })
 
-test('layout suspension gets no storage time credit',async()=>{
+test('a successful layout suspension preserves short computation with its own bounded credit',async()=>{
  const result=await run(`document.getElementById('b').getBoundingClientRect();burn(30);${done}`,{onMeasure:(m,{post,later})=>later(250,()=>post({kind:'measurement',requestId:m.value.requestId,value:{rect:{x:0,y:0,width:1,height:1,top:0,left:0,right:1,bottom:1}}}))})
- assert.equal(result.message.kind,'error');assert.match(result.message.value,/CARD_EXECUTION_TIME/);assert.equal(numbers(result.message.value).creditedWaitMs,0)
+ assert.equal(result.message.kind,'idle');assert.ok(result.messages.some(message=>message.kind==='view'&&message.value.includes('>DONE<')))
 })
 
 test('a queued entry cannot borrow the previous execution storage credit',async()=>{

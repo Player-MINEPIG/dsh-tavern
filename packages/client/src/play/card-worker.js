@@ -9,6 +9,7 @@ import {IDENTITY_ACTION_RUNTIME} from './identity-action-runtime.js'
 import {cardExecutionDiagnostic,cardExecutionPhase} from './card-execution-diagnostic.js'
 import {settleCardStorageWait} from './card-storage-wait-budget.js'
 import {settleCardActionWait} from './card-action-wait-budget.js'
+import {settleCardLayoutWait} from './card-layout-wait-budget.js'
 
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
@@ -199,10 +200,10 @@ async function init(input){
   const raw=vm.getString(handle);if(raw.length>1024*1024)throw Error('Card layout input exceeds limit')
   const value=JSON.parse(raw)
   if(!Number.isSafeInteger(value.id)||value.id<0||typeof value.view?.html!=='string'||typeof value.view?.styles!=='string'||!['',null,undefined,'::before','::after'].includes(value.pseudo))throw Error('Invalid card measurement')
-  const requestId=++layoutId,started=performance.now(),timing=executionTiming
+  const requestId=++layoutId,timing=executionTiming,wait={execution:timing,deadline,started:null,succeeded:false,settled:false}
   let result
-  try{result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{layoutPending=null;if(timing)timing.layoutFailure='response-deadline';reject(Error('Card layout response deadline exceeded'))},1000);layoutPending={requestId,resolve,reject,timer,timing};reply('measure',{...value,requestId},{controlSequence})})}
-  finally{if(timing&&executionTiming===timing)timing.waitMs+=Math.max(0,performance.now()-started)}
+  try{result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{layoutPending=null;if(timing)timing.layoutFailure='response-deadline';reject(Error('Card layout response deadline exceeded'))},1000);layoutPending={requestId,resolve,reject,timer,timing};reply('measure',{...value,requestId},{controlSequence});wait.started=performance.now()});wait.succeeded=true}
+  finally{deadline=settleCardLayoutWait(wait,{current:executionTiming,live:!destroyed&&!executionInterrupted,now:performance.now(),deadline})}
   if(destroyed)throw Error('Card disposed')
   return vm.newString(JSON.stringify(result))
  });vm.setProp(vm.global,'__layout',layout);layout.dispose()
