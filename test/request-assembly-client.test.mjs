@@ -57,7 +57,7 @@ for (const [locale, label, sourceName, help, add] of [
 
 // Integration of the extracted component: source descriptors drive parser discovery.
 for (const nativeOnly of [false, true]) test(`extracted view exposes one parser editor and resets the available default: native=${nativeOnly}`, async t => {
-  const { AssemblyPanel: Panel } = await import('dsh-prompt-assembler/client')
+  const { AssemblyPanel: Panel } = await import('dsh-prompt-assembler/panel')
   const { createDshRegistry, BUILTINS: NATIVE } = await import('dsh-prompt-assembler')
   const keys = ['window', 'document', 'fetch', 'getComputedStyle', 'IS_REACT_ACT_ENVIRONMENT']
   const previous = Object.fromEntries(keys.map(key => [key, globalThis[key]]))
@@ -105,7 +105,7 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
 })
 
 test('legacy text aliases preview through one parser without changing saved rules or source modules',async t=>{
- const {AssemblyPanel:Panel}=await import('dsh-prompt-assembler/client')
+ const {AssemblyPanel:Panel}=await import('dsh-prompt-assembler/panel')
  const keys=['window','document','getComputedStyle','IS_REACT_ACT_ENVIRONMENT'],old=Object.fromEntries(keys.map(k=>[k,globalThis[k]]))
  const {window,document}=parseHTML('<html><body><div id="root"></div></body></html>')
  Object.assign(globalThis,{window,document,getComputedStyle:()=>({display:'block'}),IS_REACT_ACT_ENVIRONMENT:true})

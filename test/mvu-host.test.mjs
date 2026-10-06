@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -72,6 +73,7 @@ test('real DSH AgentLoop final replies, fork seed, restart snapshots and native 
       }
     }
     ctx.llm.registerAdapter(['mvu-test'], new Adapter())
+    await installIndependentAssembler(ctx, directory)
     const plugin = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory, mvu: { resources } }) } }); await plugin
     ctx.on('agent/error', e => failures.push(e.error))
     const service = ctx.get('tavernMvu'), handle = await ctx.agents.create({ sessionId: 'mvu-host', agentOptions: { provider: 'mvu-test', model: 'test' } })
@@ -148,6 +150,7 @@ test('real Host empty greeting binding writes state used by the first model requ
       }
     }
     ctx.llm.registerAdapter(['initial-test'], new Adapter())
+    await installIndependentAssembler(ctx, directory)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory, mvu: { resources: [
       { sharing: 'shared', id: 'mvu:opening', characterId: 'opening-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
     ] } }) } })
@@ -235,6 +238,7 @@ test('official persisted empty session resumes through resolveAgent, while resum
     }
     ctx.llm.registerAdapter(['resume-test'], new Adapter())
     let store
+    await installIndependentAssembler(ctx, directory)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: join(directory, 'tavern'), mvu: { resources: [
       { sharing: 'shared', id: 'mvu:resume', characterId: 'resume-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
     ] } }) } })

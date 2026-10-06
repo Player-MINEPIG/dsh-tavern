@@ -13,7 +13,7 @@ for (let i = 0; i < args.length; i += 2) {
 }
 const npm = (cwd, options) => JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--cache', join(output, '.npm-cache'), ...options], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }))
 const manifest = JSON.parse(readFileSync(join(assembler, 'package.json')))
-if (manifest.name !== 'dsh-prompt-assembler' || manifest.version !== '0.1.0') throw new Error('Expected dsh-prompt-assembler@0.1.0')
+if (manifest.name !== 'dsh-prompt-assembler' || manifest.version !== '0.2.0') throw new Error('Expected dsh-prompt-assembler@0.2.0')
 mkdirSync(output, { recursive: true })
 const stage = mkdtempSync(join(tmpdir(), 'tavern-assembler-pack-'))
 try {
@@ -21,9 +21,6 @@ try {
   for (const file of source.files) {
     const target = join(stage, file.path); mkdirSync(dirname(target), { recursive: true }); cpSync(join(project, file.path), target)
   }
-  const tavern = JSON.parse(readFileSync(join(stage, 'package.json')))
-  tavern.dependencies['dsh-prompt-assembler'] = manifest.version
-  writeFileSync(join(stage, 'package.json'), JSON.stringify(tavern, null, 2) + '\n')
   const [assemblyPackage] = npm(assembler, ['--pack-destination', output])
   const [tavernPackage] = npm(stage, ['--pack-destination', output])
   const receipt = { sourceProtocolVersion: 1, dshVersion: '0.2.0-rc.2', published: false, packages: [assemblyPackage, tavernPackage].map(p => ({ name: p.name, version: p.version, filename: p.filename, integrity: p.integrity })) }

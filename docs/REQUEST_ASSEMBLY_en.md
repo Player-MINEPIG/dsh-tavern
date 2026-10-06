@@ -91,22 +91,22 @@ The Cordis waterfall `agent/assemble-request(payload,next)` receives `agent/turn
 
 ## HTTP primitives
 
-Prefix: `/pmp-dsh-tavern/api/v1/assembly-presets`. Existing Host authentication, same-origin and desktop request security apply. Request bodies are limited to 2 MiB.
+Prefix: `/dsh-prompt-assembler/api/v1/assembly-presets` (legacy Tavern routes forward to the same store/runtime). Existing Host authentication, same-origin and desktop request security apply. Request bodies are limited to 2 MiB.
 
 | Method/path | Input or result |
 | --- | --- |
 | `GET /?sessionId=…` | Built-ins, user presets, applied snapshot and core capability |
 | `POST /` | Import or create an independent preset |
 | `GET/PUT/DELETE /:id` | Read/edit/delete; built-ins are immutable and applied presets cannot be deleted |
-| `PUT /selection` | `{sessionId,id}`; `id:null` disables the strategy for this mode (native assembly on extended core); `id:"builtin-st"` applies the default ST strategy |
+| `PUT /selection` | `{sessionId,id}`; `id:null` disables the strategy for this session (native assembly on extended core); `id:"builtin-st"` applies the default ST strategy |
 | `POST /preview` | `{sessionId,preset}` or `{sessionId,presetId}`; no apply or Agent run |
 
-Export serializes preset JSON directly. Format is `dsh-tavern-request-assembly`, version 1; each rule has `id/kind/enabled/role/lifetime/depth/text/name`. Executable scripts are not accepted. `assembly-presets.json` atomically stores presets and applied snapshots, limited to 8 MiB. Actual request bodies use `requestAssembly` on existing v3 assembly details rather than another history API.
+Export serializes preset JSON directly. Format is `dsh-tavern-request-assembly`, version 1; each rule has `id/kind/enabled/role/lifetime/depth/text/name`. Executable scripts are not accepted. `assembly-presets.json` atomically stores presets and applied snapshots, limited to 8 MiB. The independent UI reads DSH’s latest `request/assembly` through `GET /actual?sessionId=…`. Tavern v3 assembly detail `requestAssembly` remains available; both read the same durable record without maintaining another history.
 
 
 ## Independent assembler and adapters
 
-The implementation now lives in the independent dsh-prompt-assembler package. Tavern depends on it and retains legacy package entry points, service aliases, storage and HTTP paths. Adapters belong to the assembler repository; source-owned state and parsing services stay with their source. The native DSH catalog now also includes dsh.text. Sources with parseText expose a user-authored text mode; other sources keep their resource-content mode. Third-party text uses its own parser/renderer rather than automatic ST expansion. See the [extraction and integration guide](ASSEMBLER_INTEGRATION_en.md).
+The implementation now lives in the independent dsh-prompt-assembler package. Tavern shares the independent Host plugin’s store, registry and runtime, retaining legacy package exports, service aliases and HTTP forwarding while migrating prior storage non-destructively. Adapters belong to the assembler repository; source-owned state and parsing services stay with their source. The native DSH catalog now also includes dsh.text. Sources with parseText expose a user-authored text mode; other sources keep their resource-content mode. Third-party text uses its own parser/renderer rather than automatic ST expansion. See the [extraction and integration guide](ASSEMBLER_INTEGRATION_en.md).
 
 ## Unified content source API (protocol 1)
 

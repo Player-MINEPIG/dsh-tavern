@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -52,6 +53,7 @@ test('full official persisted cold preview traverses Tavern catalog, actual Mana
     await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
     ctx.on('llm/stream', () => { calls.model++; throw Error('cold preview cannot call a model') }, { global: true, prepend: true })
     for (const method of ['prepareCall', 'resolveCallConfig', 'modelInfo']) ctx.llm[method] = () => { calls.provider++; throw Error('cold preview cannot prepare a provider') }
+    await installIndependentAssembler(ctx, storageDir)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(c) { store = tavern.apply(c, { storageDir }) } })
     if (managed) await ctx.plugin(managerPlugin, { storageDir: managerDir })
     return routes

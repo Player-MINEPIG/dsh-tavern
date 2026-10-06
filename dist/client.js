@@ -22985,10 +22985,10 @@ ${conversationSettingsCss}
 // packages/request-assembler/client.js
 var import_react8 = require("react");
 
-// .local/dsh-prompt-assembler/src/client.js
+// node_modules/dsh-prompt-assembler/src/client.js
 var import_react7 = require("react");
 
-// .local/dsh-prompt-assembler/src/model.js
+// node_modules/dsh-prompt-assembler/src/model.js
 var FORMAT = "dsh-tavern-request-assembly";
 var MODULES = Object.freeze(["native-system", "history", "input", "dsh.text"]);
 var DEFAULT_RULES = Object.freeze(["native-system", "history", "input"].map((kind) => ({ id: kind, kind, enabled: true })));
@@ -23014,7 +23014,7 @@ function normalizePreset(value) {
 }
 var BUILTINS = Object.freeze([{ id: "builtin-native", ...normalizePreset({ format: FORMAT, version: 1, name: "DSH \u539F\u751F / DSH native", rules: DEFAULT_RULES }) }]);
 
-// .local/dsh-prompt-assembler/src/client.js
+// node_modules/dsh-prompt-assembler/src/client.js
 var labels = {
   "harness:identity": ["DSH \u8EAB\u4EFD\u6307\u4EE4", "DSH identity"],
   "deployment:persona-prefix": ["\u90E8\u7F72\u524D\u7F6E\u6307\u4EE4", "Deployment prefix"],
@@ -23034,6 +23034,13 @@ var labels = {
   retry: ["\u91CD\u8BD5", "Retry"],
   cancel: ["\u53D6\u6D88", "Cancel"],
   confirm: ["\u786E\u8BA4", "Confirm"],
+  librarySection: ["\u7B56\u7565\u5E93", "Strategy library"],
+  applicationSection: ["\u4F1A\u8BDD\u5E94\u7528", "Session application"],
+  rulesSection: ["\u88C5\u914D\u89C4\u5219\u4E0E\u9884\u89C8", "Assembly rules and preview"],
+  interfaceSettings: ["\u754C\u9762\u8BBE\u7F6E", "Interface settings"],
+  createSession: ["\u4F7F\u7528\u6B64\u7B56\u7565\u65B0\u5EFA\u4F1A\u8BDD", "Create a session with this strategy"],
+  session: ["\u4F1A\u8BDD", "Session"],
+  newSession: ["\u65B0\u4F1A\u8BDD", "New Session"],
   disable: ["\u5173\u95ED\u7B56\u7565\uFF0C\u4F7F\u7528 DSH \u9ED8\u8BA4", "Disable; use DSH default"],
   "additional-phi": ["\u7B56\u7565\u8FFD\u52A0\u7684\u540E\u7F6E\u6307\u4EE4", "Additional strategy instructions"],
   description: ["\u89D2\u8272\u63CF\u8FF0", "Character description"],
@@ -23158,6 +23165,7 @@ async function request(fetcher, apiRoot, path3 = "", method = "GET", body2) {
 }
 var assemblyCss = `
 .dta-stage{position:absolute;top:var(--dta-content-top,84px);bottom:0;left:var(--dta-content-left,0px);width:var(--dta-center-width,100%);z-index:1;pointer-events:none;background:#0005;padding:8px;box-sizing:border-box;display:flex;justify-content:center}
+.dta-stage.dta-standalone{inset:0;width:100%;z-index:100;padding:24px}.dta-launcher{font:inherit;color:inherit;border:1px solid currentColor;border-radius:8px;background:transparent;padding:7px 10px;cursor:pointer}.dta-standalone .dtv-assembly-screen{width:min(960px,100%)}.dta-section-title{font-size:15px;font-weight:600;margin:24px 0 16px;padding-top:20px;border-top:1px solid var(--dta-border)}.dta-content>.dta-section-title:first-child{margin-top:0;padding-top:0;border-top:0}.dta-interface-settings{margin-top:28px}.dta-toolbar.dta-session-controls{gap:16px 24px}.dta-session-controls label{display:flex;align-items:center;gap:12px;max-width:100%}.dtv-assembly-screen .dta-session-controls select{width:120px;flex-shrink:1}.dtv-assembly-screen .dta-session-controls label:first-child select{width:220px}@media(max-width:600px){.dta-session-controls label{flex-wrap:wrap}}
 .dtv-assembly-screen{--dta-border:color-mix(in srgb,var(--dsw-alias-label-primary,#24252b) 32%,var(--dsw-alias-bg-base,#fff));position:relative;width:min(var(--dsh-composer-card-max-width,780px),100%);pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;container-type:inline-size;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dta-border);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
 .dta-confirm-shade{position:absolute;inset:0;z-index:4;background:#0006;display:grid;place-items:center;padding:20px}.dta-confirm{background:var(--dsw-alias-bg-base,#fff);border:1px solid var(--dta-border);border-radius:14px;padding:24px;max-width:100%;width:360px;box-shadow:0 10px 40px #0004}.dta-confirm p{margin:0 0 20px}.dta-confirm .dta-toolbar{justify-content:flex-end;margin:0}
 .dta-head{display:flex;justify-content:space-between;align-items:start;padding:20px 28px;border-bottom:1px solid var(--dta-border)}.dta-head{width:100%;max-width:calc(var(--dsh-composer-card-max-width,780px) + 56px);margin:auto}.dta-head h2{margin:0;font-size:22px}.dta-head p{margin:5px 0 0;opacity:.7}.dta-body{overflow:auto;padding:22px 28px 50px;flex:1}.dta-content{max-width:var(--dsh-composer-card-max-width,780px);margin:auto}.dta-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
@@ -23170,7 +23178,7 @@ var assemblyCss = `
 function AssemblyPanel(props) {
   return (0, import_react7.createElement)(AssemblyPanelContent, { ...props, key: props.sessionId ?? "no-session" });
 }
-function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, chromeMode, locale: selectedLocale = "zh-CN", fetcher = globalThis.fetch, apiRoot = "/dsh-prompt-assembler/api/v1/assembly-presets", traceRoot, refreshEvent = "dsh-prompt-assembler:refresh" }) {
+function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, createSessionControls, interfaceControls, standalone = false, close: close2, registerBeforeLeave, chromeMode, locale: selectedLocale = "zh-CN", fetcher = globalThis.fetch, apiRoot = "/dsh-prompt-assembler/api/v1/assembly-presets", traceRoot, refreshEvent = "dsh-prompt-assembler:refresh" }) {
   const locale = selectedLocale === "zh-CN" ? 0 : 1, t = (key2) => labels[key2]?.[locale] ?? key2;
   const [confirmation, setConfirmation] = (0, import_react7.useState)(null);
   const confirmationResolve = (0, import_react7.useRef)(null);
@@ -23194,6 +23202,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
   const [status, setStatus] = (0, import_react7.useState)(""), [error, setError] = (0, import_react7.useState)(false), [busy2, setBusy] = (0, import_react7.useState)(false), [tab, setTab] = (0, import_react7.useState)("rules"), [preview, setPreview] = (0, import_react7.useState)(null), [dirty, setDirty] = (0, import_react7.useState)(false), [expanded, setExpanded] = (0, import_react7.useState)({});
   const file = (0, import_react7.useRef)(), stage = (0, import_react7.useRef)(), dialog = (0, import_react7.useRef)(), generation = (0, import_react7.useRef)(0), mounted = (0, import_react7.useRef)(true);
   (0, import_react7.useLayoutEffect)(() => {
+    if (standalone) return;
     const panel = dialog.current;
     let frame = panel?.parentElement;
     while (frame && getComputedStyle(frame).display !== "grid") frame = frame.parentElement;
@@ -23342,8 +23351,17 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
   };
   const sourceInfo = (kind) => sourceDescriptor2(kind)?.generationRequiresPlugin === false ? t("nativeSource") : t("removed");
   async function actualRequest() {
+    const show = (record) => {
+      if (!record?.messages) return false;
+      const result = record.metadata?.assembly ?? { diagnostics: [], nodes: record.messages.map((m2, index) => ({ id: m2.id ?? `actual-${index}`, module: m2.role === "system" ? "native-system" : "history", name: m2.role === "system" ? "native-system" : m2.role, role: m2.role, source: { plugin: m2.source?.plugin ?? "DSH", field: m2.source?.kind }, stability: "snapshot", lifetime: "native", locked: true, text: (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n") })) };
+      setPreview({ ...result, diagnostics: result.diagnostics ?? [], nodes: result.nodes ?? [], messages: record.messages, actual: true });
+      setTab("expanded");
+      setStatus(record.metadata?.assembly ? "" : t("legacy"));
+      return true;
+    };
     if (!traceRoot) {
-      setStatus(t("noActual"));
+      const data3 = await api6(`/actual?sessionId=${encodeURIComponent(sessionId)}`);
+      if (!show(data3.request)) setStatus(t("noActual"));
       return;
     }
     const response = await fetcher(`${traceRoot}/sessions/${encodeURIComponent(sessionId)}/assemblies`);
@@ -23354,13 +23372,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       if (!res.ok) continue;
       const record = (await res.json()).record?.requestAssembly;
       if (!mounted.current) return;
-      if (record?.messages) {
-        const result = record.metadata?.assembly ?? { diagnostics: [], nodes: record.messages.map((m2, index) => ({ id: m2.id ?? `actual-${index}`, module: m2.role === "system" ? "native-system" : "history", name: m2.role === "system" ? "native-system" : m2.role, role: m2.role, source: { plugin: m2.source?.plugin ?? "DSH", field: m2.source?.kind }, stability: "snapshot", lifetime: "native", locked: true, text: (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n") })) };
-        setPreview({ ...result, messages: record.messages, actual: true });
-        setTab("expanded");
-        setStatus(record.metadata?.assembly ? "" : t("legacy"));
-        return;
-      }
+      if (show(record)) return;
     }
     setStatus(t("noActual"));
   }
@@ -23500,9 +23512,9 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       expanded[node.id] && (0, import_react7.createElement)("div", { className: "dta-detail" }, (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react7.createElement)("small", null, sourceInfo(node.module))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(node.stability))), (0, import_react7.createElement)("div", null, t("lifetime"), (0, import_react7.createElement)("small", null, t(node.lifetime)), (0, import_react7.createElement)("small", null, t("recorded")))), (0, import_react7.createElement)("div", { className: "dta-preview-depth" }, `${t("previewDepth")}: ${node.depth == null ? t("listPosition") : node.depth}`), node.locked && (0, import_react7.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react7.createElement)("div", { key: child.id, className: "dta-child", style: { borderLeftColor: sourceColor(child.source?.plugin) } }, `\u{1F512} ${nodeName(child)}`, (0, import_react7.createElement)("small", null, child.lockReason), (0, import_react7.createElement)("small", null, [originName(child.source?.plugin), child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react7.createElement)("pre", null, child.text))), (0, import_react7.createElement)("pre", null, node.text))
     );
   }
-  return (0, import_react7.createElement)("div", { ref: stage, className: "dta-stage" }, (0, import_react7.createElement)(
+  return (0, import_react7.createElement)("div", { ref: stage, className: `dta-stage${standalone ? " dta-standalone" : ""}` }, (0, import_react7.createElement)(
     "section",
-    { ref: dialog, className: "dtv-assembly-screen", role: "dialog", "aria-modal": false, "aria-label": t("title") },
+    { ref: dialog, className: "dtv-assembly-screen", role: "dialog", "aria-modal": standalone, "aria-label": t("title") },
     (0, import_react7.createElement)("style", null, assemblyCss),
     confirmation && (0, import_react7.createElement)("div", { className: "dta-confirm-shade" }, (0, import_react7.createElement)("div", { className: "dta-confirm", role: "alertdialog", "aria-modal": true, "aria-label": confirmation, onKeyDown: (e) => {
       if (e.key === "Escape") {
@@ -23515,10 +23527,11 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         buttons[(at4 + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length]?.focus();
       }
     } }, (0, import_react7.createElement)("p", null, confirmation), (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("button", { type: "button", onClick: () => answerConfirmation(false) }, t("cancel")), (0, import_react7.createElement)("button", { type: "button", className: "primary", onClick: () => answerConfirmation(true) }, t("confirm"))))),
-    (0, import_react7.createElement)("header", { className: "dta-head" }, (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("h2", null, t("title")), (0, import_react7.createElement)("p", null, t("intro"))), (0, import_react7.createElement)("button", { onClick: safeClose, "aria-label": t("close") }, "\xD7")),
+    (0, import_react7.createElement)("header", { className: "dta-head" }, (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("h2", null, t("title")), (0, import_react7.createElement)("p", null, t("intro")), sessionLabel !== void 0 && (0, import_react7.createElement)("p", { "data-assembly-session": sessionId ?? "" }, `${t("session")}: ${sessionLabel || t("newSession")}`)), (0, import_react7.createElement)("button", { onClick: safeClose, "aria-label": t("close") }, "\xD7")),
     (0, import_react7.createElement)("div", { className: "dta-body" }, (0, import_react7.createElement)(
       "fieldset",
       { className: "dta-content", disabled: busy2, style: { border: 0, padding: 0, minWidth: 0 } },
+      (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("librarySection")),
       (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("input", { type: "file", accept: ".json,application/json", hidden: true, ref: file, onChange: (e) => {
         const f2 = e.target.files?.[0];
         e.target.value = "";
@@ -23558,7 +23571,13 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
           setDirty(false);
           setPreview(null);
         }), !draft.id || draft.builtin), dirty && (0, import_react7.createElement)("span", null, t("dirty"))),
+        (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
         (0, import_react7.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, !capable && (0, import_react7.createElement)("small", null, t("unavailable"))),
+        onCreateSession && (0, import_react7.createElement)("div", null, createSessionControls, (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("createSession", () => run(async () => {
+          const preset = dirty || !draft.id ? await save() : draft;
+          if (!mounted.current) return;
+          await onCreateSession(preset.id);
+        }), !capable, "primary"))),
         (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("apply", () => run(async () => {
           const preset = dirty || !draft.id ? await save() : draft;
           const data3 = await api6("/selection", "PUT", { sessionId, id: preset.id });
@@ -23584,6 +23603,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         }), !sessionId || !selection)),
         draft.builtin && (0, import_react7.createElement)("small", null, t("defaultHint")),
         !sessionId && (0, import_react7.createElement)("small", null, t("noSession")),
+        (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("rulesSection")),
         (0, import_react7.createElement)("div", { className: "dta-tabs" }, (0, import_react7.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
           setDragFrom(null);
           setDropIndex(null);
@@ -23604,7 +23624,8 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
           (0, import_react7.createElement)("small", null, t("sourceHelp"))
         ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react7.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
-      )
+      ),
+      interfaceControls && (0, import_react7.createElement)("section", { className: "dta-interface-settings", "aria-label": t("interfaceSettings") }, (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("interfaceSettings")), interfaceControls)
     ))
   ));
 }
@@ -23615,8 +23636,49 @@ function reorderAtBoundary2(items2, from, boundary) {
   return next;
 }
 
+// node_modules/dsh-prompt-assembler/src/client-fetch.js
+var API_ROOT2 = "/dsh-prompt-assembler/api/v1";
+function createAssemblerFetch({ fetcher = (...args) => globalThis.fetch(...args), protocol = () => globalThis.location?.protocol } = {}) {
+  let tokenPromise2;
+  const requestToken2 = () => tokenPromise2 ??= fetcher(`${API_ROOT2}/request-token`, {
+    headers: { "X-Assembler-Client": "embedded" },
+    cache: "no-store"
+  }).then(async (response) => {
+    if (!response.ok) throw new Error(`Assembler request token: HTTP ${response.status}`);
+    const { token } = await response.json();
+    if (!/^[a-f0-9]{64}$/.test(token)) throw new Error("Invalid assembler request token");
+    return token;
+  }).catch((error) => {
+    tokenPromise2 = void 0;
+    throw error;
+  });
+  return async (url, options = {}) => {
+    if (typeof url !== "string" || !url.startsWith(`${API_ROOT2}/`) || /[\\#]/.test(url) || url.split("?")[0].split("/").some((part) => {
+      try {
+        return [".", ".."].includes(decodeURIComponent(part)) || /[/\\]/.test(decodeURIComponent(part));
+      } catch {
+        return true;
+      }
+    })) throw new Error("Invalid assembler API path");
+    const method = String(options.method ?? "GET").toUpperCase();
+    if (protocol() !== "dsh-app:" || ["GET", "HEAD", "OPTIONS"].includes(method)) return fetcher(url, options);
+    const send = async () => {
+      const headers = new Headers(options.headers);
+      headers.set("X-Assembler-Request-Token", await requestToken2());
+      return fetcher(url, { ...options, headers });
+    };
+    const response = await send();
+    if (response.status !== 403) return response;
+    const error = await response.clone().json().catch(() => null);
+    if (error?.code !== "ASSEMBLER_API_ORIGIN_FORBIDDEN") return response;
+    tokenPromise2 = void 0;
+    return send();
+  };
+}
+var assemblerFetch = createAssemblerFetch();
+
 // packages/request-assembler/client.js
-var AssemblyPanel2 = (props) => (0, import_react8.createElement)(AssemblyPanel, { ...props, locale: getClientUiSettings().locale, fetcher: tavernFetch, apiRoot: `${API_V1}/assembly-presets`, traceRoot: API_V3, refreshEvent: CLIENT_REFRESH_EVENT });
+var AssemblyPanel2 = (props) => (0, import_react8.createElement)(AssemblyPanel, { ...props, locale: getClientUiSettings().locale, fetcher: assemblerFetch, apiRoot: "/dsh-prompt-assembler/api/v1/assembly-presets", refreshEvent: CLIENT_REFRESH_EVENT });
 
 // packages/client/src/index.js
 var import_react34 = require("react");

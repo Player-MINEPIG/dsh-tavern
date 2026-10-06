@@ -1,5 +1,7 @@
 # pmp-dsh-tavern
 
+Independent prompt assembly plugin: [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) (private; authorized access required). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for Tavern’s dependency and activation of both plugins.
+
 [Candidate branch feature (not in the v2.5.1 tag): prompt assembly settings.](docs/REQUEST_ASSEMBLY_en.md)
 
 [中文](README.md)

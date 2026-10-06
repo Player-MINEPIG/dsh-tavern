@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -51,6 +52,7 @@ test('official SessionController creates fresh state beside an initialized legac
       [cardTemplateId]: { ...oldRecord, definition: { id: cardTemplateId, characterId: 'legacy-card', discovered: true, sessionIds: [previous.sessionId], initial: { stat_data: { hp: 100 } } } },
     } })
     mkdirSync(join(directory, 'tavern'), { recursive: true }); writeFileSync(legacyPath, legacyBytes)
+    await installIndependentAssembler(ctx, directory)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: join(directory, 'tavern'), mvu: { resources: [{ id: 'mvu:template', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }] } }) } })
     ctx.on('agent/error', e => failures.push(e.error))
     const service = ctx.get('tavernMvu')

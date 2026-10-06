@@ -1,35 +1,38 @@
 # 独立 Prompt Assembler 接入
 
-[English](ASSEMBLER_INTEGRATION_en.md) · [装配行为](REQUEST_ASSEMBLY.md)
+[English](ASSEMBLER_INTEGRATION_en.md) · [装配行为](REQUEST_ASSEMBLY.md) · [独立插件仓库](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Tavern 的 npm 运行时依赖方向为 `Tavern → dsh-prompt-assembler`。assembler 不引入 Tavern 或 Memory Manager 包，`adapters/tavern`、`adapters/memory-manager` 接收它们公开的只读服务接口。adapter 由 assembler 仓库维护，第三方可 fork 或向该仓库提 PR；来源仍拥有数据与权限。
+Tavern 单向依赖 `dsh-prompt-assembler` 0.2.0。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和侧栏入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
 
-## 当前候选的使用
+## 安装与开发
 
-独立 assembler `0.1.0` 尚未发布。源码开发时把 assembler checkout 放在本仓库 `.local/dsh-prompt-assembler`，再运行 `npm ci`、`npm run check`。这个位置只属于本地开发依赖，不包含在 Tavern Git 或发布包中。
+Tavern 的 manifest 与 lockfile 将 assembler 固定到私有 GitHub 仓库的提交。安装需要该仓库的 GitHub 访问权限；没有发布同名 npm 版本。npm 会拉取依赖，但 DSH 只启用明确安装的插件 bundle，因此 assembler 和 Tavern 都需要在目标 profile 启用：
 
 ```sh
-node scripts/pack-with-assembler.mjs --assembler .local/dsh-prompt-assembler --output .local/packages
-# 在目标测试 profile 对应的依赖目录，同时安装两个候选包。
-npm install /path/to/dsh-prompt-assembler-0.1.0.tgz /path/to/pmp-dsh-tavern-2.5.1.tgz
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#main
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/assembler-extraction
 ```
 
-打包脚本将 Tavern 发布包中的依赖固定为 `dsh-prompt-assembler:0.1.0`。已有稳定 `2.5.1` 与本地候选的版本标签相同，这不是稳定版覆盖发布；按交付 receipt 和对应 Git 提交选择候选。真实 DSH profile 仍需使用现有安全安装流程，保持原配置、credentials 和数据；只有 package 安装不足以启用装配核心。参见[准备核心](REQUEST_ASSEMBLY.md#核心扩展和安装边界)。
+第二条仅在对应 Tavern 分支已推送时可用；本地候选可使用 `scripts/pack-with-assembler.mjs` 产生的两份 tgz 通过已有测试 profile 安装流程启用。本次 assembler 仓库发布不表示 Tavern 分支已经发布。assembler 的 bundle 提供 `dshPromptAssembler`，Tavern 的 loader 声明该服务依赖，由 Host 管理加载顺序；仅安装 npm 依赖不足以挂载服务。
+
+源码开发可单独 clone assembler 并运行其 `npm ci`、`npm run check`。Tavern 的 `npm ci` 使用锁定的远端提交。需要一起验证本地修改时，可在临时 checkout 使用 `npm install --no-save --package-lock=false /path/to/assembler`，不要提交临时路径。
+
+真实请求仍需显式准备协议 1 核心；stock DSH rc.2 缺少钩子时可编辑和预览，但应用非空策略返回 409。插件安装不会修改核心。参见 assembler 的[安装合同](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/main/docs/INSTALLATION.md)。
 
 ## Tavern 的接入切面
 
-Tavern 提供当前资源快照和世界书策略校验，将它们传给 assembler 的 store、registry、runtime；装配前完成来源资产准备，装配后再核对策略租约。新来源服务为 `dshPromptSources`；旧 `tavernRequestSources` 和 `pmp-dsh-tavern/request-assembler` 保留转发。HTTP 仍在 Tavern 认证/同源/desktop 令牌保护下，UI 注入 Tavern 的 fetch、语言与 Trace 地址。现有 selection、play/native 默认值、子会话继承、Trace owner 和存储格式保留。
+Tavern 使用共享 `dshPromptAssembler` 的 store、registry、runtime。它注册来源并用 `attachTavern` 提供资源编译、只读会话租约、模式默认值及装配后策略校验。assembler 是请求装配的唯一执行者，每次请求只记录一次 `request/assembly`；Tavern 保留资源、受限 EJS、MVU 提交路径与 Trace 展示。旧 `tavernRequestSources` 和包入口继续兼容转发。
 
-注册与转换由 assembler adapter 完成：preset、character、persona、worldbook、PHI、自定义文本、模板与 MVU 的装配描述都在那里维护。Tavern 保留资源状态、EJS 受限运行时、MVU 提交路径；adapter 不复制它们的状态或读取私有文件。Memory Manager 的装配 adapter 调用公开 `requestAssemblyResources()` 和 `trigger`，管理器继续拥有配置与检索策略。
+新界面使用 assembler 自有 `/dsh-prompt-assembler/api/v1/assembly-presets`、安全 fetch 和实际请求只读接口。Tavern 的旧 assembly-presets 路径仍转发同一 store/runtime；Trace 仍可读取 DSH 中的实际请求。当前记录 owner 为 `dsh-prompt-assembler`，旧 `pmp-dsh-tavern` owner 继续可读。迁移仅合并旧存储缺少的项，原文件保留；新应用统一绑定 session ID，优先于旧 play/native scope，不因重新安装 Tavern 恢复旧选择。
 
-提供 `parseText(context,rule)` 的来源通过 `inputMode:'text'` 解析用户手填内容；默认模式读取来源资产。两种模式共用位置、深度、角色与快照机制。第三方使用自己的语法，Tavern 使用 ST 解析，DSH 自定义文本使用原生变量插值。Skill 不重复注入。
+卸载 Tavern 时取消其来源和只读 provider，assembler 的入口、策略和 DSH 自定义文本继续工作。依赖已卸载来源的模块有明确诊断，不重建缺失资源，不改写原生历史。Memory Manager adapter 使用公开服务；无需安装 Manager 就能使用 assembler 的原生来源。
 
-模块来源与文本解析器分开添加：不能提供当前独立内容的来源不出现在模块菜单，其 parseText 仍可供用户输入文本使用。Tavern 模板文本通过来源自己的只读 EJS 子集解析，存储模板、MVU 状态和 Manager 检索模块按当前真实绑定/配置显示。记忆管理只读查询通过 withSessionRead 等待并借用持久化冷会话；不会创建 Agent 或追加历史。会话不存在、读取服务初始化和读取失败分别处理。
+## 模块与文本解析器
 
-Tavern 的自定义文本只有一个 tavern.text 入口：手填 EJS → 内容引用 → ST 宏；DSH 变量插值仍独立。旧文本规则兼容执行，界面预览、导出和保存时使用统一入口，打开界面不会写入策略。模块描述由 assembler adapter 提供包含内容、内容来源、手动编辑和修改入口四项双语说明；真实正文和资源身份在只读预览中查看。MVU 当前变量在 Tavern Trace 最新轮次编辑；已有实例更新指令目前没有公开编辑入口，不把重启或 InitVar 修改描述成覆盖既有实例的方法。
+模块菜单仅列出当前能提供独立内容的来源。分散内容可通过来源的 `parseText(context, rule)` 和 `inputMode:'text'` 解析用户手填文本，两种模式共用位置、深度、角色与快照机制。
 
-## GitHub 与分发
+Tavern 文本使用一个 `tavern.text` 入口，依次执行受限 EJS、内容引用与 ST 宏；引用正文不会再执行 EJS。DSH `dsh.text` 使用原生变量插值。第三方来源保留自己的 parser/renderer。每个模块说明包含字段、来源、能否编辑和修改入口；资源身份与实际正文通过预览查看。
 
-一般用独立 repository 与 package.json 的 dependencies 表示单向依赖；README 同时给包依赖图与运行时接口图。GitHub Dependency Graph 从 manifest/lockfile 获取依赖，不必把子库作为 submodule。正式发布 assembler 后，Tavern 的源码依赖应从本地 file spec 改为精确 npm 版本，并用 npm 重生成 lockfile。用户正常安装 Tavern 时即可拉取 assembler；当前本地候选通过两包组合安装，避免要求用户手动拼接运行时代码。
+## GitHub 的依赖表示
 
-维护者发布两个包的先后顺序为 assembler → Tavern；本次工作不创建远端仓库、不 push、不发布。
+独立仓库链接与 manifest/lockfile 表示 `Tavern → assembler`，不需要 submodule。当前使用私有 Git 提交固定版本，安装需要访问权限；将来公开 npm 分发时可改用精确包版本。Host 的服务依赖和显式 bundle 启用说明补足 npm 依赖图无法表达的运行时关系。公开目录提交、仓库公开、tag、release 和 npm 发布需要另行授权。

@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -220,6 +221,7 @@ test('official AgentLoop/loader snapshot carries its own user gate through a sin
   ctx.llm.registerAdapter(['command-fixture'], new Adapter()); ctx.on('agent/error', e => errors.push(e.error))
   const commandSource = helper('const gate=globalThis.fixtureGate;if(!gate.extractOperationBlock(gate.latestUserText()).includes("allow"))commands.length=0;')
   const resource = { id: 'mvu:official-command', sessionIds: ['*'], initial, commandSource }
+  await installIndependentAssembler(ctx, storageDir)
   await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { tavern.apply(context, { storageDir, mvu: { resources: [resource] } }) } })
   const service = ctx.get('tavernMvu'), handle = await ctx.agents.create({ sessionId: 'command-official', agentOptions: { provider: 'command-fixture', model: 'synthetic' } })
   const { agent } = handle, facts = []; service.observe(f => facts.push(f))

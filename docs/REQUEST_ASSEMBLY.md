@@ -91,22 +91,22 @@ node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-buil
 
 ## HTTP 原语
 
-前缀 `/pmp-dsh-tavern/api/v1/assembly-presets`，复用现有 Host 认证、同源和 desktop 安全边界。请求体上限 2 MiB。
+独立插件前缀 `/dsh-prompt-assembler/api/v1/assembly-presets`，使用 Host 认证、同源和 desktop 令牌保护。Tavern 的旧 `/pmp-dsh-tavern/api/v1/assembly-presets` 路径继续转发相同 store/runtime。请求体上限 2 MiB。
 
 | 方法与路径 | 输入/输出 |
 | --- | --- |
 | `GET /?sessionId=…` | 内置/用户预设、已应用快照、核心 capability |
 | `POST /` | 导入或创建独立预设 |
 | `GET/PUT/DELETE /:id` | 读取、编辑、删除；内置只读，应用中的预设不可删除 |
-| `PUT /selection` | `{sessionId,id}`；`id:null` 关闭当前模式下的策略（扩展核心使用 DSH 默认装配）；`id:"builtin-st"` 应用默认 ST 策略 |
+| `PUT /selection` | `{sessionId,id}`；`id:null` 关闭当前会话的策略（扩展核心使用 DSH 默认装配）；`id:"builtin-st"` 应用默认 ST 策略 |
 | `POST /preview` | `{sessionId,preset}` 或 `{sessionId,presetId}`，不应用、不运行 Agent |
 
-导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。实际请求复用 v3 assemblies detail 的 `requestAssembly`，没有第二套历史查询接口。
+导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。独立界面通过 `GET /actual?sessionId=…` 只读获取 DSH 最近的 `request/assembly`；Tavern v3 assemblies detail 的 `requestAssembly` 继续可用，两者都读取同一持久记录，不建立额外历史。
 
 
 ## 独立 assembler 与 adapter
 
-实现现位于独立 dsh-prompt-assembler 包。Tavern 单向依赖该包，保留旧包入口、服务别名、存储和 HTTP 路径。adapter 在 assembler 仓库维护，来源状态和解析服务仍由来源拥有。DSH 目录新增 dsh.text 自定义文本；提供 parseText 的来源显示用户手填解析模式，其他来源继续提供资源内容。第三方正文使用自己的 parser/renderer，不再自动解释 ST 语法。见[拆分与接入指南](ASSEMBLER_INTEGRATION.md)。
+实现现位于独立 dsh-prompt-assembler 包。Tavern 单向依赖该包，复用独立 Host 插件的 store、registry、runtime，保留旧包入口、服务别名和 HTTP 转发；旧存储非破坏迁移。adapter 在 assembler 仓库维护，来源状态和解析服务仍由来源拥有。DSH 目录新增 dsh.text 自定义文本；提供 parseText 的来源显示用户手填解析模式，其他来源继续提供资源内容。第三方正文使用自己的 parser/renderer，不再自动解释 ST 语法。见[拆分与接入指南](ASSEMBLER_INTEGRATION.md)。
 
 ## 统一内容来源 API（协议 1）
 

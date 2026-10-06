@@ -43,7 +43,7 @@ export function createMemorySources(options) {
     observeRequest(request, session) {
       if (!session?.id || (request.sessionId && request.sessionId !== session.id)) return
       const event = session?.snapshotEvents?.().findLast(e => e.type === 'request/assembly')
-      if (!Number.isSafeInteger(event?.seq) || event.data.metadata?.owner !== 'pmp-dsh-tavern' || hash(event.data.messages) !== hash(request.messages)) return
+      if (!Number.isSafeInteger(event?.seq) || !['pmp-dsh-tavern', 'dsh-prompt-assembler'].includes(event.data.metadata?.owner) || hash(event.data.messages) !== hash(request.messages)) return
       const assembly = event.data.metadata.assembly
       if (!assembly || assembly.preview) return
       const flatten = nodes => nodes.flatMap(n => [n, ...flatten(n.children ?? [])])

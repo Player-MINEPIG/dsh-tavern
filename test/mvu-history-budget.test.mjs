@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
@@ -170,6 +171,7 @@ test('official AgentLoop eight-turn state history and large assembly bodies surv
   }
   ctx.llm.registerAdapter(['history-fixture'], new Adapter()); ctx.on('agent/error', event => errors.push(event.error))
   let store
+  await installIndependentAssembler(ctx, storageDir)
   const plugin = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir, mvu: { resources } }) } }); await plugin
   const service = ctx.get('tavernMvu'), handle = await ctx.agents.create({ sessionId: 'eight-turn-history', agentOptions: { provider: 'history-fixture', model: 'synthetic' } })
   const { agent } = handle

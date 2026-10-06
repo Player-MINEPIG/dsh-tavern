@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -37,6 +38,7 @@ for (const largeProfile of [false, true]) test(`default assembly reaches the off
       }
       return next()
     })
+    await installIndependentAssembler(ctx, directory)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory }) } })
     const synthetic = defaultAssemblyFailureInput()
     if (largeProfile) for (const [i, entry] of synthetic.assets.loreEntries.entries()) {
@@ -124,6 +126,7 @@ test('an empty native head followed by a visible update retains its boundary thr
       }
       return next()
     })
+    await installIndependentAssembler(ctx, directory)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory }) } })
     await withDeepSeekWire(runtimeRoot, async ({ adapter, bodies }) => {
       ctx.llm.registerAdapter(['offline'], adapter)
@@ -196,6 +199,7 @@ test('extended core sends the assembled request, records it, restores native his
       }
     }
     ctx.llm.registerAdapter(['test'], new Adapter())
+    await installIndependentAssembler(ctx, directory)
     const plugin = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory }) } }); await plugin
     ctx.on('agent/assemble-request', async (payload, next) => {
       // A slow assembly hook lets automatic title generation arrive even before
@@ -311,6 +315,7 @@ test('public sources run for tool continuations, steering, child requests and se
       }
     }
     ctx.llm.registerAdapter(['test'], new Adapter())
+    await installIndependentAssembler(ctx, directory)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory }) } })
     const sourcePlugin = ctx.plugin({ name: 'example-memory', inject: ['tavernRequestSources'], apply(context) {
       context.effect(() => context.get('tavernRequestSources').register({ id: 'example.memory', pluginId: 'example.memory', name: 'Memory', async resolve(input) { calls.push([input.sessionId, input.turn, input.step, input.preview]); return { blocks: [{ id: 'memory', type: 'text', text: `MEMORY ${input.turn}/${input.step}` }] } } }))

@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -45,6 +46,7 @@ test('real AgentLoop failure references preserve attempt identity and cold-read 
           }
         }
         root.llm.registerAdapter(['synthetic'], new Adapter())
+        await installIndependentAssembler(root, directory)
         await root.plugin({ name: tavern.name, inject: tavern.inject,
           apply(ctx) { store = tavern.apply(ctx, { storageDir: directory }) } })
         root.on('agent/request-error', async (_payload, next) => {
