@@ -8,13 +8,14 @@ import { join, resolve } from 'node:path'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { createPlayHost } from '../packages/tavern-loader/src/play-host.js'
 import { MvuService, characterMvuId, stateInstanceId } from '../packages/mvu-adapter/src/index.js'
+import {stoppedRequestFromEvents} from '../packages/play/src/stopped-request.js'
 
 const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT ?? process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 test('official SessionController creates fresh state beside an initialized legacy empty session, then isolates forks and swipes', { skip: !runtimeRoot, timeout: 30000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json')), load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt'), llm = await load('@deepseek-ai/dsh-llm')
   const ctx = new Context(), directory = mkdtempSync(join(tmpdir(), 'mvu-instance-host-')), requests = [], failures = []
-  let store, updateText = "_.add(\'hp\', -1);"
+  let store, updateText = "_.add(\'hp\', -1);",cancelReady
   try {
     ctx.provide('directoryPickerController', {}); ctx.provide('workspaceController', {})
     ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
@@ -31,7 +32,7 @@ test('official SessionController creates fresh state beside an initialized legac
     class Adapter extends llm.LlmAdapter {
       async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic state instance' }] }
       async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
-      async *stream(request) { requests.push(request); const text = updateText; yield { type: 'block-start', index: 0, blockType: 'text' }; yield { type: 'text-delta', index: 0, text }; yield { type: 'block-end', index: 0, block: { type: 'text', text } }; yield { type: 'finish', reason: { kind: 'stop' } } }
+      async *stream(request) { requests.push(request);if(cancelReady){const ready=cancelReady;cancelReady=null;ready();await new Promise((_,reject)=>request.signal.addEventListener('abort',()=>reject(request.signal.reason),{once:true}));return} const text = updateText; yield { type: 'block-start', index: 0, blockType: 'text' }; yield { type: 'text-delta', index: 0, text }; yield { type: 'block-end', index: 0, block: { type: 'text', text } }; yield { type: 'finish', reason: { kind: 'stop' } } }
     }
     ctx.llm.registerAdapter(['instance-test'], new Adapter())
     const previous = await ctx.sessionController.create({ cwd: directory })
@@ -98,6 +99,26 @@ test('official SessionController creates fresh state beside an initialized legac
     assert.equal((await row(laterSwipe.sessionId)).content.stat_data.hp, 69)
     updateText = "_.add('hp', -1);"; await turn(laterSwipe.sessionId)
     assert.equal((await row(laterSwipe.sessionId)).content.stat_data.hp, 68); assert.equal((await row(rootId)).content.stat_data.hp, 50)
+    for(const later of [false,true]){
+      const fresh=await host.createSession({cwd:directory}),id=fresh.sessionId
+      const initialState=await row(id)
+      await service.update({id:initialState.id,scope:{sessionId:id},expectedRevision:initialState.revision,operationId:'before-cancel',content:{stat_data:{hp:80}}})
+      const prefix=later?await turn(id):null,baseline=later?79:80
+      const entered=new Promise(resolve=>{cancelReady=resolve})
+      const agent=ctx.agents.get(id)
+      agent.followup(llm.createUserMessage({content:[{type:'text',text:'Neutral cancelled request.'}],source:{kind:'user'}}))
+      await entered;agent.cancel({kind:'user'});await agent.whenIdle();await service.flush()
+      const stopped=stoppedRequestFromEvents(agent.session.snapshotEvents());assert(stopped)
+      assert.equal((await row(id)).content.stat_data.hp,baseline)
+      const current=await row(id)
+      await service.update({id:current.id,scope:{sessionId:id},expectedRevision:current.revision,operationId:'after-cancel',content:{stat_data:{hp:40}}})
+      const stateSource={sessionId:id,beforeUserEventId:stopped.userEventId}
+      const retried=later?await host.forkSession({sessionId:id,atSeq:prefix,sessionFormatVersion:4,stateSource}):await host.createSession({cwd:directory,stateSource})
+      await host.copySelection(id,retried.sessionId);await service.flush()
+      assert.equal((await row(retried.sessionId)).content.stat_data.hp,baseline)
+      await turn(retried.sessionId);assert.equal((await row(retried.sessionId)).content.stat_data.hp,baseline-1)
+      assert.equal((await row(id)).content.stat_data.hp,40)
+    }
     for (const id of [rootId, child.sessionId, swipe.sessionId, laterSwipe.sessionId]) {
       const current = await row(id), assembly = ctx.sessions.get(id).snapshotEvents().findLast(e => e.type === 'request/assembly').data.metadata.assembly
       assert(assembly.nodes.some(n => n.source?.resourceId === current.id))
@@ -124,6 +145,6 @@ test('official SessionController creates fresh state beside an initialized legac
     assert.equal((await restored.read({ id: (await row(child.sessionId)).id, scope: { sessionId: child.sessionId } })).content.stat_data.hp, 68)
     restored.dispose()
     assert.equal(readFileSync(legacyPath, 'utf8'), legacyBytes)
-    assert.equal(requests.length, 6); assert.deepEqual(failures, [])
+    assert.equal(requests.length, 11); assert.deepEqual(failures, [])
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })

@@ -163,6 +163,8 @@ Pending navigation belongs to the current frontend instance. Reloading or closin
 
 **Branch from here as a new playthrough** copies the active path through that reply into a new playthrough. **Continue from here in this playthrough** only moves the current playthrough head to that reply's DSH branch session. Both keep old DSH history. The difference is whether a new playthrough is created. The next turn after rollback becomes a tree continuation; the old continuation stays stored but is not rendered on the active path.
 
+If a normal request is cancelled before any assistant body is saved, the RP view shows **Stopped without a saved reply** and a right-arrow **Generate this reply again** button beneath its user message. It retries that same text in a separate session from the request’s original state. After a real reply is saved, normal swipe controls are available. Cancelling again preserves the original request and existing replies.
+
 A new branch starts with inherited pending input cleared, including queued and steering messages, without changing the source session’s queue. If cleanup fails, the operation reports an error and does not navigate to that branch.
 
 **Edit display text** expands an in-place resizable multiline editor. It does not call the browser single-line prompt. Save updates only timeline `displayOverride`; Cancel or Esc discards. The original DSH assistant message and later model context do not change. The saved value is final display text: later macros and display regex are skipped, but Markdown/HTML still goes through DOMPurify. An empty save still keeps **Restore original reply**. Restore clears the override and reruns the current display pipeline from DSH source.

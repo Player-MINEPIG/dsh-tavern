@@ -103,7 +103,7 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
       assistant = null
       continuationAssistant = null
     } else if (message.role === 'assistant' && user !== null) {
-      assistant = message
+      if(messageState.stoppedRequest?.userEventId!==user.seq)assistant = message
     } else if (message.role === 'assistant') {
       // Context/tool/subagent messages do not open a new QA. A later parent reply
       // extends the active real-user turn, including when DSH persists it in a

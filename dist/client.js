@@ -17694,6 +17694,8 @@ var zh_CN_default = Object.freeze({
   "appearance.unsupportedEvents": "\u6B64\u5361\u7247\u4F7F\u7528\u5185\u8054\u4E8B\u4EF6\u5C5E\u6027\uFF08\u5982 onclick\uFF09\uFF0C\u9700\u6539\u4E3A addEventListener\u3002",
   "appearance.cardStaticFallback": "\u5F53\u524D\u663E\u793A\u9759\u6001\u754C\u9762\uFF1B\u5361\u7247\u811A\u672C\u672A\u8FD0\u884C\uFF0C\u539F\u56E0\u89C1\u4E0A\u8FF0\u63D0\u793A\u3002",
   "appearance.dismissCardNotice": "\u5173\u95ED\u6B64\u63D0\u793A",
+  "play.chat.stoppedWithoutReply": "\u5DF2\u505C\u6B62\uFF0C\u5C1A\u672A\u4FDD\u5B58\u56DE\u590D",
+  "play.chat.retryStoppedRequest": "\u91CD\u65B0\u751F\u6210\u672C\u8F6E\u56DE\u590D",
   "appearance.styleName": "\u6837\u5F0F\u540D\u79F0",
   "appearance.radius": "\u5706\u89D2",
   "appearance.padding": "\u5185\u8FB9\u8DDD",
@@ -18757,6 +18759,8 @@ var en_default = Object.freeze({
   "appearance.unsupportedEvents": "This card uses inline event attributes (such as onclick); use addEventListener instead.",
   "appearance.cardStaticFallback": "The static view is shown. Card scripts did not run for the reasons listed above.",
   "appearance.dismissCardNotice": "Dismiss this notice",
+  "play.chat.stoppedWithoutReply": "Stopped without a saved reply",
+  "play.chat.retryStoppedRequest": "Generate this reply again",
   "appearance.styleName": "Style name",
   "appearance.radius": "Radius",
   "appearance.padding": "Padding",
@@ -21095,6 +21099,8 @@ function normalizeSessionMessages(value, label = "messages") {
   if (!isRecord3(value)) fail2(label, "must be an object");
   if (!Array.isArray(value.messages)) fail2(label, "messages must be an array");
   if (typeof value.incompleteTurn !== "boolean") fail2(label, "incompleteTurn must be a boolean");
+  const stopped = value.stoppedRequest;
+  if (stopped != null && (!isRecord3(stopped) || !["userEventId", "turnStartEventId", "turnEndEventId"].every((key2) => Number.isSafeInteger(stopped[key2]) && stopped[key2] >= 0) || stopped.turnStartEventId >= stopped.userEventId || stopped.userEventId >= stopped.turnEndEventId || value.incompleteTurn)) fail2(label, "invalid stopped request coordinates");
   const messages = value.messages.map((item, index) => {
     const itemLabel = `${label}.messages[${index}]`;
     if (!isRecord3(item)) fail2(itemLabel, "must be an object");
@@ -21131,7 +21137,8 @@ function normalizeSessionMessages(value, label = "messages") {
   return {
     messages,
     incompleteTurn: value.incompleteTurn,
-    ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {}
+    ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {},
+    ...stopped === void 0 ? {} : { stoppedRequest: stopped === null ? null : { userEventId: stopped.userEventId, turnStartEventId: stopped.turnStartEventId, turnEndEventId: stopped.turnEndEventId } }
   };
 }
 function normalizeFocus(value, label = "focus") {
@@ -22207,13 +22214,14 @@ function completedPairAfter(messageState, eventId) {
   const messages = (messageState?.messages ?? []).filter((message) => Number.isSafeInteger(message.seq) && message.seq > eventId).sort((left, right) => left.seq - right.seq);
   const user = messages.find((message) => message.role === "user" && (messageOriginKind(message) === "user" || messageOriginKind(message) === "steering"));
   if (user === void 0) return null;
+  if (messageState.stoppedRequest?.userEventId === user.seq) return null;
   const assistant = [...messages].reverse().find((message) => message.role === "assistant" && message.seq > user.seq);
   return assistant === void 0 ? null : { user, assistant, sessionFormatVersion: messageState.sessionFormatVersion };
 }
-async function createRootSwipeSession(client, sourceSessionId, beforeReplyEventId) {
+async function createRootSwipeSession(client, sourceSessionId, coordinate) {
   const binding = typeof client.getImportContextBinding === "function" ? await client.getImportContextBinding(sourceSessionId) : null;
   const importContextRef = typeof binding?.path === "string" && binding.path !== "" ? { path: binding.path } : void 0;
-  return client.postSession(sourceSessionId, importContextRef, { sessionId: sourceSessionId, beforeReplyEventId });
+  return client.postSession(sourceSessionId, importContextRef, { sessionId: sourceSessionId, ...coordinate });
 }
 function createPlayNodeController(client, {
   delay = defaultDelay,
@@ -22241,6 +22249,18 @@ function createPlayNodeController(client, {
     playthrough,
     () => updateTimeline(client, playthrough, transform)
   );
+  async function waitForReply(sessionId, boundary) {
+    let sawOpenTurn = false;
+    for (let attempt = 0; attempt < maxPolls; attempt++) {
+      const messages = await client.getMessages(sessionId), pair = completedPairAfter(messages, boundary);
+      if (pair) return pair;
+      const accepted = messages.messages?.some((message) => message.seq > boundary && message.role === "user" && ["user", "steering"].includes(messageOriginKind(message)));
+      if ((sawOpenTurn || accepted) && messages.incompleteTurn === false) throw new Error("Swipe stopped without a saved assistant reply");
+      sawOpenTurn ||= messages.incompleteTurn === true;
+      if (attempt + 1 < maxPolls) await delay(pollInterval);
+    }
+    throw new Error("Timed out waiting for the swipe reply");
+  }
   const update = (playthrough, nodeId, transform) => writeTimeline(playthrough, (timeline) => {
     const { index, node } = nodeById2(timeline, nodeId);
     return replaceNode(timeline, index, transform(node));
@@ -22305,7 +22325,7 @@ function createPlayNodeController(client, {
         }
         const parent = sourceIndex > 0 ? entries2[sourceIndex - 1] : null;
         const forkEventId = parent?.variant.endEventId ?? -1;
-        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId, adopted.endEventId) : await client.postBranch(adopted.sessionId, forkEventId, void 0, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId });
+        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId, { beforeReplyEventId: adopted.endEventId }) : await client.postBranch(adopted.sessionId, forkEventId, void 0, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId });
         const newSessionId = branch?.sessionId;
         if (typeof newSessionId !== "string" || newSessionId === "") {
           throw new TypeError("Branch response has no sessionId");
@@ -22320,20 +22340,7 @@ function createPlayNodeController(client, {
         try {
           onStarted?.({ sessionId: newSessionId, nodeId: sourceNode.id });
           await client.postUserMessage(newSessionId, user.text);
-          let pair = null;
-          let sawOpenTurn = false;
-          for (let attempt = 0; attempt < maxPolls; attempt += 1) {
-            const messages = await client.getMessages(newSessionId);
-            pair = completedPairAfter(messages, forkEventId);
-            const accepted = messages.messages?.some((message) => message.seq > forkEventId && message.role === "user" && ["user", "steering"].includes(messageOriginKind(message)));
-            if ((sawOpenTurn || accepted) && messages.incompleteTurn === false && pair === null) {
-              throw new Error("Swipe stopped without a saved assistant reply");
-            }
-            sawOpenTurn ||= messages.incompleteTurn === true;
-            if (pair !== null) break;
-            if (attempt + 1 < maxPolls) await delay(pollInterval);
-          }
-          if (pair === null) throw new Error("Timed out waiting for the swipe reply");
+          const pair = await waitForReply(newSessionId, forkEventId);
           const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
           const variant2 = {
             id: variantId,
@@ -22366,6 +22373,40 @@ function createPlayNodeController(client, {
           if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
           finishPendingSwipe(client, pending2);
           return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId };
+        } catch (error) {
+          finishPendingSwipe(client, pending2, error);
+          throw error;
+        }
+      });
+    },
+    retryStoppedRequest(playthrough, { sessionId, userEventId }, { onStarted } = {}) {
+      return schedule(playthrough, async () => {
+        const timeline = await client.getTimeline(playthrough), entries2 = activeTimelineEntries(timeline);
+        if ((timeline.head?.sessionId ?? playthrough.ext?.pmpDshTavern?.rootSessionId) !== sessionId) throw Error("The stopped request is not on the active session");
+        const source = await client.getMessages(sessionId);
+        const user = source.messages.find((message) => message.seq === userEventId && message.role === "user" && ["user", "steering"].includes(messageOriginKind(message)));
+        if (source.incompleteTurn || source.stoppedRequest?.userEventId !== userEventId || !user?.text?.trim()) throw Error("The stopped request is no longer retryable");
+        const parent = entries2.at(-1), boundary = parent?.variant.endEventId ?? -1;
+        if (boundary >= userEventId) throw Error("The stopped request is already represented by a reply");
+        const stateSource = { sessionId, beforeUserEventId: userEventId };
+        const branch = parent ? await client.postBranch(sessionId, boundary, source.sessionFormatVersion, stateSource) : await createRootSwipeSession(client, sessionId, { beforeUserEventId: userEventId });
+        const newSessionId = branch?.sessionId;
+        if (typeof newSessionId !== "string" || !newSessionId) throw Error("Retry created no session");
+        const pending2 = beginPendingSwipe(client, { playthrough, sessionId: newSessionId, sourceSessionId: sessionId, nodeId: `live-${userEventId}`, timeline: pendingSwipeTimeline(timeline, entries2, entries2.length, newSessionId) });
+        try {
+          onStarted?.({ sessionId: newSessionId });
+          await client.postUserMessage(newSessionId, user.text);
+          const pair = await waitForReply(newSessionId, boundary);
+          const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId), nodeId = `qa-${variantId}`.slice(0, 200);
+          const variant2 = { id: variantId, sessionId: newSessionId, startEventId: pair.user.seq, endEventId: pair.assistant.seq, ...Number.isSafeInteger(pair.sessionFormatVersion) ? { ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } } } : {} };
+          const next = await writeTimeline(playthrough, (current4) => {
+            if (JSON.stringify(current4.head) !== JSON.stringify(timeline.head)) throw Error("Active reply changed during request retry");
+            return timelineWithHead({ ...current4, nodes: [...current4.nodes, { id: nodeId, kind: "qa", displayOverride: null, parentVariantId: parent?.variant.id ?? null, adoptedVariantId: variantId, variants: [variant2] }] }, { sessionId: newSessionId, nodeId, variantId });
+          });
+          const focus = await client.getFocus(playthrough);
+          if (focus.sessionId !== newSessionId) throw Error("Saved retry does not match derived focus");
+          finishPendingSwipe(client, pending2);
+          return { timeline: next, sessionId: newSessionId, nodeId, variantId };
         } catch (error) {
           finishPendingSwipe(client, pending2, error);
           throw error;
@@ -22482,6 +22523,33 @@ function turnActionCapabilities(turn) {
     fork: true,
     editDisplay: true
   };
+}
+function StoppedRequestActions({ request: request2, nodeId, playthrough, playClient, openSession, running, readOnly, onChanged, onError, onSwipePending }) {
+  installStyles();
+  const [busy2, setBusy] = (0, import_react3.useState)(false), pending2 = pendingSwipe(playClient, playthrough);
+  const disabled = readOnly || running || busy2 || pending2 !== null && pending2.error === null;
+  async function retry() {
+    if (disabled) return;
+    setBusy(true);
+    onError("");
+    onSwipePending?.(nodeId, true);
+    try {
+      await controller(playClient).retryStoppedRequest(playthrough, request2, { onStarted: (value) => openSession(value.sessionId, playthrough) });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      onChanged();
+    } catch (error) {
+      onError(error instanceof Error ? error.message : String(error));
+    } finally {
+      onSwipePending?.(nodeId, false);
+      setBusy(false);
+    }
+  }
+  return h3(
+    "div",
+    { className: "dtv-play-turn-actions" },
+    h3("span", { className: "dtv-play-turn-position" }, uiMessage("play.chat.stoppedWithoutReply")),
+    h3(Action, { icon: "\u203A", label: uiMessage("play.chat.retryStoppedRequest"), disabled, onClick: retry })
+  );
 }
 function PlayTurnActions({
   turn,
@@ -52286,7 +52354,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
       assistant = null;
       continuationAssistant = null;
     } else if (message.role === "assistant" && user !== null) {
-      assistant = message;
+      if (messageState.stoppedRequest?.userEventId !== user.seq) assistant = message;
     } else if (message.role === "assistant") {
       continuationAssistant = message;
     }
@@ -52596,6 +52664,7 @@ async function loadChatState(client, sessionId, playthrough) {
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     pendingSwipeError: pending2?.error ?? null,
+    stoppedRequest: rootMessages?.stoppedRequest ?? null,
     timeline,
     turns,
     importBinding: importedContext.binding,
@@ -52676,7 +52745,7 @@ function messageVariableScope(turn) {
   const version3 = variant2.ext?.pmpDshTavern?.sessionFormatVersion;
   return { sessionId: variant2.sessionId, nodeId: turn.id, variantId: variant2.id, endEventId: variant2.endEventId, ...Number.isSafeInteger(version3) ? { sessionFormatVersion: version3 } : {} };
 }
-function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
+function Turn({ turn, hideUser = false, swipePending = false, stoppedRequest, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null;
   const durableQa = turnHasDurableQaActions(turn);
   const assistantTexts = swipePending ? [] : Array.isArray(turn.assistantTexts) ? turn.assistantTexts : turn.assistantText === "" ? [] : [turn.assistantText];
@@ -52700,7 +52769,7 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
       ...actionProps,
       running: actionProps.running === true || swipePending,
       pendingVariant: swipePending
-    })) : null
+    })) : stoppedRequest ? h21(MessageRow, null, h21(StoppedRequestActions, { ...actionProps, request: stoppedRequest, nodeId: turn.id })) : null
   );
 }
 function ImportControls({
@@ -52873,7 +52942,19 @@ function ChatFrame({
       swipePending: pendingSwipe2?.nodeId === turn.id
     })),
     state.importBinding === null ? null : importControls,
-    ...liveTurns.map((turn) => h21(Turn, { key: turn.id, turn })),
+    ...liveTurns.map((turn) => h21(Turn, {
+      key: turn.id,
+      turn,
+      stoppedRequest: turn.id === `live-${state.stoppedRequest?.userEventId}` ? { ...state.stoppedRequest, sessionId: currentSessionId } : null,
+      playthrough,
+      playClient,
+      openSession,
+      running,
+      readOnly: !interactive,
+      onChanged: changed,
+      onError,
+      onSwipePending
+    })),
     state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h21("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
     liveTurns.length === 0 && running && current4 ? h21("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
   )));

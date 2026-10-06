@@ -134,8 +134,8 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件。`catalog.json` / `timeline.json` 读出后执行对应 schema/path 校验；第三方 `ext` 原样保留；受管文档响应增加精确 UTF-8 字节的 SHA-256 `revision`（64 位小写 hex） | 已实现 |
 | PUT | `/workspace/files?path=` | 普通文件仍使用 `{ content }`；`catalog.json` / `timeline.json` 必须显式带 `expectedRevision`：`null` 仅创建缺失目标，64 位小写 SHA-256 仅在当前字节 hash 相等时替换。校验、CAS、临时写和 rename 在同一目标 guard 内 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
-| POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。首轮 reply swipe 可另带 `stateSource:{sessionId,beforeReplyEventId}`（sessionId 必须等于 selection 来源），由 Host 冻结原请求前 MVU 状态并在首次请求前安装独立实例；普通新周目不带此字段。插入扮演工作区。**不写 timeline** | 已实现 |
-| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion?, stateSource?:{sessionId,beforeReplyEventId} }`：显式 reply swipe 的 stateSource 必须绑定当前来源 session 和更晚的目标回复；历史仍按 atEventId fork，MVU 使用目标请求前 checkpoint。日志 seq 与其格式版本；迁移检查见下文。fork 后通过公开 `sessionController.resolveAgent()` / `agent.inbox.clear()` 清空子会话的 queued/steering 输入，再复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。队列清理或校验失败返回 502 `PLAY_BRANCH_INPUT_RESET_FAILED`，不继续复制上下文；复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
+| POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。首轮 reply swipe 可另带 `stateSource:{sessionId,beforeReplyEventId}`（sessionId 必须等于 selection 来源），由 Host 冻结原请求前 MVU 状态并在首次请求前安装独立实例；普通新周目不带此字段。插入扮演工作区。**不写 timeline** 已取消且没有助手正文的请求改用 `stateSource:{sessionId,beforeUserEventId}`；两个坐标字段互斥。来源核对已持久保存的 aborted 回合，并冻结其请求前 checkpoint。 | 已实现 |
+| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion?, stateSource?:{sessionId,beforeReplyEventId} }`：显式 reply swipe 的 stateSource 必须绑定当前来源 session 和更晚的目标回复；历史仍按 atEventId fork，MVU 使用目标请求前 checkpoint。日志 seq 与其格式版本；迁移检查见下文。fork 后通过公开 `sessionController.resolveAgent()` / `agent.inbox.clear()` 清空子会话的 queued/steering 输入，再复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。队列清理或校验失败返回 502 `PLAY_BRANCH_INPUT_RESET_FAILED`，不继续复制上下文；复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409。保留前缀后的已取消请求重试同样支持互斥的 `beforeUserEventId` 坐标。 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + 每条消息的 `origin`；顶层可附带 `sessionFormatVersion` / `migratedFromV2`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现 |
 | GET | `/sessions/:id/coordinates` | 只读查询当前逻辑会话的格式版本与迁移标记；无消息正文。[字段与调用示例](#session-coordinates) | 已实现 |
@@ -148,6 +148,8 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 | GET | `/focus?path=` | 低层兼容路由：按显式 timeline path 派生 `{ sessionId }`；内置前端使用 playthrough id 路由 | 兼容面 |
 | GET | `/focus`（无 path） | 不提供默认目标；“最近写入 timeline”不是用户 focus | 400 PLAY_FOCUS_PATH_REQUIRED |
 | POST | `/focus`、`/playthroughs/:id/focus` | 不提供 | 405 |
+
+会话 messages 响应中的 `stoppedRequest` 为 null，或为最后一个已持久停止且没有助手正文的人类请求的 `{userEventId,turnStartEventId,turnEndEventId}`。运行中的回合、已完成回复和来源上下文不符合条件。它提供重试证据，不代表已保存的回复变体。
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404 PLAY_PLAYTHROUGH_NOT_FOUND；catalog 缺失返回 409 PLAY_CATALOG_UNAVAILABLE，catalog 损坏保留 400 PLAY_CATALOG_INVALID；timeline 缺失或损坏统一返回 409 PLAY_FOCUS_UNAVAILABLE。稳定入口不接受客户端 path，不读取 DSH history，也不写文件。旧 /focus?path= 仅保留迁移兼容。
 
@@ -569,7 +571,6 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
 | GET | `/presets/:id/export` | 请求：无；返回：ST JSON 附件；`Content-Disposition: attachment` | 已实现 |
-
 
 ### 资源携带的原生 ST 正则
 

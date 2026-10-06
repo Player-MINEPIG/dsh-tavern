@@ -72,6 +72,24 @@ export function turnActionCapabilities(turn) {
   }
 }
 
+export function StoppedRequestActions({request,nodeId,playthrough,playClient,openSession,running,readOnly,onChanged,onError,onSwipePending}){
+ installStyles()
+ const [busy,setBusy]=useState(false),pending=pendingSwipe(playClient,playthrough)
+ const disabled=readOnly||running||busy||(pending!==null&&pending.error===null)
+ async function retry(){
+  if(disabled)return
+  setBusy(true);onError('');onSwipePending?.(nodeId,true)
+  try{
+   await controller(playClient).retryStoppedRequest(playthrough,request,{onStarted:value=>openSession(value.sessionId,playthrough)})
+   window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));onChanged()
+  }catch(error){onError(error instanceof Error?error.message:String(error))}
+  finally{onSwipePending?.(nodeId,false);setBusy(false)}
+ }
+ return h('div',{className:'dtv-play-turn-actions'},
+  h('span',{className:'dtv-play-turn-position'},uiMessage('play.chat.stoppedWithoutReply')),
+  h(Action,{icon:'›',label:uiMessage('play.chat.retryStoppedRequest'),disabled,onClick:retry}))
+}
+
 export function PlayTurnActions({
   turn,
   playthrough,

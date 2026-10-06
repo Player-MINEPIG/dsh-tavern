@@ -35,7 +35,7 @@ import {
   getRegexDocument,
   resourceRegexRules,
 } from './regex.js'
-import { PlayTurnActions } from './turn-actions.js'
+import { PlayTurnActions,StoppedRequestActions } from './turn-actions.js'
 import { MessageRow } from './message-layout.js'
 import { createTurnReconciler } from './turns.js'
 import {
@@ -242,6 +242,7 @@ export async function loadChatState(client, sessionId, playthrough) {
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     pendingSwipeError: pending?.error ?? null,
+    stoppedRequest:rootMessages?.stoppedRequest??null,
     timeline,
     turns,
     importBinding: importedContext.binding,
@@ -332,7 +333,7 @@ export function messageVariableScope(turn) {
   return {sessionId:variant.sessionId,nodeId:turn.id,variantId:variant.id,endEventId:variant.endEventId,...(Number.isSafeInteger(version)?{sessionFormatVersion:version}:{})}
 }
 
-function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
+function Turn({ turn, hideUser = false, swipePending = false, stoppedRequest, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null
   const durableQa = turnHasDurableQaActions(turn)
   const assistantTexts = swipePending ? [] : Array.isArray(turn.assistantTexts)
@@ -358,7 +359,7 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
       ...actionProps,
       running: actionProps.running === true || swipePending,
       pendingVariant: swipePending,
-    })) : null,
+    })) : stoppedRequest?h(MessageRow,null,h(StoppedRequestActions,{...actionProps,request:stoppedRequest,nodeId:turn.id})):null,
   )
 }
 
@@ -532,7 +533,10 @@ function ChatFrame({
       swipePending: pendingSwipe?.nodeId === turn.id,
     })),
     state.importBinding === null ? null : importControls,
-    ...liveTurns.map(turn => h(Turn, { key: turn.id, turn })),
+    ...liveTurns.map(turn => h(Turn, { key: turn.id, turn,
+      stoppedRequest:turn.id===`live-${state.stoppedRequest?.userEventId}`?{...state.stoppedRequest,sessionId:currentSessionId}:null,
+      playthrough,playClient,openSession,running,readOnly:!interactive,onChanged:changed,onError,onSwipePending,
+    })),
     state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running
       ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))
       : null,

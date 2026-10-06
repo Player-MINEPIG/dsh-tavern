@@ -33,6 +33,8 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 正常 fork 在调用官方创建操作前冻结具体来源实例、versionKey、revision 与内容 hash，之后原子安装子实例。子实例继承当时完整 variables/schema 和可验证的只读历史，不重放祖先更新或 schema transform。reply swipe 继承被重生成回复的持久请求前 checkpoint，包含当时开场配置；后续父状态变化不改变种子。首轮 swipe 使用新空会话；后续 swipe 分别绑定历史截断坐标 `prefixEndEventId` 和被替换回复坐标 `atEventId`，保留官方历史前缀，以目标 checkpoint 作为 current，排除之后的编辑。普通 fork 仍继承截断坐标的状态。新实例不继承 manager 策略、grant、capability 或 operationId。子实例保留来源的已存模式；实际管理方仍由当前注册决定，管理器注册期间缺失许可会拒绝执行。Host 首请求等待初始化及 checkpoint 完成；缺失 seed 或 checkpoint 拒绝继续。
 
+已停止且没有助手正文的人类请求通过 request-retry 绑定持久用户事件及 aborted 回合，冻结该轮不可变 checkpoint（包括开场配置）；之后的手动编辑不改变重试基线。首轮创建独立空会话，后续轮保留前一回复的历史前缀。不会为已取消请求伪造回复版本。
+
 新状态写入 `mvu-instances.json`。旧 `mvu-state.json` 保留原字节，只作为带 `MVU_MIGRATION_REQUIRED` 的只读资源，不能更新、复制、提供给模型或作为继承来源。旧共享账本可能已串写，不按 session 自动拆分。绑定旧状态的会话需显式处理；新会话可独立从模板开始。
 
 角色侧栏的“新周目”明确创建独立会话和状态，不复用尚无 DSH 对话但已初始化的旧周目。旧周目、旧状态和历史仍保留。
@@ -59,7 +61,7 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 | `observe(listener)` | 注册提交与请求事实监听，返回 disposer；监听器不能参与状态写事务 |
 | `discover({definition,sessionId?})` | 可信 Host 发现接口；稳定模板身份、原生默认及显式会话访问 |
 | `validateConfig(config)` | 检查 `type:'mvu-state'`、store/retrieve 触发及支持的策略链 |
-| `captureSessionSeed({sessionId,kind,atEventId,prefixEndEventId?,targetSessionId?,signal?})` | 可信创建路径冻结来源，返回 opaque ticket 或无状态时 null；kind 为 fork / reply-swipe，首轮 swipe 必须预先指定目标 session ID，后续 swipe 必须给出 prefixEndEventId |
+| `captureSessionSeed({sessionId,kind,atEventId,prefixEndEventId?,targetSessionId?,signal?})` | 可信创建路径冻结来源，返回 opaque ticket 或无状态时 null；kind 为 fork / reply-swipe / request-retry，首轮 swipe/retry 必须预先指定目标 session ID，后续 swipe/retry 必须给出 prefixEndEventId |
 | `installSessionSeed({ticket,sessionId,signal?})` | 官方创建返回后校验子身份/父来源/继承消息，原子安装；同 ticket 同目标幂等，冲突拒绝 |
 | `checkpoint(session,turnStartEvent)` | Host 在 durable turn/start 冻结一次请求前基线；后续 step 不覆盖 |
 
@@ -154,7 +156,6 @@ v2 DSL 支持 `z.looseObject(shape)` 和 `z.strictObject(shape)`：普通 `z.obj
 
 v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 先尝试对象候选，schema 验证拒绝后再尝试数组，仅保留成功解析的候选；对象插入为浅赋值。set 的数字转换由 Zod schema 决定，add 仍要求已有数字。路径创建保留 JSON/prototype、稠密数组和原大小/结构限制；原生元数据及 v1 命令维持原路径规则。CAS、事务收据、来源 schema 所有权、grant 与 usage 策略继续由已有 API 核验。本修复不改变 schema 校验的事件时机，也不提供关闭校验的选项。
 
-
 远程模块标识/hash、默认关闭的替代模式和界面诊断由渲染 adapter 独立核验。上述确切 mvu_zod URL 接纳静态核验的两组 SHA-256：`78c40f52d81022d9d769a923a49e673b8babb562656051a7d0410b6b19f45184` 和 `e540ab99589ad83de1495056a84693bda00af92f8848926bcb9a53b9263a0302`，均映射到同一后端 schema 登记适配器。未知字节或 URL 仍拒绝；这不代表支持上游其他运行回调。后端 descriptor 的解释器版本不能当作上游 bundle 字节身份，也不证明原 bundle 运行过。
 
 ## 兼容边界与验证
@@ -182,7 +183,6 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 
 `test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。 `test/mvu-history-budget.test.mjs` 另覆盖跨单状态预算的历史集合、保存超限的原子拒绝、冻结种子与冷恢复；设置上述 runtime 后还验证官方 AgentLoop 八轮请求及 detached Session 恢复。
 
-
 ## Prompt Template 依赖读取
 
 可信 Host 可调用 `tavernMvu.resolvePromptDependency({id,scope:{authority:'local',sessionId},event:{preview,turn?,step?,usage:'prompt-template-dependency',consumer:{adapterId:'tavern.prompt-templates',id}},signal?})`。consumer.id 必须是实际选定模板 ID；VM 不能自行选择来源、scope 或 consumer。类型定义见 `packages/mvu-adapter/src/prompt-dependency.d.ts`。
@@ -190,7 +190,6 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 来源缺失、不可用或策略拒绝时返回 `null`，允许时返回 `{id,adapterId:'tavern.mvu',content,revision,configRevision,checkCurrent}`；无效 scope、取消与配置错误抛出异常。content 是包含 stat_data 的完整变量对象副本；世界书发送读取可返回该轮持久请求前 checkpoint。读取经过 MVU 自己的 `before_model_request` 策略和固定 read/render/provide 链；managed 来源必须获得明确许可；对这个依赖接口，每个已注册策略 handler（包括原生来源上的 handler）都必须返回带同步租约的允许决策，`undefined` 弃权会拒绝释放内容。没有策略 handler 的 native 来源保持原生许可。普通 `resolveRequest` 保留通用 handler 的原有弃权规则，但已注册管理器必须独立决定，最终装配复核其许可及角色绑定租约。管理接口 `read` 成功不等于允许模型检索。
 
 仅供 Host 保存的同步 `checkCurrent()` 会在来源 revision、角色选择、catalog/timeline 成员关系 ABA、manager reload/卸载、取消或来源卸载后拒绝旧结果。Host 必须能够核实会话选择和成员关系，无法核实时拒绝。`PlayMembershipService.captureContextLease()` 使用 `PlayWorkspaceStore.captureMutationLease()` 核实全部公开文件写入、目录创建及工作区身份变更，包含缺失 catalog、未绑定工作区和成员关系 ABA；因此无需为原生会话创建 catalog。该保守租约也会因无关文件写入失效，调用方需重新读取。调用方应在模板实际读取变量时才调用，将租约留在 VM 外，并在最终装配处无间隔 await 地再次检查。取得依赖不会产生 applied 事实或声称已提供给模型；此接口不增加 HTTP 路由或写权限。
-
 
 ## 来源提交前命令 Helper
 

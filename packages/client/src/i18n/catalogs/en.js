@@ -135,6 +135,8 @@ export default Object.freeze({
   "appearance.unsupportedEvents": "This card uses inline event attributes (such as onclick); use addEventListener instead.",
   "appearance.cardStaticFallback": "The static view is shown. Card scripts did not run for the reasons listed above.",
   "appearance.dismissCardNotice": "Dismiss this notice",
+  "play.chat.stoppedWithoutReply": "Stopped without a saved reply",
+  "play.chat.retryStoppedRequest": "Generate this reply again",
   "appearance.styleName": "Style name",
   "appearance.radius": "Radius",
   "appearance.padding": "Padding",

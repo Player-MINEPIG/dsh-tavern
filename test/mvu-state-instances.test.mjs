@@ -318,6 +318,29 @@ test('a later invalid update preserves the exact earlier reply snapshot and sche
  assert.deepEqual((await f.service.snapshot(scope)).variables,before.variables)
 })
 
+test('cancelled requests without a reply retry from the checkpoint, including the first request',async t=>{
+ for(const later of [false,true]){
+  const f=fixture(t);f.create('A');await f.edit('A',70)
+  const prefix=later?await f.turn('A',-10):null,baseline=later?60:70
+  const session=f.sessions.get('A'),seq=session.events.length,turn=later?2:1
+  const start={seq,type:'turn/start',data:{turn}};session.events.push(start);await f.service.checkpoint(session,start)
+  session.events.push({seq:seq+1,type:'user/message',data:{id:'cancelled-user',role:'user',source:{kind:'user'},content:[{type:'text',text:'Neutral request'}]}},
+   {seq:seq+2,type:'assistant/message',data:{turn,interrupted:true,message:{id:'reasoning',content:[{type:'reasoning',text:'Analysis only'}]}}},
+   {seq:seq+3,type:'turn/end',data:{turn,reason:{kind:'aborted'}}})
+  await f.service.ingest(session)
+  await f.edit('A',30,'after-stop')
+  const ticket=await f.service.captureSessionSeed({sessionId:'A',kind:'request-retry',atEventId:seq+1,...(later?{prefixEndEventId:prefix}:{targetSessionId:'B'})})
+  const child=f.create('B',later?'A':undefined,later?session.events.filter(e=>e.seq<=prefix):[])
+  if(later)child.events.push({seq:child.events.length,type:'session/end-seed',data:{}})
+  await f.service.installSessionSeed({ticket,sessionId:'B'})
+  assert.equal((await f.read('B')).content.stat_data.hp,baseline)
+  assert.equal((await f.read('A')).content.stat_data.hp,30)
+  await f.turn('B',-1);assert.equal((await f.read('B')).content.stat_data.hp,baseline-1)
+  session.events.at(-1).data.reason.kind='completed'
+  await assert.rejects(f.service.captureSessionSeed({sessionId:'A',kind:'request-retry',atEventId:seq+1,targetSessionId:'C'}),{code:'MVU_SEED'})
+ }
+})
+
 test('non-root swipe baseline retains valid prefix provenance for editing and another fork', async t => {
   const f = fixture(t); f.create('A'); const first = await f.turn('A', -10), second = await f.turn('A', -1)
   const ticket = await f.service.captureSessionSeed({ sessionId: 'A', kind: 'reply-swipe', atEventId: second, prefixEndEventId: first })

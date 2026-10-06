@@ -617,5 +617,28 @@ test('session creation and branch accept only fixed source coordinates for expli
       assert.equal(result.status, 400); assert.equal(result.body.code, 'PLAY_STATE_SOURCE_INVALID')
     }
     assert.equal(f.host.calls.filter(c => c[0] === 'forkSession').length, 1)
+    const retry={sessionId:'session-root',beforeUserEventId:7}
+    const retried=await invoke(f.handler,{method:'POST',url:`${API_V2}/sessions`,body:{selectionFromSessionId:'session-root',stateSource:retry}})
+    assert.equal(retried.status,201)
+    const retryBranch=await invoke(f.handler,{method:'POST',url:`${API_V2}/sessions/session-root/branch`,body:{atEventId:3,stateSource:retry}})
+    assert.equal(retryBranch.status,201)
+    const mixed=await invoke(f.handler,{method:'POST',url:`${API_V2}/sessions`,body:{selectionFromSessionId:'session-root',stateSource:{...retry,beforeReplyEventId:8}}})
+    assert.equal(mixed.status,400)
   } finally { rmSync(f.pluginDir, { recursive: true, force: true }); rmSync(f.playRoot, { recursive: true, force: true }) }
+})
+
+test('messages expose a stopped ordinary request even when only reasoning was saved',async()=>{
+ const f=await boundHandler()
+ try{
+  f.host.history=async()=>({hasMore:false,throughSeq:3,events:[
+   {seq:0,type:'turn/start',data:{turn:1}},
+   {seq:1,type:'user/message',data:{id:'u',role:'user',source:{kind:'user'},content:[{type:'text',text:'Neutral question'}]}},
+   {seq:2,type:'assistant/message',data:{turn:1,interrupted:true,message:{id:'a',role:'assistant',content:[{type:'reasoning',text:'Analysis only'}]}}},
+   {seq:3,type:'turn/end',data:{turn:1,reason:{kind:'aborted'}}},
+  ]})
+  f.host.deriveMessages=async()=>[{id:'u',role:'user',content:[{type:'text',text:'Neutral question'}]},{id:'a',role:'assistant',content:[{type:'reasoning',text:'Analysis only'}]}]
+  const result=await invoke(f.handler,{url:`${API_V2}/sessions/session-root/messages`})
+  assert.equal(result.status,200);assert.equal(result.body.incompleteTurn,false)
+  assert.deepEqual(result.body.stoppedRequest,{userEventId:1,turnStartEventId:0,turnEndEventId:3})
+ }finally{rmSync(f.pluginDir,{recursive:true,force:true});rmSync(f.playRoot,{recursive:true,force:true})}
 })

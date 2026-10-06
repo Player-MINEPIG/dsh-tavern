@@ -135,6 +135,8 @@ export default Object.freeze({
   "appearance.unsupportedEvents": "此卡片使用内联事件属性（如 onclick），需改为 addEventListener。",
   "appearance.cardStaticFallback": "当前显示静态界面；卡片脚本未运行，原因见上述提示。",
   "appearance.dismissCardNotice": "关闭此提示",
+  "play.chat.stoppedWithoutReply": "已停止，尚未保存回复",
+  "play.chat.retryStoppedRequest": "重新生成本轮回复",
   "appearance.styleName": "样式名称",
   "appearance.radius": "圆角",
   "appearance.padding": "内边距",

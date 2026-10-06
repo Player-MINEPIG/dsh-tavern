@@ -1,4 +1,5 @@
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
+import {stateSourceTarget} from '../../play/src/stopped-request.js'
 import { mapHostError } from '../../play/src/host.js'
 import { httpError } from '../../play/src/http.js'
 import { sessionCoordinates, requireCoordinates } from '../../play/src/session-coordinates.js'
@@ -63,7 +64,7 @@ export function createPlayHost({
       const source = stateSeeds?.()
       // Public DSH create accepts an explicit id. Persist the target intent before creating it.
       const targetId = stateSource ? `session-${randomUUID()}` : null
-      const ticket = stateSource ? await source?.captureSessionSeed({ kind: 'reply-swipe', sessionId: stateSource.sessionId, atEventId: stateSource.beforeReplyEventId, targetSessionId: targetId }) : null
+      const ticket = stateSource ? await source?.captureSessionSeed({ ...stateSourceTarget(stateSource), sessionId: stateSource.sessionId, targetSessionId: targetId }) : null
       if (targetId) payload.sessionId = targetId
       const value = await callSessionCreation(sessionController, 'create', payload, operation)
       const sessionId = value?.sessionId
@@ -90,7 +91,7 @@ export function createPlayHost({
         requireCoordinates(sessionFormatVersion, coordinates)
         importContexts?.()?.ensureCoordinates?.(sessionId, coordinates)
         const source = stateSeeds?.(), ticket = await source?.captureSessionSeed(stateSource
-          ? { kind: 'reply-swipe', sessionId, atEventId: stateSource.beforeReplyEventId, prefixEndEventId: atSeq }
+          ? { ...stateSourceTarget(stateSource), sessionId, prefixEndEventId: atSeq }
           : { kind: 'fork', sessionId, atEventId: atSeq })
         if (typeof sessionController?.resolveAgent !== 'function') throw missing('session.resolveAgent')
         const value = await callSessionCreation(sessionController, 'fork', { sessionId, atSeq }, operation)

@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import {stoppedRequestFromEvents} from '../../play/src/stopped-request.js'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { atomicJson, readJsonFile } from '../../play/src/atomic-json.js'
@@ -179,10 +180,12 @@ export class MvuService {
   async captureSessionSeed({ sessionId, kind, atEventId, prefixEndEventId, targetSessionId, signal } = {}) {
     const barrier = this.waitForHost?.(); if (barrier) await barrier
     signal?.throwIfAborted()
-    if (!['fork', 'reply-swipe'].includes(kind) || !Number.isSafeInteger(atEventId) || atEventId < 0
-      || (prefixEndEventId !== undefined && (kind !== 'reply-swipe' || !Number.isSafeInteger(prefixEndEventId) || prefixEndEventId < 0 || prefixEndEventId >= atEventId))
-      || (kind === 'reply-swipe' && prefixEndEventId === undefined && (typeof targetSessionId !== 'string' || !targetSessionId))) fail('MVU_SEED', 'A concrete source reply and creation intent are required')
+    const retry=kind==='request-retry'
+    if (!['fork', 'reply-swipe','request-retry'].includes(kind) || !Number.isSafeInteger(atEventId) || atEventId < 0
+      || (prefixEndEventId !== undefined && (kind === 'fork' || !Number.isSafeInteger(prefixEndEventId) || prefixEndEventId < 0 || prefixEndEventId >= atEventId))
+      || (kind !== 'fork' && prefixEndEventId === undefined && (typeof targetSessionId !== 'string' || !targetSessionId))) fail('MVU_SEED', 'A concrete source coordinate and creation intent are required')
     await this.refresh?.(sessionId)
+    if(retry){const session=this.inspect?await this.inspect(sessionId):this.#sessions.get(sessionId);if(stoppedRequestFromEvents(session?.events)?.userEventId!==atEventId)fail('MVU_SEED','Retry requires a stopped request without assistant text')}
     const hasState = await this.#serial(async () => { await this.#ensureInstances(sessionId); return this.resources.some(r => r.instance?.sessionId === sessionId && this.#cardResourceActive(r, { sessionId })) })
     if (!hasState) { signal?.throwIfAborted(); return null }
     const lease = await this.#sessionLease(sessionId)
@@ -192,20 +195,21 @@ export class MvuService {
       if (!active.length) return null
       const session = this.inspect ? await this.inspect(sessionId) : this.#sessions.get(sessionId), identity = sessionIdentity(session, sessionId)
       const message = session.events.find(e => e.seq === atEventId)
-      if (message?.type !== 'assistant/message' || message.data?.interrupted) fail('MVU_SEED', 'Seed must reference a durable final reply')
+      const stopped=retry?stoppedRequestFromEvents(session.events):null
+      if (retry?stopped?.userEventId!==atEventId:message?.type !== 'assistant/message' || message.data?.interrupted) fail('MVU_SEED', 'Seed must reference a durable reply or stopped request')
       const prefix = prefixEndEventId === undefined ? null : session.events.find(e => e.seq === prefixEndEventId)
-      const targetStart = session.events.find(e => e.type === 'turn/start' && e.data?.turn === message.data?.turn)
+      const targetStart = retry?session.events.find(e=>e.seq===stopped.turnStartEventId):session.events.find(e => e.type === 'turn/start' && e.data?.turn === message.data?.turn)
       if (prefixEndEventId !== undefined && (prefix?.type !== 'assistant/message' || !targetStart || targetStart.seq <= prefixEndEventId
         || session.events.some(e => e.seq > prefixEndEventId && e.seq < targetStart.seq && ['turn/start', 'assistant/message'].includes(e.type)))) fail('MVU_SEED_MISMATCH', 'Swipe prefix must immediately precede its target turn')
       const items = []
       for (const resource of active) {
         const record = this.#record(resource.id)
         this.#verifyHistory(record, sessionId, session)
-        const version = record.versions.findLast(v => v.source.messageSeq === atEventId && v.source.messageId === message.data.message.id)
-        if (!version) fail('MVU_SEED_REQUIRED', 'The source reply has no state snapshot')
-        let variables = version.variables, sourceRevision = version.revision, versionKey = version.key, checkpointRevision = null
-        if (kind === 'reply-swipe') {
-          const checkpoint = record.checkpoints?.find(c => c.turn === message.data.turn)
+        const version = retry?null:record.versions.findLast(v => v.source.messageSeq === atEventId && v.source.messageId === message.data.message.id)
+        if (!version&&!retry) fail('MVU_SEED_REQUIRED', 'The source reply has no state snapshot')
+        let variables = version?.variables, sourceRevision = version?.revision, versionKey = version?.key, checkpointRevision = null
+        if (kind !== 'fork') {
+          const checkpoint = record.checkpoints?.find(c => c.turn === targetStart.data.turn)
           if (!checkpoint) fail('MVU_BASELINE_REQUIRED', 'Reply swipe requires its immutable pre-turn state')
           variables = checkpoint.variables; sourceRevision = checkpoint.revision; versionKey = checkpoint.versionKey; checkpointRevision = checkpoint.revision
         }
@@ -245,7 +249,7 @@ export class MvuService {
       const prefixCut = seed.prefixEndEventId ?? seed.atEventId
       if (session.events.some(e => e.seq > prefixCut && ['user/message', 'assistant/message', 'turn/start'].includes(e.type))) fail('MVU_SEED_CONFLICT', 'Child already started new work')
       if ((seed.kind === 'fork' || seed.prefixEndEventId !== undefined) && header.parentSession !== seed.sourceSessionId) fail('MVU_SEED_MISMATCH', 'Official child parent does not match the seed')
-      if (seed.kind === 'reply-swipe' && seed.prefixEndEventId === undefined && (header.parentSession || session.events.some(e => ['turn/start', 'user/message', 'assistant/message'].includes(e.type)))) fail('MVU_SEED_MISMATCH', 'Root swipe must use a new empty session')
+      if (seed.kind !== 'fork' && seed.prefixEndEventId === undefined && (header.parentSession || session.events.some(e => ['turn/start', 'user/message', 'assistant/message'].includes(e.type)))) fail('MVU_SEED_MISMATCH', 'Root retry/swipe must use a new empty session')
       const definitions = [], records = { ...this.#state.resources }
       for (const item of seed.items) {
         const template = this.templates.find(t => t.id === item.templateId)
