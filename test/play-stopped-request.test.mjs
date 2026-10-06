@@ -22,6 +22,11 @@ test('only a durable cancelled human request without assistant text offers a ret
  const value=normalizeSessionMessages({incompleteTurn:false,stoppedRequest:expected,messages:source.slice(1,3).map(event=>({id:(event.data.message??event.data).id,seq:event.seq,role:event.type==='user/message'?'user':'assistant',content:(event.data.message??event.data).content}))})
  assert.deepEqual(value.stoppedRequest,expected)
  assert.equal(appendCompletedTurns({nodes:[]},value,'old').added.length,0)
+ const legacy=appendCompletedTurns({nodes:[]},{...value,stoppedRequest:null},'old').timeline
+ assert.equal(legacy.nodes.length,1)
+ assert.equal(value.messages.at(-1).text,'Analysis only')
+ const repaired=appendCompletedTurns(legacy,value,'old')
+ assert.equal(repaired.changed,true);assert.equal(repaired.timeline.nodes.length,0)
  assert.throws(()=>normalizeSessionMessages({...value,incompleteTurn:true}),/invalid stopped/)
 })
 
@@ -39,7 +44,7 @@ function fixture(later=false,stoppedAgain=false,legacy=false){
  const prefix=later?[{role:'user',seq:1,text:'Previous question'},{role:'assistant',seq:3,text:'Previous reply'}]:[]
  const user={role:'user',seq:userSeq,text:'Neutral stopped question'}
  const client={getTimeline:async()=>structuredClone(timeline),putTimeline:async(_p,next)=>{writes++;timeline=next},getFocus:async()=>timeline.head,
-  getMessages:async sessionId=>({incompleteTurn:false,sessionFormatVersion:4,stoppedRequest:sessionId==='old'||stoppedAgain?stoppedRequest:null,messages:[...prefix,user,...(sessionId==='old'||stoppedAgain?[{role:'assistant',seq:userSeq+1,text:'',content:[{type:'reasoning',text:'Analysis only'}]}]:[{role:'assistant',seq:userSeq+1,text:'Neutral saved answer'}])]}),
+  getMessages:async sessionId=>({incompleteTurn:false,sessionFormatVersion:4,stoppedRequest:sessionId==='old'||stoppedAgain?stoppedRequest:null,messages:[...prefix,user,...(sessionId==='old'||stoppedAgain?[{role:'assistant',seq:userSeq+1,text:'Analysis only',content:[{type:'reasoning',text:'Analysis only'}]}]:[{role:'assistant',seq:userSeq+1,text:'Neutral saved answer'}])]}),
   getCharacterSelection:async()=>({selection:null}),postSession:async(...args)=>{calls.push(['create',...args]);return {sessionId:'new'}},postBranch:async(...args)=>{calls.push(['branch',...args]);return {sessionId:'new'}},postUserMessage:async(...args)=>{calls.push(['send',...args]);return {accepted:true}}}
  const controller=createPlayNodeController(client,{idFactory:()=>`v-${++id}`,delay:()=>{throw Error('A stopped request must not wait for polling')}})
  return {playthrough,client,controller,stoppedRequest,calls,get timeline(){return timeline},get writes(){return writes}}

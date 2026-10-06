@@ -52272,7 +52272,8 @@ function repairStoppedLeaf(timeline, messageState, sessionId) {
   const previous = path3.at(-2);
   if (!leaf || leaf.node.kind !== "qa" || leaf.node.variants.length !== 1 || leaf.variant.sessionId !== sessionId || leaf.variant.startEventId !== stopped.userEventId || leaf.variant.endEventId <= stopped.userEventId || leaf.variant.endEventId >= stopped.turnEndEventId || previous && previous.variant.sessionId !== sessionId || (timeline.nodes ?? []).some((node) => node.parentVariantId === leaf.variant.id)) return { timeline, changed: false };
   const reply = messageState.messages?.find((message) => message.seq === leaf.variant.endEventId);
-  if (reply?.role !== "assistant" || (reply.text ?? "").trim() || reply.content?.some((block) => block.type === "text" && block.text?.trim())) return { timeline, changed: false };
+  const hasBody = Array.isArray(reply?.content) ? reply.content.some((block) => block.type === "text" && block.text?.trim()) : Boolean((reply?.text ?? "").trim());
+  if (reply?.role !== "assistant" || hasBody) return { timeline, changed: false };
   const head = previous ? { sessionId: previous.variant.sessionId, nodeId: previous.node.id, variantId: previous.variant.id } : null;
   const next = { ...timeline, nodes: timeline.nodes.filter((node) => node.id !== leaf.node.id) };
   delete next.head;
