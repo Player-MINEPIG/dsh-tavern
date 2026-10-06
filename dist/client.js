@@ -52264,6 +52264,25 @@ function adjacentGreetingIndex(greeting, direction) {
 }
 
 // packages/client/src/play/turns.js
+function repairStoppedLeaf(timeline, messageState, sessionId) {
+  const stopped = messageState.stoppedRequest;
+  if (!stopped) return { timeline, changed: false };
+  const path3 = activeTimelineEntries(timeline);
+  const leaf = path3.at(-1);
+  const previous = path3.at(-2);
+  if (!leaf || leaf.node.kind !== "qa" || leaf.node.variants.length !== 1 || leaf.variant.sessionId !== sessionId || leaf.variant.startEventId !== stopped.userEventId || leaf.variant.endEventId <= stopped.userEventId || leaf.variant.endEventId >= stopped.turnEndEventId || previous && previous.variant.sessionId !== sessionId || (timeline.nodes ?? []).some((node) => node.parentVariantId === leaf.variant.id)) return { timeline, changed: false };
+  const reply = messageState.messages?.find((message) => message.seq === leaf.variant.endEventId);
+  if (reply?.role !== "assistant" || (reply.text ?? "").trim() || reply.content?.some((block) => block.type === "text" && block.text?.trim())) return { timeline, changed: false };
+  const head = previous ? { sessionId: previous.variant.sessionId, nodeId: previous.node.id, variantId: previous.variant.id } : null;
+  const next = { ...timeline, nodes: timeline.nodes.filter((node) => node.id !== leaf.node.id) };
+  delete next.head;
+  const remembered = next.ext?.pmpDshTavern?.branchHeads;
+  if (Array.isArray(remembered)) next.ext = { ...next.ext, pmpDshTavern: {
+    ...next.ext.pmpDshTavern,
+    branchHeads: remembered.filter((value) => value.branchVariantId !== leaf.variant.id && value.variantId !== leaf.variant.id)
+  } };
+  return { timeline: head ? timelineWithHead(next, head) : next, changed: true };
+}
 function recordedEndSeq2(timeline, sessionId) {
   let end = -1;
   for (const node of timeline?.nodes ?? []) {
@@ -52306,13 +52325,15 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
 } = {}) {
   if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
   if (messageState?.incompleteTurn === true) return { timeline, added: [], changed: false };
+  const repaired = repairStoppedLeaf(timeline, messageState, sessionId);
+  timeline = repaired.timeline;
   const head = timelineHead(timeline);
   if (head !== null && head.sessionId !== sessionId) return { timeline, added: [], changed: false };
   const boundary = recordedEndSeq2(timeline, sessionId);
   const messages = [...messageState?.messages ?? []].filter((message) => Number.isSafeInteger(message.seq) && message.seq > boundary).sort((left, right) => left.seq - right.seq);
   const added = [];
   let nextTimeline = timeline;
-  let changed = false;
+  let changed = repaired.changed;
   let parentVariantId = timelineHead(timeline)?.variantId ?? null;
   let user = null;
   let assistant = null;

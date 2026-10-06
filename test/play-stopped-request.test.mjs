@@ -25,11 +25,17 @@ test('only a durable cancelled human request without assistant text offers a ret
  assert.throws(()=>normalizeSessionMessages({...value,incompleteTurn:true}),/invalid stopped/)
 })
 
-function fixture(later=false,stoppedAgain=false){
+function fixture(later=false,stoppedAgain=false,legacy=false){
  const playthrough={id:'p',path:'p/timeline.json',ext:{pmpDshTavern:{rootSessionId:'old'}}}
  const parent={id:'parent',kind:'qa',parentVariantId:null,adoptedVariantId:'parent-v',variants:[{id:'parent-v',sessionId:'old',startEventId:1,endEventId:3}]}
  let timeline={nodes:later?[parent]:[],head:later?{sessionId:'old',nodeId:'parent',variantId:'parent-v'}:null},writes=0,id=0
- const userSeq=later?5:1,stoppedRequest={userEventId:userSeq,turnStartEventId:userSeq-1,turnEndEventId:userSeq+2},calls=[]
+ const userSeq=later?5:1
+ if(legacy){
+  const phantom={id:'phantom',kind:'qa',displayOverride:null,parentVariantId:later?'parent-v':null,adoptedVariantId:'phantom-v',variants:[{id:'phantom-v',sessionId:'old',startEventId:userSeq,endEventId:userSeq+1}]}
+  timeline.nodes.push(phantom);timeline.head={sessionId:'old',nodeId:'phantom',variantId:'phantom-v'}
+  timeline.ext={pmpDshTavern:{branchHeads:[{branchVariantId:'phantom-v',...timeline.head}]}}
+ }
+ const stoppedRequest={userEventId:userSeq,turnStartEventId:userSeq-1,turnEndEventId:userSeq+2},calls=[]
  const prefix=later?[{role:'user',seq:1,text:'Previous question'},{role:'assistant',seq:3,text:'Previous reply'}]:[]
  const user={role:'user',seq:userSeq,text:'Neutral stopped question'}
  const client={getTimeline:async()=>structuredClone(timeline),putTimeline:async(_p,next)=>{writes++;timeline=next},getFocus:async()=>timeline.head,
@@ -59,4 +65,30 @@ test('cancelling the ordinary request retry again never records a fabricated rep
  const f=fixture(false,true),before=structuredClone(f.timeline)
  await assert.rejects(f.controller.retryStoppedRequest(f.playthrough,{sessionId:'old',userEventId:1}),/stopped without a saved/)
  assert.equal(f.writes,0);assert.deepEqual(f.timeline,before)
+})
+
+for(const later of [false,true])test(`${later?'later':'first'} legacy reasoning-only QA is repaired and the stopped request can retry`,async()=>{
+ const f=fixture(later,false,true)
+ const state=await loadChatState(f.client,'old',f.playthrough)
+ assert.deepEqual(state.stoppedRequest,f.stoppedRequest)
+ assert.equal(f.timeline.nodes.length,later?1:0)
+ assert.equal(f.timeline.nodes.some(node=>node.id==='phantom'),false)
+ assert.equal(f.timeline.ext.pmpDshTavern.branchHeads.some(value=>value.variantId==='phantom-v'),false)
+ assert.equal(f.writes,1)
+ await loadChatState(f.client,'old',f.playthrough)
+ assert.equal(f.writes,1)
+ await f.controller.retryStoppedRequest(f.playthrough,{sessionId:'old',userEventId:f.stoppedRequest.userEventId})
+ assert.equal(f.timeline.nodes.length,later?2:1)
+})
+
+test('legacy repair preserves real replies, alternate variants and descendant branches',()=>{
+ const messages={incompleteTurn:false,stoppedRequest:{userEventId:1,turnStartEventId:0,turnEndEventId:3},messages:[{seq:1,role:'user',text:'Question'},{seq:2,role:'assistant',text:'',content:[{type:'reasoning',text:'Analysis'}]}]}
+ const node={id:'qa',kind:'qa',parentVariantId:null,adoptedVariantId:'v',variants:[{id:'v',sessionId:'old',startEventId:1,endEventId:2}]}
+ const base={nodes:[node],head:{sessionId:'old',nodeId:'qa',variantId:'v'}}
+ for(const change of [value=>value.nodes[0].variants.push({id:'other',sessionId:'child',startEventId:1,endEventId:2}),value=>value.nodes.push({...node,id:'child',parentVariantId:'v',adoptedVariantId:'child-v',variants:[{...node.variants[0],id:'child-v'}]})]){
+  const value=structuredClone(base);change(value)
+  assert.deepEqual(appendCompletedTurns(value,messages,'old').timeline,value)
+ }
+ const saved=structuredClone(messages);saved.stoppedRequest=null;saved.messages[1].text='Saved reply'
+ assert.deepEqual(appendCompletedTurns(base,saved,'old').timeline,base)
 })
