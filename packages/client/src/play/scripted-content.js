@@ -1,7 +1,7 @@
 import {claimGreetingSelection,greetingReadView} from './bound-greeting.js'
 import {initialWriteViewScope} from './mvu-scope.js'
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
-import {useCardDiagnostics} from './card-diagnostics.js'
+import {CardDiagnosticNotice,useCardDiagnostics} from './card-diagnostics.js'
 import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBUTE } from './card-images.js'
 import { selectedPhoto } from './card-photo.js'
 import {createPhotoPickerDiagnostic} from './card-photo-diagnostic.js'
@@ -537,9 +537,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout),'data-dtv-card-instance':diagnosticId},
     closed?h('p',{role:'status'},translate('appearance.cardSendAccepted')):h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
-    !diagnosticsOutside&&unsupportedMessage ? h('p',{role:'alert'},unsupportedMessage):null,
-    !diagnosticsOutside&&error ? h('p',{role:'alert'},error):null,
-    !diagnosticsOutside&&photoError ? h('p',{className:'dtv-card-photo-error',role:'alert'},photoError):null,
+    ...(!diagnosticsOutside?[unsupportedMessage,error,photoError].filter(Boolean).map(message=>h(CardDiagnosticNotice,{key:message,message,cardId:diagnosticId})):[]),
     media?.failed > 0 ? h('small',{className:'dtv-card-media',role:'alert'},translate('appearance.imageUnavailable')):null,
     openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,
     openingProposal?h('section',{className:'dtv-card-opening-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},

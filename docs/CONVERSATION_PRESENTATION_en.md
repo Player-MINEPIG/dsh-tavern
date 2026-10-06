@@ -1,5 +1,7 @@
 # Math, avatars, message bubbles and restricted interactive cards
 
+Card runtime, static fallback and photo notices appear in separate yellow areas outside the message bubble and can be dismissed individually. Dismissal only hides the current notice; it does not change script permissions or execution results. New errors appear again.
+
 [中文](CONVERSATION_PRESENTATION.md) · [Usage](USAGE_en.md) · [API](API_en.md) · [Security](../SECURITY_en.md)
 
 The 2.5.1 contract targets DSH `0.2.0-rc.2`. Public UI services and slots embed Tavern in the Web/desktop document. No separate browser is needed. DSH history remains authoritative; these features store presentation metadata only.

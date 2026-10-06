@@ -120,7 +120,9 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 ## 开场的当前只读变量
 
-同一 snapshot API 接受 `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}`，只读取选定角色资源的当前值。Host 核对根会话 membership、角色选择、会话身份与唯一活动资源；不恢复 Agent，不回放事件，不重置状态。该绑定可在用户已经发起回合后继续读取，即使还没有已完成的 assistant 消息。它不是历史消息快照，不跟随其他会话的 focus，也不能创建写 capability。导入或缺失本地会话不能借此伪造绑定。
+同一 snapshot API 接受 `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}`，只读取选定角色资源的当前值。Host 核对周目根会话或持久 timeline 中已保存回复的会话 membership、角色选择、会话身份与唯一活动资源；不恢复 Agent，不回放事件，不重置状态。该绑定可在用户已经发起回合后继续读取，即使还没有已完成的 assistant 消息。它不是历史消息快照，不跟随其他会话的 focus，也不能创建写 capability。导入或缺失本地会话不能借此伪造绑定。
+
+swipe 切换到已保存分支后，开场读取该分支自己的当前状态，不读取根会话或其他分支的当前值。历史回复仍按各自持久消息坐标读取，不随后一轮更新失败而换成当前值。
 
 开场渲染将只读 greeting scope 与空会话 initial 写 scope 分开；角色或周目切换会取消旧读取及订阅。缺失变量和初始化错误应显示错误，而非补造默认状态。
 

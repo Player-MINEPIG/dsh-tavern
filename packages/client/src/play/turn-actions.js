@@ -137,9 +137,9 @@ export function PlayTurnActions({
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       onChanged()
     } catch (reason) {
-      onSwipePending?.(turn.id, false)
       onError(reason instanceof Error ? reason.message : String(reason))
     } finally {
+      onSwipePending?.(turn.id, false)
       setGenerating(false)
     }
   }

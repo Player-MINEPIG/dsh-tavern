@@ -7,10 +7,11 @@ export function initialCardScope({playthrough,sessionId,characterId,timeline,tur
 }
 
 /** Current read-only greeting view. Turns do not turn it into a message snapshot. */
-export function greetingCardScope({playthrough,sessionId,characterId,greetingIndex}={}) {
+export function greetingCardScope({playthrough,sessionId,characterId,greetingIndex,timeline}={}) {
  const ext=playthrough?.ext?.pmpDshTavern
+ const member=ext?.rootSessionId===sessionId||timeline?.nodes?.some(node=>node.variants?.some(variant=>variant.sessionId===sessionId))
  if(typeof playthrough?.id!=='string'||!playthrough.id||typeof sessionId!=='string'||!sessionId||typeof characterId!=='string'||!characterId
-  ||ext?.rootSessionId!==sessionId||ext?.characterId!==characterId)return null
+  ||!member||ext?.characterId!==characterId)return null
  return {mode:'greeting',playthroughId:playthrough.id,sessionId,characterId,...(Number.isSafeInteger(greetingIndex)&&greetingIndex>=0?{greetingIndex}:{})}
 }
 

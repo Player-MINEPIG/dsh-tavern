@@ -126,8 +126,12 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         || !getSelection || !getSelectionToken) fail('MVU_SCOPE', 'Explicit greeting scope required')
       const member = () => {
         const item = memberships?.readCatalog({ allowMissing: true })?.catalog.playthroughs.find(p => p.id === scope.playthroughId)
-        if (!item || item.ext?.pmpDshTavern?.rootSessionId !== scope.sessionId || item.ext?.pmpDshTavern?.characterId !== scope.characterId) fail('MVU_READ_ONLY', 'Greeting membership changed')
-        return digest(item)
+        if (!item || item.ext?.pmpDshTavern?.characterId !== scope.characterId) fail('MVU_READ_ONLY', 'Greeting membership changed')
+        if (item.ext?.pmpDshTavern?.rootSessionId === scope.sessionId) return digest(item)
+        const timeline = memberships.readTimeline(item).timeline
+        const member = timeline.nodes.some(node => node.variants.some(variant => variant.sessionId === scope.sessionId))
+        if (!member) fail('MVU_READ_ONLY', 'Greeting session is not a saved playthrough member')
+        return digest([item, timeline])
       }
       member()
       requireSelectedView(scope)

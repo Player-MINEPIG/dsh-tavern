@@ -112,7 +112,9 @@ Observed signatures remain `Mvu.getMvuData(options?)` returning whole variables,
 
 ## Current read-only greeting variables
 
-The same snapshot API accepts `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}` to read the selected character resource's current value. Host verifies root-session membership, character selection, session identity and one active resource. It does not resume an Agent, replay events or reset state. This view remains readable after a user starts a turn, including before any assistant message completes. It is not a historical message snapshot, does not follow another session's focus, and cannot create a write capability. Imported or missing local sessions cannot fabricate a binding.
+The same snapshot API accepts `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}` to read the selected character resource's current value. Host verifies membership as the playthrough root or a saved reply session in the durable timeline, character selection, session identity and one active resource. It does not resume an Agent, replay events or reset state. This view remains readable after a user starts a turn, including before any assistant message completes. It is not a historical message snapshot, does not follow another session's focus, and cannot create a write capability. Imported or missing local sessions cannot fabricate a binding.
+
+After a swipe switches to a saved branch, the greeting reads that branch's own current state, rather than the root or another branch. Historical replies continue to use their exact durable message coordinates; a later failed update does not replace them with current values.
 
 Greeting rendering separates the read-only greeting scope from the empty-session initial write scope. Changing character or playthrough cancels old reads and subscriptions. Missing variables and initialization failures surface as errors rather than fabricated default state.
 

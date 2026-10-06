@@ -84,8 +84,11 @@ test('official SessionController creates fresh state beside an initialized legac
     await host.copySelection(rootId, swipe.sessionId); await service.flush()
     const swipeRow = await row(swipe.sessionId); assert.notEqual(swipeRow.id, initial.id); assert.equal(swipeRow.content.stat_data.hp, 70)
     await turn(swipe.sessionId); assert.equal((await row(swipe.sessionId)).content.stat_data.hp, 69); assert.equal((await row(child.sessionId)).content.stat_data.hp, 68)
+    const priorReply = await service.read({ id: initial.id, scope: { sessionId: rootId, endEventId: reply } })
     updateText = "_.add('hp', 'invalid');"
     const failedReply = await turn(rootId); assert.equal((await row(rootId)).content.stat_data.hp, 69)
+    const afterFailure = await service.read({ id: initial.id, scope: { sessionId: rootId, endEventId: reply } })
+    assert.equal(afterFailure.revision, priorReply.revision); assert.deepEqual(afterFailure.content, priorReply.content)
     const latestRoot = await row(rootId)
     await service.update({ id: latestRoot.id, scope: { sessionId: rootId }, expectedRevision: latestRoot.revision, operationId: 'after-failure', content: { stat_data: { hp: 50 } } })
     const ordinary = await host.forkSession({ sessionId: rootId, atSeq: reply, sessionFormatVersion: 4 })

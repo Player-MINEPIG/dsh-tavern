@@ -30,4 +30,7 @@ test('greeting current read scope survives turns without granting an initial wri
  assert.deepEqual(greetingCardScope(input),{mode:'greeting',playthroughId:'p',sessionId:'s',characterId:'c'})
  assert.equal(initialCardScope(input),null)
  for(const patch of [{sessionId:'other'},{characterId:'other'},{playthrough:null}])assert.equal(greetingCardScope({...input,...patch}),null)
+ const branch={...input,sessionId:'child',timeline:{nodes:[{variants:[{sessionId:'child'}]}]}}
+ assert.deepEqual(greetingCardScope(branch),{mode:'greeting',playthroughId:'p',sessionId:'child',characterId:'c'})
+ assert.equal(initialCardScope(branch),null)
 })

@@ -1,6 +1,15 @@
 import {createElement as h,Fragment,createContext,useContext,useEffect,useId,useMemo,useState} from 'react'
+import {translate} from '../i18n.js'
 
 const Diagnostics=createContext(null)
+
+export function CardDiagnosticNotice({message,cardId}){
+ const [closed,setClosed]=useState(false)
+ if(closed)return null
+ return h('div',{className:'dtv-card-diagnostic',style:{display:'flex',alignItems:'start',gap:12,padding:'8px 10px',border:'1px solid #d6b656',borderRadius:8,background:'#fff5cc',color:'#5f4700'}},
+  h('p',{role:'alert','data-dtv-card-instance':cardId,style:{margin:0,flex:1}},message),
+  h('button',{type:'button','aria-label':translate('appearance.dismissCardNotice'),onClick:()=>setClosed(true),style:{border:0,background:'transparent',color:'inherit',font:'inherit',cursor:'pointer'}},'×'))
+}
 
 // Host runtime notices are siblings of the message bubble, never card content.
 export function CardDiagnosticBoundary({children}){
@@ -15,7 +24,7 @@ export function CardDiagnosticBoundary({children}){
  }),[])
  return h(Fragment,null,h(Diagnostics.Provider,{value:sink},children),
   notices.size?h('div',{className:'dtv-message-diagnostics','data-dtv-card-diagnostics':''},
-   ...[...notices].flatMap(([id,messages])=>messages.map((message,index)=>h('p',{key:`${id}:${index}`,role:'alert','data-dtv-card-instance':id},message)))):null)
+   ...[...notices].flatMap(([id,messages])=>messages.map((message,index)=>h(CardDiagnosticNotice,{key:JSON.stringify([id,index,message]),message,cardId:id})))):null)
 }
 
 export function useCardDiagnostics(messages,cardId){

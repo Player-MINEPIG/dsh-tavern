@@ -341,6 +341,22 @@ test('greeting reads a stored session without starting an Agent and rechecks acc
   await assert.rejects(f.service.snapshot(scope), { code: 'MVU_READ_ONLY' })
 })
 
+test('saved swipe members read their own greeting state and remain unable to grant writes', async t => {
+ const resource=(id,sessionId,hp)=>({sharing:'shared',id,characterId:'c',sessionIds:[sessionId],initial:{stat_data:{hp}},schemaSource:'const Schema=z.object({hp:z.number()});'})
+ const f=fixture(t,{resources:[resource('mvu:root','s',10),resource('mvu:child','child',20)]})
+ f.ctx.get('sessions').set('child',{id:'child',header:{id:'child',version:4,createdAt:'child',parentSession:'s'},snapshotEvents:()=>[]})
+ f.selections.set('child',{characterCardId:'c'})
+ f.timeline.nodes.push({id:'n',variants:[{id:'v',sessionId:'child'}]})
+ const scope={...f.scope,mode:'greeting',sessionId:'child'}
+ assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp,20)
+ assert.equal((await f.service.snapshot({...scope,sessionId:'s'})).variables.stat_data.hp,10)
+ await assert.rejects(f.service.createCardBinding({scope,grantId:'grant',sourceIdentity:{...f.sourceIdentity,scope}}),{code:'MVU_READ_ONLY'})
+ await assert.rejects(f.service.snapshot({...scope,mode:'initial'}),{code:'MVU_READ_ONLY'})
+ const list=f.service.list.bind(f.service)
+ f.service.list=async input=>{const rows=await list(input);f.timeline.nodes.length=0;return rows}
+ await assert.rejects(f.service.snapshot(scope),{code:'MVU_READ_ONLY'})
+})
+
 test('a selected greeting view cannot lazily acquire a newer selection lease or survive selection ABA', async t => {
  const f=fixture(t);f.allow()
  f.selections.set('s',{character:{greetingIndex:0}})

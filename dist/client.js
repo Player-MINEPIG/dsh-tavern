@@ -17692,7 +17692,8 @@ var zh_CN_default = Object.freeze({
   "appearance.unsupportedModule": "\u6A21\u5757\u4F9D\u8D56\u5C1A\u4E0D\u53EF\u7528\uFF0C\u8BF7\u5728\u201C\u5916\u90E8\u4EE3\u7801\u201D\u67E5\u770B\u83B7\u53D6\u72B6\u6001\u3002",
   "appearance.unsupportedType": "\u6B64\u5361\u7247\u5305\u542B\u4E0D\u652F\u6301\u7684 script \u7C7B\u578B\u3002",
   "appearance.unsupportedEvents": "\u6B64\u5361\u7247\u4F7F\u7528\u5185\u8054\u4E8B\u4EF6\u5C5E\u6027\uFF08\u5982 onclick\uFF09\uFF0C\u9700\u6539\u4E3A addEventListener\u3002",
-  "appearance.cardStaticFallback": "\u5DF2\u4FDD\u7559\u9759\u6001\u754C\u9762\uFF0C\u672A\u8FD0\u884C\u6B64\u5361\u7247\u7684\u811A\u672C\uFF1B\u5F00\u542F\u5F00\u5173\u4E0D\u4F1A\u89E3\u9664\u8FD9\u4E9B\u9650\u5236\u3002",
+  "appearance.cardStaticFallback": "\u5F53\u524D\u663E\u793A\u9759\u6001\u754C\u9762\uFF1B\u5361\u7247\u811A\u672C\u672A\u8FD0\u884C\uFF0C\u539F\u56E0\u89C1\u4E0A\u8FF0\u63D0\u793A\u3002",
+  "appearance.dismissCardNotice": "\u5173\u95ED\u6B64\u63D0\u793A",
   "appearance.styleName": "\u6837\u5F0F\u540D\u79F0",
   "appearance.radius": "\u5706\u89D2",
   "appearance.padding": "\u5185\u8FB9\u8DDD",
@@ -18754,7 +18755,8 @@ var en_default = Object.freeze({
   "appearance.unsupportedModule": "Module dependencies are unavailable. Check their download status under External code.",
   "appearance.unsupportedType": "This card contains an unsupported script type.",
   "appearance.unsupportedEvents": "This card uses inline event attributes (such as onclick); use addEventListener instead.",
-  "appearance.cardStaticFallback": "The static view is retained and this card\u2019s scripts are not running. Enabling the switch does not remove these limits.",
+  "appearance.cardStaticFallback": "The static view is shown. Card scripts did not run for the reasons listed above.",
+  "appearance.dismissCardNotice": "Dismiss this notice",
   "appearance.styleName": "Style name",
   "appearance.radius": "Radius",
   "appearance.padding": "Padding",
@@ -22323,7 +22325,8 @@ function createPlayNodeController(client, {
           for (let attempt = 0; attempt < maxPolls; attempt += 1) {
             const messages = await client.getMessages(newSessionId);
             pair = completedPairAfter(messages, forkEventId);
-            if (sawOpenTurn && messages.incompleteTurn === false && pair === null) {
+            const accepted = messages.messages?.some((message) => message.seq > forkEventId && message.role === "user" && ["user", "steering"].includes(messageOriginKind(message)));
+            if ((sawOpenTurn || accepted) && messages.incompleteTurn === false && pair === null) {
               throw new Error("Swipe stopped without a saved assistant reply");
             }
             sawOpenTurn ||= messages.incompleteTurn === true;
@@ -22542,9 +22545,9 @@ function PlayTurnActions({
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       onChanged();
     } catch (reason) {
-      onSwipePending?.(turn.id, false);
       onError(reason instanceof Error ? reason.message : String(reason));
     } finally {
+      onSwipePending?.(turn.id, false);
       setGenerating(false);
     }
   };
@@ -27484,9 +27487,10 @@ function initialCardScope({ playthrough, sessionId, characterId, timeline, turns
   if (typeof playthrough?.id !== "string" || !playthrough.id || typeof sessionId !== "string" || !sessionId || typeof characterId !== "string" || !characterId || ext?.rootSessionId !== sessionId || ext?.characterId !== characterId || !Array.isArray(timeline?.nodes) || timeline.nodes.length || turns.length) return null;
   return { mode: "initial", playthroughId: playthrough.id, sessionId, characterId, ...Number.isSafeInteger(greetingIndex) && greetingIndex >= 0 ? { greetingIndex } : {} };
 }
-function greetingCardScope({ playthrough, sessionId, characterId, greetingIndex } = {}) {
+function greetingCardScope({ playthrough, sessionId, characterId, greetingIndex, timeline } = {}) {
   const ext = playthrough?.ext?.pmpDshTavern;
-  if (typeof playthrough?.id !== "string" || !playthrough.id || typeof sessionId !== "string" || !sessionId || typeof characterId !== "string" || !characterId || ext?.rootSessionId !== sessionId || ext?.characterId !== characterId) return null;
+  const member = ext?.rootSessionId === sessionId || timeline?.nodes?.some((node) => node.variants?.some((variant2) => variant2.sessionId === sessionId));
+  if (typeof playthrough?.id !== "string" || !playthrough.id || typeof sessionId !== "string" || !sessionId || typeof characterId !== "string" || !characterId || !member || ext?.characterId !== characterId) return null;
   return { mode: "greeting", playthroughId: playthrough.id, sessionId, characterId, ...Number.isSafeInteger(greetingIndex) && greetingIndex >= 0 ? { greetingIndex } : {} };
 }
 function initialWriteViewScope(scope, snapshot) {
@@ -27782,6 +27786,16 @@ var OPENING_CARD_VIEWPORT_CSS = `
 // packages/client/src/play/card-diagnostics.js
 var import_react19 = require("react");
 var Diagnostics = (0, import_react19.createContext)(null);
+function CardDiagnosticNotice({ message, cardId }) {
+  const [closed, setClosed] = (0, import_react19.useState)(false);
+  if (closed) return null;
+  return (0, import_react19.createElement)(
+    "div",
+    { className: "dtv-card-diagnostic", style: { display: "flex", alignItems: "start", gap: 12, padding: "8px 10px", border: "1px solid #d6b656", borderRadius: 8, background: "#fff5cc", color: "#5f4700" } },
+    (0, import_react19.createElement)("p", { role: "alert", "data-dtv-card-instance": cardId, style: { margin: 0, flex: 1 } }, message),
+    (0, import_react19.createElement)("button", { type: "button", "aria-label": translate("appearance.dismissCardNotice"), onClick: () => setClosed(true), style: { border: 0, background: "transparent", color: "inherit", font: "inherit", cursor: "pointer" } }, "\xD7")
+  );
+}
 function CardDiagnosticBoundary({ children }) {
   const [notices, setNotices] = (0, import_react19.useState)(() => /* @__PURE__ */ new Map());
   const sink = (0, import_react19.useMemo)(() => ({
@@ -27809,7 +27823,7 @@ function CardDiagnosticBoundary({ children }) {
     notices.size ? (0, import_react19.createElement)(
       "div",
       { className: "dtv-message-diagnostics", "data-dtv-card-diagnostics": "" },
-      ...[...notices].flatMap(([id, messages]) => messages.map((message, index) => (0, import_react19.createElement)("p", { key: `${id}:${index}`, role: "alert", "data-dtv-card-instance": id }, message)))
+      ...[...notices].flatMap(([id, messages]) => messages.map((message, index) => (0, import_react19.createElement)(CardDiagnosticNotice, { key: JSON.stringify([id, index, message]), message, cardId: id })))
     ) : null
   );
 }
@@ -51721,9 +51735,7 @@ var InteractiveCard = (0, import_react22.memo)(function InteractiveCard2({ sourc
     { className: "dtv-interactive-card", "data-dtv-viewport": String(viewportLayout), "data-dtv-card-instance": diagnosticId },
     closed ? (0, import_react22.createElement)("p", { role: "status" }, translate("appearance.cardSendAccepted")) : (0, import_react22.createElement)("iframe", { key: JSON.stringify([sourceFrameKey, scopeKey, enabled, trustRevision, owners, helpers, openingBinding]), ref: frame, title: translate("appearance.card"), sandbox: "allow-same-origin", referrerPolicy: "no-referrer", srcDoc, onLoad: load, style: { display: "block", width: "100%", boxSizing: "border-box", minWidth: 220, height: 160, maxHeight: 800, border: 0, borderRadius: 0, background: "transparent" } }),
     !enabled && data3.scripts.length ? (0, import_react22.createElement)("small", null, translate("appearance.scriptsOff")) : null,
-    !diagnosticsOutside && unsupportedMessage ? (0, import_react22.createElement)("p", { role: "alert" }, unsupportedMessage) : null,
-    !diagnosticsOutside && error ? (0, import_react22.createElement)("p", { role: "alert" }, error) : null,
-    !diagnosticsOutside && photoError ? (0, import_react22.createElement)("p", { className: "dtv-card-photo-error", role: "alert" }, photoError) : null,
+    ...!diagnosticsOutside ? [unsupportedMessage, error, photoError].filter(Boolean).map((message) => (0, import_react22.createElement)(CardDiagnosticNotice, { key: message, message, cardId: diagnosticId })) : [],
     media?.failed > 0 ? (0, import_react22.createElement)("small", { className: "dtv-card-media", role: "alert" }, translate("appearance.imageUnavailable")) : null,
     openingProgress ? (0, import_react22.createElement)("p", { role: "status" }, translate("appearance.openingProgress")) : null,
     openingProposal ? (0, import_react22.createElement)(
@@ -52426,7 +52438,7 @@ ${mathStyles("[data-dtv-rich-text]")}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
-.dtv-message-diagnostics{margin:8px 0;padding:8px 10px;border-left:2px solid var(--dsw-alias-state-error);color:var(--dsw-alias-state-error);font-size:12px;line-height:1.5;overflow-wrap:anywhere}.dtv-message-diagnostics p{margin:0}.dtv-message-diagnostics p+p{margin-top:6px}
+.dtv-message-diagnostics{margin:8px 0;display:grid;gap:6px;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 .dtv-play-chat-failure{position:sticky;top:0;z-index:1;border:1px solid currentColor}
 .dtv-play-chat-failure-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.dtv-play-chat-failure-toggle{flex-shrink:0;border:0;border-radius:6px;padding:4px 8px;background:transparent;color:inherit;font:inherit;cursor:pointer}.dtv-play-chat-failure-toggle:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:calc(12px * var(--dtv-rp-text-scale,1));line-height:1.5}

@@ -176,7 +176,11 @@ export function createPlayNodeController(client, {
           for (let attempt = 0; attempt < maxPolls; attempt += 1) {
             const messages = await client.getMessages(newSessionId)
             pair = completedPairAfter(messages, forkEventId)
-            if (sawOpenTurn && messages.incompleteTurn === false && pair === null) {
+            // DSH logs the accepted user after turn/start. A fast stop can close
+            // the turn before our first poll ever observes it running.
+            const accepted = messages.messages?.some(message => message.seq > forkEventId && message.role === 'user'
+              && ['user', 'steering'].includes(messageOriginKind(message)))
+            if ((sawOpenTurn || accepted) && messages.incompleteTurn === false && pair === null) {
               throw new Error('Swipe stopped without a saved assistant reply')
             }
             sawOpenTurn ||= messages.incompleteTurn === true

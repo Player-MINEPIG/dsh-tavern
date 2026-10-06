@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createPlayNodeController } from '../packages/client/src/play/nodes.js'
-import { pendingSwipe, pendingSwipeForSession } from '../packages/client/src/play/pending-swipe.js'
+import { finishPendingSwipe, pendingSwipe, pendingSwipeForSession } from '../packages/client/src/play/pending-swipe.js'
 import { loadCurrentPlaythrough, projectLiveTurns } from '../packages/client/src/play/chat-model.js'
 import { loadChatState } from '../packages/client/src/play/chat.js'
 import { projectPlaySidebar } from '../packages/client/src/play/sidebar-model.js'
@@ -30,12 +30,12 @@ function fixture({ first = false } = {}) {
       incompleteTurn: phase === 'open', messages: [
         ...oldMessages.filter(m => m.seq < userSeq),
         { role: 'user', seq: userSeq, text: `Q${sourceIndex}` },
-        ...(phase === 'done' ? [{ role: 'assistant', seq: userSeq+1, text: 'New reply' }] : []),
+        ...(['done','interrupted'].includes(phase) ? [{ role: 'assistant', seq: userSeq+1, text: 'New reply', interrupted: phase==='interrupted' }] : []),
       ],
     },
   }
   const controller = createPlayNodeController(client, { delay: () => new Promise(r => { release = r }), maxPolls: 3, idFactory: () => 'new-variant' })
-  return { client, controller, playthrough, saved, userSeq, get timeline() { return timeline }, get writes() { return writes }, settle(next = 'done') { phase = next; release() } }
+  return { client, controller, playthrough, saved, userSeq, get timeline() { return timeline }, get writes() { return writes }, setPhase(next) { phase=next }, settle(next = 'done') { phase = next; release() } }
 }
 const tick = () => new Promise(resolve => setImmediate(resolve))
 
@@ -87,6 +87,26 @@ test('canceling before an assistant is saved ends polling and preserves existing
   assert.equal(f.writes, 0)
   assert.deepEqual(f.timeline, f.saved)
   assert.match(pendingSwipe(f.client, f.playthrough).error, /stopped/)
+})
+
+test('a fast stop before the first poll can return to the saved reply and retry immediately', async () => {
+ const f=fixture();f.setPhase('stopped')
+ await assert.rejects(f.controller.createReplySwipe(f.playthrough,'qa-2'),/stopped without a saved/)
+ assert.equal(f.writes,0)
+ const pending=pendingSwipe(f.client,f.playthrough)
+ assert.equal(pending.sourceSessionId,'old')
+ finishPendingSwipe(f.client,pending)
+ assert.equal(pendingSwipe(f.client,f.playthrough),null)
+ f.setPhase('done')
+ await f.controller.createReplySwipe(f.playthrough,'qa-2')
+ assert.equal(f.timeline.nodes[1].variants.length,2)
+})
+
+test('a stopped reply with durable partial text is a saved swipe and unlocks the next one', async () => {
+ const f=fixture();f.setPhase('interrupted')
+ await f.controller.createReplySwipe(f.playthrough,'qa-2')
+ assert.equal(f.timeline.nodes[1].variants.length,2)
+ assert.equal(pendingSwipe(f.client,f.playthrough),null)
 })
 
 test('display edits and another playthrough finish while a swipe waits, and survive its commit', async () => {

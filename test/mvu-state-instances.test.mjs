@@ -303,6 +303,21 @@ test('fork preserves its captured versionKey when a later edit is appended on an
   await f.fork('A', 'C', first); assert.equal((await f.read('C')).content.stat_data.hp, 50)
 })
 
+test('a later invalid update preserves the exact earlier reply snapshot and schema', async t => {
+ const f=fixture(t,{resources:[{id:'mvu:template',sessionIds:['*'],initial:{stat_data:{hp:100}},schemaSource:'const Schema=z.object({hp:z.number()});'}]})
+ f.create('A');const first=await f.turn('A',-10)
+ const scope={sessionId:'A',endEventId:first},before=await f.service.snapshot(scope)
+ assert.equal(before.status,'available')
+ const failed=await f.turn('A','"invalid"'),after=await f.service.snapshot(scope)
+ assert.equal(after.status,'available');assert.equal(after.revision,before.revision)
+ assert.deepEqual(after.variables,before.variables)
+ const failure=await f.service.snapshot({sessionId:'A',endEventId:failed})
+ assert.equal(failure.variables.stat_data.hp,90)
+ assert.deepEqual(failure.variables.mvu_schema,before.variables.mvu_schema)
+ f.restart()
+ assert.deepEqual((await f.service.snapshot(scope)).variables,before.variables)
+})
+
 test('non-root swipe baseline retains valid prefix provenance for editing and another fork', async t => {
   const f = fixture(t); f.create('A'); const first = await f.turn('A', -10), second = await f.turn('A', -1)
   const ticket = await f.service.captureSessionSeed({ sessionId: 'A', kind: 'reply-swipe', atEventId: second, prefixEndEventId: first })
