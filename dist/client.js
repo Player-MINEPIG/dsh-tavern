@@ -22974,9 +22974,9 @@ var labels = {
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
   noActual: ["\u6682\u65E0\u65B0\u7248\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No request assembly record yet"],
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
-  addSource: ["\u6DFB\u52A0\u6765\u6E90\uFF08\u5DF2\u6CE8\u518C\uFF0C\u672A\u52A0\u5165\u5F53\u524D\u7B56\u7565\uFF09", "Add a source (registered, not in this strategy)"],
+  addSource: ["\u6DFB\u52A0\u6A21\u5757\uFF08\u5F53\u524D\u6709\u72EC\u7ACB\u5185\u5BB9\uFF09", "Add a module (current independent content)"],
   chooseSource: ["\u9009\u62E9\u6765\u6E90\u2026", "Choose source\u2026"],
-  sourceHelp: ["\u9009\u62E9\u6765\u6E90\u5E76\u6DFB\u52A0\u3001\u4FDD\u5B58\u89C4\u5219\u3001\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u540E\uFF0C\u6765\u6E90\u5185\u5BB9\u624D\u4F1A\u8FDB\u5165\u540E\u7EED\u8BF7\u6C42\uFF1B\u5B9E\u9645\u8F93\u51FA\u4ECD\u9075\u5FAA\u6765\u6E90\u81EA\u8EAB\u7684\u89C4\u5219\u3002\u81EA\u5B9A\u4E49\u5185\u5BB9\u53EF\u586B\u5199\u6587\u672C\u548C\u5B8F\u3002", "Select and add a source, save the rules, then apply them to the current session to include its content in future requests. Actual output still follows the source\u2019s own rules. Custom content accepts text and macros."],
+  sourceHelp: ["\u6A21\u5757\u53EA\u5217\u51FA\u5F53\u524D\u63D0\u4F9B\u72EC\u7ACB\u5185\u5BB9\u7684\u6765\u6E90\u3002\u5206\u6563\u5185\u5BB9\u53EF\u901A\u8FC7\u6587\u672C\u89E3\u6790\u5668\u5F15\u7528\uFF1B\u586B\u5199\u6587\u672C\u540E\u4FDD\u5B58\u89C4\u5219\u5E76\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002", "Modules list sources with independent content. Reference dispersed content through a text parser, save the rules, then apply them to the current session."],
   missingSource: ["\u6765\u6E90\u63D2\u4EF6\u672A\u5B89\u88C5\u6216\u672A\u6CE8\u518C\uFF1B\u672C\u6B21\u8BF7\u6C42\u8DF3\u8FC7\u6B64\u6A21\u5757\u3002", "Source unavailable; this module is omitted from the request."],
   title: ["\u63D0\u793A\u8BCD\u88C5\u914D\u7B56\u7565", "Prompt assembly strategy"],
   intro: ["\u5B89\u6392\u5185\u5BB9\u5982\u4F55\u8FDB\u5165\u6BCF\u6B21\u6A21\u578B\u8BF7\u6C42\u3002\u9884\u89C8\u5F53\u524D\u8D44\u4EA7\u3001\u5B8F\u5F15\u7528\u548C\u5B9E\u9645\u987A\u5E8F\u3002", "Arrange each model request. Preview assets, macro references and message order."],
@@ -23041,6 +23041,9 @@ var labels = {
   tools: ["\u5DE5\u5177\u5B9A\u4E49\u4F7F\u7528\u72EC\u7ACB\u8BF7\u6C42\u5B57\u6BB5\uFF0C\u4E0D\u53C2\u4E0E\u6D88\u606F\u62D6\u62FD\u3002", "Tool definitions are a separate request field, not draggable messages."],
   result: ["\u8BF7\u6C42\u6D88\u606F", "Request messages"],
   audit: ["\u6BCF\u6B21\u91CD\u65B0\u88C5\u914D\uFF1A\u8F68\u8FF9\u4FDD\u7559\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4F46\u4E0B\u6B21\u91CD\u65B0\u6C42\u503C\uFF0C\u4E0D\u7D2F\u79EF\u65E7\u526F\u672C\u3002\u7D2F\u79EF\u5FEB\u7167\uFF1A\u5185\u5BB9\u53D8\u5316\u65F6\u4FDD\u7559\u65B0\u526F\u672C\uFF0C\u5E76\u5E26\u5165\u540E\u7EED\u8BF7\u6C42\u3002\u539F\u751F\u7528\u6237\u6D88\u606F\u3001\u56DE\u590D\u548C\u5DE5\u5177\u7ED3\u679C\u4ECD\u7531 DSH \u4FDD\u5B58\uFF0C\u662F\u5426\u53D1\u9001\u7531\u539F\u751F\u5386\u53F2\u4E0E\u672C\u6B65\u8F93\u5165\u63A7\u5236\u3002", "Rebuild each request: the trace records the actual request, while later requests evaluate fresh content without accumulating copies. Retain snapshots: changed content adds a copy reused by later requests. DSH still saves native user messages, replies and tool results; history and current-input rules control whether they are sent."],
+  moduleContentHint: ["\u6B63\u6587\u7531\u6765\u6E90\u63D0\u4F9B\uFF1B\u5728\u6765\u6E90\u4E2D\u7F16\u8F91\u5185\u5BB9\uFF0C\u8FD9\u91CC\u8C03\u6574\u88C5\u914D\u65B9\u5F0F\u3002", "The source supplies content. Edit it at its source; this rule controls assembly."],
+  parser: ["\u6587\u672C\u89E3\u6790\u5668", "Text parser"],
+  addText: ["\u6DFB\u52A0\u81EA\u5B9A\u4E49\u6587\u672C", "Add custom text"],
   "native-system": ["\u5B98\u65B9\u57FA\u7840\u6307\u4EE4", "Native instructions"],
   preset: ["\u9884\u8BBE\u6B63\u6587", "Preset content"],
   character: ["\u89D2\u8272\u8BBE\u5B9A", "Character"],
@@ -23103,7 +23106,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
   (0, import_react7.useEffect)(() => {
     if (confirmation) dialog.current?.querySelector(".dta-confirm button")?.focus();
   }, [confirmation]);
-  const [sources, setSources] = (0, import_react7.useState)([]), [addKind, setAddKind] = (0, import_react7.useState)("custom"), [defaultId3, setDefaultId] = (0, import_react7.useState)(BUILTINS[0].id);
+  const [sources, setSources] = (0, import_react7.useState)([]), [addParser, setAddParser] = (0, import_react7.useState)("custom"), [addKind, setAddKind] = (0, import_react7.useState)(""), [defaultId3, setDefaultId] = (0, import_react7.useState)(BUILTINS[0].id);
   const [items2, setItems] = (0, import_react7.useState)([]), [draft, setDraft] = (0, import_react7.useState)(null), [selection, setSelection] = (0, import_react7.useState)(null), [capable, setCapable] = (0, import_react7.useState)(false);
   const [status, setStatus] = (0, import_react7.useState)(""), [error, setError] = (0, import_react7.useState)(false), [busy2, setBusy] = (0, import_react7.useState)(false), [tab, setTab] = (0, import_react7.useState)("rules"), [preview, setPreview] = (0, import_react7.useState)(null), [dirty, setDirty] = (0, import_react7.useState)(false), [expanded, setExpanded] = (0, import_react7.useState)({});
   const file = (0, import_react7.useRef)(), stage = (0, import_react7.useRef)(), dialog = (0, import_react7.useRef)(), generation = (0, import_react7.useRef)(0), mounted = (0, import_react7.useRef)(true);
@@ -23167,7 +23170,8 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       setCapable(data3.capability);
       setSources(data3.sources ?? []);
       setDefaultId(data3.defaultPresetId ?? data3.presets[0]?.id);
-      setAddKind(data3.sources?.some((s) => s.id === "custom") ? "custom" : data3.sources?.find((s) => s.acceptsText)?.id ?? data3.sources?.[0]?.id ?? "");
+      setAddParser(data3.sources?.some((s) => s.id === "custom") ? "custom" : data3.sources?.find((s) => s.acceptsText)?.id ?? "");
+      setAddKind(data3.sources?.find((s) => s.supportsModule !== false && s.moduleAvailable !== false && !data3.presets[0]?.rules.some((r) => r.kind === s.id))?.id ?? "");
       setDraft(data3.presets.find((p) => p.id === data3.selection?.id) ?? data3.presets[0]);
       setPreview(null);
       setDirty(false);
@@ -23238,6 +23242,15 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
   const sourceDescriptor2 = (kind) => sources.find((s) => s.id === kind);
   const sourcePlugin = (kind) => sourceDescriptor2(kind)?.pluginId ?? null;
   const sourceName = (kind) => labels[kind] ? t(kind) : sourceDescriptor2(kind)?.name ?? kind;
+  const modules = sources.filter((s) => s.supportsModule !== false && s.moduleAvailable !== false && (s.multiple || !draft?.rules.some((r) => r.kind === s.id && r.inputMode !== "text")));
+  const parsers = sources.filter((s) => s.acceptsText);
+  const addRule = (kind, inputMode) => {
+    const source = sourceDescriptor2(kind);
+    if (!source) return;
+    const id = `source-${crypto.randomUUID()}`;
+    edit({ rules: [...draft.rules, { id, kind, ...inputMode ? { inputMode } : {}, enabled: true, role: inputMode === "text" && source.roles.includes("user") ? "user" : source.roles[0], lifetime: source.lifetimes[0], depth: null, text: "", name: "" }] });
+    setExpanded((old) => ({ ...old, [id]: true }));
+  };
   const sourceInfo = (kind) => sourceDescriptor2(kind)?.generationRequiresPlugin === false ? t("nativeSource") : t("removed");
   async function actualRequest() {
     if (!traceRoot) {
@@ -23344,6 +23357,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     ...[["stability", stability], ["lifetime", lifetime], ["role", role2]].map(([label, value]) => (0, import_react7.createElement)("div", { key: label }, (0, import_react7.createElement)("dt", null, t(label)), (0, import_react7.createElement)("dd", null, t(label === "stability" && value === "snapshot" ? "retained" : value))))
   );
   function ruleRow(rule, index) {
+    const textInput = rule.inputMode === "text" || ["custom", "dsh.text"].includes(rule.kind);
     return (0, import_react7.createElement)(
       "article",
       { key: rule.id, className: "dta-row", "data-assembly-index": index, "data-dragging": dragFrom === index, style: { "--assembly-color": sourceColor(sourcePlugin(rule.kind)) } },
@@ -23365,10 +23379,17 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         { className: "dta-detail" },
         (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react7.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(ruleStability(rule)))), (0, import_react7.createElement)("label", null, t("lifetime"), ["native-system", "history", "input"].includes(rule.kind) ? (0, import_react7.createElement)("small", null, t("nativeRetention")) : select(rule.lifetime, sourceDescriptor2(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor2(rule.kind)?.lifetimes.length === 1))),
         (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("role"), select(rule.role, sourceDescriptor2(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"], (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor2(rule.kind)?.roles.length === 1)), sourceDescriptor2(rule.kind)?.depth !== false && (0, import_react7.createElement)("label", null, t("depth"), (0, import_react7.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
-        sourceDescriptor2(rule.kind)?.acceptsText && (0, import_react7.createElement)("label", null, t("contentMode"), (0, import_react7.createElement)("select", { value: rule.inputMode ?? "source", onChange: (e) => editRule(rule.id, { inputMode: e.target.value }) }, (0, import_react7.createElement)("option", { value: "source" }, t("sourceMode")), (0, import_react7.createElement)("option", { value: "text" }, t("textMode")))),
-        rule.inputMode === "text" && ["preset", "character", "persona", "worldbook", "phi"].includes(rule.kind) && (0, import_react7.createElement)("label", null, t("text"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })),
-        rule.kind === "phi" && rule.inputMode !== "text" && (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t("phiHelp")), (0, import_react7.createElement)("label", null, t("additional-phi"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))),
-        suppliedContentHints.has(rule.kind) ? (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t(suppliedContentHints.get(rule.kind))), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))) : (rule.kind === "custom" || !["native-system", "history", "input", "preset", "character", "persona", "worldbook", "phi"].includes(rule.kind)) && (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("label", { className: "dta-field-name" }, t("name"), (0, import_react7.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })), (0, import_react7.createElement)("label", null, t("text"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
+        textInput ? (0, import_react7.createElement)(
+          "div",
+          { className: "dta-fields" },
+          (0, import_react7.createElement)("label", null, t("parser"), (0, import_react7.createElement)("select", { value: rule.kind, onChange: (e) => {
+            const source = sourceDescriptor2(e.target.value);
+            editRule(rule.id, { kind: source.id, inputMode: "text", role: source.roles.includes(rule.role) ? rule.role : source.roles[0], lifetime: source.lifetimes.includes(rule.lifetime) ? rule.lifetime : source.lifetimes[0], depth: source.depth === false ? null : rule.depth });
+          } }, ...parsers.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`)))),
+          (0, import_react7.createElement)("label", null, t("name"), (0, import_react7.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })),
+          (0, import_react7.createElement)("label", null, t("text"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })),
+          button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))
+        ) : suppliedContentHints.has(rule.kind) ? (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t(suppliedContentHints.get(rule.kind))), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))) : rule.kind === "phi" ? (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t("phiHelp")), (0, import_react7.createElement)("label", null, t("additional-phi"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))) : !["native-system", "history", "input", "preset", "character", "persona", "worldbook"].includes(rule.kind) && (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t("moduleContentHint")), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
         !sourceDescriptor2(rule.kind) && (0, import_react7.createElement)("small", { role: "status" }, t("missingSource")),
         (0, import_react7.createElement)("small", null, t("audit"))
       )
@@ -23476,14 +23497,17 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
           setTab("expanded");
         }), false, void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),
         (0, import_react7.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react7.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
-        tab === "rules" ? (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), draft.placement === "st" && (0, import_react7.createElement)("small", null, t("stHelp")), ...draft.rules.flatMap((row, i3) => [placeholder(i3), ruleRow(row, i3)]), placeholder(draft.rules.length), (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react7.createElement)("select", { id: "dta-add-source", value: addKind, onChange: (e) => setAddKind(e.target.value) }, ...sources.filter((s) => s.multiple || !draft.rules.some((r) => r.kind === s.id)).map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => {
-          const source = sourceDescriptor2(addKind);
-          if (!source || !source.multiple && draft.rules.some((r) => r.kind === source.id)) return;
-          const id = `source-${crypto.randomUUID()}`;
-          edit({ rules: [...draft.rules, { id, kind: source.id, enabled: true, role: source.id === "custom" ? "user" : source.roles[0], lifetime: source.lifetimes[0], depth: null, text: "", name: "" }] });
-          setExpanded((old) => ({ ...old, [id]: true }));
-          if (!source.multiple) setAddKind("custom");
-        }, !sourceDescriptor2(addKind))), (0, import_react7.createElement)("small", null, t("sourceHelp"))) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+        tab === "rules" ? (0, import_react7.createElement)(
+          "div",
+          null,
+          (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))),
+          draft.placement === "st" && (0, import_react7.createElement)("small", null, t("stHelp")),
+          ...draft.rules.flatMap((row, i3) => [placeholder(i3), ruleRow(row, i3)]),
+          placeholder(draft.rules.length),
+          modules.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react7.createElement)("select", { id: "dta-add-source", value: modules.some((s) => s.id === addKind) ? addKind : modules[0].id, onChange: (e) => setAddKind(e.target.value) }, ...modules.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => addRule(modules.some((s) => s.id === addKind) ? addKind : modules[0].id))),
+          parsers.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react7.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
+          (0, import_react7.createElement)("small", null, t("sourceHelp"))
+        ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react7.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
       )
     ))

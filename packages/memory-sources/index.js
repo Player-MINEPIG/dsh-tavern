@@ -9,6 +9,10 @@ export function createMemorySources(options) {
   const templates = new PromptTemplateService({ ...options, worldBooks })
   let disposed = false
   return { protocolVersion: 1, adapters: [worldBooks, templates], worldBooks, templates,
+    withSessionRead(scope, callback) {
+      if (disposed) fail('SOURCE_BOUND_UNAVAILABLE', 'Memory source is unloaded')
+      return options.withSessionRead ? options.withSessionRead(scope, callback) : callback()
+    },
     async listBound({ scope, signal } = {}) {
       scope = boundScope(scope); signal?.throwIfAborted()
       if (disposed || !options.getSession || !options.getSelection) fail('SOURCE_BOUND_UNAVAILABLE', 'Current session binding metadata is unavailable')
@@ -61,7 +65,7 @@ export function createMemorySources(options) {
         }
         if (!['TAVERN_MEMORY_RESOURCE_VERSION', 'TAVERN_MEMORY_DEPENDENCY_VERSION'].includes(fact.code)) continue
         const source = [worldBooks, templates].find(a => a.id === fact.adapterId)
-        if (!source || !nodes.some(n => n.source?.sourceId === fact.sourceId && n.source?.resourceId === (fact.consumerId ?? fact.blockResourceId ?? fact.resourceId) && (n.id?.endsWith(`:${fact.blockId}`) || n.name === fact.blockId))) continue
+        if (!source || !nodes.some(n => n.source?.sourceId === fact.sourceId && (fact.consumerField ? n.source?.field === fact.consumerField : n.source?.resourceId === (fact.consumerId ?? fact.blockResourceId ?? fact.resourceId)) && (n.id?.endsWith(`:${fact.blockId}`) || n.name === fact.blockId))) continue
         source.policy.emit({ id: fact.resourceId, eventId: `${session.id}:${event.seq}:${fact.blockId}`, requestId: `${session.id}:${event.seq}`, phase: 'applied', sessionId: session.id,
           turn: event.data.turn, turnKind: 'unknown', ...(fact.consumerId ? {consumerId:fact.consumerId} : {}), revision: fact.revision, configRevision: fact.configRevision, detail: 'Observed in durable DSH request; provider delivery not established' })
       }

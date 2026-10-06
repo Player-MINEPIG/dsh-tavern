@@ -24,6 +24,8 @@ The assembler owns adapters for presets, characters, personas, world books, PHI,
 
 Sources implementing parseText process user text through inputMode:'text'; default mode reads source resources. Both share position, depth, roles and snapshots. Third parties own their language, Tavern uses ST parsing, and DSH custom text uses native variable interpolation. Skills are not injected twice.
 
+Module sources and text parsers use separate add controls. Sources without current independent content do not appear as modules; parseText remains available for authored text. Tavern templates use their own read-only EJS parser; stored templates, MVU and Manager modules reflect actual bindings/configuration. Memory Manager reads borrow persisted cold sessions through withSessionRead without creating Agents or appending history. Missing sessions, reader initialization and read failures remain distinct.
+
 ## GitHub and distribution
 
 Use separate repositories and package.json dependencies for the one-way package dependency. Document package dependencies separately from injected runtime interfaces. GitHub Dependency Graph reads manifests and lockfiles; a submodule is unnecessary. Once the assembler is published, replace Tavern's local file dependency with its exact npm version and regenerate the lockfile with npm. Users can then install Tavern and receive its dependency automatically. The current local candidate uses a paired-package installation.

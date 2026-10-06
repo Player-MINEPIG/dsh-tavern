@@ -9,8 +9,8 @@ import { BUILTINS, createDefaultRegistry } from '../packages/request-assembler/i
 import { getClientUiSettings, setClientUiSettings } from '../packages/client/src/i18n.js'
 
 for (const [locale, label, sourceName, help, add] of [
-  ['zh-CN', '添加来源（已注册，未加入当前策略）', 'MVU 状态与更新指令', '选择来源并添加、保存规则、应用到当前会话后', '添加'],
-  ['en', 'Add a source (registered, not in this strategy)', 'MVU state and update instructions', 'Select and add a source, save the rules, then apply them to the current session', 'Add'],
+  ['zh-CN', '添加模块（当前有独立内容）', 'MVU 状态与更新指令', '模块只列出当前提供独立内容的来源', '添加'],
+  ['en', 'Add a module (current independent content)', 'MVU state and update instructions', 'Modules list sources with independent content', 'Add'],
 ]) test(`assembly source discovery uses clear localized labels without changing presets: ${locale}`, async t => {
   const keys = ['window', 'document', 'fetch', 'getComputedStyle', 'IS_REACT_ACT_ENVIRONMENT']
   const previous = Object.fromEntries(keys.map(key => [key, globalThis[key]])), settings = getClientUiSettings()
@@ -63,6 +63,8 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
   const { window, document } = parseHTML('<html><body><div id="root"></div></body></html>')
   Object.assign(globalThis, { window, document, getComputedStyle: () => ({ display: 'block' }), IS_REACT_ACT_ENVIRONMENT: true })
   const registry = nativeOnly ? createDshRegistry() : createDefaultRegistry()
+  registry.register({id:'pmp-dsh-tavern/prompt-template',pluginId:'pmp-dsh-tavern',name:'Empty templates',roles:['system'],lifetimes:['request'],moduleAvailable:()=>false,resolve:()=>({blocks:[]}),parseText:(_c,r)=>({blocks:[{id:'text',type:'text',text:r.text}]})})
+  registry.register({id:'memory-manager.resources',pluginId:'dsh-memory-manager',name:'Empty managed resources',moduleAvailable:()=>false,resolve:()=>({blocks:[]})})
   const presets = structuredClone(nativeOnly ? NATIVE : BUILTINS), calls = []
   const fetcher = async (url, options = {}) => {
     calls.push({ url, ...options })
@@ -72,14 +74,19 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
   const container = document.getElementById('root'), root = createRoot(container)
   t.after(async () => { await act(() => root.unmount()); for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value } })
   await act(() => root.render(h(Panel, { sessionId: 'fixture', fetcher, close() {} })))
-  const chooser = container.querySelector('#dta-add-source')
+  const chooser = container.querySelector('#dta-add-parser')
   assert.equal(chooser.value, nativeOnly ? 'dsh.text' : 'custom')
-  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '添加')))
+  assert.equal(container.querySelector('#dta-add-source'), null, 'already listed builtins and parser-only providers are absent from the module picker')
+  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '添加自定义文本')))
   const row = [...container.querySelectorAll('.dta-row')].at(-1)
-  const mode = [...row.querySelectorAll('select')].find(e => [...e.querySelectorAll('option')].some(o => o.value === 'source'))
-  assert(mode)
-  await act(() => Simulate.change(mode, { target: { value: 'text' } }))
+  assert(row.textContent.includes('文本解析器'))
   assert.equal(row.querySelectorAll('textarea').length, 1)
+  assert(chooser.querySelector('option[value="pmp-dsh-tavern/prompt-template"]'), 'empty modules can still expose a real text parser')
+  const parser = row.querySelector('.dta-fields select')
+  await act(() => Simulate.change(parser, {target:{value:'pmp-dsh-tavern/prompt-template'}}))
+  assert.equal(row.querySelectorAll('textarea').length,1,'supplied-content hints do not hide a parser text editor')
+  assert.equal(row.querySelector('.dta-grid select').value,'system','switching a parser adjusts unsupported role settings')
+  assert.equal(row.querySelector('.dta-properties select').value,'request')
   // Saved strategies have no draft edits: reload the session component before reset.
   await act(() => root.render(h(Panel, { sessionId: 'fresh-fixture', fetcher, close() {} })))
   await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '应用默认装配策略')))

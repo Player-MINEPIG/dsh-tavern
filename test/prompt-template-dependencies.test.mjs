@@ -127,3 +127,25 @@ test('native dependency requires explicit revocable permission from every instal
  assert.equal((await f.service.templates.resolve(input)).blocks[0].text,'WORLD')
  stop();assert.throws(()=>f.service.templates.validateResolved(input),{code:'SOURCE_POLICY_CHANGED'})
 })
+
+
+test('template text parser reads selected fragments without requiring a stored template module', async t => {
+ const service=new PromptTemplateService({storageDir:temp(t),resources:[]})
+ assert.equal(service.hasModule({sessionId:'s'}),false)
+ const context={sessionId:'s',preview:true,assets:{preset:{prompts:[{identifier:'fragment',name:'Part',content:'FRAGMENT'}]},character:{id:'card',data:{description:'CARD'}}},nativeMessages:[],inputIds:[]}
+ const output=await service.parseText(context,{id:'authored',name:'Text',text:'<%- await getpreset("fragment") %> / <%- await getchar("card") %>'})
+ assert.equal(output.blocks[0].text,'FRAGMENT / CARD')
+ assert.deepEqual(output.blocks[0].source,{field:'authored'})
+ assert(!output.diagnostics.some(d=>d.code==='TAVERN_MEMORY_RESOURCE_VERSION'))
+ await assert.rejects(service.parseText(context,{id:'bad',text:'<% setvar("x",1) %>'}))
+})
+
+
+test('several authored template texts preserve every source selection lease',async t=>{
+ const current=[true,true];let calls=0
+ const service=new PromptTemplateService({storageDir:temp(t),worldBooks:{selectionLease:()=>{const index=calls++;return ()=>current[index]}}})
+ const ctx={...context,assets:{}}
+ await service.parseText(ctx,{id:'one',text:'ONE'})
+ current[0]=false
+ await assert.rejects(service.parseText(ctx,{id:'two',text:'TWO'}),{code:'SOURCE_POLICY_CHANGED'})
+})

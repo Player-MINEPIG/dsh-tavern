@@ -90,6 +90,11 @@ test('full official persisted cold preview traverses Tavern catalog, actual Mana
     ctx.sessionController.resolveAgent = async () => { calls.resume++; throw Error('cold preview cannot resume') }
     ctx.on('session/event', () => calls.events++)
     const beforeLog = bytes(join(directory, 'sessions')), beforeState = readFileSync(join(storageDir, 'mvu-instances.json')), beforeConfig = readFileSync(configPath)
+    const coldResources = await manager.query({ scope: { sessionId } })
+    assert(coldResources.rows.some(row => row.id === resourceId), 'a persisted cold session has bound memory resources')
+    assert(!coldResources.diagnostics.some(d => ['SCOPE_CATALOG_NOT_FOUND', 'SOURCE_BOUND_UNAVAILABLE'].includes(d.code)))
+    assert.equal(ctx.sessions.get(sessionId), undefined, 'memory reads never activate the cold session')
+    await assert.rejects(manager.query({ scope: { sessionId: 'absent-session' } }), { code: 'SESSION_NOT_FOUND' })
     const result = await call(routes)
     assert.equal(result.status, 200, JSON.stringify(result))
     const output = result.preview.messages.flatMap(message => message.content.map(block => block.text)).join('\n')

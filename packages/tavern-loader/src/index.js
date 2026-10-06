@@ -322,6 +322,21 @@ export function apply(ctx, config = {}) {
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   const sessionReads = createSessionReadContext(id => ctx.get('sessions')?.get?.(id))
+  const withSessionRead = async ({ sessionId, signal } = {}, callback) => {
+    signal?.throwIfAborted()
+    if (!sessionId || sessionReads.getSession(sessionId)) return callback()
+    const sessions = ctx.get('sessions'), controller = ctx.get('sessionController')
+    if (!sessions || !controller) throw Object.assign(new Error('Session reader is not ready'), { code: 'SESSION_READER_NOT_READY' })
+    let record
+    try { record = await controller.inspect(sessionId) }
+    catch (error) {
+      if (error.code === 'session/not-found' || error.constructor?.name === 'ApiSessionNotFound') throw Object.assign(new Error('Session does not exist'), { code: 'SESSION_NOT_FOUND' })
+      throw error
+    }
+    signal?.throwIfAborted()
+    const session = sessions.get(sessionId) ?? sessions.prepare(sessionId, { seed: record.events, meta: record.meta, inheritedEventCount: record.inheritedEventCount, eventState: 'detached' })
+    return sessionReads.run(session, callback)
+  }
   ctx.effect(() => () => sessionReads.dispose())
   migrateCharacterSelections(characterStore, selections)
   const openingWorldBooks = new OpeningWorldBookService({ storageDir, characters: characterStore,
@@ -386,7 +401,7 @@ export function apply(ctx, config = {}) {
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
   const assemblyPresets = new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
-  const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [],
+  const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [], withSessionRead,
     getSession: sessionReads.getSession, getMvu: () => ctx.get('tavernMvu'),
     resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
     getSelection: sessionId => {

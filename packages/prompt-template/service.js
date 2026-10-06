@@ -96,7 +96,74 @@ export class PromptTemplateService {
     this.policy.setMode(args, resource)
     return this.read(args)
   }
-  validateResolved = context => { if ((this.#checks.get(context) ?? []).some(check => !check())) fail('SOURCE_POLICY_CHANGED', 'Template policy changed before assembly') }
+  validateResolved = context => { if ([...(this.#checks.get(context)?.values() ?? [])].flat().some(check => !check())) fail('SOURCE_POLICY_CHANGED', 'Template policy changed before assembly') }
+  #captureChecks(context, key, checks) {
+    const captured = this.#checks.get(context) ?? new Map()
+    captured.set(key, checks); this.#checks.set(context, captured)
+  }
+  hasModule({ sessionId } = {}) {
+    return !!sessionId && !this.#boundDisposed && this.state.resources.some(r => r.enabled && r.sessionIds.some(id => id === '*' || id === sessionId) && inspectTemplateMetadata(r).supported)
+  }
+  async parseText(context, rule) {
+    if (!context.sessionId) fail('TEMPLATE_SESSION_REQUIRED', 'Template text requires a session')
+    const checks = [], blocks = [], diagnostics = []
+    const definition = { content: rule.text, variables: context.assets.context ?? {} }
+    const row = { id: 'text:' + rule.id, name: rule.name || 'Template text', revision: hash(rule.text) }
+    const decision = { enabled: true, configRevision: null, checkCurrent: () => !this.#boundDisposed }
+    await this.#renderText(context, definition, row, decision, checks, blocks, diagnostics)
+    for (const block of blocks) { block.source = { field: rule.id }; for (const child of block.children ?? []) child.source = { field: rule.id, representation: 'original' } }
+    const references = diagnostics.filter(d => d.code !== 'TAVERN_MEMORY_RESOURCE_VERSION').map(d => ({ ...d, consumerId: null, consumerField: rule.id }))
+    this.#captureChecks(context, 'text:' + rule.id, checks); this.validateResolved(context)
+    return { blocks, diagnostics: references }
+  }
+  async #renderText(context, definition, row, decision, checks, blocks, diagnostics) {
+    const dependencies = new Map(), assets = context.assets
+    const event = { preview: context.preview === true, turn: context.turn ?? null, step: context.step ?? null,
+      usage: 'prompt-template-dependency', consumer: { adapterId:this.id, id:row.id } }
+    const selectionCurrent = this.worldBooks?.selectionLease(context) ?? (() => true)
+    const accept = (id, proof) => {
+      if (!decision.checkCurrent() || !selectionCurrent() || [...dependencies.values()].some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template policy changed during dependency lookup')
+      if (!proof || proof.id !== id || proof.adapterId !== (id.startsWith('mvu:') ? 'tavern.mvu' : 'tavern.world-books') || typeof proof.checkCurrent !== 'function') fail('TEMPLATE_DEPENDENCY_UNAVAILABLE', 'Source does not provide a prompt-use lease')
+      if (!proof.checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'Template dependency lease expired')
+      dependencies.set(id, proof)
+      return proof
+    }
+    const resolveDependency = async ({ kind, args }) => {
+      if (!decision.checkCurrent() || !selectionCurrent() || [...dependencies.values()].some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template dependency changed during expansion')
+      if (kind === 'variables' && args.length === 0) {
+        if (!definition.variableResourceId) return definition.variables
+        const id = definition.variableResourceId
+        const proof = dependencies.get(id) ?? accept(id, await this.resolveVariables?.({ id,
+          scope: { authority:'local', sessionId:context.sessionId }, event, signal:context.signal }))
+        return proof.content
+      }
+      if (kind === 'worldbook-catalog' && args.length === 0) return this.worldBooks?.catalog(context) ?? []
+      if (kind === 'worldbook-entry' && args.length === 2) {
+        const [id, uid] = args
+        const proof = dependencies.get(id) ?? accept(id, await this.worldBooks?.resolvePromptDependency({ id, context, event }))
+        const entry = proof.content.find(e => String(e.uid) === String(uid))
+        if (!entry) fail('TEMPLATE_DEPENDENCY_NOT_ACTIVE', 'World-book dependency entry is not active in this request')
+        return entry.content
+      }
+      // These helpers expose only selected fragments; no card/preset raw document enters the VM.
+      if (kind === 'preset-catalog' && args.length === 0) return (assets.preset?.prompts ?? []).map(p => ({id:p.identifier,name:p.name}))
+      if (kind === 'preset-entry' && args.length === 1) return assets.preset?.prompts?.find(p => p.identifier === args[0])?.content ?? ''
+      if (kind === 'character-catalog' && args.length === 0) return assets.character ? {id:assets.character.id,name:assets.character.name}:null
+      if (kind === 'character-description' && args.length === 1) return assets.character?.id === args[0] ? assets.character.data?.description ?? '' : ''
+      fail('TEMPLATE_DEPENDENCY_INVALID', 'Unsupported template dependency request')
+    }
+    const text = await renderTemplate(definition.content, {}, { signal: context.signal, resolveDependency })
+    const dependencyProofs = [...dependencies.values()]
+    if (!selectionCurrent() || dependencyProofs.some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template dependency changed before provide')
+    checks.push(selectionCurrent, ...dependencyProofs.map(p => p.checkCurrent))
+    if (!decision.checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'Template or policy changed before provide')
+    checks.push(decision.checkCurrent)
+    const blockId = `template-${hash([row.id, row.revision, decision.configRevision])}`
+    blocks.push({ type: 'text', id: blockId, name: row.name, text, source: { resourceId: row.id, field: 'content' },
+      children: [{ id: `${blockId}:original`, name: 'Template source', text: definition.content, locked: true, source: { resourceId: row.id, field: 'content', representation: 'original' } }] })
+    for (const proof of dependencyProofs) diagnostics.push({ code:'TAVERN_MEMORY_DEPENDENCY_VERSION', adapterId:proof.adapterId, resourceId:proof.id, revision:proof.revision, configRevision:proof.configRevision, consumerId:row.id, sourceId:TEMPLATE_SOURCE, blockId })
+    diagnostics.push({ code: 'TAVERN_MEMORY_RESOURCE_VERSION', adapterId: this.id, sourceId: TEMPLATE_SOURCE, resourceId: row.id, blockId, revision: row.revision, configRevision: decision.configRevision })
+  }
   async resolve(context) {
     if (!context.sessionId) return { blocks: [], diagnostics: [{ code: 'TEMPLATE_SESSION_REQUIRED' }] }
     const blocks = [], diagnostics = [], checks = []
@@ -104,56 +171,11 @@ export class PromptTemplateService {
       if (!row.enabled) continue
       const definition = structuredClone(this.#definition(row.id)), decision = await this.policy.decision(row, context, () => this.read({ id: row.id })?.revision)
       if (!decision.enabled) { diagnostics.push({ code: 'TEMPLATE_POLICY_SKIPPED', resourceId: row.id }); continue }
-      const dependencies = new Map(), assets = context.assets
-      const event = { preview: context.preview === true, turn: context.turn ?? null, step: context.step ?? null,
-        usage: 'prompt-template-dependency', consumer: { adapterId:this.id, id:row.id } }
-      const selectionCurrent = this.worldBooks?.selectionLease(context) ?? (() => true)
-      const accept = (id, proof) => {
-        if (!decision.checkCurrent() || !selectionCurrent() || [...dependencies.values()].some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template policy changed during dependency lookup')
-        if (!proof || proof.id !== id || proof.adapterId !== (id.startsWith('mvu:') ? 'tavern.mvu' : 'tavern.world-books') || typeof proof.checkCurrent !== 'function') fail('TEMPLATE_DEPENDENCY_UNAVAILABLE', 'Source does not provide a prompt-use lease')
-        if (!proof.checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'Template dependency lease expired')
-        dependencies.set(id, proof)
-        return proof
-      }
-      const resolveDependency = async ({ kind, args }) => {
-        if (!decision.checkCurrent() || !selectionCurrent() || [...dependencies.values()].some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template dependency changed during expansion')
-        if (kind === 'variables' && args.length === 0) {
-          if (!definition.variableResourceId) return definition.variables
-          const id = definition.variableResourceId
-          const proof = dependencies.get(id) ?? accept(id, await this.resolveVariables?.({ id,
-            scope: { authority:'local', sessionId:context.sessionId }, event, signal:context.signal }))
-          return proof.content
-        }
-        if (kind === 'worldbook-catalog' && args.length === 0) return this.worldBooks?.catalog(context) ?? []
-        if (kind === 'worldbook-entry' && args.length === 2) {
-          const [id, uid] = args
-          const proof = dependencies.get(id) ?? accept(id, await this.worldBooks?.resolvePromptDependency({ id, context, event }))
-          const entry = proof.content.find(e => String(e.uid) === String(uid))
-          if (!entry) fail('TEMPLATE_DEPENDENCY_NOT_ACTIVE', 'World-book dependency entry is not active in this request')
-          return entry.content
-        }
-        // These helpers expose only selected fragments; no card/preset raw document enters the VM.
-        if (kind === 'preset-catalog' && args.length === 0) return (assets.preset?.prompts ?? []).map(p => ({id:p.identifier,name:p.name}))
-        if (kind === 'preset-entry' && args.length === 1) return assets.preset?.prompts?.find(p => p.identifier === args[0])?.content ?? ''
-        if (kind === 'character-catalog' && args.length === 0) return assets.character ? {id:assets.character.id,name:assets.character.name}:null
-        if (kind === 'character-description' && args.length === 1) return assets.character?.id === args[0] ? assets.character.data?.description ?? '' : ''
-        fail('TEMPLATE_DEPENDENCY_INVALID', 'Unsupported template dependency request')
-      }
-      const text = await renderTemplate(definition.content, {}, { signal: context.signal, resolveDependency })
-      const dependencyProofs = [...dependencies.values()]
-      if (!selectionCurrent() || dependencyProofs.some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template dependency changed before provide')
-      checks.push(selectionCurrent, ...dependencyProofs.map(p => p.checkCurrent))
-      if (!decision.checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'Template or policy changed before provide')
-      checks.push(decision.checkCurrent)
-      const blockId = `template-${hash([row.id, row.revision, decision.configRevision])}`
-      blocks.push({ type: 'text', id: blockId, name: row.name, text, source: { resourceId: row.id, field: 'content' },
-        children: [{ id: `${blockId}:original`, name: 'Template source', text: definition.content, locked: true, source: { resourceId: row.id, field: 'content', representation: 'original' } }] })
-      for (const proof of dependencyProofs) diagnostics.push({ code:'TAVERN_MEMORY_DEPENDENCY_VERSION', adapterId:proof.adapterId, resourceId:proof.id, revision:proof.revision, configRevision:proof.configRevision, consumerId:row.id, sourceId:TEMPLATE_SOURCE, blockId })
-      diagnostics.push({ code: 'TAVERN_MEMORY_RESOURCE_VERSION', adapterId: this.id, sourceId: TEMPLATE_SOURCE, resourceId: row.id, blockId, revision: row.revision, configRevision: decision.configRevision })
+      await this.#renderText(context, definition, row, decision, checks, blocks, diagnostics)
     }
     context.signal?.throwIfAborted()
     if (checks.some(check => !check())) fail('SOURCE_POLICY_CHANGED', 'Template or policy changed during source resolution')
-    this.#checks.set(context, checks)
+    this.#captureChecks(context, 'module', checks)
     return { blocks, diagnostics }
   }
   dispose() { this.#boundDisposed = true; this.policy.dispose() }

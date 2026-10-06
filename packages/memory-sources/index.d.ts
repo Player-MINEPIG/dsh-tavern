@@ -27,7 +27,7 @@ export interface MemorySourceAdapter {
   dispose(): void;
 }
 export interface MemorySources {
-  protocolVersion: 1; adapters: MemorySourceAdapter[]; templates: PromptTemplateService;
+  protocolVersion: 1; withSessionRead<T>(scope: { sessionId?: string; signal?: AbortSignal }, callback: () => T | Promise<T>): T | Promise<T>; adapters: MemorySourceAdapter[]; templates: PromptTemplateService;
   listBound(args: BoundResourceRequest): Promise<BoundResourceSnapshot>;
   worldBooks: MemorySourceAdapter & { filter(context: SourceContext, output: SourceOutput): Promise<SourceOutput>; validateResolved(context: SourceContext): void; catalog(context:SourceContext): unknown[]; resolvePromptDependency(args:{id:string;context:SourceContext;event:Record<string,unknown>}): Promise<{id:string;adapterId:string;content:unknown;revision:string;configRevision:unknown;checkCurrent:()=>boolean}> };
   validateAssembly(assembly: unknown): void;
@@ -35,6 +35,7 @@ export interface MemorySources {
   dispose(): void;
 }
 export function createMemorySources(options: { storageDir: string; store: unknown; resources?: TemplateResource[]; characters?: unknown;
+  withSessionRead?: <T>(scope: {sessionId?: string; signal?: AbortSignal}, callback: () => T | Promise<T>) => T | Promise<T>;
   getSelection?: (sessionId:string) => {worldBookIds:string[];characterId:string|null;selectionRevision:number|string}; getSession?: (sessionId:string) => unknown;
   getMvu?: () => {listBound(args:BoundResourceRequest):BoundResourceSnapshot|Promise<BoundResourceSnapshot>; resolvePromptDependency?(args:import('../mvu-adapter/src/prompt-dependency.js').MvuPromptDependencyRequest):Promise<import('../mvu-adapter/src/prompt-dependency.js').MvuPromptDependencyResult|null>}|undefined; resolveVariables?: (args: unknown) => unknown }): MemorySources
 export function installMemorySources(ctx: unknown, service: MemorySources, registry: RequestSourceRegistry): void

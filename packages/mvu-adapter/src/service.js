@@ -937,6 +937,10 @@ export class MvuService {
     if (!checkCurrent()) return null
     return { id: resource.id, adapterId: 'tavern.mvu', content: json(content), revision: contentRevision, configRevision: decision.configRevision, checkCurrent }
   }
+  hasModule({ sessionId } = {}) {
+    return !!sessionId && !this.#disposed && this.resources.some(resource => !resource.legacy && !resource.sourceError
+      && resource.sessionIds.some(id => id === '*' || id === sessionId) && this.#cardResourceActive(resource, { sessionId }))
+  }
   async resolveRequest(context) {
     const scope = { sessionId: context.sessionId, authority: 'local' }, blocks = [], diagnostics = [], checks = []
     for (const row of await this.list({ scope, signal: context.signal })) {

@@ -24,6 +24,8 @@ Tavern 提供当前资源快照和世界书策略校验，将它们传给 assemb
 
 提供 `parseText(context,rule)` 的来源通过 `inputMode:'text'` 解析用户手填内容；默认模式读取来源资产。两种模式共用位置、深度、角色与快照机制。第三方使用自己的语法，Tavern 使用 ST 解析，DSH 自定义文本使用原生变量插值。Skill 不重复注入。
 
+模块来源与文本解析器分开添加：不能提供当前独立内容的来源不出现在模块菜单，其 parseText 仍可供用户输入文本使用。Tavern 模板文本通过来源自己的只读 EJS 子集解析，存储模板、MVU 状态和 Manager 检索模块按当前真实绑定/配置显示。记忆管理只读查询通过 withSessionRead 等待并借用持久化冷会话；不会创建 Agent 或追加历史。会话不存在、读取服务初始化和读取失败分别处理。
+
 ## GitHub 与分发
 
 一般用独立 repository 与 package.json 的 dependencies 表示单向依赖；README 同时给包依赖图与运行时接口图。GitHub Dependency Graph 从 manifest/lockfile 获取依赖，不必把子库作为 submodule。正式发布 assembler 后，Tavern 的源码依赖应从本地 file spec 改为精确 npm 版本，并用 npm 重生成 lockfile。用户正常安装 Tavern 时即可拉取 assembler；当前本地候选通过两包组合安装，避免要求用户手动拼接运行时代码。

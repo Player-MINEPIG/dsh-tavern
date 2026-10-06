@@ -28,6 +28,8 @@ export class PromptTemplateService {
   getManagementDefaults(args: import('../memory-sources/index.js').ResourceAccess): import('../memory-sources/index.js').SourceManagementDefaults | null;
   registerUsage(handler: (request: Record<string, unknown>) => unknown, options?: {providerId: 'dsh-memory-manager'}): () => void;
   observe(handler: (event: Record<string, unknown>) => void): () => void;
+  hasModule(scope?: {sessionId?: string}): boolean;
+  parseText(context: SourceContext, rule: import('dsh-prompt-assembler').Rule): Promise<SourceOutput>;
   resolve(context: SourceContext): Promise<SourceOutput>;
   validateResolved(context: SourceContext): void;
   dispose(): void;
