@@ -17,7 +17,8 @@ test('complete schema source confirmation requires backend authority and support
  assert.equal(confirmMvuSchemas(declarations,snapshot)[0].status,'source-registered')
  const v2={...snapshot,variables:{mvu_schema:{...snapshot.variables.mvu_schema,interpreterVersion:2}}}
  assert.equal(confirmMvuSchemas(declarations,v2)[0].interpreterVersion,2)
- for(const replacement of [undefined,{...snapshot,status:'unavailable'},{...snapshot,variables:{}}, {...snapshot,variables:{mvu_schema:{...snapshot.variables.mvu_schema,source:'different'}}}, {...snapshot,variables:{mvu_schema:{...snapshot.variables.mvu_schema,interpreterVersion:3}}}])assert.throws(()=>confirmMvuSchemas(declarations,replacement),/exact complete schema/)
+ for(const replacement of [undefined,{...snapshot,status:'unavailable'}])assert.throws(()=>confirmMvuSchemas(declarations,replacement),error=>error.code==='MVU_SNAPSHOT_UNAVAILABLE')
+ for(const replacement of [{...snapshot,variables:{}}, {...snapshot,variables:{mvu_schema:{...snapshot.variables.mvu_schema,source:'different'}}}, {...snapshot,variables:{mvu_schema:{...snapshot.variables.mvu_schema,interpreterVersion:3}}}])assert.throws(()=>confirmMvuSchemas(declarations,replacement),error=>error.code==='MVU_SCHEMA_MISMATCH'&&/exact complete schema/.test(error.message))
 })
 test('initial coordinates require the resolved root and selected character with empty timeline',()=>{
  const input={playthrough:{id:'p',ext:{pmpDshTavern:{rootSessionId:'s',characterId:'c'}}},sessionId:'s',characterId:'c',timeline:{nodes:[]},turns:[]}

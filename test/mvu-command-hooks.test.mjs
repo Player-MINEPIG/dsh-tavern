@@ -151,7 +151,8 @@ test('old disposer cannot remove replacement registration; receipt alone never c
   service.resources[0] = { ...service.resources[0], commandSource: undefined }
   assert.equal((await read(service)).commandProcessor.registrationId, next.receipt.registrationId)
   await service.ingest(session()); assert.equal((await read(service)).content.stat_data.hp, 10)
-  for (const snapshot of [null, { status: 'available', commandProcessor: { ...next.receipt, source: 'different' } }, { status: 'available', commandProcessor: { ...next.receipt, registered: false } }]) assert.throws(() => confirmMvuCommandHooks([{ source: next.receipt.source }], snapshot), /successful source registration/)
+  assert.throws(()=>confirmMvuCommandHooks([{source:next.receipt.source}],null),error=>error.code==='MVU_SNAPSHOT_UNAVAILABLE')
+  for (const snapshot of [{ status: 'available', commandProcessor: { ...next.receipt, source: 'different' } }, { status: 'available', commandProcessor: { ...next.receipt, registered: false } }]) assert.throws(() => confirmMvuCommandHooks([{ source: next.receipt.source }], snapshot), /successful source registration/)
 }))
 
 test('trusted ingest carries bounded same-turn user text, never a prior-turn operation block', () => fixture(async service => {

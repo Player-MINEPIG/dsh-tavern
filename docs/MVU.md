@@ -104,7 +104,7 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 `GET /pmp-dsh-tavern/api/v1/mvu/snapshot?scope=<JSON>` 使用现有 Tavern 请求认证。scope 为 Host 绑定的 `{playthroughId,sessionId,nodeId,variantId,endEventId,sessionFormatVersion?}`，必须与持久 timeline 和原生消息相符。浏览器不能传自选 messageId。读快照的 revision 保留历史语义，currentRevision 提供当前 CAS 版本。
 
-客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。渲染模块负责脚本回调和生命周期。普通开场、导入、流式气泡不能冒充 durable scope；当前角色开场使用下述只读 greeting 模式；空会话写入另用 initial 模式。
+客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。已有验证快照遇到网络或 HTTP 5xx 读取失败时，仅保留本绑定的展示数据，标记 `readState:'failed'`、`error:'MVU_READ_FAILED'` 并禁止新写入；读取恢复后清除标记。权限、作用域拒绝或无效响应会清空展示数据，不借用其他绑定。重复的相同失败不重复通知。渲染模块负责脚本回调和生命周期。普通开场、导入、流式气泡不能冒充 durable scope；当前角色开场使用下述只读 greeting 模式；空会话写入另用 initial 模式。
 
 ## 已下载且开启的卡片变量
 
@@ -118,7 +118,7 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 可信 dispatcher 从原生事件或 timer 任务取得 cause（`user-interaction`、`interval`、`script`）；卡片只提交 operation/value 和受限 options。Host 信任已认证 UI 的证据，不声称加密证明人类点击。自动传输恢复保留 Worker 实际看到的 revision 和原 operationId，不改用最新 CAS 或新操作 ID。
 
-已观察的签名仍是返回整份变量的 `Mvu.getMvuData(options?)`、`Mvu.updateVariablesWith(JSONPatchArray)` 与 `await Mvu.replaceMvuData(variables,options?)`；不宣称 callback updater 重载。VARIABLE_UPDATE_ENDED 仅在此绑定提交后提供无参回调。跨 scope fallback 仍拒绝；下载代码不会开放网络、父页面 DOM 或 Host 工具。
+已观察的签名仍是返回整份变量的 `Mvu.getMvuData(options?)`、`Mvu.updateVariablesWith(JSONPatchArray)` 与 `await Mvu.replaceMvuData(variables,options?)`；不宣称 callback updater 重载。VARIABLE_UPDATE_ENDED 在此绑定观察到更新版本，或不可用快照恢复为可用时提供无参回调；恢复读取不表示发生新提交。跨 scope fallback 仍拒绝；下载代码不会开放网络、父页面 DOM 或 Host 工具。
 
 ## 开场的当前只读变量
 

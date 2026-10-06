@@ -260,7 +260,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
   return { bridge, attach: value => { runtime=value; if (destroyed) value.dispose() }, destroy }
 }
 
-const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, openingBinding }) {
+const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, writesBlocked=false, openingBinding }) {
   const diagnosticId=useId()
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0),sourceFrameRevision=useRef(0)
   const sourceFrameKey=useMemo(()=>++sourceFrameRevision.current,[source])
@@ -275,14 +275,23 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const openingBridge=useRef(null),identityBridge=useRef(null),proposalVersion=useRef(0)
   const replaceProposal=value=>{proposalVersion.current++;setProposal(value)}
   const [closed,setClosed]=useState(false)
+  const [runtimeRevision,setRuntimeRevision]=useState(0),[mvuReading,setMvuReading]=useState(false),[mvuFailure,setMvuFailure]=useState(false)
+  const [mvuNotice,setMvuNotice]=useState('')
+  const retryMvu=useRef(false)
+  useEffect(()=>{if(!writesBlocked&&retryMvu.current){retryMvu.current=false;setRuntimeRevision(value=>value+1)}},[writesBlocked])
+  const writePolicy=useRef(null),revokeAccess=useRef(()=>{})
+  const writeKey=JSON.stringify(writeScope)
+  writePolicy.current={scope:writeScope,blocked:writesBlocked,createBinding}
+  useLayoutEffect(()=>{revokeAccess.current()},[writeKey,writesBlocked])
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
     try { if(!enabled)return cardDocument(source);const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
-  const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
+  const srcDoc = useMemo(()=>`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`,[data])
   const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):''
-  const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,error,photoError].filter(Boolean),diagnosticId)
-  useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,JSON.stringify(openingBinding)])
+  const visibleError=mvuFailure&&writesBlocked?'':error
+  const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,visibleError,mvuNotice,photoError].filter(Boolean),diagnosticId)
+  useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);setMvuReading(false);setMvuFailure(false);setMvuNotice('');retryMvu.current=false;return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,JSON.stringify(openingBinding),runtimeRevision])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); replaceProposal('');setIdentityProposal(null)
     const doc=frame.current?.contentDocument
@@ -327,10 +336,12 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       if(hadWriteBinding){stopVariables?.();stopVariables=null}
       if(hadWriteBinding&&!cleaned&&createBinding)createBinding(controller.signal).then(next=>{
         if(cleaned||ticket!==writeEpoch){next.dispose();return}
-        binding=next;virtualRuntime?.notifyVariables(next.getSnapshot());stopVariables=next.subscribe(value=>virtualRuntime?.notifyVariables(value))
-      }).catch(()=>{})
+        binding=next;receiveVariables(next.getSnapshot());stopVariables=next.subscribe(receiveVariables)
+      }).catch(()=>{if(!cleaned&&ticket===writeEpoch){retryMvu.current=true;setMvuFailure(true);setError(translate('appearance.mvuReadFailed'));receiveVariables({version:1,status:'unavailable',revision:0,variables:{}})}})
     }
     let cleaned=false
+    const receiveVariables=value=>{if(cleaned||current!==generation.current)return;setMvuNotice(value.readState==='failed'?translate('appearance.mvuRetained'):value.status==='unavailable'?translate('appearance.mvuUnavailable'):'');virtualRuntime?.notifyVariables(value)}
+    revokeAccess.current=()=>{const request=writeRequest;writeRequest=null;if(request)request.dispose();else revokeWrites()}
     const stopRuntime=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();photoDiagnostic?.dispose();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();composerBridge?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     cleanup.current=()=>{stopRuntime();observer.disconnect();cancelAnimationFrame(measurementFrame);measurementFrame=0}
     // Stop all active capabilities on failure while sizing the inert view until
@@ -342,8 +353,11 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     try {
       if (!(data.runs?.length || data.scripts?.length)) return
       if (!await firstCardVisibility(ownFrame,controller.signal) || cleaned || current!==generation.current) return
+      const requiresMvu=data.adapters?.some(item=>['mvu-facade','backend-schema','backend-command-hook'].includes(item.kind))
       if(createBinding) {
-        try { binding=await createBinding(controller.signal) } catch(error) { if(controller.signal.aborted)return /* Missing MVU is reported only if the card requests variables. */ }
+        if(requiresMvu)setMvuReading(true)
+        try { binding=await createBinding(controller.signal) } catch(error) { if(controller.signal.aborted)return;if(requiresMvu)throw Object.assign(Error(translate('appearance.mvuReadFailed')),{code:'MVU_SNAPSHOT_READ_FAILED'}) /* Ordinary cards do not require MVU. */ }
+        finally{if(current===generation.current)setMvuReading(false)}
         if(current!==generation.current){binding?.dispose();return}
       }
       if(data.virtual) {
@@ -356,6 +370,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         composerBridge=createCardComposerBridge({identity,adapter:composer,storage,onClose:()=>{if(!cleaned&&current===generation.current){setClosed(true);queueMicrotask(()=>{if(current===generation.current)cleanup.current()})}}})
         if(composerBridge.modeError)setError(composerBridge.modeError)
         const activeBinding=binding??helperBinding
+        if(requiresMvu&&activeBinding?.getSnapshot()?.status!=='available')throw Object.assign(Error('MVU snapshot is unavailable'),{code:'MVU_SNAPSHOT_UNAVAILABLE'})
         confirmMvuSchemas(data.schemaDeclarations??[],activeBinding?.getSnapshot())
         confirmMvuCommandHooks(data.commandDeclarations??[],activeBinding?.getSnapshot())
         const events=['click','input','change','keydown','keyup','pointerdown','pointerup']
@@ -385,20 +400,21 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         }
         for(const type of events)doc.body.addEventListener(type,handler)
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
-        let variableWriteScope
-        if(writeScope&&createBinding)try{variableWriteScope=initialWriteViewScope(writeScope,activeBinding?.getSnapshot())}catch{/* Missing MVU denies writes; ordinary cards can still render. */}
-        // Preparation has read only downloaded dependencies and enabled scripts.
-        if(variableWriteScope)writeRequest=renderingWriteRequests.register({scope:variableWriteScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,downloaded:true,enabled:true,onRevoke:revokeWrites})
         const ensureWriteBinding=async(refresh=false)=>{
-          if(!writeRequest)throw Object.assign(Error('Card variables are not writable in this view'),{code:'MVU_READ_ONLY'})
+          const policy=writePolicy.current
+          if(cleaned||policy.blocked||!policy.scope||!policy.createBinding)throw Object.assign(Error('Card variables are not writable in this view'),{code:'MVU_READ_ONLY'})
+          if(!writeRequest){
+            const variableWriteScope=initialWriteViewScope(policy.scope,(binding??helperBinding)?.getSnapshot())
+            writeRequest=renderingWriteRequests.register({scope:variableWriteScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,downloaded:true,enabled:true,onRevoke:revokeWrites})
+          }
           if(refresh){writeEpoch++;writeController?.abort();writeBinding?.dispose();writeBinding=null;writeLoading=null;await writeRequest.renew()}
           if(!writeBinding){
             if(!writeLoading){const pendingController=new AbortController();writeController=pendingController;writeLoading=(async()=>{
               let grant=await writeRequest.getGrant();pendingController.signal.throwIfAborted()
               let next
-              try{next=await createBinding(pendingController.signal,grant)}catch(error){if(error.code!=='MVU_WRITE_DENIED'||pendingController.signal.aborted||cleaned)throw error;grant=await writeRequest.renew();pendingController.signal.throwIfAborted();next=await createBinding(pendingController.signal,grant)}
+              try{next=await policy.createBinding(pendingController.signal,grant)}catch(error){if(error.code!=='MVU_WRITE_DENIED'||pendingController.signal.aborted||cleaned)throw error;grant=await writeRequest.renew();pendingController.signal.throwIfAborted();next=await policy.createBinding(pendingController.signal,grant)}
               if(pendingController.signal.aborted||cleaned){next.dispose();throw Error('Variable write binding cancelled')}
-              stopVariables?.();binding?.dispose();binding=next;writeBinding=next;stopVariables=next.subscribe(snapshot=>virtualRuntime?.notifyVariables(snapshot));return next
+              stopVariables?.();binding?.dispose();binding=next;writeBinding=next;stopVariables=next.subscribe(receiveVariables);return next
             })().finally(()=>{if(writeController===pendingController)writeLoading=null})}
             await writeLoading
           }
@@ -521,7 +537,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             signal.throwIfAborted();return result
           },
         })
-        if(activeBinding)stopVariables=activeBinding.subscribe(value=>virtualRuntime?.notifyVariables(value))
+        if(activeBinding)stopVariables=activeBinding.subscribe(receiveVariables)
         return
       }
       dom=createDomBridge(doc,context,replaceProposal,failRuntime,binding??helperBinding)
@@ -530,14 +546,19 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       dom.attach(runtime)
       for(const script of data.runs ?? data.scripts.map(code=>({code}))) runtime.evaluate(script.code,script)
       resize()
-    }catch(error){if(current===generation.current)failRuntime(error)}
+    }catch(error){if(current===generation.current){
+      if(['MVU_SNAPSHOT_UNAVAILABLE','MVU_SNAPSHOT_READ_FAILED'].includes(error.code)){retryMvu.current=true;setMvuFailure(true);error=Object.assign(Error(translate(error.code==='MVU_SNAPSHOT_UNAVAILABLE'?'appearance.mvuUnavailable':'appearance.mvuReadFailed')),{code:error.code})}
+      failRuntime(error)
+    }}
   }
   // Extracting scripts can leave srcDoc identical after a source edit. Give
   // that source its own iframe so onLoad recreates the disposed runtime.
   return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout),'data-dtv-card-instance':diagnosticId},
-    closed?h('p',{role:'status'},translate('appearance.cardSendAccepted')):h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
+    closed?null:h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding,runtimeRevision]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
+    mvuReading||mvuFailure&&writesBlocked?h('p',{role:'status'},translate('appearance.mvuLoading')):null,
+    mvuFailure&&!writesBlocked?h('button',{type:'button',onClick:()=>setRuntimeRevision(value=>value+1)},translate('appearance.mvuRetry')):null,
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
-    ...(!diagnosticsOutside?[unsupportedMessage,error,photoError].filter(Boolean).map(message=>h(CardDiagnosticNotice,{key:message,message,cardId:diagnosticId})):[]),
+    ...(!diagnosticsOutside?[unsupportedMessage,visibleError,mvuNotice,photoError].filter(Boolean).map(message=>h(CardDiagnosticNotice,{key:message,message,cardId:diagnosticId})):[]),
     media?.failed > 0 ? h('small',{className:'dtv-card-media',role:'alert'},translate('appearance.imageUnavailable')):null,
     openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,
     openingProposal?h('section',{className:'dtv-card-opening-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},

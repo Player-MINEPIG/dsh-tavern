@@ -204,11 +204,13 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 
 变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。空开场白可用明确的 `{mode:'initial',playthroughId,sessionId,characterId}` 作用域，仅绑定已解析的根会话及所选角色；来源再次验证空持久历史，首个 turn 开始后永久关闭该初始作用域。离开、切角色/会话、重挂载均销毁旧绑定与授权。没有可核实坐标的导入与流式内容不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，写操作需要单独的 Host capability，不继承模型工具权限。消息建议仍需卡片外确认；受控输入请求走其独立的真实点击校验，与模型工具授权完全分离。
 
+开场白的读取 iframe 在生成及初始写作用域消失时保留；写授权和待执行写入独立撤销。历史卡片正文不变时复用解析、清洗结果，避免随流式刷新重复处理。初次 MVU 读取显示加载状态；读取失败或缺失快照提供本卡重新加载入口。生成中尚未读到快照的卡片在生成结束后重试；schema 原文或解释器版本不匹配仍报错。离开视图销毁旧运行时，返回后先完成本次挂载的权威读取，再启用脚本。
+
 ## 已下载且开启的脚本变量
 
 外观面板管理下载和脚本开关。总开关未设置时默认开启，已保存的关闭选择保持关闭。已下载且开启的受支持代码可使用当前绑定变量，不需要源码核对、单独写批准或按时失效的权限。刷新恢复持久缓存，运行时重建自动替换内部绑定；切换 session 不转移变量值或 capability 对象。Host 校验完整执行包 hash 与准确 scope，不保存上传源码正文。
 
-渲染器支持已核实的 `Mvu.getMvuData(options?)` 整对象读取、`Mvu.updateVariablesWith(JSONPatchArray)` 和 `await Mvu.replaceMvuData(wholeVariables, options?)`，不声称支持回调重载。options 只可指向本绑定消息；global/chat/character、latest 或数字别名不会把历史气泡暗中改指当前焦点。`eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, callback)` 在本绑定有更新的已提交 revision 后无参回调，不声称原版事件 payload 或可变 before-update 语义。
+渲染器支持已核实的 `Mvu.getMvuData(options?)` 整对象读取、`Mvu.updateVariablesWith(JSONPatchArray)` 和 `await Mvu.replaceMvuData(wholeVariables, options?)`，不声称支持回调重载。options 只可指向本绑定消息；global/chat/character、latest 或数字别名不会把历史气泡暗中改指当前焦点。`eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, callback)` 在本绑定有更新的已提交 revision 或从不可用恢复为可用时无参回调；恢复读取不表示新提交。不声称原版事件 payload 或可变 before-update 语义。
 
 MVU 服务验证当前资源/头、选择与成员关系、来源 schema、CAS revision、幂等操作 ID 和最终执行 lease。缺失集成及历史 scope 明确失败。渲染器生成 operationId，并保留 Worker 实际看到的 revision。关闭或卸载立即停止本地执行并撤销内部绑定。原生卡片提交发出 card_variable_update 事实供 manager 观察，不再请求第二次 manager 批准；模型注入与助手更新保持原有策略。
 
@@ -230,6 +232,6 @@ MVU 服务验证当前资源/头、选择与成员关系、来源 schema、CAS r
 
 卡片 viewport 只提供只读的 `innerWidth/innerHeight`（同名全局属性亦可读），取自本卡 iframe 的实际内容尺寸，不提供 Host DOM、screen 或任意 Window API。宿主观察本卡尺寸变化，合并连续更新后在原串行解释器队列派发 `window` 的 `resize` 事件；该事件属于 script 原因，不提升为用户点击。切换、禁用、撤销与卸载会断开观察和待执行回调。html/body 的 class、内联样式（包括 CSS 变量）作为有界展示数据投影，其他根属性不在此接口内。包含固定定位或 `vh/dvh/svh/lvh` 高度单位的页面使用 `clamp(362px,75dvh,800px)` 卡片面板，iframe 内的高度单位与脚本尺寸都针对该面板；面板统一管理高度，脚本 resize 请求不会覆盖它。仅使用 `vw` 的响应式宽度或字体不启用此面板；单独出现在 `max-height` 声明中的视口高度上限（例如滚动列表的 `max-height: min(430px,68vh)`）也不启用此面板。普通流式页面按内容高度展示，基础 body 流布局把子元素边距纳入测量，不添加宿主内边距。
 
-普通流式卡片按实际内容高度缩放，不保留宿主额外的 100px 最低空间；最大高度仍为 800px。仅填入保留选项卡片，直接发送受理后本卡的关闭请求移除整个 iframe，并显示受理状态。
+普通流式卡片按实际内容高度缩放，不保留宿主额外的 100px 最低空间；最大高度仍为 800px。仅填入保留选项卡片，直接发送受理后本卡的关闭请求移除整个 iframe，不再向对话添加发送成功提示。
 
 开场 dock 中，只有显式标记容器内的单张 viewport 卡会使用嵌入式布局：面板高 `clamp(392px,75dvh,800px)`，iframe 填满网格区域；存在媒体状态或错误时才为其保留空间，不添加运行控件栏。脚本仍读取 iframe 的实际尺寸；不再在 `45dvh` 的外层滚动窗口里独立放入更高的 iframe。普通开场文本、多卡布局与原生 Host 窗口保持原布局。窄屏时，源页面可在自己的滚动区域内响应较小尺寸；此接口不重写源页面的最小高度或响应式规则。

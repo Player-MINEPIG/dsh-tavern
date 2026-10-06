@@ -34,7 +34,7 @@ const __getVariables=options=>__call('variables',[options??null]);
 globalThis.getVariables=__getVariables;globalThis.getAllVariables=()=>__getVariables();
 globalThis.TavernHelper=Object.freeze({getVariables:__getVariables,getAllVariables});
 globalThis.TavernUI=Object.freeze({version:1,getContext:()=>__call('context'),getVariables:__getVariables,proposeMessage:text=>__call('propose',[String(text)]),onVariables:fn=>{if(typeof fn!=='function'||__subscribers.size>=64)throw Error('Invalid variable subscriber');const id=++__subscriberId;__subscribers.set(id,fn);return()=>__subscribers.delete(id)}});
-const __mvuCallbacks=new Set(),__boundEvents=new Map(),__writes=new Map();let __writeId=0,__mvuRevision=-1;globalThis.__setMvuRevision=value=>{__mvuRevision=value};
+const __mvuCallbacks=new Set(),__boundEvents=new Map(),__writes=new Map();let __writeId=0,__mvuRevision=-1,__mvuAvailable=false;globalThis.__setMvuRevision=(value,available=value>=0)=>{__mvuRevision=value;__mvuAvailable=available};
 const __write=(operation,value,options)=>{if(__writes.size>=32)return Promise.reject(Error('Too many pending writes'));const id=++__writeId;return new Promise((resolve,reject)=>{__writes.set(id,{resolve,reject});try{__call('variableWrite',[id,operation,value,options??null])}catch(error){__writes.delete(id);reject(error)}})};
 globalThis.__writeResult=(id,result)=>{const pending=__writes.get(id);if(!pending)return;__writes.delete(id);if(result.error)pending.reject(Object.assign(Error(result.error.message),{code:result.error.code}));else pending.resolve(result.variables)};
 globalThis.Mvu=Object.freeze({getMvuData:options=>options==null?__getVariables():__call('mvuVariables',[options]),updateVariablesWith:ops=>{if(!Array.isArray(ops))return Promise.reject(Error('JSONPatch array required'));return __write('patch',ops)},replaceMvuData:(data,options)=>__write('replace',data,options),events:Object.freeze({VARIABLE_UPDATE_ENDED:'VARIABLE_UPDATE_ENDED'})});
@@ -52,7 +52,7 @@ for(const key of ['Mvu','TavernHelper','eventOn','tavern_events','getChatMessage
 globalThis.__greetingSelected=()=>{const choice=__call('boundGreetingSelection');if(!choice)return;const view=choice.view;for(const fn of [...(__boundEvents.get(tavern_events.CHARACTER_FIRST_MESSAGE_SELECTED)??[])])fn({input:view.message.mes,output:view.message.mes});if(choice.swiped)for(const fn of [...(__boundEvents.get(tavern_events.MESSAGE_SWIPED)??[])])fn(0)};
 globalThis.__initializeBuiltinMvu=version=>{if(version!==1)throw Error('Unsupported built-in MVU facade version');return Mvu};
 globalThis.waitGlobalInitialized=name=>name==='Mvu'?Promise.resolve():Promise.reject(Error('Unsupported global initialization'));
-globalThis.__notifyVariables=snapshot=>{for(const fn of __subscribers.values())fn(JSON.parse(JSON.stringify(snapshot)));if(snapshot.status==='available'&&snapshot.revision>__mvuRevision){__mvuRevision=snapshot.revision;for(const fn of __mvuCallbacks)fn()}}
+globalThis.__notifyVariables=snapshot=>{const available=snapshot.status==='available',changed=available&&(!__mvuAvailable||snapshot.revision>__mvuRevision);__mvuAvailable=available;for(const fn of __subscribers.values())fn(JSON.parse(JSON.stringify(snapshot)));if(changed){__mvuRevision=snapshot.revision;for(const fn of __mvuCallbacks)fn()}}
 ;
 const __ids=new WeakMap(),__nodes=new Map();let __nodeId=0;
 globalThis.__view=()=>{

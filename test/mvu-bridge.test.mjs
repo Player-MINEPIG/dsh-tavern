@@ -27,6 +27,34 @@ test('abort during initial snapshot stops transport and exposes no binding', asy
   assert.equal(stopped, true)
 })
 
+test('temporary read failure retains verified display, denies writes and recovers at the same revision',async t=>{
+ let mode='ready',calls=0,writes=0
+ const binding=await createMvuCardBinding({scope,pollMs:250,writeGrant:{grantId:'g',sourceIdentity:{}},client:{
+  getMvuSnapshot:async()=>{calls++;if(mode==='failed')throw Object.assign(Error('temporarily busy'),{status:503});return snapshot(4)},
+  postMvuOperation:async(path,body)=>path==='card-binding'?{capability:body.bindingId,snapshot:snapshot(4)}:path==='card-write'?(writes++,snapshot(5)):{ok:true},
+ }})
+ t.after(()=>binding.dispose())
+ const waitFor=predicate=>new Promise(resolve=>{const stop=binding.subscribe(value=>{if(predicate(value)){stop();resolve(value)}})})
+ const failed=waitFor(value=>value.readState==='failed');mode='failed';await failed
+ assert.equal(binding.getSnapshot().variables.stat_data.hp,96);assert.equal(binding.getSnapshot().status,'available');assert.equal(binding.getSnapshot().writable,false)
+ await assert.rejects(binding.write({operation:'patch',value:[]}),error=>error.code==='MVU_READ_FAILED');assert.equal(writes,0)
+ const notices=[];const stop=binding.subscribe(value=>notices.push(value))
+ await new Promise(resolve=>setTimeout(resolve,300));assert.equal(notices.length,0,'identical failed polls must not flood the VM')
+ const recovered=waitFor(value=>!value.readState);mode='ready';await recovered
+ assert.equal(binding.getSnapshot().revision,4);assert.equal(binding.getSnapshot().writable,true);assert.ok(calls>=3);stop()
+})
+
+test('access rejection and malformed replies invalidate the display instead of retaining stale variables',async t=>{
+ for(const failure of ['access','source','malformed']){
+  let fail=false
+  const binding=await createMvuCardBinding({scope,pollMs:250,client:{getMvuSnapshot:async()=>{if(!fail)return snapshot(4);if(failure==='access')throw Object.assign(Error('scope revoked'),{status:403,code:'MVU_SCOPE'});if(failure==='source')throw Object.assign(Error('source is unavailable'),{status:503,code:'MVU_HISTORY_UNAVAILABLE'});return {...snapshot(4),scope:{sessionId:'foreign'}}}}})
+  t.after(()=>binding.dispose())
+  const changed=new Promise(resolve=>binding.subscribe(resolve));fail=true
+  const value=await changed;assert.equal(value.status,'unavailable');assert.deepEqual(value.variables,{})
+  binding.dispose()
+ }
+})
+
 test('a failed poll issued before a committed write cannot erase the newer snapshot', async () => {
   const scope = { sessionId: 's', nodeId: 'n' }, snap = revision => ({ version: 1, status: 'available', scope, revision, currentRevision: revision, variables: { stat_data: { hp: revision }, schema: {} } })
   let calls = 0, rejectPoll, entered

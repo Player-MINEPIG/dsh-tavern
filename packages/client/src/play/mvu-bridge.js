@@ -12,7 +12,7 @@ export async function createMvuCardBinding({ client, scope, pollMs = 1000, signa
   if (typeof bound.sessionId !== 'string' || !bound.sessionId) throw new TypeError('MVU session scope is required')
   const controller = new AbortController(), listeners = new Set()
   const bindingId = writeGrant ? crypto.randomUUID() : undefined
-  let disposed = false, timer, current, polling = false, capability, creating = false, generation = 0
+  let disposed = false, timer, current, polling = false, capability, creating = false, generation = 0, readFailed=false
   const dispose = () => { if (disposed) return; if (capability || creating) { const revoked = capability ?? bindingId; capability = undefined; creating = false; void renderingWriteRequests.revokeMvuBinding(revoked, () => post('card-binding/revoke', { capability: revoked }, AbortSignal.timeout(10000))) }; disposed = true; clearTimeout(timer); listeners.clear(); controller.abort(); signal?.removeEventListener('abort', dispose) }
   signal?.addEventListener('abort', dispose, { once: true })
   const post = async (path, body, requestSignal = controller.signal) => {
@@ -25,8 +25,10 @@ export async function createMvuCardBinding({ client, scope, pollMs = 1000, signa
   const read = async () => {
     if (client?.getMvuSnapshot) return client.getMvuSnapshot(bound, { signal: controller.signal })
     const response = await tavernFetch(`${API_V1}/mvu/snapshot?scope=${encodeURIComponent(JSON.stringify(bound))}`, { signal: controller.signal, cache: 'no-store' })
-    if (!response.ok) throw new Error(`MVU snapshot: HTTP ${response.status}`)
-    return response.json()
+    let result
+    try{result=await response.json()}catch{throw Object.assign(Error(`MVU snapshot: HTTP ${response.status}`),{status:response.status,...(response.ok?{code:'MVU_INVALID_SNAPSHOT'}:{})})}
+    if (!response.ok) throw Object.assign(new Error(result.error??`MVU snapshot: HTTP ${response.status}`),{status:response.status,code:result.code})
+    return result
   }
   const validate = input => {
     if (input?.version !== 1 || !['available', 'unavailable'].includes(input.status) || !input.variables || typeof input.variables !== 'object' || Array.isArray(input.variables)
@@ -43,19 +45,31 @@ export async function createMvuCardBinding({ client, scope, pollMs = 1000, signa
     if (disposed || polling || !listeners.size) return
     polling = true
     const issuedGeneration = generation
+    let transportFailure=false
     try {
-      const next = validate(await read())
-      if (!disposed && issuedGeneration === generation && next.revision >= current.revision && JSON.stringify(next) !== JSON.stringify(current)) { current = next; for (const listener of listeners) { try { listener(copy(current)) } catch {} } }
+      let input;try{input=await read()}catch(error){transportFailure=true;throw error}
+      const next = validate(input)
+      if (!disposed && issuedGeneration === generation && next.revision >= current.revision) {
+        readFailed=false
+        if(JSON.stringify(next)!==JSON.stringify(current)){current=next;for (const listener of listeners) { try { listener(copy(current)) } catch {} }}
+      }
     } catch (error) {
       if (!disposed && issuedGeneration === generation) {
-        current = immutable({ version: 1, scope: bound, revision: 0, status: 'unavailable', variables: {}, error: 'MVU_READ_FAILED' })
-        for (const listener of listeners) { try { listener(copy(current)) } catch {} }
+        readFailed=true
+        // Only transport failures retain the last verified read. Scope/access
+        // rejection and malformed replies always invalidate it. No new write
+        // may use a retained display until a fresh read succeeds.
+        const temporary=transportFailure&&!['AbortError','SyntaxError'].includes(error.name)&&!error.code&&(!error.status||error.status>=500)
+        const next = temporary&&current.status==='available'?immutable({...current,readState:'failed',error:'MVU_READ_FAILED'}):immutable({ version: 1, scope: bound, revision: 0, status: 'unavailable', variables: {}, error: 'MVU_READ_FAILED' })
+        if(JSON.stringify(next)!==JSON.stringify(current)){current=next;for (const listener of listeners) { try { listener(copy(current)) } catch {} }}
       }
     } finally { polling = false; if (!disposed && listeners.size) timer = setTimeout(poll, Math.max(250, pollMs)) }
   }
   const submit = async ({ operation, value, expectedRevision, operationId, cause = 'script', signal: writeSignal } = {}) => {
     if (disposed) throw new Error('MVU binding is disposed')
     if (!capability) throw Object.assign(new Error('MVU binding is read-only'), { code: 'MVU_WRITE_DENIED' })
+    if (readFailed) throw Object.assign(new Error('A fresh MVU snapshot is required before writing'), {code:'MVU_READ_FAILED'})
+    if (current.status!=='available') throw Object.assign(new Error('MVU snapshot is unavailable'),{code:'MVU_SNAPSHOT_UNAVAILABLE'})
     writeSignal?.throwIfAborted()
     const pending = new AbortController(), abort = () => pending.abort()
     controller.signal.addEventListener('abort', abort, { once: true }); writeSignal?.addEventListener('abort', abort, { once: true })
@@ -69,7 +83,7 @@ export async function createMvuCardBinding({ client, scope, pollMs = 1000, signa
     } finally { controller.signal.removeEventListener('abort', abort); writeSignal?.removeEventListener('abort', abort) }
   }
   return Object.freeze({
-    getSnapshot: () => { if (disposed) throw new Error('MVU binding is disposed'); return { ...copy(current), writable: Boolean(capability) } },
+    getSnapshot: () => { if (disposed) throw new Error('MVU binding is disposed'); return { ...copy(current), writable: Boolean(capability)&&!readFailed&&current.status==='available' } },
     async write(request) { return (await submit(request)).snapshot },
     async writeOperation(request) { return (await submit(request)).receipt },
     subscribe(listener) {

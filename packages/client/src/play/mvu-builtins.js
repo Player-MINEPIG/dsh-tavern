@@ -9,7 +9,8 @@ export function mvuBuiltin(url,digest){return MVU_BUILTINS.find(item=>item.url==
 export function confirmMvuSchemas(declarations,snapshot){
  return declarations.map(item=>{
   const descriptor=snapshot?.variables?.mvu_schema
-  if(snapshot?.status!=='available'||descriptor?.mvuSchema!==1||![1,2].includes(descriptor?.interpreterVersion)||descriptor?.source!==item.source)throw Error('Built-in MVU schema requires an available backend snapshot with the exact complete schema source and supported interpreter version')
+  if(snapshot?.status!=='available')throw Object.assign(Error('MVU snapshot is unavailable'),{code:'MVU_SNAPSHOT_UNAVAILABLE'})
+  if(descriptor?.mvuSchema!==1||![1,2].includes(descriptor?.interpreterVersion)||descriptor?.source!==item.source)throw Object.assign(Error('Built-in MVU schema requires the exact complete schema source and supported interpreter version'),{code:'MVU_SCHEMA_MISMATCH'})
   return {...item,status:'source-registered',resourceId:snapshot.resourceId,revision:snapshot.revision,interpreterVersion:descriptor.interpreterVersion,confirmation:'Derived locally from the authoritative snapshot; original schema script was not executed in the card'}
  })
 }
@@ -18,7 +19,8 @@ export function confirmMvuSchemas(declarations,snapshot){
 export function confirmMvuCommandHooks(declarations,snapshot){
  return declarations.map(item=>{
   const receipt=snapshot?.commandProcessor
-  if(snapshot?.status!=='available'||receipt?.protocolVersion!==1||receipt?.registered!==true||receipt.source!==item.source||typeof receipt.registrationId!=='string'||!receipt.registrationId||!Number.isSafeInteger(receipt.listenerCount)||receipt.listenerCount<1)throw Error('MVU command Helper requires a matching successful source registration receipt')
+  if(snapshot?.status!=='available')throw Object.assign(Error('MVU snapshot is unavailable'),{code:'MVU_SNAPSHOT_UNAVAILABLE'})
+  if(receipt?.protocolVersion!==1||receipt?.registered!==true||receipt.source!==item.source||typeof receipt.registrationId!=='string'||!receipt.registrationId||!Number.isSafeInteger(receipt.listenerCount)||receipt.listenerCount<1)throw Error('MVU command Helper requires a matching successful source registration receipt')
   return {...item,status:'source-registered',resourceId:snapshot.resourceId,registrationId:receipt.registrationId,confirmation:'Source precommit registration; no state commit implied'}
  })
 }

@@ -211,7 +211,7 @@ async function init(input){
  if(data.cardStorage)await evaluate(CARD_STORAGE_RUNTIME,'card-storage.js',false,true)
  if(data.identityOpening===true)await evaluate(IDENTITY_OPENING_RUNTIME,'identity-opening.js',false,true)
  if(data.identityAction===true)await evaluate(IDENTITY_ACTION_RUNTIME,'identity-action.js',false,true)
- await evaluate(`__setMvuRevision(${Number.isSafeInteger(data.variables?.revision)?data.variables.revision:-1})`,'initial-revision.js',false,true)
+ await evaluate(`__setMvuRevision(${Number.isSafeInteger(data.variables?.revision)?data.variables.revision:-1},${data.variables?.status==='available'})`,'initial-revision.js',false,true)
  await evaluate(`document.body.innerHTML=${JSON.stringify(data.html)}`,'card-html.js',false,true)
  for(const key of ['html','body']){
   const root=data.root?.[key]??{},className=root.className??'',style=root.style??''

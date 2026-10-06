@@ -1,7 +1,7 @@
 import {boundGreetingView} from './bound-greeting.js'
 import {initialCardScope,greetingCardScope,writeGrantScope} from './mvu-scope.js'
 import { createMvuCardBinding } from './mvu-bridge.js'
-import { createElement as h, createContext, useContext, useState, useEffect, useMemo } from 'react'
+import { createElement as h, createContext, useContext, useState, useEffect, useMemo, useRef } from 'react'
 import { API_V1 } from '../../../identity.js'
 import { avatarFor, editAvatar } from '../../../presentation/avatar.js'
 import { AvatarInput } from '../avatar-input.js'
@@ -26,6 +26,7 @@ export function MessageBubble({ text, role = 'assistant', messageKey, editable =
   const messageScope = variableScope && context?.playthrough?.id ? {...variableScope,playthroughId:context.playthrough.id} : null
   const boundScope = messageScope ?? ((greetingBinding||initialBinding)&&!context?.disabled ? greetingCardScope(coordinate) : null)
   const writeScope = messageScope ?? (initialBinding&&!context?.disabled&&!context?.busy ? initialCardScope(coordinate) : null)
+  const latest=useRef(context);latest.current=context
   const [editing, setEditing] = useState(false)
   const [avatar, setAvatar] = useState(null)
   const [failedImage, setFailedImage] = useState(null)
@@ -47,13 +48,26 @@ export function MessageBubble({ text, role = 'assistant', messageKey, editable =
   }
   const name = context?.state?.display?.macros?.[role === 'user' ? 'user' : 'character'] ?? (role === 'user' ? 'User' : 'Assistant')
   const textBubbleStyle=useMemo(()=>messageBubbleStyle(settings.bubbleStyle,role),[settings.bubbleStyle,role])
+  const display=context?.state?.display
+  const owners=useMemo(()=>[display?.globalRenderingOwner,...Object.entries(display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean),[display])
+  const helpers=useMemo(()=>(display?.renderingSources??[]).filter(item=>item.kind==='helper'),[display])
+  // Read ownership is independent of the first-turn write permission. Streaming
+  // and permission changes must not replace an already verified greeting VM.
+  const scopeKey=JSON.stringify([context?.playthrough?.id,context?.sessionId,messageKey,boundScope])
+  const writeKey=JSON.stringify(writeScope)
+  const cardContext=useMemo(()=>({version:1,role,userName:display?.macros?.user??'User',characterName:display?.macros?.character??'Assistant',boundGreeting:greetingBinding?boundGreetingView({state:context?.state,scope:boundScope,disabled:context?.disabled}):null}),[scopeKey,role,display,context?.state?.greeting,greetingBinding,context?.disabled])
+  const content=useMemo(()=>h(MessageContent,{text,writeScope,writesBlocked:context?.busy===true,composer:disabled?null:context?.composer,
+    createBinding:boundScope?(signal,writeGrant)=>createMvuCardBinding({client:context.playClient,scope:writeGrant?writeGrantScope(writeScope,writeGrant):boundScope,signal,writeGrant}):undefined,
+    owners,helpers,enabled:settings.interactiveCards!==false&&!context?.disabled&&!streaming,scopeKey,context:cardContext,
+    onSend:disabled||context?.busy?undefined:async(text,options)=>{const current=latest.current;if(current.disabled||current.busy)throw Error('Session input is busy');await current.playClient.postUserMessage(current.sessionId,text,options);current.changed?.()},
+  }),[text,scopeKey,writeKey,context?.busy,disabled,context?.composer,context?.playClient,owners,helpers,cardContext,settings.interactiveCards,context?.disabled,streaming])
   return h(MessageRow, { role, className: `dtv-message dtv-message-${role}`,
     avatar: h('button', { className: 'dtv-message-avatar', type: 'button', disabled, title: translate('appearance.editAvatar'), 'aria-label': `${translate('appearance.editAvatar')} · ${name}`, style: { ...messageAvatarStyle, cursor: disabled ? 'default' : 'pointer' }, onClick: () => { setAvatar(image?.startsWith('data:') ? image : null); setEditing(true) } },
       image && failedImage !== image ? h('img', { src: image, alt: name, width: 42, height: 42, style: { objectFit: 'cover' }, onError: () => setFailedImage(image) }) : name.slice(0, 1)),
     },
     h(CardDiagnosticBoundary,null,h('div', { className: `dtv-play-chat-bubble dtv-play-chat-${role}`, style: textBubbleStyle },
       h('div', { style: { textAlign: role === 'user' ? 'right' : 'left', font: '600 11px system-ui', opacity: 0.65, marginBottom: 6 } }, name),
-      h(MessageContent, { text, writeScope, composer: disabled || context?.busy ? null : context?.composer, createBinding: boundScope ? (signal,writeGrant) => createMvuCardBinding({client:context.playClient,scope:writeGrant?writeGrantScope(writeScope,writeGrant):boundScope,signal,writeGrant}) : undefined, owners: [context?.state?.display?.globalRenderingOwner,...Object.entries(context?.state?.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean), helpers: (context?.state?.display?.renderingSources ?? []).filter(item=>item.kind==='helper'), enabled: settings.interactiveCards !== false && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id,context?.sessionId,messageKey,boundScope,writeScope]), context: { version: 1, role, userName: context?.state?.display?.macros?.user ?? 'User', characterName: context?.state?.display?.macros?.character ?? 'Assistant', boundGreeting: greetingBinding ? boundGreetingView({state:context?.state,scope:boundScope,disabled:context?.disabled}) : null }, onSend: disabled || context?.busy ? undefined : async (text,options) => { await context.playClient.postUserMessage(context.sessionId, text,options); context.changed?.() } }),
+      content,
     )),
     editing ? h('dialog', { className: 'dtv-avatar-dialog', ref: element => { if (element && !element.open) element.showModal() }, onCancel: event => { event.preventDefault(); if (!busy) setEditing(false) }, role: 'dialog', 'aria-modal': true, 'aria-label': translate('appearance.editAvatar'), style: { position: 'fixed', inset: 0, width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none', margin: 0, border: 0, boxSizing: 'border-box', zIndex: 2147483500, background: '#0008', display: 'grid', placeItems: 'center' }, onKeyDown: event => { if (event.key === 'Escape' && !busy) setEditing(false) } },
       h('div', { style: { width: 'min(420px,90vw)', maxHeight: '85vh', overflow: 'auto', padding: 22, borderRadius: 16, background: 'var(--dsw-alias-bg-base,#fff)', color: 'var(--dsw-alias-label-primary,#222)', display: 'grid', gap: 12 } },
