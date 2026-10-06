@@ -57,8 +57,8 @@ test('full official persisted cold preview traverses Tavern catalog, actual Mana
     return routes
   }
   const bytes = root => Object.fromEntries(readdirSync(root, { recursive: true, withFileTypes: true }).filter(e => e.isFile()).map(e => { const path = join(e.parentPath, e.name); return [path.slice(root.length), readFileSync(path).toString('base64')] }))
-  const call = async (routes, id = sessionId) => {
-    const req = Readable.from([Buffer.from(JSON.stringify({ sessionId: id, preset: BUILTINS[0] }))])
+  const call = async (routes, id = sessionId, preset = BUILTINS[0]) => {
+    const req = Readable.from([Buffer.from(JSON.stringify({ sessionId: id, preset }))])
     Object.assign(req, { method: 'POST', url: '/pmp-dsh-tavern/api/v1/assembly-presets/preview', headers: { host: '127.0.0.1', origin: 'http://127.0.0.1', 'content-type': 'application/json' }, socket: { remoteAddress: '127.0.0.1' } })
     let result
     await routes.get('/pmp-dsh-tavern/api')(req, { statusCode: 200, setHeader() {}, end(body) { result = { status: this.statusCode, ...JSON.parse(body) } } })
@@ -100,6 +100,10 @@ test('full official persisted cold preview traverses Tavern catalog, actual Mana
     const output = result.preview.messages.flatMap(message => message.content.map(block => block.text)).join('\n')
     assert.match(output, /AUTHORED_COLD_INPUT/); assert.match(output, /COLD_STATE.*hp: 100/s); assert.equal(output.includes('format_message_variable'), false)
     assert(result.preview.diagnostics.some(d => d.code === 'WORLD_BOOK_MVU_VARIABLE_VERSION' && d.resourceId === resourceId))
+    const authored = await call(routes, sessionId, { ...BUILTINS[0], rules: [...BUILTINS[0].rules, { id: 'unified-text', kind: 'tavern.text', inputMode: 'text', role: 'user', text: 'COLD_EJS:<%- (await getchar("cold-card")).length %>:{{char}}' }] })
+    assert.equal(authored.status, 200, JSON.stringify(authored))
+    assert(authored.preview.messages.some(m => m.role === 'user' && m.content.some(b => b.text === 'COLD_EJS:0:Authored cold card')))
+
     assert(defaults.some(d => d.id === resourceId && d.valid)); assert(dependencies.some(d => d.id === resourceId && d.valid))
     assert(dependencies.filter(d => d.valid).every(d => d.checkCurrent() === false), 'cold dependency leases expire when the preview returns')
     assert.equal(ctx.sessions.get(sessionId), undefined); assert.equal(ctx.agents.get(sessionId), undefined)

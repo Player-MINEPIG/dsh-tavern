@@ -9,7 +9,7 @@ const blocks = value => ({ blocks: [{ type: 'text', id: 'memory', text: value }]
 
 test('all native and Tavern modules use the same public registry, with no implicit fallback', () => {
   const registry = new RequestSourceRegistry(), remove = registerBuiltinSources(registry)
-  assert.equal(registry.list().length, 10)
+  assert.equal(registry.list().length, 11)
   const options = { registry, preset: BUILTINS[1], nativeMessages: native, assets: { character: { data: { description: 'CHARACTER' } } } }
   assert.deepEqual(assembleRequest(options).messages.map(textOf), ['CORE', 'CHARACTER', 'INPUT'])
   remove()

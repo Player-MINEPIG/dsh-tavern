@@ -149,3 +149,33 @@ test('several authored template texts preserve every source selection lease',asy
  current[0]=false
  await assert.rejects(service.parseText(ctx,{id:'two',text:'TWO'}),{code:'SOURCE_POLICY_CHANGED'})
 })
+
+test('one Tavern parser runs authored EJS then references and macros, with unchanged source access checks', async t => {
+ const { registerTavernTemplateSource } = await import('dsh-prompt-assembler/adapters/tavern')
+ const f=fixture(t,'unused'), registry=createDefaultRegistry()
+ const stop=registerTavernTemplateSource(registry,f.service.templates)
+ const nativeMessages=[{id:'u',role:'user',content:[{type:'text',text:'HISTORY'}]}]
+ const assets={...f.assets(),user:{name:'CHAR',description:'DESCRIPTION'},preset:{prompts:[{identifier:'main',content:'PRESET {{user}}'}]}}
+ const preset={...BUILTINS[0],placement:'modules',rules:[{id:'own',kind:'tavern.text',inputMode:'text',role:'user',text:'<%- await getpreset("main") %>|{{persona}}|{{history}}|<%- await getwi("Book","Active") %>'}]}
+ const output=await assembleRequestAsync({registry,preset,sessionId:'s',assets,nativeMessages})
+ assert.deepEqual(output.messages.map(m=>m.content[0].text),['PRESET CHAR|DESCRIPTION|','HISTORY','|WORLD'])
+ const receipts=output.diagnostics.filter(d=>d.code==='TAVERN_MEMORY_DEPENDENCY_VERSION')
+ assert(receipts.length>0);assert(receipts.every(d=>d.sourceId==='tavern.text'&&d.consumerField==='own'&&output.nodes.some(n=>n.source.sourceId===d.sourceId&&n.source.field===d.consumerField&&n.id.endsWith(':'+d.blockId))))
+ assert(output.nodes.some(n=>n.source.sourceId==='tavern.text'&&n.children.some(c=>c.representation==='original'||c.source?.representation==='original')))
+ const denied=f.service.worldBooks.registerUsage(()=>({enabled:false}),{providerId:'dsh-memory-manager'})
+ await assert.rejects(assembleRequestAsync({registry,preset,sessionId:'s',assets,nativeMessages}),{code:'TEMPLATE_DEPENDENCY_DENIED'})
+ denied(); stop()
+ await assert.rejects(assembleRequestAsync({registry,preset,sessionId:'s',assets,nativeMessages}),{code:'TAVERN_TEMPLATE_PARSER_UNAVAILABLE'})
+})
+
+test('unified Tavern text preserves ST variables, does not execute EJS in referenced content and keeps per-text leases',async t=>{
+ const { registerTavernTemplateSource }=await import('dsh-prompt-assembler/adapters/tavern')
+ const f=fixture(t,'unused'),registry=createDefaultRegistry();registerTavernTemplateSource(registry,f.service.templates)
+ const assets={...f.assets(),user:{description:'<%- 99 %>'}}
+ const rules=[{id:'set',kind:'tavern.text',inputMode:'text',role:'user',text:'{{setvar::n::VALUE}}<%- await getwi("Book","Active") %>'},{id:'get',kind:'tavern.text',inputMode:'text',role:'user',text:'{{getvar::n}} {{persona}}'}]
+ const preset={...BUILTINS[0],rules}
+ const result=await assembleRequestAsync({registry,preset,sessionId:'s',assets})
+ assert.deepEqual(result.messages.map(m=>m.content[0].text),['WORLD','VALUE <%- 99 %>'])
+ registry.register({id:'change',pluginId:'fixture',name:'Change source',resolve(){f.changeSelection();return {blocks:[]}}})
+ await assert.rejects(assembleRequestAsync({registry,preset:{...preset,rules:[...rules,{id:'change',kind:'change'}]},sessionId:'s',assets}),{code:'SOURCE_POLICY_CHANGED'})
+})

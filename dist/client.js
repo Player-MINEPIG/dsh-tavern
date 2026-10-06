@@ -22954,11 +22954,7 @@ var labels = {
   cancel: ["\u53D6\u6D88", "Cancel"],
   confirm: ["\u786E\u8BA4", "Confirm"],
   disable: ["\u5173\u95ED\u7B56\u7565\uFF0C\u4F7F\u7528 DSH \u9ED8\u8BA4", "Disable; use DSH default"],
-  phiHelp: ["\u89D2\u8272\u5361\u7684\u300C\u540E\u7F6E\u6307\u4EE4\u300D\u548C\u9884\u8BBE\u7684\u300CPost-History Instructions / jailbreak\u300D\u5728\u5404\u81EA\u7F16\u8F91\u5668\u4E2D\u4FEE\u6539\u3002\u4E0B\u9762\u53EF\u8FFD\u52A0\u6B64\u7B56\u7565\u4E13\u7528\u7684 PHI\u3002", "Edit character post-history instructions or preset Post-History Instructions / jailbreak in their editors. Add strategy-specific PHI below."],
   "additional-phi": ["\u7B56\u7565\u8FFD\u52A0\u7684\u540E\u7F6E\u6307\u4EE4", "Additional strategy instructions"],
-  templateSourceHint: ["\u6B63\u6587\u6765\u81EA\u5F53\u524D\u4F1A\u8BDD\u542F\u7528\u7684\u63D0\u793A\u8BCD\u6A21\u677F\uFF1B\u5728\u6A21\u677F\u8D44\u6E90\u4E2D\u4FEE\u6539\u5185\u5BB9\u3002\u8FD9\u91CC\u8C03\u6574\u88C5\u914D\u65B9\u5F0F\uFF0C\u4E0D\u521B\u5EFA\u6A21\u677F\u3002", "Content comes from enabled prompt templates bound to this session. Edit template resources for content; this rule controls assembly and does not create a template."],
-  mvuSourceHint: ["\u6B63\u6587\u7531\u5F53\u524D\u4F1A\u8BDD\u7684 MVU \u72B6\u6001\u548C\u66F4\u65B0\u6307\u4EE4\u751F\u6210\uFF1B\u8FD9\u91CC\u8C03\u6574\u88C5\u914D\u65B9\u5F0F\uFF0C\u4E0D\u7F16\u8F91\u53D8\u91CF\u3002", "Content is generated from this session\u2019s MVU state and update instructions. This rule controls assembly and does not edit variables."],
-  memorySourceHint: ["\u6B63\u6587\u6765\u81EA\u7BA1\u7406\u5668\u68C0\u7D22\u7B56\u7565\u5141\u8BB8\u7684\u8D44\u6E90\uFF1B\u5177\u4F53\u5185\u5BB9\u548C\u68C0\u7D22\u89C4\u5219\u5728\u7BA1\u7406\u5668\u4E2D\u4FEE\u6539\u3002", "Content comes from resources allowed by the manager\u2019s retrieval policies. Edit resource content and retrieval rules in the manager."],
   description: ["\u89D2\u8272\u63CF\u8FF0", "Character description"],
   personality: ["\u89D2\u8272\u6027\u683C", "Character personality"],
   scenario: ["\u573A\u666F", "Scenario"],
@@ -23041,7 +23037,18 @@ var labels = {
   tools: ["\u5DE5\u5177\u5B9A\u4E49\u4F7F\u7528\u72EC\u7ACB\u8BF7\u6C42\u5B57\u6BB5\uFF0C\u4E0D\u53C2\u4E0E\u6D88\u606F\u62D6\u62FD\u3002", "Tool definitions are a separate request field, not draggable messages."],
   result: ["\u8BF7\u6C42\u6D88\u606F", "Request messages"],
   audit: ["\u6BCF\u6B21\u91CD\u65B0\u88C5\u914D\uFF1A\u8F68\u8FF9\u4FDD\u7559\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4F46\u4E0B\u6B21\u91CD\u65B0\u6C42\u503C\uFF0C\u4E0D\u7D2F\u79EF\u65E7\u526F\u672C\u3002\u7D2F\u79EF\u5FEB\u7167\uFF1A\u5185\u5BB9\u53D8\u5316\u65F6\u4FDD\u7559\u65B0\u526F\u672C\uFF0C\u5E76\u5E26\u5165\u540E\u7EED\u8BF7\u6C42\u3002\u539F\u751F\u7528\u6237\u6D88\u606F\u3001\u56DE\u590D\u548C\u5DE5\u5177\u7ED3\u679C\u4ECD\u7531 DSH \u4FDD\u5B58\uFF0C\u662F\u5426\u53D1\u9001\u7531\u539F\u751F\u5386\u53F2\u4E0E\u672C\u6B65\u8F93\u5165\u63A7\u5236\u3002", "Rebuild each request: the trace records the actual request, while later requests evaluate fresh content without accumulating copies. Retain snapshots: changed content adds a copy reused by later requests. DSH still saves native user messages, replies and tool results; history and current-input rules control whether they are sent."],
-  moduleContentHint: ["\u6B63\u6587\u7531\u6765\u6E90\u63D0\u4F9B\uFF1B\u5728\u6765\u6E90\u4E2D\u7F16\u8F91\u5185\u5BB9\uFF0C\u8FD9\u91CC\u8C03\u6574\u88C5\u914D\u65B9\u5F0F\u3002", "The source supplies content. Edit it at its source; this rule controls assembly."],
+  contains: ["\u5305\u542B\u5185\u5BB9", "Included content"],
+  contentOrigin: ["\u5185\u5BB9\u6765\u6E90", "Content origin"],
+  editable: ["\u624B\u52A8\u7F16\u8F91", "Manual editing"],
+  editAt: ["\u4FEE\u6539\u5165\u53E3", "Where to edit"],
+  unknownContains: ["\u6765\u6E90\u672A\u58F0\u660E\u6A21\u5757\u5305\u542B\u54EA\u4E9B\u5B57\u6BB5\uFF1B\u8BF7\u5148\u9884\u89C8\u5B9E\u9645\u6B63\u6587\u3002", "The provider has not described its included fields; preview the actual content first."],
+  unknownOrigin: ["\u6765\u6E90\u672A\u63D0\u4F9B\u8D44\u6E90\u4F4D\u7F6E\u8BF4\u660E\uFF1B\u9884\u89C8\u8282\u70B9\u663E\u793A\u5DF2\u8FD4\u56DE\u7684\u8D44\u6E90 ID\u3002", "The provider has not described resource locations; preview identifies returned resource IDs."],
+  unknownEditable: ["\u6765\u6E90\u672A\u58F0\u660E\u6B63\u6587\u7F16\u8F91\u80FD\u529B\uFF0C\u4E0D\u80FD\u5728\u6B64\u76F4\u63A5\u4FEE\u6539\u3002", "The provider has not declared content editing support; content cannot be edited here."],
+  unknownEditAt: ["\u6765\u6E90\u672A\u63D0\u4F9B\u7F16\u8F91\u5165\u53E3\uFF1B\u8BF7\u67E5\u9605\u8BE5\u6765\u6E90\u63D2\u4EF6\u7684\u6587\u6863\u3002", "The provider has not supplied an editing entry point; consult its documentation."],
+  modulePreviewHelp: ["\u4F7F\u7528\u300C\u6839\u636E\u5F53\u524D\u914D\u7F6E\u9884\u89C8\u300D\uFF0C\u5C55\u5F00\u6A21\u5757\u67E5\u770B\u5B9E\u9645\u6B63\u6587\u3001\u8D44\u6E90 ID \u548C\u5B57\u6BB5\uFF1B\u9884\u89C8\u4E0D\u4F1A\u5199\u5165\u8D44\u6E90\u3002", "Use Preview current configuration and expand a node to inspect actual text, resource IDs and fields; preview does not write resources."],
+  "tavern.text": ["Tavern \u6587\u672C\u89E3\u6790\u5668", "Tavern text parser"],
+  tavernParserHelp: ["\u5148\u5BF9\u624B\u586B\u6587\u672C\u6267\u884C\u53D7\u9650 EJS\uFF0C\u518D\u5C55\u5F00\u89D2\u8272\u3001\u4E16\u754C\u4E66\u548C\u5386\u53F2\u5F15\u7528\uFF0C\u6700\u540E\u89E3\u6790 ST \u5B8F\u3002\u53EF\u6DF7\u7528\u8FD9\u4E9B\u8BED\u6CD5\uFF1B\u5F15\u7528\u5185\u5BB9\u4E0D\u4F1A\u518D\u6B21\u4F5C\u4E3A EJS \u6267\u884C\u3002ST setvar/getvar \u5728\u672C\u6B21\u88C5\u914D\u5185\u5171\u4EAB\u4E34\u65F6\u53D8\u91CF\uFF0C\u987A\u5E8F\u53EF\u80FD\u5F71\u54CD\u7ED3\u679C\u3002", "Authored text runs restricted EJS, then character/world-book/history references, then ST macros. These syntaxes can be mixed; referenced content is never reevaluated as EJS. ST setvar/getvar share temporary variables within this assembly, so order can affect results."],
+  dshParserHelp: ["\u4EC5\u5C55\u5F00 DSH \u63D0\u4F9B\u7684 {{\u53D8\u91CF\u540D}}\uFF1B\u672A\u77E5\u53D8\u91CF\u62A5\u9519\u3002Tavern \u5B8F\u548C EJS \u8BF7\u4F7F\u7528 Tavern \u6587\u672C\u89E3\u6790\u5668\u3002", "Expands only DSH-provided {{variable}} values; unknown variables fail. Use the Tavern text parser for Tavern macros and EJS."],
   parser: ["\u6587\u672C\u89E3\u6790\u5668", "Text parser"],
   addText: ["\u6DFB\u52A0\u81EA\u5B9A\u4E49\u6587\u672C", "Add custom text"],
   "native-system": ["\u5B98\u65B9\u57FA\u7840\u6307\u4EE4", "Native instructions"],
@@ -23054,11 +23061,6 @@ var labels = {
   phi: ["PHI \xB7 \u540E\u7F6E\u6307\u4EE4", "Post-history instructions"],
   custom: ["\u81EA\u5B9A\u4E49\u5185\u5BB9", "Custom content"]
 };
-var suppliedContentHints = /* @__PURE__ */ new Map([
-  ["pmp-dsh-tavern/prompt-template", "templateSourceHint"],
-  ["tavern.mvu/state", "mvuSourceHint"],
-  ["memory-manager.resources", "memorySourceHint"]
-]);
 function sourceColor(plugin) {
   if (!plugin) return "#999999";
   if (plugin === "DSH") return "#8192ad";
@@ -23170,7 +23172,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       setCapable(data3.capability);
       setSources(data3.sources ?? []);
       setDefaultId(data3.defaultPresetId ?? data3.presets[0]?.id);
-      setAddParser(data3.sources?.some((s) => s.id === "custom") ? "custom" : data3.sources?.find((s) => s.acceptsText)?.id ?? "");
+      setAddParser(data3.sources?.some((s) => s.id === "tavern.text") ? "tavern.text" : data3.sources?.find((s) => s.acceptsText && !s.textParserAliasFor)?.id ?? "");
       setAddKind(data3.sources?.find((s) => s.supportsModule !== false && s.moduleAvailable !== false && !data3.presets[0]?.rules.some((r) => r.kind === s.id))?.id ?? "");
       setDraft(data3.presets.find((p) => p.id === data3.selection?.id) ?? data3.presets[0]);
       setPreview(null);
@@ -23210,11 +23212,17 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     setDirty(true);
     setPreview(null);
   };
-  const editRule = (id, patch) => edit({ rules: draft.rules.map((r) => r.id === id ? { ...r, ...patch } : r) });
+  const editableRule = (rule) => {
+    const source = sources.find((s) => s.id === rule.kind);
+    const parser = sources.find((s) => s.id === source?.textParserAliasFor && s.acceptsText);
+    return parser && (rule.inputMode === "text" || rule.kind === "custom") ? { ...rule, kind: parser.id, inputMode: "text", role: parser.roles.includes(rule.role) ? rule.role : parser.roles[0], lifetime: parser.lifetimes.includes(rule.lifetime) ? rule.lifetime : parser.lifetimes[0], depth: parser.depth === false ? null : rule.depth } : rule;
+  };
+  const editablePreset = (preset) => ({ ...preset, rules: preset.rules.map(editableRule) });
+  const editRule = (id, patch) => edit({ rules: draft.rules.map((r) => r.id === id ? { ...editableRule(r), ...patch } : r) });
   const toggle = (id) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
   async function save(asCopy = false) {
     const creates = asCopy || draft.builtin || !draft.id;
-    const data3 = await api6(creates ? "" : `/${encodeURIComponent(draft.id)}`, creates ? "POST" : "PUT", draft);
+    const data3 = await api6(creates ? "" : `/${encodeURIComponent(draft.id)}`, creates ? "POST" : "PUT", editablePreset(draft));
     setDraft(data3.preset);
     setItems((list2) => [...list2.filter((p) => p.id !== data3.preset.id), data3.preset]);
     setDirty(false);
@@ -23222,7 +23230,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     return data3.preset;
   }
   function download() {
-    const blob = new Blob([JSON.stringify({ ...draft, id: void 0, builtin: void 0 }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ ...editablePreset(draft), id: void 0, builtin: void 0 }, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${draft.name.replace(/[\\/:*?"<>|]/g, "_")}.json`;
@@ -23243,7 +23251,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
   const sourcePlugin = (kind) => sourceDescriptor2(kind)?.pluginId ?? null;
   const sourceName = (kind) => labels[kind] ? t(kind) : sourceDescriptor2(kind)?.name ?? kind;
   const modules = sources.filter((s) => s.supportsModule !== false && s.moduleAvailable !== false && (s.multiple || !draft?.rules.some((r) => r.kind === s.id && r.inputMode !== "text")));
-  const parsers = sources.filter((s) => s.acceptsText);
+  const parsers = sources.filter((s) => s.acceptsText && !sources.some((target) => target.id === s.textParserAliasFor && target.acceptsText));
   const addRule = (kind, inputMode) => {
     const source = sourceDescriptor2(kind);
     if (!source) return;
@@ -23357,6 +23365,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     ...[["stability", stability], ["lifetime", lifetime], ["role", role2]].map(([label, value]) => (0, import_react7.createElement)("div", { key: label }, (0, import_react7.createElement)("dt", null, t(label)), (0, import_react7.createElement)("dd", null, t(label === "stability" && value === "snapshot" ? "retained" : value))))
   );
   function ruleRow(rule, index) {
+    rule = editableRule(rule);
     const textInput = rule.inputMode === "text" || ["custom", "dsh.text"].includes(rule.kind);
     return (0, import_react7.createElement)(
       "article",
@@ -23386,14 +23395,19 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
             const source = sourceDescriptor2(e.target.value);
             editRule(rule.id, { kind: source.id, inputMode: "text", role: source.roles.includes(rule.role) ? rule.role : source.roles[0], lifetime: source.lifetimes.includes(rule.lifetime) ? rule.lifetime : source.lifetimes[0], depth: source.depth === false ? null : rule.depth });
           } }, ...parsers.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`)))),
+          ["tavern.text", "dsh.text"].includes(rule.kind) && (0, import_react7.createElement)("p", null, t(rule.kind === "tavern.text" ? "tavernParserHelp" : "dshParserHelp")),
           (0, import_react7.createElement)("label", null, t("name"), (0, import_react7.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })),
           (0, import_react7.createElement)("label", null, t("text"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })),
           button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))
-        ) : suppliedContentHints.has(rule.kind) ? (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t(suppliedContentHints.get(rule.kind))), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))) : rule.kind === "phi" ? (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t("phiHelp")), (0, import_react7.createElement)("label", null, t("additional-phi"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))) : !["native-system", "history", "input", "preset", "character", "persona", "worldbook"].includes(rule.kind) && (0, import_react7.createElement)("div", { className: "dta-fields" }, (0, import_react7.createElement)("p", null, t("moduleContentHint")), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
+        ) : (0, import_react7.createElement)("div", { className: "dta-fields" }, moduleGuide(rule.kind), rule.kind === "phi" ? (0, import_react7.createElement)("label", null, t("additional-phi"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })) : !["native-system", "history", "input", "preset", "character", "persona", "worldbook"].includes(rule.kind) && button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
         !sourceDescriptor2(rule.kind) && (0, import_react7.createElement)("small", { role: "status" }, t("missingSource")),
         (0, import_react7.createElement)("small", null, t("audit"))
       )
     );
+  }
+  function moduleGuide(kind) {
+    const guide = sourceDescriptor2(kind)?.contentGuide;
+    return (0, import_react7.createElement)("div", { className: "dta-module-guide" }, ...[["contains", "contains", "unknownContains"], ["origin", "contentOrigin", "unknownOrigin"], ["editable", "editable", "unknownEditable"], ["editAt", "editAt", "unknownEditAt"]].map(([key2, label, fallback]) => (0, import_react7.createElement)("p", { key: key2 }, (0, import_react7.createElement)("strong", null, t(label) + "\uFF1A"), guide?.[key2]?.[locale] ?? t(fallback))), (0, import_react7.createElement)("small", null, t("modulePreviewHelp")));
   }
   function nodeRow(node, index) {
     return (0, import_react7.createElement)(
@@ -23492,7 +23506,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         (0, import_react7.createElement)("div", { className: "dta-tabs" }, (0, import_react7.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
           setDragFrom(null);
           setDropIndex(null);
-          const data3 = await api6("/preview", "POST", { sessionId, preset: draft });
+          const data3 = await api6("/preview", "POST", { sessionId, preset: editablePreset(draft) });
           setPreview(data3.preview);
           setTab("expanded");
         }), false, void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),

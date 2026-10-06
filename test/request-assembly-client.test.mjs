@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { AssemblyPanel } from '../packages/request-assembler/client.js'
 import { BUILTINS, createDefaultRegistry } from '../packages/request-assembler/index.js'
+import { registerTavernMvuSource, registerTavernTemplateSource } from 'dsh-prompt-assembler/adapters/tavern'
 import { getClientUiSettings, setClientUiSettings } from '../packages/client/src/i18n.js'
 
 for (const [locale, label, sourceName, help, add] of [
@@ -18,7 +19,7 @@ for (const [locale, label, sourceName, help, add] of [
   Object.assign(globalThis, { window, document, getComputedStyle: () => ({ display: 'block' }), IS_REACT_ACT_ENVIRONMENT: true })
   setClientUiSettings({ locale, scale: 1 }, { announce: false })
   const registry = createDefaultRegistry()
-  registry.register({ id: 'tavern.mvu/state', pluginId: 'pmp-dsh-tavern', name: 'MVU state', roles: ['system'], lifetimes: ['request'], resolve: () => ({ blocks: [] }) })
+  registerTavernMvuSource(registry, { hasModule: () => true, resolveRequest: () => ({ blocks: [] }), validateResolved() {} })
   const presets = structuredClone(BUILTINS), original = structuredClone(presets), calls = []
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url, method: options.method ?? 'GET' })
@@ -47,7 +48,7 @@ for (const [locale, label, sourceName, help, add] of [
   assert([...container.querySelectorAll('.dta-row .dta-name')].some(element => element.textContent.startsWith(sourceName)))
   const mvuRow = [...container.querySelectorAll('.dta-row')].at(-1)
   assert.equal(mvuRow.querySelectorAll('textarea').length, 0, 'MVU generates its content and ignores rule text')
-  assert(mvuRow.textContent.includes(locale === 'zh-CN' ? '不编辑变量' : 'does not edit variables'))
+  for (const text of (locale === 'zh-CN' ? ['包含内容', '内容来源', '手动编辑', '修改入口', 'stat_data', 'InitVar', 'instructions', 'Tavern Trace', '没有界面编辑器'] : ['Included content', 'Content origin', 'Manual editing', 'Where to edit', 'stat_data', 'InitVar', 'instructions', 'Tavern Trace', 'no UI editor'])) assert(mvuRow.textContent.includes(text), text)
   assert([...mvuRow.querySelectorAll('button')].some(button => button.textContent === (locale === 'zh-CN' ? '删除' : 'Delete')))
   assert.equal(Boolean(container.querySelector('#dta-add-source option[value="tavern.mvu/state"]')), false)
   assert.deepEqual(presets, original)
@@ -63,7 +64,8 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
   const { window, document } = parseHTML('<html><body><div id="root"></div></body></html>')
   Object.assign(globalThis, { window, document, getComputedStyle: () => ({ display: 'block' }), IS_REACT_ACT_ENVIRONMENT: true })
   const registry = nativeOnly ? createDshRegistry() : createDefaultRegistry()
-  registry.register({id:'pmp-dsh-tavern/prompt-template',pluginId:'pmp-dsh-tavern',name:'Empty templates',roles:['system'],lifetimes:['request'],moduleAvailable:()=>false,resolve:()=>({blocks:[]}),parseText:(_c,r)=>({blocks:[{id:'text',type:'text',text:r.text}]})})
+  if (!nativeOnly) registerTavernTemplateSource(registry, { hasModule:()=>false, resolve:()=>({blocks:[]}), parseText:(_c,r)=>({blocks:[{id:'text',type:'text',text:r.text}]}), validateResolved() {} })
+  registry.register({id:'thirdparty.strict',pluginId:'thirdparty',name:'Strict text',roles:['system'],lifetimes:['request'],supportsModule:false,parseText:(_c,r)=>({blocks:[{id:'text',type:'text',text:r.text}]})})
   registry.register({id:'memory-manager.resources',pluginId:'dsh-memory-manager',name:'Empty managed resources',moduleAvailable:()=>false,resolve:()=>({blocks:[]})})
   const presets = structuredClone(nativeOnly ? NATIVE : BUILTINS), calls = []
   const fetcher = async (url, options = {}) => {
@@ -75,15 +77,17 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
   t.after(async () => { await act(() => root.unmount()); for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value } })
   await act(() => root.render(h(Panel, { sessionId: 'fixture', fetcher, close() {} })))
   const chooser = container.querySelector('#dta-add-parser')
-  assert.equal(chooser.value, nativeOnly ? 'dsh.text' : 'custom')
+  assert.equal(chooser.value, nativeOnly ? 'dsh.text' : 'tavern.text')
   assert.equal(container.querySelector('#dta-add-source'), null, 'already listed builtins and parser-only providers are absent from the module picker')
   await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '添加自定义文本')))
   const row = [...container.querySelectorAll('.dta-row')].at(-1)
   assert(row.textContent.includes('文本解析器'))
   assert.equal(row.querySelectorAll('textarea').length, 1)
-  assert(chooser.querySelector('option[value="pmp-dsh-tavern/prompt-template"]'), 'empty modules can still expose a real text parser')
+  for (const id of ['custom','preset','pmp-dsh-tavern/prompt-template']) assert.equal(chooser.querySelector(`option[value="${id}"]`),null, 'legacy Tavern parser aliases are hidden')
+  assert(chooser.querySelector('option[value="dsh.text"]'))
+  assert.equal(!!chooser.querySelector('option[value="tavern.text"]'),!nativeOnly)
   const parser = row.querySelector('.dta-fields select')
-  await act(() => Simulate.change(parser, {target:{value:'pmp-dsh-tavern/prompt-template'}}))
+  await act(() => Simulate.change(parser, {target:{value:'thirdparty.strict'}}))
   assert.equal(row.querySelectorAll('textarea').length,1,'supplied-content hints do not hide a parser text editor')
   assert.equal(row.querySelector('.dta-grid select').value,'system','switching a parser adjusts unsupported role settings')
   assert.equal(row.querySelector('.dta-properties select').value,'request')
@@ -98,4 +102,24 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
   await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '根据当前配置预览')))
   const created = JSON.parse(calls.findLast(c => c.url.endsWith('/preview')).body).preset
   assert.equal(created.format, presets[0].format); assert.equal(created.rules.length, presets[0].rules.length)
+})
+
+test('legacy text aliases preview through one parser without changing saved rules or source modules',async t=>{
+ const {AssemblyPanel:Panel}=await import('dsh-prompt-assembler/client')
+ const keys=['window','document','getComputedStyle','IS_REACT_ACT_ENVIRONMENT'],old=Object.fromEntries(keys.map(k=>[k,globalThis[k]]))
+ const {window,document}=parseHTML('<html><body><div id="root"></div></body></html>')
+ Object.assign(globalThis,{window,document,getComputedStyle:()=>({display:'block'}),IS_REACT_ACT_ENVIRONMENT:true})
+ const registry=createDefaultRegistry();registerTavernTemplateSource(registry,{hasModule:()=>false,resolve:()=>({blocks:[]}),parseText:()=>({blocks:[]}),validateResolved(){}})
+ const preset=structuredClone(BUILTINS[0]);preset.rules.push({id:'old-custom',kind:'custom',role:'user',lifetime:'request',text:'{{user}}',enabled:true},{id:'old-ejs',kind:'pmp-dsh-tavern/prompt-template',inputMode:'text',role:'preserve',lifetime:'request',text:'<%- 1 %>',enabled:true})
+ const before=structuredClone(preset),calls=[]
+ const fetcher=async(url,options={})=>{calls.push({url,...options});return new Response(JSON.stringify(options.method==='POST'?{preview:{nodes:[],messages:[],diagnostics:[]}}:{presets:[preset],selection:preset,sources:registry.list(),capability:true}),{headers:{'Content-Type':'application/json'}})}
+ const root=createRoot(document.getElementById('root'));t.after(async()=>{await act(()=>root.unmount());for(const k of keys){if(old[k]===undefined)delete globalThis[k];else globalThis[k]=old[k]}})
+ await act(()=>root.render(h(Panel,{sessionId:'s',fetcher,close(){}})))
+ assert.deepEqual([...document.querySelectorAll('#dta-add-parser option')].map(o=>o.value),['dsh.text','tavern.text'])
+ await act(()=>Simulate.click([...document.querySelectorAll('button')].find(b=>b.textContent==='根据当前配置预览')))
+ const sent=JSON.parse(calls.findLast(c=>c.method==='POST').body).preset
+ assert.equal(sent.rules.find(r=>r.id==='preset').kind,'preset','resource source rules retain their identity')
+ assert.equal(sent.rules.find(r=>r.id==='old-custom').kind,'tavern.text')
+ assert.equal(sent.rules.find(r=>r.id==='old-ejs').kind,'tavern.text');assert.equal(sent.rules.find(r=>r.id==='old-ejs').role,'preserve')
+ assert.deepEqual(preset,before);assert(calls.every(c=>!c.method||c.method==='GET'||c.url.endsWith('/preview')))
 })
