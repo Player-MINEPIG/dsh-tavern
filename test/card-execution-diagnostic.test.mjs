@@ -8,7 +8,9 @@ import {cardExecutionDiagnostic,cardExecutionPhase} from '../packages/client/src
 // message port in Node; guest code still executes inside the same QuickJS VM.
 const source=JSON.parse((await cardWorkerDefines()).TAVERN_CARD_WORKER_SOURCE)
 async function probe({delay=0,kind='storage'}={}) {
- const code=kind==='storage'?`document.getElementById('b').addEventListener('click',()=>{localStorage.setItem('own-fixture','ok');let n=0;for(let i=0;i<100000;i++)n=(n+i)|0;document.getElementById('o').textContent='DONE'})`
+ // Keep the successful fixture comfortably inside the fixed VM time budget;
+ // the runaway case below independently verifies that the limit is enforced.
+ const code=kind==='storage'?`document.getElementById('b').addEventListener('click',()=>{localStorage.setItem('own-fixture','ok');let n=0;for(let i=0;i<1000;i++)n=(n+i)|0;document.getElementById('o').textContent='DONE'})`
   :kind==='js'?`document.getElementById('b').addEventListener('click',()=>{throw Error('PRIVATE_GUEST_EXCEPTION_MARKER')})`
   :kind==='timer'?`setTimeout(()=>{throw Error('PRIVATE_GUEST_EXCEPTION_MARKER')},30)`
   :kind.startsWith('layout')?`document.getElementById('b').addEventListener('click',()=>{setTimeout(()=>{void document.body.scrollHeight},30)})`
