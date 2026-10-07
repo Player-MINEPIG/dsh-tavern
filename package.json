@@ -107,7 +107,7 @@
   "dependencies": {
     "@jitl/quickjs-singlefile-browser-release-sync": "0.31.0",
     "dompurify": "3.4.16",
-    "katex": "0.16.47",
+    "katex": "0.18.2",
     "marked": "18.0.10",
     "quickjs-emscripten-core": "0.31.0"
   }
