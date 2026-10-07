@@ -3,12 +3,27 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { compileMvuSchema, applyMvuSchema, applyMvuUpdate, parseMvuUpdate, MvuService } from '../packages/mvu-adapter/src/index.js'
+import { compileMvuSchema, applyMvuSchema, applyMvuUpdate, parseMvuUpdate, normalizeVariables, MvuService } from '../packages/mvu-adapter/src/index.js'
 
 const helper = 'https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js'
 const register = (expression, url = helper) => `import {registerMvuSchema} from '${url}'; const Schema=${expression}; $(()=>{registerMvuSchema(Schema);});`
 const state = (source, stat_data, version = 2) => ({ stat_data, schema: { type: 'object', properties: {}, extensible: true, strictSet: true }, mvu_schema: { ...compileMvuSchema(source), interpreterVersion: version } })
 const commands = (source, data, text, version) => applyMvuUpdate(state(source, data, version), parseMvuUpdate(text))
+
+test('source-owned v2 dictionaries survive content edits, later updates and stored restrictive metadata', async t => {
+  const storageDir = mkdtempSync(join(tmpdir(), 'mvu-zod-dictionary-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
+  const source = 'const Schema=z.object({people:z.record(z.string(),z.strictObject({hp:z.number()}))});'
+  const service = new MvuService({ storageDir, resources: [{ sharing: 'shared', id: 'mvu:dictionary', sessionIds: ['s'], initial: { stat_data: { people: {} } }, schemaSource: source }] }); t.after(() => service.dispose())
+  const edited = await service.update({ id: 'mvu:dictionary', scope: { sessionId: 's' }, content: { stat_data: { people: {} } }, expectedRevision: 0, operationId: 'opening-transfer' })
+  const inserted = applyMvuUpdate(edited.content, parseMvuUpdate("_.insert('people','Ada',{hp:10});"))
+  const updated = applyMvuUpdate(inserted, parseMvuUpdate("_.set('people.Ada.hp',9);"))
+  assert.equal(updated.stat_data.people.Ada.hp, 9); assert.deepEqual(updated.update_diagnostics, [])
+  // Old receipts may carry the restrictive metadata generated before the source descriptor was attached.
+  const stale = { ...inserted, schema: normalizeVariables({ stat_data: { people: {} } }).schema }
+  assert.equal(applyMvuUpdate(stale, parseMvuUpdate("_.set('people.Ada.hp',8);")).stat_data.people.Ada.hp, 8)
+  const rejected = applyMvuUpdate(stale, parseMvuUpdate("_.set('people.Ada.extra',1);"))
+  assert.deepEqual(rejected.stat_data, inserted.stat_data); assert.equal(rejected.update_diagnostics[0].code, 'MVU_SCHEMA')
+})
 
 test('fixed registration loosens only the direct root object; nested strict objects retain their own rules', () => {
   const definition = compileMvuSchema(register('z.object({hp:z.number(),child:z.strictObject({hp:z.number()})}).strict()'))

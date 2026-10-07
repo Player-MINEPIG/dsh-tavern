@@ -32,6 +32,19 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     && Array.isArray(data.messageSeqs) && data.messageSeqs.length === 0
     && data.source !== null && typeof data.source === 'object' && !Array.isArray(data.source)
     && Object.keys(data.source).length === 1 && Object.hasOwn(data.source, 'kind') && data.source.kind === 'user'
+  // Titles are log-only even when their automatic fallback/provider runs during
+  // assembly. Only prompt reads allow them; initial writes keep the stricter lease.
+  const automaticTitleMetadata = data => data !== null && typeof data === 'object' && !Array.isArray(data)
+    && Object.keys(data).length === 3 && ['title', 'messageSeqs', 'source'].every(key => Object.hasOwn(data, key))
+    && typeof data.title === 'string' && data.title.trim().length > 0
+    && Array.isArray(data.messageSeqs) && data.messageSeqs.length > 0 && data.messageSeqs.every(seq => Number.isSafeInteger(seq) && seq >= 0)
+    && data.source !== null && typeof data.source === 'object' && !Array.isArray(data.source)
+    && ((data.source.kind === 'fallback' && Object.keys(data.source).length === 1)
+      || (data.source.kind === 'provider' && typeof data.source.provider === 'string' && data.source.provider.length > 0
+        && Object.keys(data.source).every(key => ['kind', 'provider', 'model'].includes(key))
+        && (!Object.hasOwn(data.source, 'model') || (data.source.model !== null && typeof data.source.model === 'object' && !Array.isArray(data.source.model)
+          && Object.keys(data.source.model).length === 2 && typeof data.source.model.provider === 'string' && typeof data.source.model.model === 'string'))))
+  const titleMetadata = event => event.type === 'session/title' && (userTitleMetadata(event.data) || automaticTitleMetadata(event.data))
   // Official Session restore appends this empty marker; inherited seed markers are not empty history.
   const emptyHistory = events => Array.isArray(events) && events.every(event => initialMetadata.has(event.type)
     || (event.type === 'model/selection' && modelSelectionMetadata(event.data))
@@ -55,7 +68,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     && Number.isSafeInteger(event.data.turn) && Number.isSafeInteger(event.data.step))
     || (event.type === 'request/context' && typeof event.data?.provider === 'string' && typeof event.data?.model === 'string'
       && Object.keys(event.data).every(key => ['provider', 'model', 'contextWindow', 'systemPromptUpdate'].includes(key)))
-  const preparationType = event => requestMetadata(event) || ['step/start', 'user/message', 'request/header'].includes(event.type)
+  const preparationType = event => requestMetadata(event) || titleMetadata(event) || ['step/start', 'user/message', 'request/header'].includes(event.type)
   const captureSessionLease = async (sessionId, { allowRequestMetadata = false, readOnly = false } = {}) => {
     let sessions = ctx.get('sessions'), live = sessions?.get?.(sessionId)
     if (!live && readOnly) {
@@ -82,9 +95,15 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     const claimedUsers = new Map(prefix.filter(event => event.type === 'agent/inbox/spliced').flatMap(event => event.data?.inserted ?? [])
       .filter(message => message?.role === 'user' && typeof message.id === 'string' && !loggedUsers.has(message.id)).map(message => [message.id, digest(message)]))
     const preparationCurrent = event => (requestMetadata(event) && (event.type !== 'system/message' || event.data.turn === turn))
+      || (titleMetadata(event) && event.data.messageSeqs.every(seq => {
+        const message = live.snapshotEvents().find(item => item.seq === seq)
+        return message?.type === 'user/message' && (loggedUsers.has(message.data?.id) || claimedUsers.get(message.data?.id) === digest(message.data))
+      }))
       || (event.type === 'step/start' && event.data?.turn === turn && Number.isSafeInteger(event.data.step))
       || (event.type === 'user/message' && claimedUsers.get(event.data?.id) === digest(event.data))
-      || (event.type === 'request/header' && event.data?.header && Object.keys(event.data).every(key => ['header', 'reason'].includes(key)))
+      || (event.type === 'request/header' && event.data?.header
+        && Object.keys(event.data).every(key => ['header', 'reason', 'startsSeries'].includes(key))
+        && (!Object.hasOwn(event.data, 'startsSeries') || event.data.startsSeries === true))
     const historyCurrent = () => {
       const current = live.snapshotEvents()
       return allowRequestMetadata ? current.length >= prefixLength && digest(current.slice(0, prefixLength)) === events && current.slice(prefixLength).every(preparationCurrent) : digest(current) === events
@@ -136,7 +155,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
       member()
       requireSelectedView(scope)
       if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Greeting character is not selected')
-      // This is a current read view, not a historical message or a write capability.
+      // Selection authorizes a read-only opening view; the service freezes its first pre-turn checkpoint.
       // Inspect without resuming an Agent just to display a greeting.
       const observed = await inspect(scope.sessionId), header = observed?.header ?? observed?.meta
       if (!header || header.id !== scope.sessionId || !Number.isSafeInteger(header.version)

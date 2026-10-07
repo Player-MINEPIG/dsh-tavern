@@ -610,6 +610,12 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 世界书面板直接陈列这些来源。当前角色卡没有 `character_book` 时，前端可以先建立 `{ name, entries: [] }` 草稿，再由现有 `PATCH /characters/:id/world-book` 保存；这是创建可随卡导出的内嵌书，不等同于绑定独立书。
 
+### 无会话开场草稿
+
+在 v2 Play 基地址下，`POST /drafts` 保存 `{ characterId, source?, selection?, assemblyPresetId? }`，不创建 DSH 会话。`GET /drafts/:id` 返回 `{ draft, playthrough }`。`PUT /drafts/:id` 要求 `expectedRevision`，接受 selection、assemblyPresetId、variables、importContextRef 或 resetVariables，不允许更换角色身份。
+
+`POST /drafts/:id/materialize` 接受 `{ expectedRevision, operationId, text }`，准备唯一、持久预留的会话并返回 `{ sessionId, requestId, accepted }`，自身不发送模型请求。若尚未受理，调用既有 `/sessions/:id/user-message`，传同一 text 与 requestId。`POST /drafts/:id/cancel` 在未受理时清理绑定、释放无绑定空会话并恢复草稿，`draft.lastInput` 保留该次输入用于重新打开开场；已受理时停止真实会话并保留历史。MVU 草稿 scope 为 `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`，不含 sessionId。卡片写授权仍要求当前精确 selection token 和已下载来源的执行证明。
+
 ### Tavern 周目分支组合
 
 内置 RP 视图不覆盖 DSH 原生 fork。它在目标 adopted assistant 的 `endEventId` 调用公开 `POST /sessions/:id/branch`，先用 `/messages` 验证子 session 继承了该 durable user/assistant 区间，再创建新周目目录和截至该 QA 的 timeline 副本。副本只把目标 adopted variant 的 `sessionId` 重定向到子 session，随后用 catalog CAS 追加新周目并通过按 id 的 focus 校验。这样新周目保留 DSH 权威上下文，再次从侧边栏进入时也会打开可继续对话的 branch session；源 timeline、源 variant 和 DSH 原始消息不变。

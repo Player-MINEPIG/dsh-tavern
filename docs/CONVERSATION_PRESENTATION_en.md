@@ -8,6 +8,12 @@ The 2.5.1 contract targets DSH `0.2.0-rc.2`. Public UI services and slots embed 
 
 RP displays concrete DSH session/turn errors in place. An active-write-handle error can mean another web or desktop instance holds that session in the shared data directory; finish its work and close that instance before reopening the session. Static message stylesheets and inline styles both use Shadow DOM and an outer paint boundary, preventing fixed-position content from covering the Host UI.
 
+## Name placeholders
+
+Ordinary messages, greetings and streaming replies use the names of the currently bound user/character resources for `{{user}}` / `{{char}}`; a standalone `<user>` in prose is also a user-name alias. Reloading the same historical conversation uses the current name without storing per-message name snapshots. Manually saved display edits retain their existing frozen result and do not run name macros or display regex again.
+
+The new angle alias excludes fenced/indented/inline code, escaped text, HTML attributes/comments, `pre`/`code`/script/style content, complete HTML documents, and paired `<user>…</user>` structures. Use code or `\<user>` for literal text. Existing curly name-macro rules are unchanged. Static HTML exports use the same current-name expansion. This display compatibility does not change DSH source messages or prompt assembly; JSONL conversation bodies keep their source text, while greetings continue to expand names under the existing export contract.
+
 ## Math
 
 RP messages, greetings, display edits and static HTML exports share Markdown → KaTeX MathML → DOMPurify. Math is enabled by default without a conversation-settings field or dedicated toggle; DSH source messages, prompts and JSONL remain unchanged. Use `$…$` / `\(…\)` inline and `$$…$$` / `\[…\]` for display math, with multiline delimiters on separate lines. Fractions, roots, integrals, matrices and aligned equations use KaTeX syntax and native browser MathML, without remote fonts or scripts.

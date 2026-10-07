@@ -14,7 +14,7 @@ const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT ?? process.env.DSH
 
 function assertMvuRequestContribution(request, session, resourceId, expectedState) {
   const recorded = session.snapshotEvents().findLast(event => event.type === 'request/assembly')
-  assert.equal(recorded.data.metadata.owner, 'pmp-dsh-tavern')
+  assert.equal(recorded.data.metadata.owner, 'dsh-prompt-assembler')
   assert.deepEqual(recorded.data.messages, request.messages)
   const assembly = recorded.data.metadata.assembly
   const matches = assembly.nodes.filter(node => node.source?.sourceId === 'tavern.mvu/state' && node.source.resourceId === resourceId)

@@ -13,8 +13,8 @@ import { MessageRow, messageAvatarStyle, messageBubbleStyle } from './message-la
 import {CardDiagnosticBoundary} from './card-diagnostics.js'
 
 const Presentation = createContext(null)
-export function ConversationPresentation({ state, playthrough, playClient, sessionId, disabled, busy, changed, composer, children }) {
-  return h(Presentation.Provider, { value: { state, playthrough, playClient, sessionId, disabled, busy, changed, composer } }, children)
+export function ConversationPresentation({ state, playthrough, playClient, sessionId, disabled, busy, changed, composer, sendMessage, children }) {
+  return h(Presentation.Provider, { value: { state, playthrough, playClient, sessionId, disabled, busy, changed, composer, sendMessage } }, children)
 }
 export function messageAvatarKey(turn, role, index = 0) {
   return role === 'user' ? `${turn.id}:user` : `${turn.id}:${turn.variant?.id ?? 'live'}:assistant:${index}`
@@ -59,7 +59,7 @@ export function MessageBubble({ text, role = 'assistant', messageKey, editable =
   const content=useMemo(()=>h(MessageContent,{text,writeScope,writesBlocked:context?.busy===true,composer:disabled?null:context?.composer,
     createBinding:boundScope?(signal,writeGrant)=>createMvuCardBinding({client:context.playClient,scope:writeGrant?writeGrantScope(writeScope,writeGrant):boundScope,signal,writeGrant}):undefined,
     owners,helpers,enabled:settings.interactiveCards!==false&&!context?.disabled&&!streaming,scopeKey,context:cardContext,
-    onSend:disabled||context?.busy?undefined:async(text,options)=>{const current=latest.current;if(current.disabled||current.busy)throw Error('Session input is busy');await current.playClient.postUserMessage(current.sessionId,text,options);current.changed?.()},
+    onSend:disabled||context?.busy?undefined:async(text,options)=>{const current=latest.current;if(current.disabled||current.busy)throw Error('Session input is busy');if(current.sendMessage)await current.sendMessage(text,options);else await current.playClient.postUserMessage(current.sessionId,text,options);current.changed?.()},
   }),[text,scopeKey,writeKey,context?.busy,disabled,context?.composer,context?.playClient,owners,helpers,cardContext,settings.interactiveCards,context?.disabled,streaming])
   return h(MessageRow, { role, className: `dtv-message dtv-message-${role}`,
     avatar: h('button', { className: 'dtv-message-avatar', type: 'button', disabled, title: translate('appearance.editAvatar'), 'aria-label': `${translate('appearance.editAvatar')} · ${name}`, style: { ...messageAvatarStyle, cursor: disabled ? 'default' : 'pointer' }, onClick: () => { setAvatar(image?.startsWith('data:') ? image : null); setEditing(true) } },

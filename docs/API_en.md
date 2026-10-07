@@ -645,6 +645,12 @@ Production code uses the Tavern-owned event contract; low-level `createOperation
 
 `GET /pmp-dsh-tavern/api/v2/operation-logs` provides filters, pagination and single-page JSONL export. Query fields, record format, stable events, capacity and upgrade rules are maintained in the [operation log contract](OPERATION_LOGS_en.md).
 
+### Sessionless opening drafts
+
+Under the v2 Play base, `POST /drafts` saves `{ characterId, source?, selection?, assemblyPresetId? }` without a DSH Session. `GET /drafts/:id` returns `{ draft, playthrough }`. `PUT /drafts/:id` requires `expectedRevision` and accepts selection, assemblyPresetId, variables, importContextRef, or resetVariables. It never changes the character identity.
+
+`POST /drafts/:id/materialize` takes `{ expectedRevision, operationId, text }`, prepares one durably reserved Session and returns `{ sessionId, requestId, accepted }`; it does not send a model request. Call the existing `/sessions/:id/user-message` with the same text and requestId unless already accepted. `POST /drafts/:id/cancel` either releases a cleared unbound blank and restores the draft with `draft.lastInput` retained for reopening, or stops an already admitted real Session while preserving history. Draft scope for MVU is `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`, with no sessionId. Card write grants require the exact current selection token and downloaded source execution.
+
 ## v3 prompt assembly audit
 
 Prefix: `/pmp-dsh-tavern/api/v3`. Read-only prompt assembly records and provenance.

@@ -51,7 +51,7 @@ const css = `
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
 `
 
-async function api(path, options = {}) {
+async function resourceApi(path, options = {}) {
   const method = String(options.method ?? 'GET').toUpperCase()
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
@@ -163,7 +163,9 @@ function insertionBoundary(event) {
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
 }
 
-export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpen = true }) {
+export function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessionBlank, autoOpen = true }) {
+  const api = bindingTarget?.request ?? resourceApi
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId)
   const [catalog, setCatalog] = useState(null)
   const [draft, setDraft] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -200,7 +202,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
 
   const refresh = useCallback(async (preferredId) => {
     const generation = ++refreshGeneration.current
-    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
+    const query = !bindingTarget && sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
     const data = await api(`/presets${query}`)
     const id = preferredId === undefined
       ? data.selectedId ?? data.presets[0]?.id ?? null
@@ -212,7 +214,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
     setCatalog(data)
     setDraft(detail)
     return true
-  }, [sessionId])
+  }, [sessionId, bindingTarget])
 
   useEffect(() => {
     refreshGeneration.current += 1
@@ -221,7 +223,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
     setStatus({ error: false, key: 'preset.status.syncing' })
     run(() => refresh(), 'preset.status.loaded')
     return () => { refreshGeneration.current += 1 }
-  }, [refresh, run, sessionId])
+  }, [refresh, run, sessionId, bindingTarget])
 
   useEffect(() => {
     const onRefresh = event => {
@@ -238,7 +240,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
   }, 'preset.status.detailsLoaded'), [run])
 
   const bind = useCallback(() => run(async () => {
-    if (!sessionId) throw uiError('preset.error.needSession')
+    if (!canBind) throw uiError('preset.error.needSession')
     if (draft === null) throw uiError('preset.error.needPreset')
     if (catalog?.selectedId !== draft.id
       && catalog?.selectedId !== null
@@ -247,14 +249,14 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
     await api('/select', { method: 'POST', body: body({ id: draft.id, sessionId }) })
     await refresh(draft.id)
     announceTavernRefresh()
-  }, 'preset.status.bound'), [catalog?.selectedId, draft, refresh, run, sessionBlank, sessionId])
+  }, 'preset.status.bound'), [catalog?.selectedId, draft, refresh, run, sessionBlank, sessionId, bindingTarget])
 
   const unbind = useCallback(() => run(async () => {
-    if (!sessionId) throw uiError('preset.error.noSessionToUnbind')
+    if (!canBind) throw uiError('preset.error.noSessionToUnbind')
     await api('/select', { method: 'POST', body: body({ id: null, sessionId }) })
     await refresh(draft?.id)
     announceTavernRefresh()
-  }, 'preset.status.unbound'), [draft?.id, refresh, run, sessionId])
+  }, 'preset.status.unbound'), [draft?.id, refresh, run, sessionId, bindingTarget])
 
   const createPreset = useCallback(() => run(async () => {
     const created = await api('/presets', { method: 'POST', body: body({ name: translate('preset.defaultName') }) })
@@ -367,14 +369,14 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
       catalog === null
         ? null
         : catalog.selectedId === null
-          ? h('p', { className: 'dtt-note' }, uiMessage('preset.unboundNote'))
-          : h('p', { className: 'dtt-note' }, uiMessage('preset.currentSessionBound', { name: catalog.presets.find(item => item.id === catalog.selectedId)?.name ?? catalog.selectedId })),
+          ? h('p', { className: 'dtt-note' }, uiMessage(bindingTarget ? 'play.draft.unboundPreset' : 'preset.unboundNote'))
+          : h('p', { className: 'dtt-note' }, uiMessage(bindingTarget ? 'play.draft.boundPreset' : 'preset.currentSessionBound', { name: catalog.presets.find(item => item.id === catalog.selectedId)?.name ?? catalog.selectedId })),
       draft !== null && draft.id !== catalog?.selectedId
-        ? h('div', { className: 'dtt-status', 'data-warning': true }, uiMessage('preset.browsingUnbound', { name: draft.name }))
+        ? h('div', { className: 'dtt-status', 'data-warning': true }, uiMessage(bindingTarget ? 'play.draft.browsingPreset' : 'preset.browsingUnbound', { name: draft.name }))
         : null,
       h('div', { className: 'dtt-actions' },
-        h('button', { className: 'dtt-button dtt-button-primary', type: 'button', disabled: busy || !sessionId || draft === null, onClick: bind }, catalog?.selectedId === draft?.id ? uiMessage('preset.bindUpdate') : uiMessage('preset.bind')),
-        h('button', { className: 'dtt-button', type: 'button', disabled: busy || !sessionId || catalog?.selectedId == null, onClick: unbind }, uiMessage('preset.unbind')),
+        h('button', { className: 'dtt-button dtt-button-primary', type: 'button', disabled: busy || !canBind || draft === null, onClick: bind }, bindingTarget ? uiMessage('play.draft.bind') : catalog?.selectedId === draft?.id ? uiMessage('preset.bindUpdate') : uiMessage('preset.bind')),
+        h('button', { className: 'dtt-button', type: 'button', disabled: busy || !canBind || catalog?.selectedId == null, onClick: unbind }, uiMessage(bindingTarget ? 'play.draft.unbind' : 'preset.unbind')),
       ),
       h('div', { className: 'dtt-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       draft === null ? h('p', { className: 'dtt-note' }, catalog === null ? uiMessage('preset.loading') : uiMessage('preset.emptyHint')) : h('div', { className: 'dtt-section' },

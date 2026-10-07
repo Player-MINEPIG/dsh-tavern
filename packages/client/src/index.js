@@ -1,9 +1,11 @@
+import { createDraftResourceTarget } from './play/draft-resources.js'
+import { useMemo } from 'react'
 import {renderingDependencies} from './play/rendering-dependencies.js'
 import {renderingWriteRequests} from './play/rendering-write-requests.js'
 import { renderingTrust } from './play/rendering-trust.js'
 import { ConversationSettingsPanel } from './conversation-panel.js'
 import { presentationCss } from './presentation-styles.js'
-import { AssemblyPanel } from '../../request-assembler/client.js'
+import { AssemblyPanel, ASSEMBLY_REFRESH_EVENT } from '../../request-assembler/client.js'
 import { BubbleEditor } from './bubble-editor.js'
 import { tavernFetch as fetch } from './api-fetch.js'
 import {
@@ -51,6 +53,7 @@ import { createWorkspaceDiagnostics } from './play/diagnostics-state.js'
 import { WorkspaceDiagnosticsPanel, diagnosticsCss } from './play/diagnostics.js'
 import { RegexPanel } from './play/regex-panel.js'
 import { projectRpWorkspaceSetting, workspaceSelectionRequest } from './play/workspace-setting.js'
+import { RpWorkspaceNotice } from './play/workspace-notice.js'
 import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
 import { createChromeModeServiceCore } from './play/chrome-service.js'
 import { startChromeModeTransport } from './play/chrome-transport.js'
@@ -89,6 +92,7 @@ const css = `
 .dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-rp-workspace-warning{position:relative;padding:12px 36px 12px 12px;border:1px solid #d8a82b;border-radius:9px;background:rgba(218,165,32,.16);color:var(--dsw-alias-label-primary);font-size:12px;line-height:1.6}.dtv-rp-workspace-warning h3{margin:0 0 5px;font-size:12px}.dtv-rp-workspace-warning p{margin:0}.dtv-rp-workspace-warning p+p{margin-top:6px}.dtv-rp-workspace-warning .dtv-close{position:absolute;right:5px;top:5px}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;font-family:inherit;line-height:1.4;min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
 .dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions,.dtv-template-toolbar,.dtv-template-footer,.dtv-template-name{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-template-name{grid-template-columns:minmax(0,1fr) auto}.dtv-template-footer,.dtv-settings-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dtv-settings-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
@@ -282,6 +286,7 @@ function SettingsPanel({
         ? workspaceSetting.available.map(item => h('option', { key: item.id, value: item.path }, rawText(item.title)))
         : h('option', { value: '', disabled: true }, translate('settings.rpWorkspace.none')))),
       h('p', { className: 'dtv-note' }, translate('settings.rpWorkspace.help')),
+      h(RpWorkspaceNotice),
       h(Field, { label: translate('settings.rpPolicy') }, h('textarea', {
         className: 'dtv-textarea dtv-policy',
         value: policyDraft,
@@ -594,6 +599,7 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
   h('div', { className: 'dtv-workspace-admission-card' },
     h('h2', { id: 'dtv-workspace-admission-title', className: 'dtv-workspace-admission-title' }, uiMessage('workspaceAdmission.title')),
     h('p', { className: 'dtv-workspace-admission-copy' }, uiMessage('workspaceAdmission.body')),
+    h(RpWorkspaceNotice),
     status === null ? null : h('p', {
       className: 'dtv-status',
       'data-error': ['error', 'verify-error', 'save-error'].includes(state) || unavailable,
@@ -670,6 +676,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   }), [diagnostics, requestSurface])
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
   const [chromeMode, setChromeMode] = useState(() => chromeService.getMode())
+  const activeDraftId = useSyncExternalStore(playSlots.subscribeDraft, playSlots.getActiveDraftId)
+  const bindingTarget = useMemo(() => activeDraftId ? createDraftResourceTarget({ client: playClient, draftId: activeDraftId, label: translate('play.draft.opening') }) : null, [activeDraftId, playClient])
   const [chromeAnimation, setChromeAnimation] = useState(0)
   const [chromeError, setChromeError] = useState('')
   const [activeSnapshot, setActiveSnapshot] = useState(null)
@@ -938,16 +946,16 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const refreshStatus = useCallback(async () => {
     const generation = ++statusGeneration.current
     try {
-      const [next, assembly] = await Promise.all([activeView(sessionId), fetch(`${API_ROOT}/assembly-presets?sessionId=${encodeURIComponent(sessionId ?? '')}`).then(async res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json() })])
+      const [next, assembly, openingAssembly] = await Promise.all([bindingTarget ? bindingTarget.active() : activeView(sessionId), fetch(`${API_ROOT}/assembly-presets?sessionId=${encodeURIComponent(bindingTarget ? '' : sessionId ?? '')}`).then(async res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json() }), bindingTarget?.getSelection()])
       if (generation !== statusGeneration.current) return
       setActiveSnapshot(next)
-      setAssemblyState(assembly)
+      setAssemblyState(bindingTarget ? { ...assembly, selection: openingAssembly } : assembly)
       setStatusError('')
     } catch (reason) {
       if (generation !== statusGeneration.current) return
       setStatusError(reason instanceof Error ? reason.message : String(reason))
     }
-  }, [sessionId, chromeMode])
+  }, [sessionId, chromeMode, bindingTarget])
 
   useEffect(() => {
     statusGeneration.current += 1
@@ -960,7 +968,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   useEffect(() => {
     const onRefresh = () => refreshStatus()
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
-    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    window.addEventListener(ASSEMBLY_REFRESH_EVENT, onRefresh)
+    return () => {
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+      window.removeEventListener(ASSEMBLY_REFRESH_EVENT, onRefresh)
+    }
   }, [refreshStatus])
 
   useEffect(() => {
@@ -1109,16 +1121,20 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   let panel = null
   if (surface === 'preset') {
     panel = h('div', { className: 'dtv-panel' }, h(PresetSidebar, {
+      key: activeDraftId ?? sessionId,
       closePanel: close,
       openPanel: () => {},
-      sessionId,
-      sessionBlank,
+      sessionId: bindingTarget ? null : sessionId,
+      bindingTarget,
+      sessionBlank: bindingTarget ? true : sessionBlank,
       autoOpen: false,
     }))
   } else if (surface === 'character') {
     panel = h(CharacterPanel, {
-      sessionId,
-      sessionBlank,
+      key: activeDraftId ?? sessionId,
+      sessionId: bindingTarget ? null : sessionId,
+      bindingTarget,
+      sessionBlank: bindingTarget ? true : sessionBlank,
       hasConversationHistory,
       detachPlaythroughSession: (playthroughId, targetSessionId) => playClient.detachPlaythroughSession(playthroughId, targetSessionId),
       close,
@@ -1126,9 +1142,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   } else if (surface === 'regex' && chromeMode === 'play') {
     panel = h(ConversationSettingsPanel, { settings: conversationSettings, status: conversationSettingsStatus, busy: conversationSettingsBusy, update: persistConversationSettings, reset: resetConversationSettings, client: playClient, activeSnapshot, registerBeforeLeave, initialTab: 'regex', close })
   } else if (surface === 'world-info') {
-    panel = h(WorldBookPanel, { sessionId, close })
+    panel = h(WorldBookPanel, { key: activeDraftId ?? sessionId, sessionId: bindingTarget ? null : sessionId, bindingTarget, close })
   } else if (surface === 'user') {
-    panel = h(UserPanel, { sessionId, sessionBlank, close })
+    panel = h(UserPanel, { key: activeDraftId ?? sessionId, sessionId: bindingTarget ? null : sessionId, sessionBlank: bindingTarget ? true : sessionBlank, bindingTarget, close })
   } else if (surface === 'session-template') {
     panel = h(SessionTemplatePanel, {
       sessionId,
@@ -1184,7 +1200,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     && rpWorkspaceSetting?.ready !== true
 
   return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null || assemblyOpen, style: { '--dtv-ui-scale': uiSettings.scale } },
-    assemblyOpen && h(AssemblyPanel, { sessionId, close: () => requestAssembly(false), registerBeforeLeave: registerAssemblyBeforeLeave, chromeMode }),
+    assemblyOpen && h(AssemblyPanel, { sessionId: bindingTarget ? null : sessionId, selectionTarget: bindingTarget, sessionLabel: bindingTarget?.label, close: () => requestAssembly(false), registerBeforeLeave: registerAssemblyBeforeLeave, chromeMode }),
     panel,
     importFailure === null ? null : h(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
     rpAlert === null ? null : h(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
@@ -1220,7 +1236,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
         h('span', { key: chromeAnimation, className: 'dtv-ball-face', 'data-animate': chromeAnimation > 0, 'aria-hidden': 'true' }),
         h('span', { className: 'dtv-ball-label' }, 'DT'))),
       h('div', { className: 'dtv-menu', role: 'menu' },
-        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),
+        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: bindingTarget?.label || sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),
         h('button', {
           className: 'dtv-menu-item',
           type: 'button',
@@ -1366,7 +1382,7 @@ export function apply(ctx, { conversationPhase }) {
           source: selectedSource,
         }),
         playthroughController,
-        openSession: id => ctx.uiWorkspace.openSession(id),
+        openSession: (id, playthrough) => playSlots.openPlaythrough(id, playthrough),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
       }),
     }),

@@ -79,3 +79,20 @@ test('failed character refresh releases the opening while retaining RP view pref
  f.role('other');window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));await settle();await settle()
  assert.equal(f.registrations.some(x=>x.options.name==='main.conversation'&&x.active),false)
 })
+
+test('restored sessionless opening survives roster hydration and yields on a real native focus change', async t => {
+ const previousWindow=globalThis.window, values=new Map([['pmp-dsh-tavern:active-opening-draft:v1','playthrough-draft']])
+ globalThis.window=new EventTarget();window.sessionStorage={getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)}
+ t.after(()=>{if(previousWindow===undefined)delete globalThis.window;else globalThis.window=previousWindow})
+ let snapshot={phase:'pending',byId:{}}, notify=()=>{};const registrations=[],cleanups=[]
+ const ctx={sessions:{list:{getSnapshot:()=>snapshot,subscribe:fn=>{notify=fn;return()=>{}}}},slots:{entries:()=>[],inject:(_,fn)=>cleanups.push(fn()),register(options,component){const row={options,component,active:true};registrations.push(row);return()=>{row.active=false}}},uiWorkspace:{openSession(){throw Error('Draft must not open a native Session')}}}
+ const client={getWorkspace:async()=>({selected:true,rootPath:'/fixture'}),getCatalog:async()=>({playthroughs:[]})}
+ const slots=installPlaySlotOccupancy(ctx,client);t.after(()=>cleanups.forEach(fn=>fn()));slots.setMode('play')
+ const updates=[]; const unsubscribe=slots.subscribeDraft(()=>updates.push(slots.getActiveDraftId()));t.after(unsubscribe)
+ assert.equal(slots.getActiveDraftId(),'playthrough-draft');slots.setMode('native');assert.equal(slots.getActiveDraftId(),null);slots.setMode('play');assert.equal(slots.getActiveDraftId(),'playthrough-draft')
+ const draftRoot=registrations.find(row=>row.active&&row.options.name==='main.conversation')
+ assert.equal(draftRoot.options.inject().draftId,'playthrough-draft');assert.equal(draftRoot.options.children,undefined)
+ snapshot={phase:'ready',byId:{old:{id:'old',cwd:'/fixture',retainedBy:{mainView:1}}}};notify();await settle();assert.equal(draftRoot.active,true)
+ snapshot={phase:'ready',byId:{new:{id:'new',cwd:'/fixture',retainedBy:{mainView:1}}}};notify();await settle()
+ assert.equal(slots.getActiveDraftId(),null);assert(updates.includes(null));assert.equal(draftRoot.active,false);assert.equal(values.has('pmp-dsh-tavern:active-opening-draft:v1'),false)
+})

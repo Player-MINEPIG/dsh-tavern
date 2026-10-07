@@ -258,3 +258,25 @@ Tavern 语言与 DSH 语言独立。RP、侧栏和开场 dock 订阅完整 UI �
 client组合根创建 transport-independent mode core，以 `ctx.provide('pmpDshTavernChrome', face)` 注册在稳定插件fiber；SSE/focus/轮询只通过内部adapter提交服务端快照。TavernShell、悬浮球controller和 `playSlots.setMode()` 都是该服务的普通消费者，不再各自维护GET、focus或BroadcastChannel状态机。
 
 该服务的 `when(mode, setup)` 只表达模式生命周期，不授予surface所有权。多个插件可以同时订阅并注册各自的DSH公开slot；同一slot的占用冲突仍由对应公开slot合同处理。provider卸载时先停止transport、清理effect，再由Cordis撤销服务并驱动required consumer卸载。native模式仍不修改DSH原生表面。
+
+## 无会话开场生命周期
+
+`PlaythroughDrafts` 拥有未发送周目的配置、装配快照和初始 MVU，保存于插件存储；catalog 与空 timeline 仍在 RP 工作区。草稿 ID 从不传给 DSH Session API。首次发送的准备与消息提交保持为两个可组合原语，唯一会话/请求身份先持久化，准备中的真实空会话由公开 Workspace 归档接口隔离。真实 `turn/start` 和首条输入身份共同证明受理后，catalog 才获得 `rootSessionId`；公开 `agent/pre-step` 中间件等待解除临时归档后再继续原生 gate。取消与消息受理串行协调，不清除已受理历史。现有原生周目 ID 保持不变，不需要修改 DSH 核心。
+
+```mermaid
+sequenceDiagram
+  participant UI as Tavern UI
+  participant Draft as PlaythroughDrafts
+  participant DSH as Public DSH APIs
+  UI->>Draft: 保存周目、配置、初始变量
+  Note over Draft: 无 DSH 会话
+  UI->>Draft: 准备唯一首条输入
+  Draft->>DSH: 创建并临时归档真实会话
+  Draft->>Draft: 转移配置与初始变量
+  Draft-->>UI: sessionId + requestId
+  UI->>DSH: 既有消息接口
+  DSH-->>Draft: 真实 turn/start
+  Draft->>Draft: 关联 catalog
+  Draft->>DSH: 解除临时归档
+  DSH-->>UI: 原生对话与流式回复
+```

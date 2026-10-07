@@ -6,7 +6,7 @@ export const isMvuApiPath = url => paths.some(path => requestPathname(url) === `
 const scopeKeys = ['mode', 'characterId', 'playthroughId', 'sessionId', 'nodeId', 'variantId', 'endEventId', 'sessionFormatVersion', 'greetingIndex', 'selectionToken']
 function validateScope(scope) {
   if (!scope || typeof scope !== 'object' || Array.isArray(scope) || Object.keys(scope).some(key => !scopeKeys.includes(key))
-    || (!['greeting', 'initial'].includes(scope.mode) && ['greetingIndex', 'selectionToken'].some(key => Object.hasOwn(scope, key)))) throw Object.assign(new Error('Invalid MVU scope'), { code: 'MVU_SCOPE' })
+    || (!['greeting', 'initial', 'draft'].includes(scope.mode) && ['greetingIndex', 'selectionToken'].some(key => Object.hasOwn(scope, key)))) throw Object.assign(new Error('Invalid MVU scope'), { code: 'MVU_SCOPE' })
   return scope
 }
 const traceReads = new Set(['resources', 'resource', 'history', 'facts'])
@@ -26,7 +26,7 @@ function resourceId(id) {
   if (typeof id !== 'string' || !/^mvu:[A-Za-z0-9_.-]{1,160}$/.test(id)) throw Object.assign(new Error('Invalid MVU resource'), { code: 'MVU_SCOPE' })
   return id
 }
-export function createMvuApi(service) {
+export function createMvuApi(service, { drafts } = {}) {
   return async (req, res) => {
     const pathname = requestPathname(req.url), action = pathname.split('/').at(-1), post = !traceReads.has(action) && pathname !== `${API_V1}/mvu/snapshot` && pathname !== '/'
     if (req.method !== (post ? 'POST' : 'GET')) return sendJson(res, 405, { ok: false, code: 'METHOD_NOT_ALLOWED' })
@@ -47,7 +47,8 @@ export function createMvuApi(service) {
           if (action === 'facts') return sendJson(res, 200, { ok: true, ...await service.facts(request) })
           return sendJson(res, 200, { ok: true, versions: await service.history({ ...request, includeBefore: true }) })
         }
-        return sendJson(res, 200, await service.snapshot(validateScope(JSON.parse(raw))))
+        const scope = validateScope(JSON.parse(raw))
+        return sendJson(res, 200, await (scope.mode === 'draft' && drafts ? drafts : service).snapshot(scope))
       }
       const body = await readBoundedJson(req, 2 * 1024 * 1024)
       let result
@@ -57,9 +58,9 @@ export function createMvuApi(service) {
         if (!record || record.legacy || record.sourceError || record.capabilities?.edit === false) throw Object.assign(new Error('MVU source is read-only'), { code: 'MVU_READ_ONLY' })
         result = await service.update({ id, scope, content: body.content, expectedRevision: body.expectedRevision, operationId: body.operationId, signal: controller.signal })
       }
-      else if (pathname.endsWith('/card-binding')) result = await service.createCardBinding({ scope: validateScope(body.scope), grantId: body.grantId, sourceIdentity: body.sourceIdentity, bindingId: body.bindingId, signal: controller.signal })
-      else if (pathname.endsWith('/card-binding/revoke')) { service.revokeCardBinding(body.capability); result = { ok: true } }
-      else result = await service.cardWrite({ capability: body.capability, operation: body.operation, value: body.value, expectedRevision: body.expectedRevision, operationId: body.operationId, cause: body.cause, signal: controller.signal })
+      else if (pathname.endsWith('/card-binding')) { const scope = validateScope(body.scope); result = await (scope.mode === 'draft' && drafts ? drafts : service).createCardBinding({ scope, grantId: body.grantId, sourceIdentity: body.sourceIdentity, bindingId: body.bindingId, signal: controller.signal }) }
+      else if (pathname.endsWith('/card-binding/revoke')) { service.revokeCardBinding(body.capability); drafts?.revokeCardBinding(body.capability); result = { ok: true } }
+      else result = await (drafts?.ownsBinding(body.capability) ? drafts : service).cardWrite({ capability: body.capability, operation: body.operation, value: body.value, expectedRevision: body.expectedRevision, operationId: body.operationId, cause: body.cause, signal: controller.signal })
       return sendJson(res, 200, result)
     } catch (error) {
       const status = ['MVU_AMBIGUOUS', 'REVISION_CONFLICT', 'MVU_IDEMPOTENCY_CONFLICT'].includes(error.code) ? 409 : ['MVU_WRITE_DENIED', 'MVU_READ_ONLY', 'MVU_USAGE_DENIED'].includes(error.code) ? 403 : 400

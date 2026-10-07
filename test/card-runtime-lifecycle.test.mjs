@@ -65,3 +65,27 @@ test('MVU card retry, generation revocation and accepted close preserve the righ
  mode='available';await React.act(()=>retry.click());await load()
  assert.equal(document.querySelector('[role="alert"]'),null);assert.equal(document.querySelector('[role="status"]'),null)
 })
+
+test('dependency failures appear as dismissible notices before iframe load, including disabled cards',async t=>{
+ const previous={window:globalThis.window,document:globalThis.document,IS_REACT_ACT_ENVIRONMENT:globalThis.IS_REACT_ACT_ENVIRONMENT}
+ const {window,document}=parseHTML('<html><body><div id="root"></div></body></html>')
+ Object.assign(globalThis,{window,document,IS_REACT_ACT_ENVIRONMENT:true})
+ const root=createRoot(document.getElementById('root'));t.after(async()=>{await React.act(()=>root.unmount());for(const [key,value]of Object.entries(previous)){if(value===undefined)delete globalThis[key];else globalThis[key]=value}})
+ const {CardDiagnosticNotice}=await import('../packages/client/src/play/card-diagnostics.js')
+ let available=false
+ const inert={html:'<p>Static opening</p>',scripts:[],unsupported:['appearance.unsupportedModule']}
+ const dependencies={...React,h:React.createElement,renderingTrust:{revision:()=>0,subscribe:()=>()=>{}},prepareCardDocument:()=>{if(!available)throw Error('Module dependencies unavailable');return{...inert,unsupported:[],runs:[{code:'fixture'}]}},cardDocument:()=>inert,cleanCardHtml:html=>html,CARD_CSP:'',translate:key=>key,useCardDiagnostics:()=>false,CardDiagnosticNotice,IdentityActionProposal:()=>null}
+ const Card=new Function('dependencies',`const {${Object.keys(dependencies).filter(key=>key!=='default').join(',')}}=dependencies;${component};return InteractiveCard`)(dependencies)
+ const container=document.getElementById('root')
+ await React.act(()=>root.render(React.createElement(Card,{source:'neutral module',enabled:true,scopeKey:'opening',context:{}})))
+ assert.match(container.querySelector('[role=alert]').textContent,/Module dependencies unavailable/)
+ assert(container.querySelector('.dtv-card-diagnostic'),'yellow notice exists without firing iframe onLoad')
+ await React.act(()=>container.querySelector('.dtv-card-diagnostic button').click())
+ assert.equal(container.querySelector('[role=alert]'),null)
+ await React.act(()=>root.render(React.createElement(Card,{source:'neutral module',enabled:false,scopeKey:'opening',context:{}})))
+ assert.equal(container.querySelector('[role=alert]'),null,'same dismissed diagnostic stays dismissed during send')
+ available=true
+ await React.act(()=>root.render(React.createElement(Card,{source:'available module',enabled:false,scopeKey:'opening',context:{}})))
+ assert.match(container.querySelector('[role=alert]').textContent,/appearance.scriptsOff/)
+ assert.doesNotMatch(container.querySelector('[role=alert]').textContent,/unavailable|unsupportedModule/)
+})

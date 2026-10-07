@@ -1,5 +1,6 @@
 import { pendingSwipeForSession } from './pending-swipe.js'
 import { characterGreetingOptions } from '../../../character/src/client-state.js'
+export { applyDisplayNameMacros } from './display-name-macros.js'
 import {
   activeTimelineEntries,
   activeVariantEnd,
@@ -357,17 +358,6 @@ export function projectGreeting({
     text: selected.text,
     options,
   }
-}
-
-export function applyDisplayNameMacros(text, {
-  user = 'User',
-  character = 'Assistant',
-} = {}) {
-  const names = {
-    user: typeof user === 'string' && user !== '' ? user : 'User',
-    char: typeof character === 'string' && character !== '' ? character : 'Assistant',
-  }
-  return String(text ?? '').replace(/\{\{\s*(user|char)\s*\}\}/gi, (_match, name) => names[name.toLowerCase()])
 }
 
 export function adjacentGreetingIndex(greeting, direction) {

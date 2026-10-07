@@ -285,10 +285,10 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   useLayoutEffect(()=>{revokeAccess.current()},[writeKey,writesBlocked])
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
-    try { if(!enabled)return cardDocument(source);const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
+    try { const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = useMemo(()=>`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`,[data])
-  const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):''
+  const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):!enabled&&(data.runs?.length||data.scripts?.length)?translate('appearance.scriptsOff'):''
   const visibleError=mvuFailure&&writesBlocked?'':error
   const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,visibleError,mvuNotice,photoError].filter(Boolean),diagnosticId)
   useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);setMvuReading(false);setMvuFailure(false);setMvuNotice('');retryMvu.current=false;return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,JSON.stringify(openingBinding),runtimeRevision])
@@ -557,7 +557,6 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     closed?null:h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding,runtimeRevision]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
     mvuReading||mvuFailure&&writesBlocked?h('p',{role:'status'},translate('appearance.mvuLoading')):null,
     mvuFailure&&!writesBlocked?h('button',{type:'button',onClick:()=>setRuntimeRevision(value=>value+1)},translate('appearance.mvuRetry')):null,
-    !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
     ...(!diagnosticsOutside?[unsupportedMessage,visibleError,mvuNotice,photoError].filter(Boolean).map(message=>h(CardDiagnosticNotice,{key:message,message,cardId:diagnosticId})):[]),
     media?.failed > 0 ? h('small',{className:'dtv-card-media',role:'alert'},translate('appearance.imageUnavailable')):null,
     openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,

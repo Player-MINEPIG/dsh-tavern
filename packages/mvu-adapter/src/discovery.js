@@ -11,7 +11,7 @@ export function createCharacterDiscovery({ characters, selections, service }) {
       const id = characterMvuId(summary.id)
       const existing = service().templates.find(r => r.id === id)
       // Initialization belongs to resource creation, never to each turn or selection.
-      if (existing && !existing.sourceError) {
+      if (existing && !existing.sourceError && (!existing.initial?.mvu_schema || existing.initial.mvu_schema.interpreterVersion === 2)) {
         continue
       }
       const options = { id, name: summary.name, characterId: summary.id, sessionIds: [], managementMode: 'native' }

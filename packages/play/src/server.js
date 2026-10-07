@@ -13,7 +13,7 @@ export function isPlayApiPath(url) {
 
 export function createPlayApiHandler({
   chromeStore, workspaceStore, host, validateFile = validatePlayDocument, now,
-  logger, operationOptions, operationJournal, membershipService, resolveCharacter, relinkPlaythrough,
+  logger, operationOptions, operationJournal, membershipService, resolveCharacter, relinkPlaythrough, drafts,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
@@ -37,6 +37,19 @@ export function createPlayApiHandler({
   }
   const quiet = action => ({ action })
   const mutation = (operation, action, result = 'completed') => ({ operation, action, result })
+  route('/drafts', drafts !== undefined, { POST: mutation('playthrough.draft.create', async ({ req, res }) => sendJson(res, 201, { ok: true, ...drafts.create(await readBoundedJson(req, 64 * 1024)) })) })
+  route('/drafts/:id', drafts !== undefined, {
+    GET: quiet(async ({ id, res }) => sendJson(res, 200, { ok: true, ...await drafts.read(safeDecodeId(id, 'draft id')) })),
+    PUT: mutation('playthrough.draft.update', async ({ id, req, res }) => sendJson(res, 200, { ok: true, ...drafts.update(safeDecodeId(id, 'draft id'), await readBoundedJson(req, 2 * 1024 * 1024)) })),
+  })
+  route('/drafts/:id/materialize', drafts !== undefined, { POST: mutation('playthrough.draft.materialize', async ({ id, req, res }) => {
+    const controller = new AbortController()
+    req.on?.('aborted', () => controller.abort())
+    res.on?.('close', () => { if (!res.writableEnded) controller.abort() })
+    const body = await readBoundedJson(req, 64 * 1024)
+    return sendJson(res, 200, { ok: true, ...await drafts.materialize(safeDecodeId(id, 'draft id'), { ...body, signal: controller.signal }) })
+  }) })
+  route('/drafts/:id/cancel', drafts !== undefined, { POST: mutation('playthrough.draft.cancel', async ({ id, res }) => sendJson(res, 200, { ok: true, ...await drafts.cancel(safeDecodeId(id, 'draft id')) })) })
   route('/operation-logs', true, { GET: quiet(({ req, res, searchParams }) => serveOperationLogs(operationJournal, req, res, searchParams)) })
   route('/chrome', true, Object.fromEntries(['GET', 'PUT'].map(method => [method, quiet(({ req, res }) => chromeApi(req, res, { method }))])))
   route('/chrome/events', true, { GET: quiet(({ req, res }) => chromeEventsApi(req, res, { method: 'GET' })) })

@@ -164,7 +164,7 @@ test('creating a directory that replaces absent catalog evidence expires the lea
 
 
 test('world-book request lease accepts only the known claimed input and official preparation records; future/unknown messages revoke it',async t=>{
- for(const change of ['prepared','unclaimed-user','future-reply','next-turn','prefix-change']){
+ for(const change of ['prepared','series-start','invalid-series-start','unknown-header-field','unclaimed-user','future-reply','next-turn','prefix-change']){
   const f=await fixture(t,{managed:false,shared:false}),user={id:'claimed-user',role:'user',source:{kind:'user'},content:[{type:'text',text:'authored input'}]}
   f.append({type:'agent/inbox/spliced',data:{target:'next-turn',start:0,inserted:[user]}})
   f.append({type:'turn/start',data:{turn:1}})
@@ -173,12 +173,15 @@ test('world-book request lease accepts only the known claimed input and official
   f.append({type:'step/start',data:{turn:1,step:0}})
   f.append({type:'system/message',data:{turn:1,step:0,message:{id:'system',role:'system',content:[{type:'text',text:'authored system'}]}}})
   f.append({type:'user/message',data:change==='unclaimed-user'?{...user,id:'other'}:user})
-  f.append({type:'request/header',data:{header:{config:{}},reason:'changed'}})
+  f.append({type:'request/header',data:{header:{config:{}},reason:'changed',
+   ...(change==='series-start'?{startsSeries:true}:{}),
+   ...(change==='invalid-series-start'?{startsSeries:'true'}:{}),
+   ...(change==='unknown-header-field'?{unknown:true}:{})}})
   f.append({type:'request/context',data:{provider:'fixture',model:'fixture',systemPromptUpdate:'in-history'}})
   if(change==='future-reply')f.append({type:'assistant/message',data:{turn:1,message:{id:'future',role:'assistant',content:[]}}})
   if(change==='next-turn')f.append({type:'turn/start',data:{turn:2}})
   if(change==='prefix-change')f.events[0]={...f.events[0],data:{...f.events[0].data,start:1}}
-  assert.equal(result.checkCurrent(),change==='prepared',change)
+  assert.equal(result.checkCurrent(),['prepared','series-start'].includes(change),change)
   await f.service.flush()
  }
 })
@@ -188,6 +191,21 @@ test('an installed Host rejects a stale character scope for the MVU preset sourc
  await f.service.list({scope:{sessionId:'s'}})
  f.selections.set('s',{characterCardId:'other'})
  await assert.rejects(f.service.resolveRequest({sessionId:'s'}),{code:'MVU_USAGE_CANCELLED'})
+})
+
+test('log-only titles during prompt assembly accept known input references without relaxing initial write leases',async t=>{
+ for(const change of ['fallback','provider','user','future-reference','unknown-source','unknown-field']){
+  const f=await fixture(t,{managed:false,shared:false}),user={id:'title-input',role:'user',source:{kind:'user'},content:[{type:'text',text:'title input'}]}
+  f.append({type:'agent/inbox/spliced',data:{target:'next-turn',start:0,inserted:[user]}})
+  f.append({type:'turn/start',data:{turn:1}})
+  const result=await f.service.resolvePromptDependency({scope:{authority:'local',sessionId:'s'},event:{preview:false,turn:1,usage:'world-book-variable',consumer:{adapterId:'tavern.world-books',id:'world-book:one'}}})
+  const message=f.append({type:'user/message',data:user})
+  f.append({type:'session/title',data:{title:'Title',messageSeqs:change==='user'?[]:[change==='future-reference'?message.seq+100:message.seq],
+   source:change==='provider'?{kind:'provider',provider:'title-provider',model:{provider:'offline',model:'test'}}:{kind:change==='unknown-source'?'unknown':change==='user'?'user':'fallback'},
+   ...(change==='unknown-field'?{unknown:true}:{})}})
+  assert.equal(result.checkCurrent(),['fallback','provider','user'].includes(change),change)
+  await f.service.flush()
+ }
 })
 
 test('a shared world-book checkpoint lease expires when its session enters another turn',async t=>{

@@ -2,6 +2,8 @@
 
 Independent prompt assembly plugin: [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) (private; authorized access required). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for Tavern’s dependency and activation of both plugins.
 
+[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) is an optional viewing and management extension (private repository). Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
+
 [Candidate branch feature (not in the v2.5.1 tag): prompt assembly settings.](docs/REQUEST_ASSEMBLY_en.md)
 
 [中文](README.md)

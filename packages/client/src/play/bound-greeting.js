@@ -1,7 +1,7 @@
 /** Read-only source projection for this selected, local greeting. */
 export function boundGreetingView({state,scope,disabled=false}={}) {
  const greeting=state?.greeting
- if(disabled||!scope||scope.mode!=='greeting'||greeting?.characterId!==scope.characterId
+ if(disabled||!scope||!['greeting','draft'].includes(scope.mode)||greeting?.characterId!==scope.characterId
   ||typeof greeting.sourceText!=='string'||greeting.sourceText.length>64*1024
   ||!Number.isSafeInteger(greeting.index)||greeting.index<0
   ||!Number.isSafeInteger(greeting.messageCount)||greeting.messageCount<1)return null

@@ -314,13 +314,24 @@ test('title metadata rejects automatic sources, message references, malformed an
   }
 })
 
-test('greeting is an explicit current read view after a turn and never a write capability', async t => {
+test('greeting freezes the edited opening before the first turn and never grants a write capability', async t => {
   const f = fixture(t); f.allow()
   const scope = { ...f.scope, mode: 'greeting' }
   assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp, 10)
   const initial = await f.bind()
   await f.service.cardWrite(request(initial.capability, 0))
   f.start()
+  assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp, 7)
+  f.append('assistant/message', { turn: 1, step: 1, message: { id: 'reply-1', role: 'assistant', content: [{ type: 'text', text: "_.set('hp',4);" }] } })
+  f.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+  await f.service.flush()
+  assert.equal((await f.service.read({ id: 'mvu:initial', scope: { sessionId: 's' } })).content.stat_data.hp, 4)
+  assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp, 7)
+  f.append('turn/start', { turn: 2 })
+  f.append('assistant/message', { turn: 2, step: 1, message: { id: 'reply-2', role: 'assistant', content: [{ type: 'text', text: "_.set('hp',2);" }] } })
+  f.append('turn/end', { turn: 2, reason: { kind: 'completed' } })
+  await f.service.flush()
+  assert.equal((await f.service.read({ id: 'mvu:initial', scope: { sessionId: 's' } })).content.stat_data.hp, 2)
   assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp, 7)
   await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' })
   await assert.rejects(f.service.createCardBinding({ scope, grantId: 'grant', sourceIdentity: { ...f.sourceIdentity, scope } }), { code: 'MVU_READ_ONLY' })
@@ -343,11 +354,19 @@ test('greeting reads a stored session without starting an Agent and rechecks acc
 
 test('saved swipe members read their own greeting state and remain unable to grant writes', async t => {
  const resource=(id,sessionId,hp)=>({sharing:'shared',id,characterId:'c',sessionIds:[sessionId],initial:{stat_data:{hp}},schemaSource:'const Schema=z.object({hp:z.number()});'})
- const f=fixture(t,{resources:[resource('mvu:root','s',10),resource('mvu:child','child',20)]})
+ const f=fixture(t,{resources:[resource('mvu:root','s',10),resource('mvu:child','child',20)]});f.allow()
  f.ctx.get('sessions').set('child',{id:'child',header:{id:'child',version:4,createdAt:'child',parentSession:'s'},snapshotEvents:()=>[]})
  f.selections.set('child',{characterCardId:'c'})
  f.timeline.nodes.push({id:'n',variants:[{id:'v',sessionId:'child'}]})
  const scope={...f.scope,mode:'greeting',sessionId:'child'}
+ assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp,20)
+ assert.equal((await f.service.snapshot({...scope,sessionId:'s'})).variables.stat_data.hp,10)
+ const child=f.ctx.get('sessions').get('child'),events=[{seq:0,type:'turn/start',data:{turn:1}}]
+ child.snapshotEvents=()=>events
+ await f.service.checkpoint(child,events[0])
+ events.push({seq:1,type:'assistant/message',data:{turn:1,step:1,message:{id:'child-reply',content:[{type:'text',text:"_.set('hp',18);"}]}}},{seq:2,type:'turn/end',data:{turn:1,reason:{kind:'completed'}}})
+ await f.service.ingest(child)
+ assert.equal((await f.service.read({id:'mvu:child',scope:{sessionId:'child'}})).content.stat_data.hp,18)
  assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp,20)
  assert.equal((await f.service.snapshot({...scope,sessionId:'s'})).variables.stat_data.hp,10)
  await assert.rejects(f.service.createCardBinding({scope,grantId:'grant',sourceIdentity:{...f.sourceIdentity,scope}}),{code:'MVU_READ_ONLY'})

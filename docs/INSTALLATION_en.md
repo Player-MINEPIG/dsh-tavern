@@ -2,7 +2,7 @@
 
 [中文](INSTALLATION.md)
 
-The commands using `v2.5.1` below install the stable release. To test the unpublished request assembler, use the supplied local `codex/prompt-assembler` candidate checkout and the [candidate build and core-extension procedure](REQUEST_ASSEMBLY_en.md#core-extension-and-installation-boundary).
+The commands using `v2.5.1` below install the stable release. Standalone assembler 0.2.0 is available from its private repository. See [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md) for installing it with the local Tavern candidate, and [core extension and installation](REQUEST_ASSEMBLY_en.md#core-extension-and-installation-boundary) for the required core preparation. The stable tag does not include this combined integration.
 
 Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
@@ -124,6 +124,10 @@ checks explicitly skip. Run `npm run check` for the complete suite as well.
 These commands do not replace [target Host and browser verification](TESTING_en.md).
 
 ## Uninstall
+
+Use a separate workspace for ordinary conversations rather than DSH native **New Session** inside the RP workspace. DSH may reuse a same-workspace blank session that has not started a turn, even when it already has a Tavern character or title. Uninstalling Tavern does not clear session titles, per-session resource selections or workspace playthrough records, so reinstalling can restore old character bindings and grouping.
+
+If you still repurpose a session in the RP workspace for ordinary chat, first unbind its character in the character panel and confirm detaching it from the old playthrough, unbind its preset, user persona and explicitly selected world books, turn RP off, and check the independent assembler's applied sources and custom text before uninstalling. Unbinding affects future requests without deleting resources or existing messages. Rename an old title manually through the native DSH session menu. Tavern's panels are unavailable after removal; reinstall first if you need them for cleanup.
 
 ```text
 npm run plugin:uninstall

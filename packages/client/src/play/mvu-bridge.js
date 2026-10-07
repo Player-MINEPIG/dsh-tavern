@@ -9,7 +9,7 @@ function immutable(value) { if (value && typeof value === 'object') { Object.fre
 export async function createMvuCardBinding({ client, scope, pollMs = 1000, signal, writeGrant } = {}) {
   signal?.throwIfAborted()
   const bound = immutable(copy(scope))
-  if (typeof bound.sessionId !== 'string' || !bound.sessionId) throw new TypeError('MVU session scope is required')
+  if ((typeof bound.sessionId !== 'string' || !bound.sessionId) && !(bound.mode === 'draft' && typeof bound.playthroughId === 'string' && !Object.hasOwn(bound, 'sessionId'))) throw new TypeError('MVU session or explicit draft scope is required')
   const controller = new AbortController(), listeners = new Set()
   const bindingId = writeGrant ? crypto.randomUUID() : undefined
   let disposed = false, timer, current, polling = false, capability, creating = false, generation = 0, readFailed=false

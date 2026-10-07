@@ -7927,11 +7927,11 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
           for (e = ""; b2 < d2; ) {
             var g = a[b2++];
             if (g & 128) {
-              var h28 = a[b2++] & 63;
-              if ((g & 224) == 192) e += String.fromCharCode((g & 31) << 6 | h28);
+              var h30 = a[b2++] & 63;
+              if ((g & 224) == 192) e += String.fromCharCode((g & 31) << 6 | h30);
               else {
                 var k = a[b2++] & 63;
-                g = (g & 240) == 224 ? (g & 15) << 12 | h28 << 6 | k : (g & 7) << 18 | h28 << 12 | k << 6 | a[b2++] & 63, 65536 > g ? e += String.fromCharCode(g) : (g -= 65536, e += String.fromCharCode(55296 | g >> 10, 56320 | g & 1023));
+                g = (g & 240) == 224 ? (g & 15) << 12 | h30 << 6 | k : (g & 7) << 18 | h30 << 12 | k << 6 | a[b2++] & 63, 65536 > g ? e += String.fromCharCode(g) : (g -= 65536, e += String.fromCharCode(55296 | g >> 10, 56320 | g & 1023));
               }
             } else e += String.fromCharCode(g);
           }
@@ -7957,10 +7957,10 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
           if (!(0 < d2)) return 0;
           var g = b2;
           d2 = b2 + d2 - 1;
-          for (var h28 = 0; h28 < a.length; ++h28) {
-            var k = a.charCodeAt(h28);
+          for (var h30 = 0; h30 < a.length; ++h30) {
+            var k = a.charCodeAt(h30);
             if (55296 <= k && 57343 >= k) {
-              var l3 = a.charCodeAt(++h28);
+              var l3 = a.charCodeAt(++h30);
               k = 65536 + ((k & 1023) << 10) | l3 & 1023;
             }
             if (127 >= k) {
@@ -8013,12 +8013,12 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
             return D2.set(m2, q2), q2;
           } };
           a = c["_" + a];
-          var h28 = [], k = 0;
+          var h30 = [], k = 0;
           if (e) for (var l3 = 0; l3 < e.length; l3++) {
             var v2 = g[d2[l3]];
-            v2 ? (k === 0 && (k = wa()), h28[l3] = v2(e[l3])) : h28[l3] = e[l3];
+            v2 ? (k === 0 && (k = wa()), h30[l3] = v2(e[l3])) : h30[l3] = e[l3];
           }
-          return d2 = a(...h28), d2 = (function(m2) {
+          return d2 = a(...h30), d2 = (function(m2) {
             return k !== 0 && xa(k), b2 === "string" ? m2 ? R2(E2, m2) : "" : b2 === "boolean" ? !!m2 : m2;
           })(d2);
         }, Aa = { b: (a, b2, d2, e) => {
@@ -8038,11 +8038,11 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
           }, b2);
           return S3[a] = { id: d2, Na: b2 }, 0;
         }, o: (a, b2, d2, e) => {
-          var g = (/* @__PURE__ */ new Date()).getFullYear(), h28 = new Date(g, 0, 1).getTimezoneOffset();
-          g = new Date(g, 6, 1).getTimezoneOffset(), G2[a >> 2] = 60 * Math.max(h28, g), F2[b2 >> 2] = +(h28 != g), b2 = (k) => {
+          var g = (/* @__PURE__ */ new Date()).getFullYear(), h30 = new Date(g, 0, 1).getTimezoneOffset();
+          g = new Date(g, 6, 1).getTimezoneOffset(), G2[a >> 2] = 60 * Math.max(h30, g), F2[b2 >> 2] = +(h30 != g), b2 = (k) => {
             var l3 = Math.abs(k);
             return `UTC${0 <= k ? "-" : "+"}${String(Math.floor(l3 / 60)).padStart(2, "0")}${String(l3 % 60).padStart(2, "0")}`;
-          }, a = b2(h28), b2 = b2(g), g < h28 ? (U2(a, d2, 17), U2(b2, e, 17)) : (U2(a, e, 17), U2(b2, d2, 17));
+          }, a = b2(h30), b2 = b2(g), g < h30 ? (U2(a, d2, 17), U2(b2, e, 17)) : (U2(a, e, 17), U2(b2, d2, 17));
         }, p: () => Date.now(), m: (a) => {
           var b2 = E2.length;
           if (a >>>= 0, 2147483648 < a) return false;
@@ -8065,8 +8065,8 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
         }, f: (a, b2) => {
           var d2 = 0;
           return ta().forEach((e, g) => {
-            var h28 = b2 + d2;
-            for (g = G2[a + 4 * g >> 2] = h28, h28 = 0; h28 < e.length; ++h28) D2[g++] = e.charCodeAt(h28);
+            var h30 = b2 + d2;
+            for (g = G2[a + 4 * g >> 2] = h30, h30 = 0; h30 < e.length; ++h30) D2[g++] = e.charCodeAt(h30);
             D2[g] = 0, d2 += e.length + 1;
           }), 0;
         }, g: (a, b2) => {
@@ -8077,7 +8077,7 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
         }, e: () => 52, k: function() {
           return 70;
         }, d: (a, b2, d2, e) => {
-          for (var g = 0, h28 = 0; h28 < d2; h28++) {
+          for (var g = 0, h30 = 0; h30 < d2; h30++) {
             var k = G2[b2 >> 2], l3 = G2[b2 + 4 >> 2];
             b2 += 8;
             for (var v2 = 0; v2 < l3; v2++) {
@@ -8109,11 +8109,11 @@ var init_emscripten_module_browser_VTL2UBYQ = __esm({
             a(d2.instance);
           }).catch(n), {};
         })();
-        c._malloc = (a) => (c._malloc = Y2.u)(a), c._QTS_Throw = (a, b2) => (c._QTS_Throw = Y2.v)(a, b2), c._QTS_NewError = (a) => (c._QTS_NewError = Y2.w)(a), c._QTS_RuntimeSetMemoryLimit = (a, b2) => (c._QTS_RuntimeSetMemoryLimit = Y2.x)(a, b2), c._QTS_RuntimeComputeMemoryUsage = (a, b2) => (c._QTS_RuntimeComputeMemoryUsage = Y2.y)(a, b2), c._QTS_RuntimeDumpMemoryUsage = (a) => (c._QTS_RuntimeDumpMemoryUsage = Y2.z)(a), c._QTS_RecoverableLeakCheck = () => (c._QTS_RecoverableLeakCheck = Y2.A)(), c._QTS_BuildIsSanitizeLeak = () => (c._QTS_BuildIsSanitizeLeak = Y2.B)(), c._QTS_RuntimeSetMaxStackSize = (a, b2) => (c._QTS_RuntimeSetMaxStackSize = Y2.C)(a, b2), c._QTS_GetUndefined = () => (c._QTS_GetUndefined = Y2.D)(), c._QTS_GetNull = () => (c._QTS_GetNull = Y2.E)(), c._QTS_GetFalse = () => (c._QTS_GetFalse = Y2.F)(), c._QTS_GetTrue = () => (c._QTS_GetTrue = Y2.G)(), c._QTS_NewRuntime = () => (c._QTS_NewRuntime = Y2.H)(), c._QTS_FreeRuntime = (a) => (c._QTS_FreeRuntime = Y2.I)(a), c._free = (a) => (c._free = Y2.J)(a), c._QTS_NewContext = (a, b2) => (c._QTS_NewContext = Y2.K)(a, b2), c._QTS_FreeContext = (a) => (c._QTS_FreeContext = Y2.L)(a), c._QTS_FreeValuePointer = (a, b2) => (c._QTS_FreeValuePointer = Y2.M)(a, b2), c._QTS_FreeValuePointerRuntime = (a, b2) => (c._QTS_FreeValuePointerRuntime = Y2.N)(a, b2), c._QTS_FreeVoidPointer = (a, b2) => (c._QTS_FreeVoidPointer = Y2.O)(a, b2), c._QTS_FreeCString = (a, b2) => (c._QTS_FreeCString = Y2.P)(a, b2), c._QTS_DupValuePointer = (a, b2) => (c._QTS_DupValuePointer = Y2.Q)(a, b2), c._QTS_NewObject = (a) => (c._QTS_NewObject = Y2.R)(a), c._QTS_NewObjectProto = (a, b2) => (c._QTS_NewObjectProto = Y2.S)(a, b2), c._QTS_NewArray = (a) => (c._QTS_NewArray = Y2.T)(a), c._QTS_NewArrayBuffer = (a, b2, d2) => (c._QTS_NewArrayBuffer = Y2.U)(a, b2, d2), c._QTS_NewFloat64 = (a, b2) => (c._QTS_NewFloat64 = Y2.V)(a, b2), c._QTS_GetFloat64 = (a, b2) => (c._QTS_GetFloat64 = Y2.W)(a, b2), c._QTS_NewString = (a, b2) => (c._QTS_NewString = Y2.X)(a, b2), c._QTS_GetString = (a, b2) => (c._QTS_GetString = Y2.Y)(a, b2), c._QTS_GetArrayBuffer = (a, b2) => (c._QTS_GetArrayBuffer = Y2.Z)(a, b2), c._QTS_GetArrayBufferLength = (a, b2) => (c._QTS_GetArrayBufferLength = Y2._)(a, b2), c._QTS_NewSymbol = (a, b2, d2) => (c._QTS_NewSymbol = Y2.$)(a, b2, d2), c._QTS_GetSymbolDescriptionOrKey = (a, b2) => (c._QTS_GetSymbolDescriptionOrKey = Y2.aa)(a, b2), c._QTS_IsGlobalSymbol = (a, b2) => (c._QTS_IsGlobalSymbol = Y2.ba)(a, b2), c._QTS_IsJobPending = (a) => (c._QTS_IsJobPending = Y2.ca)(a), c._QTS_ExecutePendingJob = (a, b2, d2) => (c._QTS_ExecutePendingJob = Y2.da)(a, b2, d2), c._QTS_GetProp = (a, b2, d2) => (c._QTS_GetProp = Y2.ea)(a, b2, d2), c._QTS_GetPropNumber = (a, b2, d2) => (c._QTS_GetPropNumber = Y2.fa)(a, b2, d2), c._QTS_SetProp = (a, b2, d2, e) => (c._QTS_SetProp = Y2.ga)(a, b2, d2, e), c._QTS_DefineProp = (a, b2, d2, e, g, h28, k, l3, v2) => (c._QTS_DefineProp = Y2.ha)(a, b2, d2, e, g, h28, k, l3, v2), c._QTS_GetOwnPropertyNames = (a, b2, d2, e, g) => (c._QTS_GetOwnPropertyNames = Y2.ia)(a, b2, d2, e, g), c._QTS_Call = (a, b2, d2, e, g) => (c._QTS_Call = Y2.ja)(a, b2, d2, e, g), c._QTS_ResolveException = (a, b2) => (c._QTS_ResolveException = Y2.ka)(a, b2), c._QTS_Dump = (a, b2) => (c._QTS_Dump = Y2.la)(a, b2), c._QTS_Eval = (a, b2, d2, e, g, h28) => (c._QTS_Eval = Y2.ma)(a, b2, d2, e, g, h28), c._QTS_GetModuleNamespace = (a, b2) => (c._QTS_GetModuleNamespace = Y2.na)(a, b2), c._QTS_Typeof = (a, b2) => (c._QTS_Typeof = Y2.oa)(a, b2), c._QTS_GetLength = (a, b2, d2) => (c._QTS_GetLength = Y2.pa)(a, b2, d2), c._QTS_IsEqual = (a, b2, d2, e) => (c._QTS_IsEqual = Y2.qa)(a, b2, d2, e), c._QTS_GetGlobalObject = (a) => (c._QTS_GetGlobalObject = Y2.ra)(a), c._QTS_NewPromiseCapability = (a, b2) => (c._QTS_NewPromiseCapability = Y2.sa)(a, b2), c._QTS_PromiseState = (a, b2) => (c._QTS_PromiseState = Y2.ta)(a, b2), c._QTS_PromiseResult = (a, b2) => (c._QTS_PromiseResult = Y2.ua)(a, b2), c._QTS_TestStringArg = (a) => (c._QTS_TestStringArg = Y2.va)(a), c._QTS_GetDebugLogEnabled = (a) => (c._QTS_GetDebugLogEnabled = Y2.wa)(a), c._QTS_SetDebugLogEnabled = (a, b2) => (c._QTS_SetDebugLogEnabled = Y2.xa)(a, b2), c._QTS_BuildIsDebug = () => (c._QTS_BuildIsDebug = Y2.ya)(), c._QTS_BuildIsAsyncify = () => (c._QTS_BuildIsAsyncify = Y2.za)(), c._QTS_NewFunction = (a, b2, d2) => (c._QTS_NewFunction = Y2.Aa)(a, b2, d2), c._QTS_ArgvGetJSValueConstPointer = (a, b2) => (c._QTS_ArgvGetJSValueConstPointer = Y2.Ba)(a, b2), c._QTS_RuntimeEnableInterruptHandler = (a) => (c._QTS_RuntimeEnableInterruptHandler = Y2.Ca)(a), c._QTS_RuntimeDisableInterruptHandler = (a) => (c._QTS_RuntimeDisableInterruptHandler = Y2.Da)(a), c._QTS_RuntimeEnableModuleLoader = (a, b2) => (c._QTS_RuntimeEnableModuleLoader = Y2.Ea)(a, b2), c._QTS_RuntimeDisableModuleLoader = (a) => (c._QTS_RuntimeDisableModuleLoader = Y2.Fa)(a), c._QTS_bjson_encode = (a, b2) => (c._QTS_bjson_encode = Y2.Ga)(a, b2), c._QTS_bjson_decode = (a, b2) => (c._QTS_bjson_decode = Y2.Ha)(a, b2);
+        c._malloc = (a) => (c._malloc = Y2.u)(a), c._QTS_Throw = (a, b2) => (c._QTS_Throw = Y2.v)(a, b2), c._QTS_NewError = (a) => (c._QTS_NewError = Y2.w)(a), c._QTS_RuntimeSetMemoryLimit = (a, b2) => (c._QTS_RuntimeSetMemoryLimit = Y2.x)(a, b2), c._QTS_RuntimeComputeMemoryUsage = (a, b2) => (c._QTS_RuntimeComputeMemoryUsage = Y2.y)(a, b2), c._QTS_RuntimeDumpMemoryUsage = (a) => (c._QTS_RuntimeDumpMemoryUsage = Y2.z)(a), c._QTS_RecoverableLeakCheck = () => (c._QTS_RecoverableLeakCheck = Y2.A)(), c._QTS_BuildIsSanitizeLeak = () => (c._QTS_BuildIsSanitizeLeak = Y2.B)(), c._QTS_RuntimeSetMaxStackSize = (a, b2) => (c._QTS_RuntimeSetMaxStackSize = Y2.C)(a, b2), c._QTS_GetUndefined = () => (c._QTS_GetUndefined = Y2.D)(), c._QTS_GetNull = () => (c._QTS_GetNull = Y2.E)(), c._QTS_GetFalse = () => (c._QTS_GetFalse = Y2.F)(), c._QTS_GetTrue = () => (c._QTS_GetTrue = Y2.G)(), c._QTS_NewRuntime = () => (c._QTS_NewRuntime = Y2.H)(), c._QTS_FreeRuntime = (a) => (c._QTS_FreeRuntime = Y2.I)(a), c._free = (a) => (c._free = Y2.J)(a), c._QTS_NewContext = (a, b2) => (c._QTS_NewContext = Y2.K)(a, b2), c._QTS_FreeContext = (a) => (c._QTS_FreeContext = Y2.L)(a), c._QTS_FreeValuePointer = (a, b2) => (c._QTS_FreeValuePointer = Y2.M)(a, b2), c._QTS_FreeValuePointerRuntime = (a, b2) => (c._QTS_FreeValuePointerRuntime = Y2.N)(a, b2), c._QTS_FreeVoidPointer = (a, b2) => (c._QTS_FreeVoidPointer = Y2.O)(a, b2), c._QTS_FreeCString = (a, b2) => (c._QTS_FreeCString = Y2.P)(a, b2), c._QTS_DupValuePointer = (a, b2) => (c._QTS_DupValuePointer = Y2.Q)(a, b2), c._QTS_NewObject = (a) => (c._QTS_NewObject = Y2.R)(a), c._QTS_NewObjectProto = (a, b2) => (c._QTS_NewObjectProto = Y2.S)(a, b2), c._QTS_NewArray = (a) => (c._QTS_NewArray = Y2.T)(a), c._QTS_NewArrayBuffer = (a, b2, d2) => (c._QTS_NewArrayBuffer = Y2.U)(a, b2, d2), c._QTS_NewFloat64 = (a, b2) => (c._QTS_NewFloat64 = Y2.V)(a, b2), c._QTS_GetFloat64 = (a, b2) => (c._QTS_GetFloat64 = Y2.W)(a, b2), c._QTS_NewString = (a, b2) => (c._QTS_NewString = Y2.X)(a, b2), c._QTS_GetString = (a, b2) => (c._QTS_GetString = Y2.Y)(a, b2), c._QTS_GetArrayBuffer = (a, b2) => (c._QTS_GetArrayBuffer = Y2.Z)(a, b2), c._QTS_GetArrayBufferLength = (a, b2) => (c._QTS_GetArrayBufferLength = Y2._)(a, b2), c._QTS_NewSymbol = (a, b2, d2) => (c._QTS_NewSymbol = Y2.$)(a, b2, d2), c._QTS_GetSymbolDescriptionOrKey = (a, b2) => (c._QTS_GetSymbolDescriptionOrKey = Y2.aa)(a, b2), c._QTS_IsGlobalSymbol = (a, b2) => (c._QTS_IsGlobalSymbol = Y2.ba)(a, b2), c._QTS_IsJobPending = (a) => (c._QTS_IsJobPending = Y2.ca)(a), c._QTS_ExecutePendingJob = (a, b2, d2) => (c._QTS_ExecutePendingJob = Y2.da)(a, b2, d2), c._QTS_GetProp = (a, b2, d2) => (c._QTS_GetProp = Y2.ea)(a, b2, d2), c._QTS_GetPropNumber = (a, b2, d2) => (c._QTS_GetPropNumber = Y2.fa)(a, b2, d2), c._QTS_SetProp = (a, b2, d2, e) => (c._QTS_SetProp = Y2.ga)(a, b2, d2, e), c._QTS_DefineProp = (a, b2, d2, e, g, h30, k, l3, v2) => (c._QTS_DefineProp = Y2.ha)(a, b2, d2, e, g, h30, k, l3, v2), c._QTS_GetOwnPropertyNames = (a, b2, d2, e, g) => (c._QTS_GetOwnPropertyNames = Y2.ia)(a, b2, d2, e, g), c._QTS_Call = (a, b2, d2, e, g) => (c._QTS_Call = Y2.ja)(a, b2, d2, e, g), c._QTS_ResolveException = (a, b2) => (c._QTS_ResolveException = Y2.ka)(a, b2), c._QTS_Dump = (a, b2) => (c._QTS_Dump = Y2.la)(a, b2), c._QTS_Eval = (a, b2, d2, e, g, h30) => (c._QTS_Eval = Y2.ma)(a, b2, d2, e, g, h30), c._QTS_GetModuleNamespace = (a, b2) => (c._QTS_GetModuleNamespace = Y2.na)(a, b2), c._QTS_Typeof = (a, b2) => (c._QTS_Typeof = Y2.oa)(a, b2), c._QTS_GetLength = (a, b2, d2) => (c._QTS_GetLength = Y2.pa)(a, b2, d2), c._QTS_IsEqual = (a, b2, d2, e) => (c._QTS_IsEqual = Y2.qa)(a, b2, d2, e), c._QTS_GetGlobalObject = (a) => (c._QTS_GetGlobalObject = Y2.ra)(a), c._QTS_NewPromiseCapability = (a, b2) => (c._QTS_NewPromiseCapability = Y2.sa)(a, b2), c._QTS_PromiseState = (a, b2) => (c._QTS_PromiseState = Y2.ta)(a, b2), c._QTS_PromiseResult = (a, b2) => (c._QTS_PromiseResult = Y2.ua)(a, b2), c._QTS_TestStringArg = (a) => (c._QTS_TestStringArg = Y2.va)(a), c._QTS_GetDebugLogEnabled = (a) => (c._QTS_GetDebugLogEnabled = Y2.wa)(a), c._QTS_SetDebugLogEnabled = (a, b2) => (c._QTS_SetDebugLogEnabled = Y2.xa)(a, b2), c._QTS_BuildIsDebug = () => (c._QTS_BuildIsDebug = Y2.ya)(), c._QTS_BuildIsAsyncify = () => (c._QTS_BuildIsAsyncify = Y2.za)(), c._QTS_NewFunction = (a, b2, d2) => (c._QTS_NewFunction = Y2.Aa)(a, b2, d2), c._QTS_ArgvGetJSValueConstPointer = (a, b2) => (c._QTS_ArgvGetJSValueConstPointer = Y2.Ba)(a, b2), c._QTS_RuntimeEnableInterruptHandler = (a) => (c._QTS_RuntimeEnableInterruptHandler = Y2.Ca)(a), c._QTS_RuntimeDisableInterruptHandler = (a) => (c._QTS_RuntimeDisableInterruptHandler = Y2.Da)(a), c._QTS_RuntimeEnableModuleLoader = (a, b2) => (c._QTS_RuntimeEnableModuleLoader = Y2.Ea)(a, b2), c._QTS_RuntimeDisableModuleLoader = (a) => (c._QTS_RuntimeDisableModuleLoader = Y2.Fa)(a), c._QTS_bjson_encode = (a, b2) => (c._QTS_bjson_encode = Y2.Ga)(a, b2), c._QTS_bjson_decode = (a, b2) => (c._QTS_bjson_decode = Y2.Ha)(a, b2);
         var za = (a, b2) => (za = Y2.Ja)(a, b2), xa = (a) => (xa = Y2.Ka)(a), X2 = (a) => (X2 = Y2.La)(a), wa = () => (wa = Y2.Ma)();
         c.cwrap = (a, b2, d2, e) => {
-          var g = !d2 || d2.every((h28) => h28 === "number" || h28 === "boolean");
-          return b2 !== "string" && g && !e ? c["_" + a] : (...h28) => ya(a, b2, d2, h28);
+          var g = !d2 || d2.every((h30) => h30 === "number" || h30 === "boolean");
+          return b2 !== "string" && g && !e ? c["_" + a] : (...h30) => ya(a, b2, d2, h30);
         }, c.UTF8ToString = (a, b2) => a ? R2(E2, a, b2) : "", c.stringToUTF8 = (a, b2, d2) => U2(a, b2, d2), c.lengthBytesUTF8 = va;
         var Z2;
         M = function Ba() {
@@ -15950,7 +15950,7 @@ function sourceSha256(text3) {
   view.setUint32(length - 8, Math.floor(bits / 4294967296));
   view.setUint32(length - 4, bits >>> 0);
   const k = [1116352408, 1899447441, 3049323471, 3921009573, 961987163, 1508970993, 2453635748, 2870763221, 3624381080, 310598401, 607225278, 1426881987, 1925078388, 2162078206, 2614888103, 3248222580, 3835390401, 4022224774, 264347078, 604807628, 770255983, 1249150122, 1555081692, 1996064986, 2554220882, 2821834349, 2952996808, 3210313671, 3336571891, 3584528711, 113926993, 338241895, 666307205, 773529912, 1294757372, 1396182291, 1695183700, 1986661051, 2177026350, 2456956037, 2730485921, 2820302411, 3259730800, 3345764771, 3516065817, 3600352804, 4094571909, 275423344, 430227734, 506948616, 659060556, 883997877, 958139571, 1322822218, 1537002063, 1747873779, 1955562222, 2024104815, 2227730452, 2361852424, 2428436474, 2756734187, 3204031479, 3329325298];
-  const h28 = [1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225], w = new Uint32Array(64);
+  const h30 = [1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225], w = new Uint32Array(64);
   const r = (x2, n) => x2 >>> n | x2 << 32 - n;
   for (let offset2 = 0; offset2 < length; offset2 += 64) {
     for (let i3 = 0; i3 < 16; i3++) w[i3] = view.getUint32(offset2 + i3 * 4);
@@ -15958,7 +15958,7 @@ function sourceSha256(text3) {
       const a2 = w[i3 - 15], b3 = w[i3 - 2];
       w[i3] = (r(a2, 7) ^ r(a2, 18) ^ a2 >>> 3) + w[i3 - 16] + (r(b3, 17) ^ r(b3, 19) ^ b3 >>> 10) + w[i3 - 7] >>> 0;
     }
-    let [a, b2, c, d2, e, f2, g, j2] = h28;
+    let [a, b2, c, d2, e, f2, g, j2] = h30;
     for (let i3 = 0; i3 < 64; i3++) {
       const t1 = j2 + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + (e & f2 ^ ~e & g) + k[i3] + w[i3] >>> 0, t2 = (r(a, 2) ^ r(a, 13) ^ r(a, 22)) + (a & b2 ^ a & c ^ b2 & c) >>> 0;
       j2 = g;
@@ -15970,9 +15970,9 @@ function sourceSha256(text3) {
       b2 = a;
       a = t1 + t2 >>> 0;
     }
-    for (const [i3, value] of [a, b2, c, d2, e, f2, g, j2].entries()) h28[i3] = h28[i3] + value >>> 0;
+    for (const [i3, value] of [a, b2, c, d2, e, f2, g, j2].entries()) h30[i3] = h30[i3] + value >>> 0;
   }
-  return h28.map((value) => value.toString(16).padStart(8, "0")).join("");
+  return h30.map((value) => value.toString(16).padStart(8, "0")).join("");
 }
 
 // packages/client/src/play/html-loader-adapters.js
@@ -16168,8 +16168,8 @@ function loadWrapper(source) {
   const match = body2.match(/^<body\s*>\s*<script\s*>\s*(?:\$|jQuery)\(\s*(['"])body\1\s*\)\.load\(\s*(['"])([^'"\n]+)\2\s*\)\s*;?\s*<\/script>\s*<\/body>$/i);
   return match ? { raw: match[3], url: externalUrl(match[3]) } : null;
 }
-function helperScripts(resource) {
-  const raw = resource?.source?.raw ?? resource;
+function helperScripts(resource2) {
+  const raw = resource2?.source?.raw ?? resource2;
   let helper = raw?.data?.extensions?.tavern_helper ?? raw?.extensions?.tavern_helper;
   if (Array.isArray(helper)) helper = Object.fromEntries(helper.filter((entry) => Array.isArray(entry) && entry.length === 2 && ["scripts", "variables"].includes(entry[0])));
   const result = [];
@@ -16186,10 +16186,10 @@ function helperScripts(resource) {
   visit3(helper?.scripts);
   return result;
 }
-function renderingInventory(resource, { kind, resourceId }) {
-  const raw = resource?.source?.raw ?? resource;
+function renderingInventory(resource2, { kind, resourceId }) {
+  const raw = resource2?.source?.raw ?? resource2;
   const owner = `${kind}:${resourceId}`;
-  const scripts = helperScripts(resource).map((script2) => ({ ...script2, owner, kind: "helper", key: `${owner}:${script2.path}` }));
+  const scripts = helperScripts(resource2).map((script2) => ({ ...script2, owner, kind: "helper", key: `${owner}:${script2.path}` }));
   const cardData = raw?.data ?? raw;
   for (const [path3, content] of [["first_mes", cardData?.first_mes], ...Array.isArray(cardData?.alternate_greetings) ? cardData.alternate_greetings.slice(0, 128).map((text3, index) => [`alternate_greetings[${index}]`, text3]) : []]) {
     if (typeof content === "string" && /<(?:body|html|script)\b/i.test(content)) scripts.push({ owner, key: `${owner}:${path3}`, path: path3, kind: "greeting", name: path3, content, enabled: true });
@@ -16245,8 +16245,8 @@ async function identifyRenderingSources(sources) {
 }
 async function readRenderingWorkspace(client, read) {
   const owner = await globalRenderingOwner(client);
-  const resource = await read();
-  return { owner: owner === await globalRenderingOwner(client) ? owner : null, resource };
+  const resource2 = await read();
+  return { owner: owner === await globalRenderingOwner(client) ? owner : null, resource: resource2 };
 }
 
 // packages/client/src/play/rendering-selection.js
@@ -17535,8 +17535,8 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
   } };
 }
 var renderingDependencies = createRenderingDependencies();
-async function offerRenderingDependencies(resource, kind, resourceId, { confirm = (message2) => globalThis.confirm(message2), message, dependencies = renderingDependencies } = {}) {
-  const sources = await identifyRenderingSources(renderingInventory(resource, { kind, resourceId }));
+async function offerRenderingDependencies(resource2, kind, resourceId, { confirm = (message2) => globalThis.confirm(message2), message, dependencies = renderingDependencies } = {}) {
+  const sources = await identifyRenderingSources(renderingInventory(resource2, { kind, resourceId }));
   await dependencies.sync(sources);
   const roots = dependencies.inspect(`${kind}:${resourceId}`).items.map((item) => item.url ?? item.key);
   if (!roots.length) return;
@@ -17561,6 +17561,35 @@ function isSupportedUiLocale(value) {
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
+  "play.draft.sendFailed": "\u53D1\u9001\u5931\u8D25\uFF1A{message}",
+  "play.draft.bind": "\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u5468\u76EE",
+  "play.draft.unbind": "\u89E3\u9664\u5F53\u524D\u5F00\u573A\u9009\u62E9",
+  "play.draft.unboundPreset": "\u5F53\u524D\u5F00\u573A\u5468\u76EE\u672A\u9009\u62E9\u9884\u8BBE\u3002",
+  "play.draft.boundPreset": "\u5F53\u524D\u5F00\u573A\u5468\u76EE\u4F7F\u7528\uFF1A{name}",
+  "play.draft.browsingPreset": "\u6B63\u5728\u6D4F\u89C8\u201C{name}\u201D\uFF1B\u5B83\u5C1A\u672A\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u5468\u76EE\u3002",
+  "play.draft.launcherHint": "\u9884\u8BBE\u3001\u7528\u6237\u3001\u4E16\u754C\u4E66\u548C\u88C5\u914D\u7B56\u7565\u5728 DT \u60AC\u6D6E\u7403\u4E2D\u9009\u62E9\uFF1B\u60AC\u6D6E\u7403\u663E\u793A\u5F53\u524D\u5F00\u573A\u5468\u76EE\u7684\u914D\u7F6E\u3002",
+  "play.draft.characterHint": "\u5F53\u524D\u5F00\u573A\u5468\u76EE\u7684\u89D2\u8272\u56FA\u5B9A\u3002\u53EF\u8C03\u6574\u8FD9\u4E2A\u89D2\u8272\u7684\u5F00\u573A\u9009\u9879\uFF1B\u66F4\u6362\u89D2\u8272\u8BF7\u65B0\u5EFA\u5468\u76EE\u3002",
+  "play.draft.opening": "\u5468\u76EE\u5F00\u573A",
+  "play.draft.notStarted": "\u5C1A\u672A\u5F00\u59CB\u5BF9\u8BDD",
+  "play.draft.settings": "\u5F00\u573A\u914D\u7F6E",
+  "play.draft.resources": "\u8D44\u6E90\u4E0E\u88C5\u914D\u7B56\u7565",
+  "play.draft.assembly": "\u88C5\u914D\u7B56\u7565",
+  "play.draft.none": "\u4E0D\u4F7F\u7528",
+  "play.draft.snapshotHint": "\u8D44\u6E90\u9009\u62E9\u548C\u88C5\u914D\u7B56\u7565\u4FDD\u5B58\u5728\u8FD9\u4E2A\u5468\u76EE\u4E2D\uFF0C\u9996\u6B21\u53D1\u9001\u65F6\u63A5\u5165\u4F1A\u8BDD\u3002\u4FEE\u6539\u7B56\u7565\u5E93\u4E0D\u4F1A\u6539\u52A8\u8FD9\u91CC\u5DF2\u4FDD\u5B58\u7684\u88C5\u914D\u5FEB\u7167\uFF1B\u91CD\u65B0\u9009\u62E9\u7B56\u7565\u624D\u4F1A\u66F4\u65B0\u3002",
+  "play.draft.variables": "\u5F00\u573A\u53D8\u91CF",
+  "play.draft.variablesHint": "\u521D\u59CB\u503C\u6765\u81EA\u89D2\u8272\u5361\u7684 [initvar]\u3001MVU schema \u548C\u5F53\u524D\u5F00\u573A\u7684\u53D8\u91CF\u66F4\u65B0\u3002\u5404\u5F00\u573A\u72EC\u7ACB\u4FDD\u5B58\u4FEE\u6539\uFF1B\u8FD9\u91CC\u7F16\u8F91 stat_data\uFF0C\u4E0D\u4FEE\u6539\u89D2\u8272\u5361\uFF0C\u4FDD\u5B58\u65F6\u4ECD\u6309\u6765\u6E90 schema \u6821\u9A8C\u3002\u91CD\u65B0\u8BFB\u53D6\u4F1A\u66FF\u6362\u5F53\u524D\u5F00\u573A\u7684\u4FEE\u6539\u3002",
+  "play.draft.saveVariables": "\u4FDD\u5B58\u53D8\u91CF",
+  "play.draft.resetVariables": "\u91CD\u65B0\u8BFB\u53D6\u672C\u5F00\u573A\u521D\u59CB\u503C",
+  "play.draft.import": "\u5BFC\u5165\u5BF9\u8BDD\u8BB0\u5F55",
+  "play.draft.importFile": "\u5BFC\u5165 JSONL",
+  "play.draft.removeImport": "\u89E3\u9664\u5BFC\u5165\u8BB0\u5F55",
+  "play.draft.importLimit": "\u5BFC\u5165\u8BB0\u5F55\u4E0D\u80FD\u8D85\u8FC7 2 MiB",
+  "play.draft.input": "\u8F93\u5165\u7B2C\u4E00\u6761\u6D88\u606F",
+  "play.draft.sendHint": "\u53D1\u9001\u540E\u5373\u53EF\u5F00\u59CB\u5BF9\u8BDD\uFF1B\u5931\u8D25\u65F6\u4FDD\u7559\u5F00\u573A\u914D\u7F6E\u548C\u8F93\u5165\u3002",
+  "play.draft.send": "\u53D1\u9001",
+  "play.draft.cancel": "\u53D6\u6D88",
+  "play.draft.cancelled": "\u5DF2\u53D6\u6D88\u53D1\u9001\uFF0C\u5F00\u573A\u914D\u7F6E\u548C\u8F93\u5165\u5DF2\u4FDD\u7559\u3002",
+  "play.draft.busy": "\u6B63\u5728\u53D1\u9001\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5\u3002",
   "trace.mvu.management.native": "\u7BA1\u7406\u65B9\uFF1ATavern",
   "trace.mvu.management.managed": "\u7BA1\u7406\u65B9\uFF1A\u8BB0\u5FC6\u7BA1\u7406\u5668",
   "trace.mvu.management.unknown": "\u7BA1\u7406\u65B9\uFF1A\u672A\u8BB0\u5F55",
@@ -18013,7 +18042,7 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.other": "\u666E\u901A / \u975E\u89D2\u8272\u626E\u6F14\u4F1A\u8BDD",
   "play.sidebar.otherEmpty": "\u6682\u65E0\u666E\u901A\u6216\u5916\u90E8\u4F1A\u8BDD\u3002",
   "play.sidebar.createOrdinary": "\u65B0\u5EFA\u666E\u901A\u4F1A\u8BDD",
-  "play.sidebar.ordinaryPrompt": "\u666E\u901A\u4F1A\u8BDD\u8BF7\u5728 DSH \u539F\u751F\u6A21\u5F0F\u4E2D\u521B\u5EFA\u3002\u8FD4\u56DE\u539F\u751F\u6A21\u5F0F\u540E\uFF0C\u53EF\u4F7F\u7528\u4FA7\u8FB9\u680F\u5916\u5C42\u7684\u201C\u65B0\u5EFA\u4F1A\u8BDD\u201D\u6309\u94AE\u3002",
+  "play.sidebar.ordinaryPrompt": "\u666E\u901A\u4F1A\u8BDD\u8BF7\u8FD4\u56DE DSH \u539F\u751F\u6A21\u5F0F\uFF0C\u9009\u62E9\u975E RP \u5DE5\u4F5C\u533A\u540E\uFF0C\u4F7F\u7528\u4FA7\u8FB9\u680F\u5916\u5C42\u7684\u201C\u65B0\u5EFA\u4F1A\u8BDD\u201D\u6309\u94AE\u3002",
   "play.sidebar.ordinaryClose": "\u5173\u95ED",
   "play.sidebar.returnNative": "\u56DE\u5230 DSH \u6A21\u5F0F",
   "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u5230\u6307\u5B9A RP \u5DE5\u4F5C\u533A\u5185\u7684\u5468\u76EE\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u8FDB\u5165\u89D2\u8272\u5361\u4E0B\u7684\u5468\u76EE\u540E\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5468\u76EE\u5BFC\u5165/\u5BFC\u51FA\u3002",
@@ -18089,6 +18118,10 @@ var zh_CN_default = Object.freeze({
   "settings.rpFollow.help": "\u5F00\u542F\u540E\uFF0C\u7ED1\u5B9A\u89D2\u8272\u5361\u4F1A\u8FDB\u5165\u89D2\u8272\u626E\u6F14\u5E76\u628A\u6587\u4EF6\u6C99\u7BB1\u9489\u5728\u53EA\u8BFB\u3002\u5199\u5165\u3001\u7EC8\u7AEF\u3001\u5916\u8FDE\u548C\u5DE5\u4F5C\u533A\u5916\u6216\u673A\u5BC6\u6587\u4EF6\u8BFB\u53D6\u4F1A\u88AB\u62E6\u4F4F\u5E76\u4E2D\u65AD\u8BE5 agent\uFF1B\u5B50 agent \u53EF\u4EE5\u6D3E\uFF0C\u4F46\u540C\u6837\u53D7\u9650\u5236\u3002\u804A\u5929\u680F\u6539\u6743\u9650\u65E0\u6548\u3002\u8981\u505A\u8FD9\u4E9B\u4E8B\u5FC5\u987B\u5148\u5173\u6389 RP\uFF08\u6216 /rp off\uFF09\u3002",
   "settings.rpWorkspace": "\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A",
   "settings.rpWorkspace.help": "\u65B0\u5EFA\u5468\u76EE\u9ED8\u8BA4\u4F7F\u7528\u6B64\u5DE5\u4F5C\u533A\u3002\u66F4\u6539\u53EA\u5F71\u54CD\u4E4B\u540E\u7684\u9ED8\u8BA4\u843D\u70B9\u548C RP \u4F1A\u8BDD\u5206\u7C7B\uFF0C\u4E0D\u79FB\u52A8\u5DF2\u6709\u4F1A\u8BDD\u3001\u76EE\u5F55\u6216\u5468\u76EE\u3002",
+  "settings.rpWorkspace.warningTitle": "RP \u5DE5\u4F5C\u533A\u4E0E\u666E\u901A\u4F1A\u8BDD",
+  "settings.rpWorkspace.warningUse": "\u4E0D\u5EFA\u8BAE\u5728 RP \u5DE5\u4F5C\u533A\u5185\u65B0\u5EFA\u666E\u901A\u4F1A\u8BDD\uFF0C\u8BF7\u4F7F\u7528\u5355\u72EC\u7684\u5DE5\u4F5C\u533A\u3002\u82E5\u4ECD\u8981\u8FD9\u6837\u4F7F\u7528\uFF0C\u8BF7\u5728\u5378\u8F7D\u524D\u89E3\u7ED1\u5BF9\u5E94\u4F1A\u8BDD\u7684\u89D2\u8272\u5361\u3001\u9884\u8BBE\u3001\u4E16\u754C\u4E66\u548C\u7528\u6237\u8BBE\u5B9A\uFF0C\u5173\u95ED RP\uFF0C\u5E76\u68C0\u67E5\u88C5\u914D\u5668\u5DF2\u5E94\u7528\u7684\u6765\u6E90\u3002",
+  "settings.rpWorkspace.warningResidue": "\u5378\u8F7D Tavern \u4F1A\u4FDD\u7559\u4F1A\u8BDD\u6807\u9898\u3001\u8D44\u6E90\u9009\u62E9\u548C\u5468\u76EE\u8BB0\u5F55\u3002DSH \u53EF\u80FD\u590D\u7528\u5C1A\u672A\u5F00\u59CB\u5BF9\u8BDD\u7684\u7A7A\u4F1A\u8BDD\uFF0C\u91CD\u88C5\u540E\u65E7\u7ED1\u5B9A\u548C\u5F52\u7C7B\u53EF\u80FD\u518D\u6B21\u51FA\u73B0\uFF1B\u89E3\u7ED1\u8D44\u6E90\u4E5F\u4E0D\u4F1A\u81EA\u52A8\u66F4\u6539\u65E7\u6807\u9898\u3002",
+  "settings.rpWorkspace.warningClose": "\u5173\u95ED RP \u5DE5\u4F5C\u533A\u4F7F\u7528\u63D0\u9192",
   "settings.rpWorkspace.unselected": "\u5C1A\u672A\u9009\u62E9 RP \u5DE5\u4F5C\u533A",
   "settings.rpWorkspace.unavailable": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u4E0D\u5728 DSH \u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\uFF1A{path}",
   "settings.rpWorkspace.none": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u5DE5\u4F5C\u533A",
@@ -18630,6 +18663,35 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
+  "play.draft.sendFailed": "Could not send: {message}",
+  "play.draft.bind": "Apply to this opening playthrough",
+  "play.draft.unbind": "Clear this opening selection",
+  "play.draft.unboundPreset": "This opening playthrough has no preset selected.",
+  "play.draft.boundPreset": "Opening preset: {name}",
+  "play.draft.browsingPreset": "Browsing \u201C{name}\u201D; it is not applied to this opening playthrough.",
+  "play.draft.launcherHint": "Choose the preset, user, world books and assembly strategy in the DT launcher. It shows this opening playthrough\u2019s configuration, which transfers to the real session on first send.",
+  "play.draft.characterHint": "The character belongs to this opening playthrough. You can adjust its opening options; start another playthrough to change character.",
+  "play.draft.opening": "Playthrough opening",
+  "play.draft.notStarted": "Conversation not started",
+  "play.draft.settings": "Opening settings",
+  "play.draft.resources": "Resources and assembly policy",
+  "play.draft.assembly": "Assembly policy",
+  "play.draft.none": "None",
+  "play.draft.snapshotHint": "This playthrough saves its resource selection and assembly policy for first send. Editing the policy library does not change the saved snapshot; select the policy again to refresh it.",
+  "play.draft.variables": "Opening variables",
+  "play.draft.variablesHint": "Initial values come from the character\u2019s [initvar], MVU schema and selected greeting updates. Each opening keeps its own edits. Edit stat_data here without changing the card; saving still validates the source schema. Reload replaces edits in this opening.",
+  "play.draft.saveVariables": "Save variables",
+  "play.draft.resetVariables": "Reload this opening\u2019s initial values",
+  "play.draft.import": "Imported dialogue",
+  "play.draft.importFile": "Import JSONL",
+  "play.draft.removeImport": "Unbind imported dialogue",
+  "play.draft.importLimit": "Imported dialogue must not exceed 2 MiB",
+  "play.draft.input": "Enter the first message",
+  "play.draft.sendHint": "Send to start the conversation. Settings and input are retained if sending fails.",
+  "play.draft.send": "Send",
+  "play.draft.cancel": "Cancel",
+  "play.draft.cancelled": "Send cancelled. Opening settings and input are retained.",
+  "play.draft.busy": "Sending. Please wait.",
   "trace.mvu.management.native": "Managed by Tavern",
   "trace.mvu.management.managed": "Managed by memory manager",
   "trace.mvu.management.unknown": "Management owner not recorded",
@@ -19082,7 +19144,7 @@ var en_default = Object.freeze({
   "play.sidebar.other": "Regular / non-role-play sessions",
   "play.sidebar.otherEmpty": "No regular or external sessions.",
   "play.sidebar.createOrdinary": "Create an ordinary session",
-  "play.sidebar.ordinaryPrompt": "Create ordinary sessions in DSH native mode. Return to native mode, then use the outer New Session button in the sidebar.",
+  "play.sidebar.ordinaryPrompt": "Return to DSH native mode, choose a non-RP workspace, then use the outer New Session button in the sidebar for ordinary sessions.",
   "play.sidebar.ordinaryClose": "Close",
   "play.sidebar.returnNative": "Return to DSH mode",
   "play.notice.unbound": "This session is not attached to a playthrough in the selected RP workspace. You can keep chatting normally; enter a character playthrough to enable greetings, swipes, display edits, and playthrough import/export.",
@@ -19158,6 +19220,10 @@ var en_default = Object.freeze({
   "settings.rpFollow.help": "When enabled, binding a character card enters roleplay and pins the file sandbox to read-only. Writes, shell, outbound fetch, and reads outside the workspace or of secret files are refused and that agent is cancelled. Subagents may still be spawned and inherit the same lock. The chat permission chip cannot override this; turn RP off on the character card (or /rp off) first.",
   "settings.rpWorkspace": "Default RP workspace",
   "settings.rpWorkspace.help": "New playthroughs use this workspace by default. Changing it only affects future placement and RP-session classification; it does not move existing sessions, directories, or playthroughs.",
+  "settings.rpWorkspace.warningTitle": "RP workspaces and ordinary sessions",
+  "settings.rpWorkspace.warningUse": "Use a separate workspace for ordinary sessions. If you still use the RP workspace, unbind the session\u2019s character card, preset, world books and user persona before uninstalling, turn RP off, and check the assembler\u2019s applied sources.",
+  "settings.rpWorkspace.warningResidue": "Uninstalling Tavern retains session titles, resource selections and playthrough records. DSH may reuse a blank session that has not started a turn; reinstalling can restore its old bindings and grouping. Unbinding resources does not rename the session.",
+  "settings.rpWorkspace.warningClose": "Dismiss RP workspace usage notice",
   "settings.rpWorkspace.unselected": "No RP workspace selected",
   "settings.rpWorkspace.unavailable": "The current binding is no longer in the DSH workspace list: {path}",
   "settings.rpWorkspace.none": "No DSH workspaces are available",
@@ -19784,7 +19850,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement18) {
+function createLocalizedElement(createElement19) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -19793,7 +19859,7 @@ function createLocalizedElement(createElement18) {
         if (isRawText(localizedProps[key2])) localizedProps[key2] = localizedProps[key2].value;
       }
     }
-    return createElement18(type, localizedProps, ...children.map(localizeChild));
+    return createElement19(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -20820,6 +20886,101 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
 // packages/client/src/entry.js
 var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
 
+// packages/client/src/play/draft-resources.js
+function createDraftResourceTarget({ client, draftId, label, fetcher = tavernFetch }) {
+  let current4;
+  const resource2 = async (path3, options) => {
+    const response = await fetcher(`${API_V1}${path3}`, { ...options, ...options?.body ? { headers: { "Content-Type": "application/json", ...options.headers } } : {} }), data3 = await response.json();
+    if (!response.ok || data3?.ok === false) throw new Error(data3?.error?.message ?? data3?.error ?? `HTTP ${response.status}`);
+    return data3;
+  };
+  const read = async () => {
+    current4 = await client.getDraft(draftId);
+    return current4.draft;
+  };
+  const patch = async (draft, value) => {
+    current4 = await client.putDraft(draftId, { ...value, expectedRevision: draft.revision });
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    return current4.draft;
+  };
+  const active = async () => {
+    const draft = await read(), selection = draft.selection;
+    const [preset, character, user, books, userBooks, presetBooks, characterBooks] = await Promise.all([
+      selection.presetId ? resource2(`/presets/${encodeURIComponent(selection.presetId)}`) : null,
+      resource2(`/characters/${encodeURIComponent(selection.characterCardId)}`),
+      selection.userId ? resource2(`/users/${encodeURIComponent(selection.userId)}`) : null,
+      resource2("/world-books"),
+      selection.userId ? resource2(`/users/${encodeURIComponent(selection.userId)}/world-books`) : null,
+      selection.presetId ? resource2(`/presets/${encodeURIComponent(selection.presetId)}/world-books`) : null,
+      resource2(`/characters/${encodeURIComponent(selection.characterCardId)}/world-books`)
+    ]);
+    const userBoundIds = userBooks?.binding?.worldBookIds ?? [], presetBoundIds = presetBooks?.binding?.worldBookIds ?? [], characterBoundIds = characterBooks?.binding?.worldBookIds ?? [];
+    const effectiveIds = [.../* @__PURE__ */ new Set([...selection.worldBookIds, ...userBoundIds, ...presetBoundIds, ...characterBoundIds])];
+    const worldBooks = effectiveIds.map((id) => books.worldBooks.find((book) => book.id === id) ?? { id, name: id });
+    const card = character.character, embedded = card?.data?.characterBook;
+    if (embedded && typeof embedded === "object" && !Array.isArray(embedded)) worldBooks.push({
+      id: `character:${card.id}:embedded-world-book`,
+      name: card.name || card.data?.name || "\u89D2\u8272\u5361\u4E16\u754C\u4E66",
+      ownerCharacterId: card.id,
+      kind: "embedded-character-book"
+    });
+    return {
+      selection: { ...selection, worldBookIds: effectiveIds },
+      sessionSelection: selection,
+      resources: { preset: preset?.preset ?? null, characterCard: card, user: user?.user ?? null, worldBooks },
+      worldBookSelection: { explicitIds: selection.worldBookIds, userBoundIds, presetBoundIds, characterBoundIds, effectiveIds },
+      catalog: { worldBooks: books.worldBooks }
+    };
+  };
+  return {
+    id: draftId,
+    get label() {
+      return current4?.playthrough?.title ? `${label} \xB7 ${current4.playthrough.title}` : label;
+    },
+    get editable() {
+      return !current4 || current4.draft.phase === "draft";
+    },
+    read,
+    active,
+    async getSelection() {
+      return (await read()).assembly;
+    },
+    async applyAssembly(id) {
+      const draft = await patch(await read(), { assemblyPresetId: id });
+      return { selection: draft.assembly };
+    },
+    async request(path3, options = {}) {
+      const route = path3.split("?")[0], method = options.method ?? "GET";
+      if (route === "/active") return active();
+      if (route === "/presets" && method === "GET") {
+        const [data3, draft] = await Promise.all([resource2("/presets"), read()]);
+        return { ...data3, selectedId: draft.selection.presetId };
+      }
+      if (["/select", "/user-selection", "/world-book-selection", "/character-selection", "/rp-mode"].includes(route)) {
+        const draft = await read(), selection = { ...draft.selection }, body2 = options.body ? JSON.parse(options.body) : {};
+        if (method !== "GET") {
+          if (route === "/select") selection.presetId = body2.id;
+          if (route === "/user-selection") selection.userId = body2.userId;
+          if (route === "/world-book-selection") selection.worldBookIds = body2.worldBookIds;
+          if (route === "/character-selection") {
+            if (body2.characterCardId !== selection.characterCardId) throw new Error("Start a new playthrough to change its character");
+            selection.character = body2.character;
+          }
+          if (route === "/rp-mode") throw new Error("Opening drafts are RP playthroughs");
+          await patch(draft, { selection });
+        }
+        if (route === "/character-selection") return { selection: { characterCardId: selection.characterCardId, character: selection.character } };
+        if (route === "/rp-mode") return { rp: { active: true } };
+        return { selection };
+      }
+      return resource2(path3, options);
+    }
+  };
+}
+
+// packages/client/src/index.js
+var import_react36 = require("react");
+
 // packages/client/src/conversation-panel.js
 var import_react6 = require("react");
 
@@ -21431,11 +21592,11 @@ function projectPlaySidebar({
       return missingCharacterById.get(id);
     }
     if (!characterById.has(id)) {
-      const resource = characters.find((item) => item?.id === id);
+      const resource2 = characters.find((item) => item?.id === id);
       characterById.set(id, {
         id,
         name: name2,
-        ...typeof resource?.updatedAt === "string" ? { updatedAt: resource.updatedAt } : {},
+        ...typeof resource2?.updatedAt === "string" ? { updatedAt: resource2.updatedAt } : {},
         playthroughs: [],
         unassigned: []
       });
@@ -21450,6 +21611,7 @@ function projectPlaySidebar({
   const archivedPlaythroughs = [];
   for (const playthrough of catalog2.playthroughs ?? []) {
     const rootId = rootSessionId(playthrough);
+    const draft = rootId === null && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id;
     const characterId = playthroughCharacterId(playthrough);
     if (characterId === null) continue;
     const characterReference = playthrough.ext?.pmpDshTavern ?? {};
@@ -21465,7 +21627,7 @@ function projectPlaySidebar({
         characterName: characters.find((item) => item.id === characterId)?.name ?? historicalCharacterName(playthrough, sessions, characterId),
         rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
         sessionIds: members,
-        missing: members.length === 0
+        missing: members.length === 0 && !draft
       });
       continue;
     }
@@ -21479,7 +21641,7 @@ function projectPlaySidebar({
       rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
       sessionIds: members,
       active: typeof activePlaythroughId === "string" && activePlaythroughId !== "" ? playthrough.id === activePlaythroughId : currentId !== null && members.includes(currentId),
-      missing: members.length === 0
+      missing: members.length === 0 && !draft
     });
   }
   const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
@@ -21780,6 +21942,7 @@ async function createCharacterPlaythrough(client, {
   character,
   selectionFromSessionId = null,
   configureSession = null,
+  configurationSource = null,
   reuseEmpty = true,
   now = () => /* @__PURE__ */ new Date(),
   randomUUID = () => globalThis.crypto.randomUUID()
@@ -21787,6 +21950,9 @@ async function createCharacterPlaythrough(client, {
   if (client == null) throw new TypeError("playClient.required");
   if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
   const characterId = safeSegment(character?.id, "character.id");
+  if (typeof client.postDraft === "function") {
+    return { ...await client.postDraft({ characterId, ...configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: "current", sessionId: selectionFromSessionId } } : {} }), reused: false };
+  }
   const createdAt = isoNow(now);
   const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
   const directory = `${characterId}/${playthroughId}`;
@@ -23034,6 +23200,7 @@ var labels = {
   retry: ["\u91CD\u8BD5", "Retry"],
   cancel: ["\u53D6\u6D88", "Cancel"],
   confirm: ["\u786E\u8BA4", "Confirm"],
+  withdrawnPreset: ["\u8BE5\u5185\u7F6E\u9884\u8BBE\u7684\u63D0\u4F9B\u65B9\u672A\u6CE8\u518C\u3002\u6B64\u4F1A\u8BDD\u5DF2\u5E94\u7528\u7684\u65E7\u914D\u7F6E\u4ECD\u4FDD\u7559\uFF1B\u66F4\u6539\u65F6\u8BF7\u9009\u62E9\u5F53\u524D\u53EF\u7528\u7B56\u7565\u3002", "The provider of this built-in preset is not registered. This session retains its applied configuration; choose an available strategy to change it."],
   librarySection: ["\u7B56\u7565\u5E93", "Strategy library"],
   applicationSection: ["\u4F1A\u8BDD\u5E94\u7528", "Session application"],
   rulesSection: ["\u88C5\u914D\u89C4\u5219\u4E0E\u9884\u89C8", "Assembly rules and preview"],
@@ -23098,6 +23265,7 @@ var labels = {
   appliedStatus: ["\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD", "Applied to this session"],
   unavailable: ["\u5BBF\u4E3B\u5C1A\u672A\u652F\u6301\u8BF7\u6C42\u88C5\u914D\u534F\u8BAE\u3002\u53EF\u4EE5\u7F16\u8F91\u548C\u9884\u89C8\uFF1B\u5E94\u7528\u524D\u9700\u5B89\u88C5\u6838\u5FC3\u6269\u5C55\u3002", "Editing and preview are available. Applying requires the request assembly core extension."],
   previewScope: ["\u9884\u89C8\u4F7F\u7528\u5F53\u524D\u8D44\u4EA7\u4E0E\u53EF\u8BFB\u53D6\u5386\u53F2\uFF0C\u4E0D\u542B\u5F85\u53D1\u9001\u8F93\u5165\uFF1B\u968F\u673A\u5B8F\u4F7F\u7528\u56FA\u5B9A\u6837\u4F8B\u3002\u5B9E\u9645\u8BF7\u6C42\u4EE5\u8F68\u8FF9\u4E2D\u7684\u51BB\u7ED3\u7ED3\u679C\u4E3A\u51C6\u3002", "Preview uses current assets and available history, without pending input. Random macros use a fixed sample. Recorded requests contain the frozen result."],
+  deferredSelection: ["\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u914D\u7F6E\uFF1B\u9996\u6B21\u53D1\u9001\u65F6\u63A5\u5165\u4F1A\u8BDD\u3002\u5C55\u5F00\u9884\u89C8\u9700\u771F\u5B9E\u4F1A\u8BDD\u3002", "Apply to the current opening configuration; it transfers on first send. Expanded preview requires a real session."],
   noSession: ["\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD", "Open a session first"],
   loading: ["\u52A0\u8F7D\u4E2D\u2026", "Loading\u2026"],
   close: ["\u5173\u95ED", "Close"],
@@ -23166,7 +23334,7 @@ async function request(fetcher, apiRoot, path3 = "", method = "GET", body2) {
 var assemblyCss = `
 .dta-stage{position:absolute;top:var(--dta-content-top,84px);bottom:0;left:var(--dta-content-left,0px);width:var(--dta-center-width,100%);z-index:1;pointer-events:none;background:#0005;padding:8px;box-sizing:border-box;display:flex;justify-content:center}
 .dta-stage.dta-standalone{inset:0;width:100%;z-index:100;padding:24px}.dta-launcher{font:inherit;color:inherit;border:1px solid currentColor;border-radius:8px;background:transparent;padding:7px 10px;cursor:pointer}.dta-standalone .dtv-assembly-screen{width:min(960px,100%)}.dta-section-title{font-size:15px;font-weight:600;margin:24px 0 16px;padding-top:20px;border-top:1px solid var(--dta-border)}.dta-content>.dta-section-title:first-child{margin-top:0;padding-top:0;border-top:0}.dta-interface-settings{margin-top:28px}.dta-toolbar.dta-session-controls{gap:16px 24px}.dta-session-controls label{display:flex;align-items:center;gap:12px;max-width:100%}.dtv-assembly-screen .dta-session-controls select{width:120px;flex-shrink:1}.dtv-assembly-screen .dta-session-controls label:first-child select{width:220px}@media(max-width:600px){.dta-session-controls label{flex-wrap:wrap}}
-.dtv-assembly-screen{--dta-border:color-mix(in srgb,var(--dsw-alias-label-primary,#24252b) 32%,var(--dsw-alias-bg-base,#fff));position:relative;width:min(var(--dsh-composer-card-max-width,780px),100%);pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;container-type:inline-size;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dta-border);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
+.dtv-assembly-screen{--dta-border:color-mix(in srgb,var(--dsw-alias-label-primary,#24252b) 32%,var(--dsw-alias-bg-base,#fff));position:relative;contain:paint;transform:translateZ(0);width:min(var(--dsh-composer-card-max-width,780px),100%);pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;container-type:inline-size;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dta-border);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
 .dta-confirm-shade{position:absolute;inset:0;z-index:4;background:#0006;display:grid;place-items:center;padding:20px}.dta-confirm{background:var(--dsw-alias-bg-base,#fff);border:1px solid var(--dta-border);border-radius:14px;padding:24px;max-width:100%;width:360px;box-shadow:0 10px 40px #0004}.dta-confirm p{margin:0 0 20px}.dta-confirm .dta-toolbar{justify-content:flex-end;margin:0}
 .dta-head{display:flex;justify-content:space-between;align-items:start;padding:20px 28px;border-bottom:1px solid var(--dta-border)}.dta-head{width:100%;max-width:calc(var(--dsh-composer-card-max-width,780px) + 56px);margin:auto}.dta-head h2{margin:0;font-size:22px}.dta-head p{margin:5px 0 0;opacity:.7}.dta-body{overflow:auto;padding:22px 28px 50px;flex:1}.dta-content{max-width:var(--dsh-composer-card-max-width,780px);margin:auto}.dta-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
 .dtv-assembly-screen button,.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]),.dtv-assembly-screen textarea{font:inherit;color:inherit;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));border:1px solid var(--dta-border);border-radius:9px;padding:8px 12px;min-width:0}.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]){height:40px;line-height:22px;width:100%}.dtv-assembly-screen .dta-toolbar select{width:auto;max-width:100%}.dtv-assembly-screen button{cursor:pointer}.dtv-assembly-screen button:disabled{opacity:.45;cursor:default}.dtv-assembly-screen :focus-visible{outline:2px solid #4386dc;outline-offset:2px}.dtv-assembly-screen .primary{background:#347cd2;color:white;border-color:#347cd2}.dta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.dta-grid label{display:flex;flex-direction:column;gap:5px}.dta-notice{padding:12px 15px;border-radius:10px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));margin:12px 0;overflow-wrap:anywhere}.dta-notice[data-error=true]{color:#be4747}.dta-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}.dtv-assembly-screen .dta-tabs button[aria-pressed=true]{border-color:var(--dsw-alias-state-business-primary,#4d6bfe);box-shadow:inset 0 0 0 1px var(--dsw-alias-state-business-primary,#4d6bfe);color:var(--dsw-alias-state-business-primary,#4d6bfe)}
@@ -23176,9 +23344,9 @@ var assemblyCss = `
 @media(max-width:700px){.dtv-assembly-screen{border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-summary-meta{display:none}.dta-properties>*+*{border-left:0;border-top:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding:12px 0 0}}
 `;
 function AssemblyPanel(props) {
-  return (0, import_react7.createElement)(AssemblyPanelContent, { ...props, key: props.sessionId ?? "no-session" });
+  return (0, import_react7.createElement)(AssemblyPanelContent, { ...props, key: props.selectionTarget?.id ?? props.sessionId ?? "no-session" });
 }
-function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, createSessionControls, interfaceControls, standalone = false, close: close2, registerBeforeLeave, chromeMode, locale: selectedLocale = "zh-CN", fetcher = globalThis.fetch, apiRoot = "/dsh-prompt-assembler/api/v1/assembly-presets", traceRoot, refreshEvent = "dsh-prompt-assembler:refresh" }) {
+function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCreateSession, createSessionControls, interfaceControls, standalone = false, close: close2, registerBeforeLeave, chromeMode, locale: selectedLocale = "zh-CN", fetcher = globalThis.fetch, apiRoot = "/dsh-prompt-assembler/api/v1/assembly-presets", traceRoot, refreshEvent = "dsh-prompt-assembler:refresh" }) {
   const locale = selectedLocale === "zh-CN" ? 0 : 1, t = (key2) => labels[key2]?.[locale] ?? key2;
   const [confirmation, setConfirmation] = (0, import_react7.useState)(null);
   const confirmationResolve = (0, import_react7.useRef)(null);
@@ -23232,8 +23400,9 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
     };
   }, []);
   const [reload, setReload] = (0, import_react7.useState)(0), [dragFrom, setDragFrom] = (0, import_react7.useState)(null), [dropIndex, setDropIndex] = (0, import_react7.useState)(null);
-  const api6 = async (...args) => {
-    const result = await request(fetcher, apiRoot, ...args);
+  const api2 = async (...args) => {
+    const result = selectionTarget && args[0] === "/selection" ? await selectionTarget.applyAssembly(args[2].id) : await request(fetcher, apiRoot, ...args);
+    if (selectionTarget && String(args[0]).startsWith("?")) result.selection = await selectionTarget.getSelection();
     if (!mounted.current) throw new DOMException("Panel closed", "AbortError");
     return result;
   };
@@ -23255,7 +23424,7 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
     mounted.current = true;
     const gen = ++generation.current;
     run(async () => {
-      const data3 = await api6(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
+      const data3 = await api2(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
       if (gen !== generation.current || !mounted.current) return;
       setItems(data3.presets);
       setSelection(data3.selection);
@@ -23273,27 +23442,30 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
       mounted.current = false;
       generation.current++;
     };
-  }, [sessionId, reload]);
+  }, [sessionId, selectionTarget, reload]);
   (0, import_react7.useEffect)(() => {
     const refresh = () => run(async () => {
-      const data3 = await api6(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
+      const gen = generation.current;
+      const data3 = await api2(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
+      if (gen !== generation.current || !mounted.current) return;
+      setItems(data3.presets);
       setSelection(data3.selection);
       setCapable(data3.capability);
       setSources(data3.sources ?? []);
     });
     window.addEventListener(refreshEvent, refresh);
     return () => window.removeEventListener(refreshEvent, refresh);
-  }, [sessionId, chromeMode]);
+  }, [sessionId, selectionTarget, chromeMode, refreshEvent]);
   (0, import_react7.useEffect)(() => {
     let active = true;
-    request(fetcher, apiRoot, `?sessionId=${encodeURIComponent(sessionId ?? "")}`).then((data3) => {
+    api2(`?sessionId=${encodeURIComponent(sessionId ?? "")}`).then((data3) => {
       if (active) setSelection(data3.selection);
     }).catch(() => {
     });
     return () => {
       active = false;
     };
-  }, [chromeMode, sessionId]);
+  }, [chromeMode, sessionId, selectionTarget]);
   const discard = () => !busy2 && (!dirty || confirm(t("discard")));
   (0, import_react7.useEffect)(() => registerBeforeLeave?.(discard), [dirty, busy2, registerBeforeLeave]);
   const edit = (patch) => {
@@ -23312,11 +23484,12 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
   const toggle = (id) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
   async function save(asCopy = false) {
     const creates = asCopy || draft.builtin || !draft.id;
-    const data3 = await api6(creates ? "" : `/${encodeURIComponent(draft.id)}`, creates ? "POST" : "PUT", editablePreset(draft));
+    const data3 = await api2(creates ? "" : `/${encodeURIComponent(draft.id)}`, creates ? "POST" : "PUT", editablePreset(draft));
     setDraft(data3.preset);
     setItems((list2) => [...list2.filter((p) => p.id !== data3.preset.id), data3.preset]);
     setDirty(false);
     setStatus(t("saved"));
+    window.dispatchEvent(new window.Event(refreshEvent));
     return data3.preset;
   }
   function download() {
@@ -23360,7 +23533,7 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
       return true;
     };
     if (!traceRoot) {
-      const data3 = await api6(`/actual?sessionId=${encodeURIComponent(sessionId)}`);
+      const data3 = await api2(`/actual?sessionId=${encodeURIComponent(sessionId)}`);
       if (!show(data3.request)) setStatus(t("noActual"));
       return;
     }
@@ -23538,7 +23711,7 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
         if (f2) run(async () => {
           if (f2.size > 2 * 1024 * 1024) throw new Error("2 MiB limit");
           if (!await discard()) return;
-          const data3 = await api6("", "POST", JSON.parse(await f2.text()));
+          const data3 = await api2("", "POST", JSON.parse(await f2.text()));
           setDraft(data3.preset);
           setItems((i3) => [...i3, data3.preset]);
           setDirty(false);
@@ -23565,52 +23738,20 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
         } }, !draft.id && (0, import_react7.createElement)("option", { value: "" }, draft.name), ...items2.map((p) => (0, import_react7.createElement)("option", { key: p.id, value: p.id }, p.name)))), (0, import_react7.createElement)("label", null, t("name"), (0, import_react7.createElement)("input", { value: draft.name, disabled: draft.builtin, onChange: (e) => edit({ name: e.target.value }) }))),
         (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("save", () => run(() => save())), button("copy", () => run(() => save(true))), button("remove", () => run(async () => {
           if (!await confirm(t("confirmDelete"))) return;
-          await api6(`/${draft.id}`, "DELETE");
+          await api2(`/${draft.id}`, "DELETE");
           setItems((i3) => i3.filter((p) => p.id !== draft.id));
           setDraft(items2[0]);
           setDirty(false);
           setPreview(null);
         }), !draft.id || draft.builtin), dirty && (0, import_react7.createElement)("span", null, t("dirty"))),
-        (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
-        (0, import_react7.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, !capable && (0, import_react7.createElement)("small", null, t("unavailable"))),
-        onCreateSession && (0, import_react7.createElement)("div", null, createSessionControls, (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("createSession", () => run(async () => {
-          const preset = dirty || !draft.id ? await save() : draft;
-          if (!mounted.current) return;
-          await onCreateSession(preset.id);
-        }), !capable, "primary"))),
-        (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("apply", () => run(async () => {
-          const preset = dirty || !draft.id ? await save() : draft;
-          const data3 = await api6("/selection", "PUT", { sessionId, id: preset.id });
-          setSelection(data3.selection);
-          setStatus(t("appliedStatus"));
-          window.dispatchEvent(new CustomEvent(refreshEvent));
-        }), !sessionId || !capable, "primary"), button("reset", async () => {
-          if (!await discard()) return;
-          run(async () => {
-            const data3 = await api6("/selection", "PUT", { sessionId, id: defaultId3 });
-            setSelection(data3.selection);
-            setDraft(items2.find((p) => p.id === defaultId3));
-            setDirty(false);
-            setPreview(null);
-            setTab("rules");
-            setStatus(t("appliedStatus"));
-            window.dispatchEvent(new CustomEvent(refreshEvent));
-          });
-        }, !sessionId || !capable), button("disable", () => run(async () => {
-          const data3 = await api6("/selection", "PUT", { sessionId, id: null });
-          setSelection(data3.selection);
-          window.dispatchEvent(new CustomEvent(refreshEvent));
-        }), !sessionId || !selection)),
-        draft.builtin && (0, import_react7.createElement)("small", null, t("defaultHint")),
-        !sessionId && (0, import_react7.createElement)("small", null, t("noSession")),
         (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("rulesSection")),
         (0, import_react7.createElement)("div", { className: "dta-tabs" }, (0, import_react7.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
           setDragFrom(null);
           setDropIndex(null);
-          const data3 = await api6("/preview", "POST", { sessionId, preset: editablePreset(draft) });
+          const data3 = await api2("/preview", "POST", { sessionId, preset: editablePreset(draft) });
           setPreview(data3.preview);
           setTab("expanded");
-        }), false, void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),
+        }), Boolean(selectionTarget), void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),
         (0, import_react7.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react7.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
         tab === "rules" ? (0, import_react7.createElement)(
           "div",
@@ -23623,7 +23764,39 @@ function AssemblyPanelContent({ sessionId, sessionLabel, onCreateSession, create
           parsers.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react7.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
           (0, import_react7.createElement)("small", null, t("sourceHelp"))
         ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
-        (0, import_react7.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
+        (0, import_react7.createElement)("small", { style: { marginTop: 20 } }, t("tools")),
+        (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
+        (0, import_react7.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, selection?.id?.startsWith("builtin-") && !items2.some((p) => p.id === selection.id) && (0, import_react7.createElement)("small", null, t("withdrawnPreset")), !capable && (0, import_react7.createElement)("small", null, t("unavailable"))),
+        onCreateSession && (0, import_react7.createElement)("div", null, createSessionControls, (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("createSession", () => run(async () => {
+          const preset = dirty || !draft.id ? await save() : draft;
+          if (!mounted.current) return;
+          await onCreateSession(preset.id);
+        }), !capable, "primary"))),
+        (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("apply", () => run(async () => {
+          const preset = dirty || !draft.id ? await save() : draft;
+          const data3 = await api2("/selection", "PUT", { sessionId, id: preset.id });
+          setSelection(data3.selection);
+          setStatus(t("appliedStatus"));
+          window.dispatchEvent(new window.Event(refreshEvent));
+        }), !sessionId && !selectionTarget || !capable || selectionTarget?.editable === false, "primary"), button("reset", async () => {
+          if (!await discard()) return;
+          run(async () => {
+            const data3 = await api2("/selection", "PUT", { sessionId, id: defaultId3 });
+            setSelection(data3.selection);
+            setDraft(items2.find((p) => p.id === defaultId3));
+            setDirty(false);
+            setPreview(null);
+            setTab("rules");
+            setStatus(t("appliedStatus"));
+            window.dispatchEvent(new window.Event(refreshEvent));
+          });
+        }, !sessionId && !selectionTarget || !capable || selectionTarget?.editable === false), button("disable", () => run(async () => {
+          const data3 = await api2("/selection", "PUT", { sessionId, id: null });
+          setSelection(data3.selection);
+          window.dispatchEvent(new window.Event(refreshEvent));
+        }), !sessionId && !selectionTarget || !selection || selectionTarget?.editable === false)),
+        draft.builtin && (0, import_react7.createElement)("small", null, t("defaultHint")),
+        !sessionId && (0, import_react7.createElement)("small", null, selectionTarget ? t("deferredSelection") : t("noSession"))
       ),
       interfaceControls && (0, import_react7.createElement)("section", { className: "dta-interface-settings", "aria-label": t("interfaceSettings") }, (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("interfaceSettings")), interfaceControls)
     ))
@@ -23678,10 +23851,11 @@ function createAssemblerFetch({ fetcher = (...args) => globalThis.fetch(...args)
 var assemblerFetch = createAssemblerFetch();
 
 // packages/request-assembler/client.js
-var AssemblyPanel2 = (props) => (0, import_react8.createElement)(AssemblyPanel, { ...props, locale: getClientUiSettings().locale, fetcher: assemblerFetch, apiRoot: "/dsh-prompt-assembler/api/v1/assembly-presets", refreshEvent: CLIENT_REFRESH_EVENT });
+var ASSEMBLY_REFRESH_EVENT = "dsh-prompt-assembler:refresh";
+var AssemblyPanel2 = (props) => (0, import_react8.createElement)(AssemblyPanel, { ...props, locale: getClientUiSettings().locale, fetcher: assemblerFetch, apiRoot: "/dsh-prompt-assembler/api/v1/assembly-presets", refreshEvent: ASSEMBLY_REFRESH_EVENT });
 
 // packages/client/src/index.js
-var import_react34 = require("react");
+var import_react37 = require("react");
 
 // packages/preset/src/client.js
 var import_react9 = require("react");
@@ -23712,7 +23886,7 @@ var css2 = `
 .dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dtt-prompt[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtt-prompt[data-dragging=true]>*{opacity:0}.dtt-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:13px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtt-drag:active{cursor:grabbing}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:12px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:30px;padding:0 8px;flex:1}
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
 `;
-async function api(path3, options = {}) {
+async function resourceApi(path3, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
   const response = await tavernFetch(`${API_V1}${path3}`, {
     ...options,
@@ -23830,7 +24004,9 @@ function insertionBoundary(event) {
   const bounds = target.getBoundingClientRect();
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
 }
-function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpen = true }) {
+function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessionBlank, autoOpen = true }) {
+  const api2 = bindingTarget?.request ?? resourceApi;
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId);
   const [catalog2, setCatalog] = (0, import_react9.useState)(null);
   const [draft, setDraft] = (0, import_react9.useState)(null);
   const [busy2, setBusy] = (0, import_react9.useState)(false);
@@ -23860,15 +24036,15 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
   }, []);
   const refresh = (0, import_react9.useCallback)(async (preferredId) => {
     const generation = ++refreshGeneration.current;
-    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
-    const data3 = await api(`/presets${query}`);
+    const query = !bindingTarget && sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+    const data3 = await api2(`/presets${query}`);
     const id = preferredId === void 0 ? data3.selectedId ?? data3.presets[0]?.id ?? null : preferredId;
-    const detail = id === null || id === void 0 ? null : (await api(`/presets/${encodeURIComponent(id)}`)).preset;
+    const detail = id === null || id === void 0 ? null : (await api2(`/presets/${encodeURIComponent(id)}`)).preset;
     if (generation !== refreshGeneration.current) return false;
     setCatalog(data3);
     setDraft(detail);
     return true;
-  }, [sessionId]);
+  }, [sessionId, bindingTarget]);
   (0, import_react9.useEffect)(() => {
     refreshGeneration.current += 1;
     setCatalog(null);
@@ -23878,7 +24054,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     return () => {
       refreshGeneration.current += 1;
     };
-  }, [refresh, run, sessionId]);
+  }, [refresh, run, sessionId, bindingTarget]);
   (0, import_react9.useEffect)(() => {
     const onRefresh = (event) => {
       if (event.detail?.source === "preset") return;
@@ -23888,25 +24064,25 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refresh, run]);
   const browse = (0, import_react9.useCallback)((id) => run(async () => {
-    const detail = await api(`/presets/${encodeURIComponent(id)}`);
+    const detail = await api2(`/presets/${encodeURIComponent(id)}`);
     setDraft(detail.preset);
   }, "preset.status.detailsLoaded"), [run]);
   const bind = (0, import_react9.useCallback)(() => run(async () => {
-    if (!sessionId) throw uiError("preset.error.needSession");
+    if (!canBind) throw uiError("preset.error.needSession");
     if (draft === null) throw uiError("preset.error.needPreset");
     if (catalog2?.selectedId !== draft.id && catalog2?.selectedId !== null && sessionBlank === false && !window.confirm(unwrapText(uiMessage("preset.confirmHistoricalSwitch")))) return;
-    await api("/select", { method: "POST", body: body({ id: draft.id, sessionId }) });
+    await api2("/select", { method: "POST", body: body({ id: draft.id, sessionId }) });
     await refresh(draft.id);
     announceTavernRefresh();
-  }, "preset.status.bound"), [catalog2?.selectedId, draft, refresh, run, sessionBlank, sessionId]);
+  }, "preset.status.bound"), [catalog2?.selectedId, draft, refresh, run, sessionBlank, sessionId, bindingTarget]);
   const unbind = (0, import_react9.useCallback)(() => run(async () => {
-    if (!sessionId) throw uiError("preset.error.noSessionToUnbind");
-    await api("/select", { method: "POST", body: body({ id: null, sessionId }) });
+    if (!canBind) throw uiError("preset.error.noSessionToUnbind");
+    await api2("/select", { method: "POST", body: body({ id: null, sessionId }) });
     await refresh(draft?.id);
     announceTavernRefresh();
-  }, "preset.status.unbound"), [draft?.id, refresh, run, sessionId]);
+  }, "preset.status.unbound"), [draft?.id, refresh, run, sessionId, bindingTarget]);
   const createPreset = (0, import_react9.useCallback)(() => run(async () => {
-    const created = await api("/presets", { method: "POST", body: body({ name: translate("preset.defaultName") }) });
+    const created = await api2("/presets", { method: "POST", body: body({ name: translate("preset.defaultName") }) });
     await refresh(created.preset.id);
     announceTavernRefresh();
   }, "preset.status.created"), [refresh, run]);
@@ -23914,7 +24090,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     let imported;
     try {
       const content = await file.text();
-      imported = await api("/import", {
+      imported = await api2("/import", {
         method: "POST",
         body: body({ name: file.name.replace(/\.json$/i, ""), content })
       });
@@ -23923,13 +24099,13 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
       throw error;
     }
     await refresh(imported.preset.id);
-    const importedResource = await api(`/presets/${encodeURIComponent(imported.preset.id)}`);
+    const importedResource = await api2(`/presets/${encodeURIComponent(imported.preset.id)}`);
     await offerRenderingDependencies(importedResource.preset, "preset", imported.preset.id, { message: (sources) => translate("rendering.importDependencies", { sources }) });
     announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
   }, "preset.status.imported"), [refresh, run]);
   const save = (0, import_react9.useCallback)(() => run(async () => {
-    const result = await api(`/presets/${encodeURIComponent(draft.id)}`, {
+    const result = await api2(`/presets/${encodeURIComponent(draft.id)}`, {
       method: "PUT",
       body: body({ name: draft.name, systemPromptMode: draft.systemPromptMode, sampling: draft.sampling, prompts: draft.prompts })
     });
@@ -23939,7 +24115,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
   }, "preset.status.saved"), [draft, refresh, run]);
   const remove = (0, import_react9.useCallback)(() => run(async () => {
     if (!window.confirm(unwrapText(uiMessage("preset.confirmDelete", { name: draft.name })))) return;
-    await api(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
+    await api2(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
     await refresh();
     announceTavernRefresh();
   }, "preset.status.deleted"), [draft, refresh, run]);
@@ -24018,13 +24194,13 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
         ...catalog2?.presets.length ? [] : [h9("option", { key: "empty", value: "" }, uiMessage("preset.libraryEmpty"))],
         ...(catalog2?.presets ?? []).map((preset) => h9("option", { key: preset.id, value: preset.id }, rawText(`${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`)))
       )),
-      catalog2 === null ? null : catalog2.selectedId === null ? h9("p", { className: "dtt-note" }, uiMessage("preset.unboundNote")) : h9("p", { className: "dtt-note" }, uiMessage("preset.currentSessionBound", { name: catalog2.presets.find((item) => item.id === catalog2.selectedId)?.name ?? catalog2.selectedId })),
-      draft !== null && draft.id !== catalog2?.selectedId ? h9("div", { className: "dtt-status", "data-warning": true }, uiMessage("preset.browsingUnbound", { name: draft.name })) : null,
+      catalog2 === null ? null : catalog2.selectedId === null ? h9("p", { className: "dtt-note" }, uiMessage(bindingTarget ? "play.draft.unboundPreset" : "preset.unboundNote")) : h9("p", { className: "dtt-note" }, uiMessage(bindingTarget ? "play.draft.boundPreset" : "preset.currentSessionBound", { name: catalog2.presets.find((item) => item.id === catalog2.selectedId)?.name ?? catalog2.selectedId })),
+      draft !== null && draft.id !== catalog2?.selectedId ? h9("div", { className: "dtt-status", "data-warning": true }, uiMessage(bindingTarget ? "play.draft.browsingPreset" : "preset.browsingUnbound", { name: draft.name })) : null,
       h9(
         "div",
         { className: "dtt-actions" },
-        h9("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy2 || !sessionId || draft === null, onClick: bind }, catalog2?.selectedId === draft?.id ? uiMessage("preset.bindUpdate") : uiMessage("preset.bind")),
-        h9("button", { className: "dtt-button", type: "button", disabled: busy2 || !sessionId || catalog2?.selectedId == null, onClick: unbind }, uiMessage("preset.unbind"))
+        h9("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy2 || !canBind || draft === null, onClick: bind }, bindingTarget ? uiMessage("play.draft.bind") : catalog2?.selectedId === draft?.id ? uiMessage("preset.bindUpdate") : uiMessage("preset.bind")),
+        h9("button", { className: "dtt-button", type: "button", disabled: busy2 || !canBind || catalog2?.selectedId == null, onClick: unbind }, uiMessage(bindingTarget ? "play.draft.unbind" : "preset.unbind"))
       ),
       h9("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
       draft === null ? h9("p", { className: "dtt-note" }, catalog2 === null ? uiMessage("preset.loading") : uiMessage("preset.emptyHint")) : h9(
@@ -24244,7 +24420,7 @@ function errorMessage(data3, status) {
   if (typeof data3?.error?.message === "string") return data3.error.message;
   return `HTTP ${status}`;
 }
-async function api2(path3, options = {}) {
+async function resourceApi2(path3, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
   const response = await tavernFetch(`${API_V1}${path3}`, {
     ...options,
@@ -24278,7 +24454,9 @@ function DiagnosticList({ titleKey, items: items2 }) {
 function patchDraft(setter, field, value) {
   setter((current4) => current4 === null ? current4 : { ...current4, [field]: value });
 }
-function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close: close2 }) {
+function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close: close2 }) {
+  const api2 = bindingTarget?.request ?? resourceApi2;
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId);
   const [catalog2, setCatalog] = (0, import_react10.useState)(null);
   const [detail, setDetail] = (0, import_react10.useState)(null);
   const [draft, setDraft] = (0, import_react10.useState)(null);
@@ -24329,7 +24507,7 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
     const list2 = await api2("/characters");
     let currentSelection = null;
     let currentRp = { active: false };
-    if (sessionId) {
+    if (bindingTarget || sessionId) {
       const selected = await api2(`/character-selection?sessionId=${encodeURIComponent(sessionId)}`);
       currentSelection = selected.selection;
       const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
@@ -24347,7 +24525,7 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
     const data3 = await api2(`/characters/${encodeURIComponent(id)}`);
     if (generation !== refreshGeneration.current) return;
     applyCharacter(data3.character, currentSelection);
-  }, [applyCharacter, sessionId]);
+  }, [applyCharacter, sessionId, bindingTarget]);
   (0, import_react10.useEffect)(() => {
     run(() => refresh(), "character.status.loaded");
     return () => {
@@ -24440,7 +24618,7 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
       }
       throw error;
     }
-  }, []);
+  }, [bindingTarget]);
   const applySelectionResult = (0, import_react10.useCallback)(async (data3, action) => {
     if (action === "unbind") {
       await refresh(detail?.id);
@@ -24451,9 +24629,9 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
       setRp(rpData.rp ?? { active: false });
     }
     announceTavernRefresh2();
-  }, [detail?.id, refresh, sessionId]);
+  }, [detail?.id, refresh, sessionId, bindingTarget]);
   const bind = (0, import_react10.useCallback)(() => run(async () => {
-    if (!sessionId) throw uiError("character.error.needSession");
+    if (!canBind) throw uiError("character.error.needSession");
     if (dirty) throw uiError("character.error.saveFirst");
     if (selection?.characterCardId !== binding?.characterCardId) {
       const historical = typeof hasConversationHistory === "function" ? await hasConversationHistory(sessionId) : sessionBlank === false;
@@ -24462,13 +24640,13 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
     const data3 = await requestSelection({ sessionId, ...binding }, "bind");
     if (data3 === RUN_SKIPPED) return RUN_SKIPPED;
     await applySelectionResult(data3, "bind");
-  }, "character.status.bound"), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId]);
+  }, "character.status.bound"), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId, bindingTarget]);
   const unbind = (0, import_react10.useCallback)(() => run(async () => {
-    if (!sessionId) throw uiError("character.error.noSessionToUnbind");
+    if (!canBind) throw uiError("character.error.noSessionToUnbind");
     const data3 = await requestSelection({ sessionId, characterCardId: null }, "unbind");
     if (data3 === RUN_SKIPPED) return RUN_SKIPPED;
     await applySelectionResult(data3, "unbind");
-  }, "character.status.unbound"), [applySelectionResult, requestSelection, run, sessionId]);
+  }, "character.status.unbound"), [applySelectionResult, requestSelection, run, sessionId, bindingTarget]);
   const confirmDetach = (0, import_react10.useCallback)(() => {
     if (detachPrompt === null) return;
     run(async () => {
@@ -24482,14 +24660,14 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
     }, detachPrompt.action === "unbind" ? "character.status.unbound" : "character.status.bound");
   }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run]);
   const toggleRp = (0, import_react10.useCallback)(() => run(async () => {
-    if (!sessionId) throw uiError("character.error.needSession");
+    if (!canBind) throw uiError("character.error.needSession");
     const data3 = await api2("/rp-mode", {
       method: "PUT",
       body: JSON.stringify({ sessionId, active: rp.active !== true })
     });
     setRp(data3.rp ?? { active: rp.active !== true });
     announceTavernRefresh2();
-  }, "character.status.rpUpdated"), [rp.active, run, sessionId]);
+  }, "character.status.rpUpdated"), [rp.active, run, sessionId, bindingTarget]);
   const remove = (0, import_react10.useCallback)(() => run(async () => {
     if (detail === null || !window.confirm(unwrapText(uiMessage("character.confirmDelete", { name: detail.name })))) return;
     await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
@@ -24553,14 +24731,15 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
           run(() => refresh(detail?.id), "character.status.libraryRefreshed");
         } }, uiMessage("common.refresh"))
       )),
+      bindingTarget && h10("p", { className: "dcc-note" }, uiMessage("play.draft.characterHint")),
       h10(
         "div",
         { className: "dcc-actions" },
-        h10("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy2 || !sessionId || detail === null || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind")),
-        h10("button", { className: "dcc-button", type: "button", disabled: busy2 || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind"))
+        h10("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy2 || !canBind || bindingTarget && detail?.id !== selection?.characterCardId || detail === null || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind")),
+        h10("button", { className: "dcc-button", type: "button", disabled: busy2 || !canBind || Boolean(bindingTarget) || selection === null, onClick: unbind }, uiMessage("character.unbind"))
       ),
       h10("p", { className: "dcc-note" }, uiMessage("character.sessionBinding", {
-        session: sessionId || translate("common.none"),
+        session: bindingTarget?.label || sessionId || translate("common.none"),
         name: activeName
       })),
       h10("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
@@ -24622,7 +24801,7 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
           h10("input", {
             type: "checkbox",
             checked: rp.active === true,
-            disabled: busy2 || !sessionId,
+            disabled: busy2 || !canBind || Boolean(bindingTarget),
             onChange: toggleRp
           }),
           h10("span", null, uiMessage("character.rpMode"))
@@ -24795,7 +24974,7 @@ function errorMessage2(data3, status) {
   if (typeof data3?.error === "string") return data3.error;
   return `HTTP ${status}`;
 }
-async function api3(path3, options = {}) {
+async function resourceApi3(path3, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
   const response = await tavernFetch(`${API_V1}${path3}`, {
     ...options,
@@ -24992,7 +25171,7 @@ function orderedBindingCatalog(catalog2, selection) {
   ];
 }
 function ResourceWorldBookBindingEditor({
-  resource,
+  resource: resource2,
   catalog: catalog2,
   selection,
   appliedSelection,
@@ -25003,13 +25182,13 @@ function ResourceWorldBookBindingEditor({
   currentKey,
   noneKey
 }) {
-  if (resource === null || resource === void 0) return h11("p", { className: "dwb-note" }, uiMessage(noneKey));
+  if (resource2 === null || resource2 === void 0) return h11("p", { className: "dwb-note" }, uiMessage(noneKey));
   const books = orderedBindingCatalog(catalog2, selection);
   const dirty = !sameOrderedIds(selection, appliedSelection);
   return h11(
     "div",
     { className: "dwb-resource" },
-    h11("div", { className: "dwb-resource-title" }, uiMessage(currentKey, { name: resource.name || resource.id })),
+    h11("div", { className: "dwb-resource-title" }, uiMessage(currentKey, { name: resource2.name || resource2.id })),
     books.length > 0 ? h11("div", { className: "dwb-bindings dwb-user-bindings" }, ...books.map((book) => {
       const checked = selection.includes(book.id);
       const wasApplied = appliedSelection.includes(book.id);
@@ -25087,7 +25266,9 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
     )
   );
 }
-function WorldBookPanel({ sessionId, close: close2 }) {
+function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
+  const api2 = bindingTarget?.request ?? resourceApi3;
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId);
   const [catalog2, setCatalog] = (0, import_react11.useState)(null);
   const [document2, setDocument] = (0, import_react11.useState)(null);
   const [draft, setDraft] = (0, import_react11.useState)(null);
@@ -25131,15 +25312,15 @@ function WorldBookPanel({ sessionId, close: close2 }) {
   }, []);
   const refresh = (0, import_react11.useCallback)(async (preferredId) => {
     const currentGeneration = ++generation.current;
-    const list2 = await api3("/world-books");
-    const selected = sessionId ? await api3(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
-    const activeView2 = await api3(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
+    const list2 = await api2("/world-books");
+    const selected = bindingTarget || sessionId ? await api2(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
+    const activeView2 = await api2(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
     const presetId = activeView2.resources?.preset?.id ?? null;
     const characterId = activeView2.resources?.characterCard?.id ?? null;
     const [presetBinding, characterBinding, characterDetail] = await Promise.all([
-      presetId === null ? { binding: { worldBookIds: [] } } : api3(`/presets/${encodeURIComponent(presetId)}/world-books`),
-      characterId === null ? { binding: { worldBookIds: [] } } : api3(`/characters/${encodeURIComponent(characterId)}/world-books`),
-      characterId === null ? null : api3(`/characters/${encodeURIComponent(characterId)}`)
+      presetId === null ? { binding: { worldBookIds: [] } } : api2(`/presets/${encodeURIComponent(presetId)}/world-books`),
+      characterId === null ? { binding: { worldBookIds: [] } } : api2(`/characters/${encodeURIComponent(characterId)}/world-books`),
+      characterId === null ? null : api2(`/characters/${encodeURIComponent(characterId)}`)
     ]);
     const embeddedBook = characterDetail?.character?.data?.characterBook ?? null;
     if (currentGeneration !== generation.current) return;
@@ -25168,12 +25349,12 @@ function WorldBookPanel({ sessionId, close: close2 }) {
       setDirty(false);
       return;
     }
-    const detail = await api3(`/world-books/${encodeURIComponent(id)}`);
+    const detail = await api2(`/world-books/${encodeURIComponent(id)}`);
     if (currentGeneration !== generation.current) return;
     setDocument(detail.worldBook);
     setDraft(structuredClone(detail.worldBook.book));
     setDirty(false);
-  }, [document2?.id, sessionId]);
+  }, [document2?.id, sessionId, bindingTarget]);
   (0, import_react11.useEffect)(() => {
     run(() => refresh(), "world.status.loaded");
     const onRefresh = () => run(() => refresh(), "world.status.refreshed");
@@ -25184,7 +25365,7 @@ function WorldBookPanel({ sessionId, close: close2 }) {
     };
   }, [refresh, run]);
   const load = (id) => run(async () => {
-    const detail = await api3(`/world-books/${encodeURIComponent(id)}`);
+    const detail = await api2(`/world-books/${encodeURIComponent(id)}`);
     setDocument(detail.worldBook);
     setDraft(structuredClone(detail.worldBook.book));
     setDirty(false);
@@ -25195,7 +25376,7 @@ function WorldBookPanel({ sessionId, close: close2 }) {
   };
   const editResourceBook = editUserBook;
   const create2 = () => run(async () => {
-    const data3 = await api3("/world-books", { method: "POST", body: JSON.stringify({ name: translate("world.defaultName") }) });
+    const data3 = await api2("/world-books", { method: "POST", body: JSON.stringify({ name: translate("world.defaultName") }) });
     await refresh(data3.worldBook.id);
   }, "world.status.created");
   const importFile = (file) => run(async () => {
@@ -25216,15 +25397,15 @@ function WorldBookPanel({ sessionId, close: close2 }) {
     await refresh(data3.worldBook.id);
   }, "world.status.imported");
   const save = () => run(async () => {
-    const data3 = await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "PATCH", body: JSON.stringify({ book: draft }) });
+    const data3 = await api2(`/world-books/${encodeURIComponent(document2.id)}`, { method: "PATCH", body: JSON.stringify({ book: draft }) });
     setDocument(data3.worldBook);
     setDraft(structuredClone(data3.worldBook.book));
     setDirty(false);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.saved");
   const saveSelection = () => run(async () => {
-    if (!sessionId) throw uiError("world.error.needSession");
-    const data3 = await api3("/world-book-selection", { method: "POST", body: JSON.stringify({ sessionId, worldBookIds: selection }) });
+    if (!canBind) throw uiError("world.error.needSession");
+    const data3 = await api2("/world-book-selection", { method: "POST", body: JSON.stringify({ sessionId, worldBookIds: selection }) });
     setSelection(data3.selection.worldBookIds);
     setAppliedSelection(data3.selection.worldBookIds);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
@@ -25232,7 +25413,7 @@ function WorldBookPanel({ sessionId, close: close2 }) {
   const saveUserSelection = () => run(async () => {
     const userId = active?.resources?.user?.id;
     if (!userId) throw uiError("world.user.error.noUser");
-    const data3 = await api3(`/users/${encodeURIComponent(userId)}/world-books`, {
+    const data3 = await api2(`/users/${encodeURIComponent(userId)}/world-books`, {
       method: "PUT",
       body: JSON.stringify({ worldBookIds: userSelection })
     });
@@ -25244,7 +25425,7 @@ function WorldBookPanel({ sessionId, close: close2 }) {
   const savePresetSelection = () => run(async () => {
     const presetId = active?.resources?.preset?.id;
     if (!presetId) throw uiError("world.resource.error.noPreset");
-    const data3 = await api3(`/presets/${encodeURIComponent(presetId)}/world-books`, {
+    const data3 = await api2(`/presets/${encodeURIComponent(presetId)}/world-books`, {
       method: "PUT",
       body: JSON.stringify({ worldBookIds: presetSelection })
     });
@@ -25256,7 +25437,7 @@ function WorldBookPanel({ sessionId, close: close2 }) {
   const saveCharacterSelection = () => run(async () => {
     const characterId = active?.resources?.characterCard?.id;
     if (!characterId) throw uiError("world.resource.error.noCharacter");
-    const data3 = await api3(`/characters/${encodeURIComponent(characterId)}/world-books`, {
+    const data3 = await api2(`/characters/${encodeURIComponent(characterId)}/world-books`, {
       method: "PUT",
       body: JSON.stringify({ worldBookIds: characterSelection })
     });
@@ -25267,14 +25448,14 @@ function WorldBookPanel({ sessionId, close: close2 }) {
   }, "world.resource.saveSuccess");
   const remove = () => run(async () => {
     if (document2 === null || !window.confirm(unwrapText(uiMessage("world.confirmDelete", { name: document2.name })))) return;
-    await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
+    await api2(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
     setDocument(null);
     setDraft(null);
     await refresh(null);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.deleted");
   const saveEmbedded = () => run(async () => {
-    const data3 = await api3(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
+    const data3 = await api2(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
       method: "PATCH",
       body: JSON.stringify({ characterBook: embeddedDraft })
     });
@@ -25408,11 +25589,11 @@ function WorldBookPanel({ sessionId, close: close2 }) {
           h11(
             "div",
             { className: "dwb-actions" },
-            h11("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy2 || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage("world.applyBinding") : uiMessage("world.bindingAppliedButton")),
-            h11("button", { className: "dwb-button", type: "button", disabled: busy2 || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.clearPending"))
+            h11("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy2 || !canBind || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage("world.applyBinding") : uiMessage("world.bindingAppliedButton")),
+            h11("button", { className: "dwb-button", type: "button", disabled: busy2 || !canBind || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.clearPending"))
           )
         ),
-        h11("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translate("common.none") })),
+        h11("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: bindingTarget?.label || sessionId || translate("common.none") })),
         h11("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
         draft === null ? null : h11(
           "div",
@@ -25735,7 +25916,7 @@ var css5 = `
 function errorMessage3(data3, status) {
   return data3?.error?.message ?? data3?.error ?? `HTTP ${status}`;
 }
-async function api4(path3, options = {}) {
+async function resourceApi4(path3, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
   const response = await tavernFetch(`${API_V1}${path3}`, {
     ...options,
@@ -25754,7 +25935,9 @@ function Field5({ label, children }) {
 function notifyRefresh() {
   window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
 }
-function UserPanel({ sessionId, sessionBlank, close: close2 }) {
+function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
+  const api2 = bindingTarget?.request ?? resourceApi4;
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId);
   const [users, setUsers] = (0, import_react13.useState)(null);
   const [draft, setDraft] = (0, import_react13.useState)(null);
   const [savedDraft, setSavedDraft] = (0, import_react13.useState)(null);
@@ -25794,14 +25977,14 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
   const refresh = (0, import_react13.useCallback)(async (preferredId) => {
     const current4 = ++generation.current;
     const [catalog2, worldBookCatalog, binding] = await Promise.all([
-      api4("/users"),
-      api4("/world-books"),
-      sessionId ? api4(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : Promise.resolve({ selection: null })
+      api2("/users"),
+      api2("/world-books"),
+      bindingTarget || sessionId ? api2(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : Promise.resolve({ selection: null })
     ]);
     const availableIds = new Set(catalog2.users.map((user) => user.id));
     const preferred = availableIds.has(preferredId) ? preferredId : availableIds.has(binding.selection?.userId) ? binding.selection.userId : null;
     const id = preferred ?? catalog2.users[0]?.id ?? null;
-    const relation = id === null ? { binding: { worldBookIds: [] } } : await api4(`/users/${encodeURIComponent(id)}/world-books`);
+    const relation = id === null ? { binding: { worldBookIds: [] } } : await api2(`/users/${encodeURIComponent(id)}/world-books`);
     if (current4 !== generation.current) return;
     setUsers(catalog2.users);
     setWorldBooks(worldBookCatalog.worldBooks);
@@ -25812,7 +25995,7 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
     setSavedDraft(nextDraft === null ? null : structuredClone(nextDraft));
     setWorldBookIds(ids);
     setAppliedWorldBookIds(ids);
-  }, [sessionId]);
+  }, [sessionId, bindingTarget]);
   (0, import_react13.useEffect)(() => {
     run(() => refresh(), "user.status.loaded");
     const onRefresh = () => {
@@ -25840,7 +26023,7 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
   const create2 = (0, import_react13.useCallback)(() => {
     if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForCreate")))) return;
     run(async () => {
-      const data3 = await api4("/users", { method: "POST", body: JSON.stringify({ name: translate("user.defaultName"), description: "" }) });
+      const data3 = await api2("/users", { method: "POST", body: JSON.stringify({ name: translate("user.defaultName"), description: "" }) });
       draftId.current = data3.user.id;
       await refresh(data3.user.id);
       notifyRefresh();
@@ -25851,7 +26034,7 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
     run(async () => {
       try {
         if (file.size > 1024 * 1024) throw uiError("resource.error.fileTooLarge");
-        const data3 = await api4("/users/import", { method: "POST", body: await file.text() });
+        const data3 = await api2("/users/import", { method: "POST", body: await file.text() });
         dirtyRef.current = false;
         draftId.current = data3.user.id;
         await refresh(data3.user.id);
@@ -25864,7 +26047,7 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
   }, [dirty, refresh, run]);
   const save = (0, import_react13.useCallback)(() => run(async () => {
     if (draft === null) return;
-    const data3 = await api4(`/users/${encodeURIComponent(draft.id)}`, {
+    const data3 = await api2(`/users/${encodeURIComponent(draft.id)}`, {
       method: "PATCH",
       body: JSON.stringify({ name: draft.name, description: draft.description, avatar: draft.avatar ?? null })
     });
@@ -25876,7 +26059,7 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
   }, "user.status.saved"), [draft, run]);
   const saveWorldBooks = (0, import_react13.useCallback)(() => run(async () => {
     if (draft === null) return;
-    const data3 = await api4(`/users/${encodeURIComponent(draft.id)}/world-books`, {
+    const data3 = await api2(`/users/${encodeURIComponent(draft.id)}/world-books`, {
       method: "PUT",
       body: JSON.stringify({ worldBookIds })
     });
@@ -25890,24 +26073,24 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
     run(() => refresh(id), "user.status.userLoaded");
   }, [dirty, refresh, run]);
   const bind = (0, import_react13.useCallback)(() => run(async () => {
-    if (!sessionId || draft === null) throw uiError("user.error.needSession");
+    if (!canBind || draft === null) throw uiError("user.error.needSession");
     if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm(unwrapText(uiMessage("user.confirmHistoricalSwitch")))) return;
-    const data3 = await api4("/user-selection", {
+    const data3 = await api2("/user-selection", {
       method: "POST",
       body: JSON.stringify({ sessionId, userId: draft.id })
     });
     setSelectedUserId(data3.selection.userId);
     notifyRefresh();
-  }, "user.status.bound"), [draft, run, selectedUserId, sessionBlank, sessionId]);
+  }, "user.status.bound"), [draft, run, selectedUserId, sessionBlank, sessionId, bindingTarget]);
   const unbind = (0, import_react13.useCallback)(() => run(async () => {
-    if (!sessionId) throw uiError("user.error.noSessionToUnbind");
-    await api4("/user-selection", { method: "POST", body: JSON.stringify({ sessionId, userId: null }) });
+    if (!canBind) throw uiError("user.error.noSessionToUnbind");
+    await api2("/user-selection", { method: "POST", body: JSON.stringify({ sessionId, userId: null }) });
     setSelectedUserId(null);
     notifyRefresh();
-  }, "user.status.unbound"), [run, sessionId]);
+  }, "user.status.unbound"), [run, sessionId, bindingTarget]);
   const remove = (0, import_react13.useCallback)(() => run(async () => {
     if (draft === null || !window.confirm(unwrapText(uiMessage("user.confirmDelete", { name: draft.name })))) return;
-    await api4(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
+    await api2(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
     draftId.current = null;
     await refresh(null);
     notifyRefresh();
@@ -25968,10 +26151,10 @@ function UserPanel({ sessionId, sessionBlank, close: close2 }) {
       h13(
         "div",
         { className: "dtu-actions" },
-        h13("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy2 || !sessionId || draft === null || dirty, onClick: bind }, dirty ? uiMessage("user.saveFirst") : selectedUserId === draft?.id ? uiMessage("user.refreshBinding") : uiMessage("user.bind")),
-        h13("button", { className: "dtu-button", type: "button", disabled: busy2 || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage("user.unbind"))
+        h13("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy2 || !canBind || draft === null || dirty, onClick: bind }, dirty ? uiMessage("user.saveFirst") : selectedUserId === draft?.id ? uiMessage("user.refreshBinding") : uiMessage("user.bind")),
+        h13("button", { className: "dtu-button", type: "button", disabled: busy2 || !canBind || selectedUserId === null, onClick: unbind }, uiMessage("user.unbind"))
       ),
-      h13("p", { className: "dtu-note" }, uiMessage("user.sessionBinding", { session: sessionId || translate("common.none"), name: activeName })),
+      h13("p", { className: "dtu-note" }, uiMessage("user.sessionBinding", { session: bindingTarget?.label || sessionId || translate("common.none"), name: activeName })),
       h13("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
       dirty ? h13("div", { className: "dtu-status", "data-warning": true, role: "status" }, dirtyText) : h13("p", { className: "dtu-note" }, uiMessage("user.savedNote")),
       draft === null ? h13("p", { className: "dtu-note" }, users === null ? uiMessage("user.loading") : uiMessage("user.emptyHint")) : h13(
@@ -26915,7 +27098,7 @@ function registerTavernTraceView(ctx) {
 // packages/session-template/src/client.js
 var import_react16 = require("react");
 var h16 = createLocalizedElement(import_react16.createElement);
-async function api5(path3, options = {}) {
+async function api(path3, options = {}) {
   const response = await tavernFetch(`${API_V1}${path3}`, {
     ...options,
     headers: options.body === void 0 ? options.headers : { "Content-Type": "application/json", ...options.headers }
@@ -26936,8 +27119,8 @@ function PreviewRow({ label, value, missing = false }) {
     h16("span", { className: "dtv-preview-value" }, value)
   );
 }
-function resourceValue(resource, emptyKey) {
-  return resource === null || resource === void 0 ? uiMessage(emptyKey) : rawText(resource.name || resource.id);
+function resourceValue(resource2, emptyKey) {
+  return resource2 === null || resource2 === void 0 ? uiMessage(emptyKey) : rawText(resource2.name || resource2.id);
 }
 function TemplatePreview({ template }) {
   const contents = template?.contents ?? {};
@@ -27058,11 +27241,11 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
   };
   const refresh = (0, import_react16.useCallback)(async (force = false) => {
     const [data3, presets, characters, users, books] = await Promise.all([
-      api5("/session-templates"),
-      api5("/presets"),
-      api5("/characters"),
-      api5("/users"),
-      api5("/world-books")
+      api("/session-templates"),
+      api("/presets"),
+      api("/characters"),
+      api("/users"),
+      api("/world-books")
     ]);
     if (!force && dirtyRef.current) return;
     setCatalogs({ presets: presets.presets, characters: characters.characters, users: users.users, worldBooks: books.worldBooks });
@@ -27127,7 +27310,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
     if (!discard()) return;
     return run(async () => {
       const id = event.target.value || null;
-      const data3 = await api5("/session-templates/select", {
+      const data3 = await api("/session-templates/select", {
         method: "POST",
         body: JSON.stringify({ id })
       });
@@ -27138,7 +27321,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
   const createBlank = () => {
     if (!discard()) return;
     return run(
-      () => api5("/session-templates", { method: "POST", body: JSON.stringify({ name: name2 }) }),
+      () => api("/session-templates", { method: "POST", body: JSON.stringify({ name: name2 }) }),
       (result) => ({ key: "template.status.created", values: { name: result.template.name } })
     );
   };
@@ -27147,14 +27330,14 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
     return run(async () => {
       try {
         if (file.size > 256 * 1024) throw uiError("resource.error.fileTooLarge");
-        return await api5("/session-templates/import", { method: "POST", body: await file.text() });
+        return await api("/session-templates/import", { method: "POST", body: await file.text() });
       } catch (error) {
         announceImportFailure(error);
         throw error;
       }
     }, "template.status.imported");
   };
-  const saveSelection = () => run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
+  const saveSelection = () => run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, {
     method: "PATCH",
     body: JSON.stringify({ name: name2, selection })
   }), "template.status.saved");
@@ -27162,7 +27345,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
     if (!discard()) return;
     return run(async () => {
       if (!sessionId) throw uiError("template.error.needSessionToSave");
-      return api5("/session-templates", {
+      return api("/session-templates", {
         method: "POST",
         body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
       });
@@ -27172,7 +27355,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
     if (!discard()) return;
     return run(async () => {
       if (!sessionId || selectedId === null) throw uiError("template.error.needSessionAndTemplate");
-      return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
+      return api(`/session-templates/${encodeURIComponent(selectedId)}`, {
         method: "PATCH",
         body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
       });
@@ -27180,7 +27363,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
   };
   const remove = () => {
     if (selectedId === null || !window.confirm(unwrapText(uiMessage("template.confirmDelete", { name: selected?.name ?? selectedId })))) return;
-    run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
+    run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
   };
   const start = (mode) => {
     if (!discard()) return;
@@ -27350,9 +27533,10 @@ async function createConfiguredPlaythroughWorkflow({
       name: checked?.contents?.characterCard?.name || characterId
     },
     selectionFromSessionId: source?.mode === "current" ? source.sessionId : null,
+    configurationSource: source,
     configureSession: (targetSessionId) => applySelection(targetSessionId, source)
   });
-  openSession(result.sessionId);
+  openSession(result.sessionId, result.playthrough);
   refresh();
   return result.sessionId;
 }
@@ -27380,10 +27564,10 @@ function firstRecord(...values) {
 function firstArray(...values) {
   return values.find(Array.isArray) ?? [];
 }
-function resourceTitle(resource, fallback = "") {
-  if (!isRecord4(resource)) return fallback;
+function resourceTitle(resource2, fallback = "") {
+  if (!isRecord4(resource2)) return fallback;
   for (const key2 of ["name", "title", "displayName", "label"]) {
-    if (typeof resource[key2] === "string" && resource[key2].trim() !== "") return resource[key2].trim();
+    if (typeof resource2[key2] === "string" && resource2[key2].trim() !== "") return resource2[key2].trim();
   }
   return fallback;
 }
@@ -27405,9 +27589,9 @@ function selectionIds(value) {
   const ids = value.map((item) => isRecord4(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
   return ids.filter((id, index) => ids.findIndex((item) => String(item) === String(id)) === index);
 }
-function singleStatus({ id, resource, items: items2, emptyTitleKey }) {
+function singleStatus({ id, resource: resource2, items: items2, emptyTitleKey }) {
   const bound = id !== null && id !== void 0 && id !== "";
-  const directResource = isRecord4(resource) && (resource.id === void 0 || String(resource.id) === String(id)) ? resource : null;
+  const directResource = isRecord4(resource2) && (resource2.id === void 0 || String(resource2.id) === String(id)) ? resource2 : null;
   const resolved = firstRecord(directResource, bound ? findResourceById(items2, id) : null);
   return {
     bound,
@@ -27431,20 +27615,20 @@ function launcherResourceStatuses(snapshot) {
     selection.worldBookSelection?.ids
   ));
   const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord4);
-  const implicitlySelectedWorlds = resolvedWorlds.filter((resource) => resource.selected !== false);
-  const worldIds = explicitWorldIds.length > 0 ? explicitWorldIds : implicitlySelectedWorlds.map((resource) => resource.id ?? resource.resourceId).filter((id) => id !== void 0 && id !== null);
+  const implicitlySelectedWorlds = resolvedWorlds.filter((resource2) => resource2.selected !== false);
+  const worldIds = explicitWorldIds.length > 0 ? explicitWorldIds : implicitlySelectedWorlds.map((resource2) => resource2.id ?? resource2.resourceId).filter((id) => id !== void 0 && id !== null);
   const worldCatalog = catalog(snapshot, "worldBooks", "worldBook", "lorebooks");
   const selectedWorlds = worldIds.map((id) => firstRecord(
     findResourceById(resolvedWorlds, id),
     findResourceById(worldCatalog, id),
     { id }
   ));
-  for (const resource of implicitlySelectedWorlds) {
-    const id = resource.id ?? resource.resourceId;
+  for (const resource2 of implicitlySelectedWorlds) {
+    const id = resource2.id ?? resource2.resourceId;
     if (id === void 0 || id === null || selectedWorlds.some((item) => String(item.id ?? item.resourceId) === String(id))) continue;
-    selectedWorlds.push(resource);
+    selectedWorlds.push(resource2);
   }
-  const worldTitles = selectedWorlds.map((resource) => resourceTitle(resource, String(resource.id ?? resource.resourceId ?? "")));
+  const worldTitles = selectedWorlds.map((resource2) => resourceTitle(resource2, String(resource2.id ?? resource2.resourceId ?? "")));
   return {
     preset: singleStatus({
       id: presetId,
@@ -27553,7 +27737,7 @@ function createChromeClickController({
 }
 
 // packages/client/src/play/occupancy.js
-var import_react33 = require("react");
+var import_react35 = require("react");
 
 // packages/client/src/session-selection.js
 function mainSession(snapshot) {
@@ -27573,7 +27757,7 @@ function retainedSessions(snapshot) {
 // packages/client/src/play/bound-greeting.js
 function boundGreetingView({ state, scope, disabled = false } = {}) {
   const greeting = state?.greeting;
-  if (disabled || !scope || scope.mode !== "greeting" || greeting?.characterId !== scope.characterId || typeof greeting.sourceText !== "string" || greeting.sourceText.length > 64 * 1024 || !Number.isSafeInteger(greeting.index) || greeting.index < 0 || !Number.isSafeInteger(greeting.messageCount) || greeting.messageCount < 1) return null;
+  if (disabled || !scope || !["greeting", "draft"].includes(scope.mode) || greeting?.characterId !== scope.characterId || typeof greeting.sourceText !== "string" || greeting.sourceText.length > 64 * 1024 || !Number.isSafeInteger(greeting.index) || greeting.index < 0 || !Number.isSafeInteger(greeting.messageCount) || greeting.messageCount < 1) return null;
   return {
     version: 1,
     scope: { ...scope },
@@ -27624,23 +27808,25 @@ function useRestoredRenderingDisplay(display, settings, onError) {
 // packages/client/src/play/mvu-scope.js
 function initialCardScope({ playthrough, sessionId, characterId, timeline, turns = [], greetingIndex } = {}) {
   const ext = playthrough?.ext?.pmpDshTavern;
+  if (!ext?.rootSessionId && ext?.draftId === playthrough?.id && ext?.characterId === characterId && Number.isSafeInteger(greetingIndex) && greetingIndex >= 0 && Array.isArray(timeline?.nodes) && !timeline.nodes.length && !turns.length) return { mode: "draft", playthroughId: playthrough.id, characterId, greetingIndex };
   if (typeof playthrough?.id !== "string" || !playthrough.id || typeof sessionId !== "string" || !sessionId || typeof characterId !== "string" || !characterId || ext?.rootSessionId !== sessionId || ext?.characterId !== characterId || !Array.isArray(timeline?.nodes) || timeline.nodes.length || turns.length) return null;
   return { mode: "initial", playthroughId: playthrough.id, sessionId, characterId, ...Number.isSafeInteger(greetingIndex) && greetingIndex >= 0 ? { greetingIndex } : {} };
 }
 function greetingCardScope({ playthrough, sessionId, characterId, greetingIndex, timeline } = {}) {
   const ext = playthrough?.ext?.pmpDshTavern;
+  if (!ext?.rootSessionId && ext?.draftId === playthrough?.id && ext?.characterId === characterId && Number.isSafeInteger(greetingIndex) && greetingIndex >= 0) return { mode: "draft", playthroughId: playthrough.id, characterId, greetingIndex };
   const member = ext?.rootSessionId === sessionId || timeline?.nodes?.some((node) => node.variants?.some((variant2) => variant2.sessionId === sessionId));
   if (typeof playthrough?.id !== "string" || !playthrough.id || typeof sessionId !== "string" || !sessionId || typeof characterId !== "string" || !characterId || !member || ext?.characterId !== characterId) return null;
   return { mode: "greeting", playthroughId: playthrough.id, sessionId, characterId, ...Number.isSafeInteger(greetingIndex) && greetingIndex >= 0 ? { greetingIndex } : {} };
 }
 function initialWriteViewScope(scope, snapshot) {
-  if (scope?.mode !== "initial" || scope.greetingIndex === void 0) return scope;
+  if (!["initial", "draft"].includes(scope?.mode) || scope.greetingIndex === void 0) return scope;
   const view = snapshot?.viewIdentity;
   if (view?.greetingIndex !== scope.greetingIndex || !/^[a-f0-9]{64}$/.test(view?.selectionToken ?? "")) throw Error("Current greeting selection proof unavailable");
   return { ...scope, selectionToken: view.selectionToken };
 }
 function writeGrantScope(scope, grant) {
-  if (scope?.mode !== "initial" || scope.greetingIndex === void 0) return scope;
+  if (!["initial", "draft"].includes(scope?.mode) || scope.greetingIndex === void 0) return scope;
   const bound = grant?.sourceIdentity?.scope;
   if (!bound || Object.entries(scope).some(([key2, value]) => bound[key2] !== value) || Object.keys(bound).some((key2) => !Object.hasOwn(scope, key2) && key2 !== "selectionToken") || !/^[a-f0-9]{64}$/.test(bound.selectionToken ?? "")) throw Error("Write grant belongs to a different greeting selection");
   return { ...scope, selectionToken: bound.selectionToken };
@@ -27661,7 +27847,7 @@ function immutable(value) {
 async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, writeGrant } = {}) {
   signal?.throwIfAborted();
   const bound = immutable(copy(scope));
-  if (typeof bound.sessionId !== "string" || !bound.sessionId) throw new TypeError("MVU session scope is required");
+  if ((typeof bound.sessionId !== "string" || !bound.sessionId) && !(bound.mode === "draft" && typeof bound.playthroughId === "string" && !Object.hasOwn(bound, "sessionId"))) throw new TypeError("MVU session or explicit draft scope is required");
   const controller2 = new AbortController(), listeners = /* @__PURE__ */ new Set();
   const bindingId = writeGrant ? crypto.randomUUID() : void 0;
   let disposed = false, timer, current4, polling = false, capability2, creating = false, generation = 0, readFailed = false;
@@ -27934,9 +28120,9 @@ function cardRootPresentation(value = {}) {
   }
   return root;
 }
-function usesCardViewport(html2, styles2, root) {
-  const css13 = [styles2, html2, root.html.style, root.body.style].join(";").replace(/(^|[;{"'])\s*max-height\s*:[^;}"']*/gi, "$1");
-  return /(?:\d|\.)\s*(?:d|s|l)?vh\b|\bposition\s*:\s*fixed\b/i.test(css13);
+function usesCardViewport(html2, styles3, root) {
+  const css14 = [styles3, html2, root.html.style, root.body.style].join(";").replace(/(^|[;{"'])\s*max-height\s*:[^;}"']*/gi, "$1");
+  return /(?:\d|\.)\s*(?:d|s|l)?vh\b|\bposition\s*:\s*fixed\b/i.test(css14);
 }
 var OPENING_CARD_VIEWPORT_CSS = `
 .dtv-play-opening-body[data-dtv-card-viewport-boundary]:has(> .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child){height:clamp(392px,75dvh,800px);max-height:none;min-height:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
@@ -28034,8 +28220,8 @@ function codedSource(code) {
     return null;
   }
 }
-function imageCss(css13) {
-  const value = String(css13).replace(/\/\*[\s\S]*?\*\//g, "");
+function imageCss(css14) {
+  const value = String(css14).replace(/\/\*[\s\S]*?\*\//g, "");
   if (/\\|@import\b|(?:image|image-set|-webkit-image-set|src)\s*\(/i.test(value)) return "";
   let blocked = false;
   const clean = value.replace(/url\s*\(\s*(?:"([^"\n]*)"|'([^'\n]*)'|([^\s()"']+))\s*\)/gi, (token, quoted, single, plain3, offset2) => {
@@ -28352,7 +28538,7 @@ function observeImages(root, { frame, pool = sharedPool(), onStatus = () => {
     for (const property of ["marginTop", "marginRight", "marginBottom", "marginLeft", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth"]) if (style[property] !== "0px") return false;
     for (let node = element; node; node = node.parentElement ?? node.getRootNode()?.host) if (["transform", "translate", "rotate", "scale"].some((key2) => doc.defaultView.getComputedStyle(node)[key2] !== "none")) return false;
     if (!geometry) return true;
-    const inside = (box, w, h28) => box.left >= 0 && box.top >= 0 && box.right <= w && box.bottom <= h28;
+    const inside = (box, w, h30) => box.left >= 0 && box.top >= 0 && box.right <= w && box.bottom <= h30;
     if (!inside(rect, doc.documentElement.clientWidth, doc.documentElement.clientHeight)) return false;
     if (frame) {
       const outer = frame.getBoundingClientRect();
@@ -28698,21 +28884,21 @@ async function selectedPhoto(file, signal) {
     let edge = PHOTO_LIMITS.maxEdge;
     for (let attempt = 0; attempt < 12; attempt++, edge = Math.floor(edge * 0.8)) {
       signal.throwIfAborted();
-      const ratio = Math.min(1, edge / Math.max(width, height)), w = Math.max(1, Math.round(width * ratio)), h28 = Math.max(1, Math.round(height * ratio));
+      const ratio = Math.min(1, edge / Math.max(width, height)), w = Math.max(1, Math.round(width * ratio)), h30 = Math.max(1, Math.round(height * ratio));
       const canvas = document.createElement("canvas");
       canvas.width = w;
-      canvas.height = h28;
+      canvas.height = h30;
       const context = canvas.getContext("2d");
       if (!context) throw Error("PHOTO_DECODER");
       context.fillStyle = "#fff";
-      context.fillRect(0, 0, w, h28);
-      context.drawImage(bitmap, 0, 0, w, h28);
+      context.fillRect(0, 0, w, h30);
+      context.drawImage(bitmap, 0, 0, w, h30);
       for (const quality of [0.82, 0.7, 0.55, 0.4]) {
         const data3 = canvas.toDataURL("image/jpeg", quality);
         if (data3.length <= PHOTO_LIMITS.characters && /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(data3)) {
           signal.throwIfAborted();
           const encoded = data3.slice(data3.indexOf(",") + 1);
-          return { data: data3, width: w, height: h28, type: "image/jpeg", size: encoded.length * 3 / 4 - (encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0) };
+          return { data: data3, width: w, height: h30, type: "image/jpeg", size: encoded.length * 3 / 4 - (encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0) };
         }
       }
     }
@@ -31421,8 +31607,8 @@ var purify_default = createDOMPurify();
 var import_react22 = require("react");
 
 // packages/client/src/play/static-resources.js
-function localCss(css13) {
-  const value = String(css13).replace(/\/\*[\s\S]*?\*\//g, "");
+function localCss(css14) {
+  const value = String(css14).replace(/\/\*[\s\S]*?\*\//g, "");
   return /\\|@import\b|(?:url|image|image-set|-webkit-image-set|src)\s*\(/i.test(value) ? "" : value;
 }
 function restrictStaticResources(fragment, { liveImages = false } = {}) {
@@ -31683,8 +31869,8 @@ var y = class {
         s = s ? `${s}
 ${u}` : u, r = r ? `${r}
 ${c}` : c;
-        let h28 = this.lexer.state.top;
-        if (this.lexer.state.top = true, this.lexer.blockTokens(c, i3, true), this.lexer.state.top = h28, n.length === 0) break;
+        let h30 = this.lexer.state.top;
+        if (this.lexer.state.top = true, this.lexer.blockTokens(c, i3, true), this.lexer.state.top = h30, n.length === 0) break;
         let k = i3.at(-1);
         if (k?.type === "code") break;
         if (k?.type === "blockquote") {
@@ -31716,10 +31902,10 @@ ${g}`, r = r.substring(0, r.length - T2.text.length) + M.text;
         let a = false, u = "", c = "";
         if (!(t = i3.exec(e)) || this.rules.block.hr.test(e)) break;
         u = t[0], e = e.substring(u.length);
-        let h28 = me(t[2].split(`
+        let h30 = me(t[2].split(`
 `, 1)[0], t[1].length), k = e.split(`
-`, 1)[0], T2 = !h28.trim(), g = 0;
-        if (this.options.pedantic ? (g = 2, c = h28.trimStart()) : T2 ? g = t[1].length + 1 : (g = h28.search(this.rules.other.nonSpaceChar), g = g > 4 ? 1 : g, c = h28.slice(g), g += t[1].length), T2 && this.rules.other.blankLine.test(k) && (u += k + `
+`, 1)[0], T2 = !h30.trim(), g = 0;
+        if (this.options.pedantic ? (g = 2, c = h30.trimStart()) : T2 ? g = t[1].length + 1 : (g = h30.search(this.rules.other.nonSpaceChar), g = g > 4 ? 1 : g, c = h30.slice(g), g += t[1].length), T2 && this.rules.other.blankLine.test(k) && (u += k + `
 `, e = e.substring(k.length + 1), a = true), !a) {
           let w = this.rules.other.nextBulletRegex(g), M = this.rules.other.hrRegex(g), ne = this.rules.other.fencesBeginRegex(g), re = this.rules.other.headingBeginRegex(g), be = this.rules.other.htmlBeginRegex(g), Re = this.rules.other.blockquoteBeginRegex(g);
           for (; e; ) {
@@ -31729,12 +31915,12 @@ ${g}`, r = r.substring(0, r.length - T2.text.length) + M.text;
             if (D2.search(this.rules.other.nonSpaceChar) >= g || !k.trim()) c += `
 ` + D2.slice(g);
             else {
-              if (T2 || h28.replace(this.rules.other.tabCharGlobal, "    ").search(this.rules.other.nonSpaceChar) >= 4 || ne.test(h28) || re.test(h28) || M.test(h28)) break;
+              if (T2 || h30.replace(this.rules.other.tabCharGlobal, "    ").search(this.rules.other.nonSpaceChar) >= 4 || ne.test(h30) || re.test(h30) || M.test(h30)) break;
               c += `
 ` + k;
             }
             T2 = !k.trim(), u += N + `
-`, e = e.substring(N.length + 1), h28 = D2.slice(g);
+`, e = e.substring(N.length + 1), h30 = D2.slice(g);
           }
         }
         r.loose || (o ? r.loose = true : this.rules.other.doubleBlankLine.test(u) && (o = true)), r.items.push({ type: "list_item", raw: u, task: !!this.options.gfm && this.rules.other.listIsTask.test(c), loose: false, text: c, tokens: [] }), r.raw += u;
@@ -31744,21 +31930,21 @@ ${g}`, r = r.substring(0, r.length - T2.text.length) + M.text;
       else return;
       r.raw = r.raw.trimEnd();
       for (let a of r.items) if (this.lexer.state.top = false, a.tokens = this.lexer.blockTokens(a.text, []), !r.loose) {
-        let u = a.tokens.filter((h28) => h28.type === "space"), c = u.length > 0 && u.some((h28) => this.rules.other.anyLine.test(h28.raw));
+        let u = a.tokens.filter((h30) => h30.type === "space"), c = u.length > 0 && u.some((h30) => this.rules.other.anyLine.test(h30.raw));
         r.loose = c;
       }
       for (let a of r.items) {
         let u = a.tokens[0];
         if (a.task && (u?.type === "text" || u?.type === "paragraph")) {
           a.text = a.text.replace(this.rules.other.listReplaceTask, ""), u.raw = u.raw.replace(this.rules.other.listReplaceTask, ""), u.text = u.text.replace(this.rules.other.listReplaceTask, "");
-          for (let h28 = this.lexer.inlineQueue.length - 1; h28 >= 0; h28--) if (this.rules.other.listIsTask.test(this.lexer.inlineQueue[h28].src)) {
-            this.lexer.inlineQueue[h28].src = this.lexer.inlineQueue[h28].src.replace(this.rules.other.listReplaceTask, "");
+          for (let h30 = this.lexer.inlineQueue.length - 1; h30 >= 0; h30--) if (this.rules.other.listIsTask.test(this.lexer.inlineQueue[h30].src)) {
+            this.lexer.inlineQueue[h30].src = this.lexer.inlineQueue[h30].src.replace(this.rules.other.listReplaceTask, "");
             break;
           }
           let c = this.rules.other.listTaskCheckbox.exec(a.raw);
           if (c) {
-            let h28 = { type: "checkbox", raw: c[0] + " ", checked: c[0] !== "[ ]" };
-            a.checked = h28.checked, r.loose ? a.tokens[0] && ["paragraph", "text"].includes(a.tokens[0].type) && "tokens" in a.tokens[0] && a.tokens[0].tokens ? (a.tokens[0].raw = h28.raw + a.tokens[0].raw, a.tokens[0].text = h28.raw + a.tokens[0].text, a.tokens[0].tokens.unshift(h28)) : a.tokens.unshift({ type: "paragraph", raw: h28.raw, text: h28.raw, tokens: [h28] }) : a.tokens.unshift(h28);
+            let h30 = { type: "checkbox", raw: c[0] + " ", checked: c[0] !== "[ ]" };
+            a.checked = h30.checked, r.loose ? a.tokens[0] && ["paragraph", "text"].includes(a.tokens[0].type) && "tokens" in a.tokens[0] && a.tokens[0].tokens ? (a.tokens[0].raw = h30.raw + a.tokens[0].raw, a.tokens[0].text = h30.raw + a.tokens[0].text, a.tokens[0].tokens.unshift(h30)) : a.tokens.unshift({ type: "paragraph", raw: h30.raw, text: h30.raw, tokens: [h30] }) : a.tokens.unshift(h30);
           }
         } else a.task && (a.task = false);
       }
@@ -31864,7 +32050,7 @@ ${g}`, r = r.substring(0, r.length - T2.text.length) + M.text;
     let s = this.rules.inline.emStrongLDelim.exec(e);
     if (!s || !s[1] && !s[2] && !s[3] && !s[4] || s[4] && n.match(this.rules.other.unicodeAlphaNumeric)) return;
     if (!(s[1] || s[3] || "") || !n || this.rules.inline.punctuation.exec(n)) {
-      let i3 = [...s[0]].length - 1, o, p, a = i3, u = 0, c = s[0][0], h28 = n === c, k = c === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
+      let i3 = [...s[0]].length - 1, o, p, a = i3, u = 0, c = s[0][0], h30 = n === c, k = c === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
       for (k.lastIndex = 0, t = t.slice(-1 * e.length + i3); (s = k.exec(t)) !== null; ) {
         if (o = s[1] || s[2] || s[3] || s[4] || s[5] || s[6], !o) continue;
         if (p = [...o].length, s[3] || s[4]) {
@@ -31875,7 +32061,7 @@ ${g}`, r = r.substring(0, r.length - T2.text.length) + M.text;
             u += p;
             continue;
           }
-          if (h28) break;
+          if (h30) break;
         }
         if (a -= p, a > 0) continue;
         p = Math.min(p, p + a + u);
@@ -31913,8 +32099,8 @@ ${g}`, r = r.substring(0, r.length - T2.text.length) + M.text;
         }
         if (a -= p, a > 0) continue;
         p = Math.min(p, p + a);
-        let c = [...s[0]][0].length, h28 = e.slice(0, i3 + s.index + c + p), k = h28.slice(i3, -i3);
-        return { type: "del", raw: h28, text: k, tokens: this.lexer.inlineTokens(k) };
+        let c = [...s[0]][0].length, h30 = e.slice(0, i3 + s.index + c + p), k = h30.slice(i3, -i3);
+        return { type: "del", raw: h30, text: k, tokens: this.lexer.inlineTokens(k) };
       }
     }
   }
@@ -32145,8 +32331,8 @@ var x = class l {
       let p = e;
       if (this.options.extensions?.startInline) {
         let a = 1 / 0, u = e.slice(1), c;
-        this.options.extensions.startInline.forEach((h28) => {
-          c = h28.call({ lexer: this }, u), typeof c == "number" && c >= 0 && (a = Math.min(a, c));
+        this.options.extensions.startInline.forEach((h30) => {
+          c = h30.call({ lexer: this }, u), typeof c == "number" && c >= 0 && (a = Math.min(a, c));
         }), a < 1 / 0 && a >= 0 && (p = e.substring(0, a + 1));
       }
       if (o = this.tokenizer.inlineText(p)) {
@@ -32588,15 +32774,15 @@ var Z = class {
           let o = i3, p = n.hooks[o], a = r[o];
           S.passThroughHooks.has(i3) ? r[o] = (u) => {
             if (this.defaults.async && S.passThroughHooksRespectAsync.has(i3)) return (async () => {
-              let h28 = await p.call(r, u);
-              return a.call(r, h28);
+              let h30 = await p.call(r, u);
+              return a.call(r, h30);
             })();
             let c = p.call(r, u);
             return a.call(r, c);
           } : r[o] = (...u) => {
             if (this.defaults.async) return (async () => {
-              let h28 = await p.apply(r, u);
-              return h28 === false && (h28 = await a.apply(r, u)), h28;
+              let h30 = await p.apply(r, u);
+              return h30 === false && (h30 = await a.apply(r, u)), h30;
             })();
             let c = p.apply(r, u);
             return c === false && (c = a.apply(r, u)), c;
@@ -32733,40 +32919,40 @@ function isolateStyledHtml(template, documentObject) {
   template.content.append(boundary);
   return template.innerHTML;
 }
-function skipCssTrivia(css13, offset2, end) {
+function skipCssTrivia(css14, offset2, end) {
   while (offset2 < end) {
-    if (/\s/.test(css13[offset2])) offset2++;
-    else if (css13.startsWith("/*", offset2)) {
-      const close2 = css13.indexOf("*/", offset2 + 2);
+    if (/\s/.test(css14[offset2])) offset2++;
+    else if (css14.startsWith("/*", offset2)) {
+      const close2 = css14.indexOf("*/", offset2 + 2);
       if (close2 < 0 || close2 >= end) break;
       offset2 = close2 + 2;
     } else break;
   }
   return offset2;
 }
-function adaptDocumentCss(css13) {
+function adaptDocumentCss(css14) {
   const parts = [];
   const frames = [{ rules: true, start: 0 }];
   let copied = 0;
   let parentheses = 0;
   let brackets = 0;
-  for (let i3 = 0; i3 < css13.length; i3++) {
-    const char = css13[i3];
+  for (let i3 = 0; i3 < css14.length; i3++) {
+    const char = css14[i3];
     if (char === "\\") {
       i3++;
       continue;
     }
-    if (char === "/" && css13[i3 + 1] === "*") {
-      const end = css13.indexOf("*/", i3 + 2);
+    if (char === "/" && css14[i3 + 1] === "*") {
+      const end = css14.indexOf("*/", i3 + 2);
       if (end < 0) break;
       i3 = end + 1;
       continue;
     }
     if (char === '"' || char === "'") {
       const quote = char;
-      while (++i3 < css13.length) {
-        if (css13[i3] === "\\") i3++;
-        else if (css13[i3] === quote) break;
+      while (++i3 < css14.length) {
+        if (css14[i3] === "\\") i3++;
+        else if (css14[i3] === quote) break;
       }
       continue;
     }
@@ -32777,11 +32963,11 @@ function adaptDocumentCss(css13) {
     if (parentheses || brackets) continue;
     const frame = frames.at(-1);
     if (char === "{") {
-      const start = frame.rules ? skipCssTrivia(css13, frame.start, i3) : i3;
-      const prefix = css13.slice(start, Math.min(start + 20, i3));
+      const start = frame.rules ? skipCssTrivia(css14, frame.start, i3) : i3;
+      const prefix = css14.slice(start, Math.min(start + 20, i3));
       const root = prefix.match(/^(?:html|body|:root)\b/i)?.[0];
-      if (root && skipCssTrivia(css13, start + root.length, i3) === i3) {
-        parts.push(css13.slice(copied, frame.start), ":host");
+      if (root && skipCssTrivia(css14, start + root.length, i3) === i3) {
+        parts.push(css14.slice(copied, frame.start), ":host");
         copied = i3;
       }
       frames.push({ rules: /^@(media|supports|container|layer|scope|document|starting-style)\b/i.test(prefix), start: i3 + 1 });
@@ -32790,7 +32976,7 @@ function adaptDocumentCss(css13) {
       frames.at(-1).start = i3 + 1;
     } else if (char === ";") frame.start = i3 + 1;
   }
-  parts.push(css13.slice(copied));
+  parts.push(css14.slice(copied));
   return parts.join("");
 }
 function isolateHtmlDocuments(template, documentObject) {
@@ -33577,14 +33763,14 @@ var createClass = function createClass2(classes) {
   return classes.filter((cls) => cls).join(" ");
 };
 var cssStyleToString = function cssStyleToString2(style) {
-  var styles2 = "";
+  var styles3 = "";
   for (var key2 of Object.keys(style)) {
     var value = style[key2];
     if (value !== void 0) {
-      styles2 += hyphenate(key2) + ":" + value + ";";
+      styles3 += hyphenate(key2) + ":" + value + ";";
     }
   }
-  return styles2;
+  return styles3;
 };
 var initNode = function initNode2(classes, options, style) {
   this.classes = classes || [];
@@ -33621,9 +33807,9 @@ var toMarkup = function toMarkup2(tagName) {
   if (this.classes.length) {
     markup += ' class="' + escape(createClass(this.classes)) + '"';
   }
-  var styles2 = cssStyleToString(this.style);
-  if (styles2) {
-    markup += ' style="' + escape(styles2) + '"';
+  var styles3 = cssStyleToString(this.style);
+  if (styles3) {
+    markup += ' style="' + escape(styles3) + '"';
   }
   for (var attr of Object.keys(this.attributes)) {
     if (invalidAttributeNameRegex.test(attr)) {
@@ -33726,9 +33912,9 @@ var Img = class {
   }
   toMarkup() {
     var markup = '<img src="' + escape(this.src) + '"' + (' alt="' + escape(this.alt) + '"');
-    var styles2 = cssStyleToString(this.style);
-    if (styles2) {
-      markup += ' style="' + escape(styles2) + '"';
+    var styles3 = cssStyleToString(this.style);
+    if (styles3) {
+      markup += ' style="' + escape(styles3) + '"';
     }
     markup += "'/>";
     return markup;
@@ -33810,14 +33996,14 @@ var SymbolNode = class {
       markup += escape(createClass(this.classes));
       markup += '"';
     }
-    var styles2 = "";
+    var styles3 = "";
     if (this.italic > 0) {
-      styles2 += "margin-right:" + makeEm(this.italic) + ";";
+      styles3 += "margin-right:" + makeEm(this.italic) + ";";
     }
-    styles2 += cssStyleToString(this.style);
-    if (styles2) {
+    styles3 += cssStyleToString(this.style);
+    if (styles3) {
       needsSpan = true;
-      markup += ' style="' + escape(styles2) + '"';
+      markup += ' style="' + escape(styles3) + '"';
     }
     var escaped = escape(this.text);
     if (needsSpan) {
@@ -50586,7 +50772,8 @@ function validate(value, schema5) {
 function normalizeVariables(input) {
   const result = json(input);
   if (!result || typeof result.stat_data !== "object" || result.stat_data === null || Array.isArray(result.stat_data)) fail("MVU_SCHEMA", "stat_data must be an object");
-  result.schema ??= deriveSchema(result.stat_data);
+  if (result.mvu_schema?.mvuSchema === 1 && result.mvu_schema.interpreterVersion === 2) result.schema = { type: "object", properties: {}, extensible: true, strictSet: true };
+  else result.schema ??= deriveSchema(result.stat_data);
   validate(result.stat_data, result.schema);
   result.initialized_lorebooks ??= {};
   result.display_data ??= json(result.stat_data);
@@ -51418,7 +51605,6 @@ var InteractiveCard = (0, import_react22.memo)(function InteractiveCard2({ sourc
   const data3 = (0, import_react22.useMemo)(() => {
     if (source.length > 128 * 1024) return { html: "", scripts: [], unsupported: ["Card exceeds 128K characters"] };
     try {
-      if (!enabled) return cardDocument(source);
       const prepared = prepareCardDocument(source, owners, helpers);
       if (/<input\b[^>]*type=["']?file\b/i.test(prepared.html)) prepared.virtual = true;
       return prepared;
@@ -51431,7 +51617,7 @@ var InteractiveCard = (0, import_react22.memo)(function InteractiveCard2({ sourc
     }
   }, [source, enabled, trustRevision, JSON.stringify(owners), JSON.stringify(helpers)]);
   const srcDoc = (0, import_react22.useMemo)(() => `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data3.html, { inertImages: true })}</body></html>`, [data3]);
-  const unsupportedMessage = data3.unsupported.length ? data3.unsupported.map((reason) => reason.startsWith("appearance.") ? translate(reason) : reason).join(" ") + " " + translate("appearance.cardStaticFallback") : "";
+  const unsupportedMessage = data3.unsupported.length ? data3.unsupported.map((reason) => reason.startsWith("appearance.") ? translate(reason) : reason).join(" ") + " " + translate("appearance.cardStaticFallback") : !enabled && (data3.runs?.length || data3.scripts?.length) ? translate("appearance.scriptsOff") : "";
   const visibleError = mvuFailure && writesBlocked ? "" : error;
   const diagnosticsOutside = useCardDiagnostics([unsupportedMessage, visibleError, mvuNotice, photoError].filter(Boolean), diagnosticId);
   (0, import_react22.useLayoutEffect)(() => {
@@ -51950,7 +52136,6 @@ var InteractiveCard = (0, import_react22.memo)(function InteractiveCard2({ sourc
     closed ? null : (0, import_react22.createElement)("iframe", { key: JSON.stringify([sourceFrameKey, scopeKey, enabled, trustRevision, owners, helpers, openingBinding, runtimeRevision]), ref: frame, title: translate("appearance.card"), sandbox: "allow-same-origin", referrerPolicy: "no-referrer", srcDoc, onLoad: load, style: { display: "block", width: "100%", boxSizing: "border-box", minWidth: 220, height: 160, maxHeight: 800, border: 0, borderRadius: 0, background: "transparent" } }),
     mvuReading || mvuFailure && writesBlocked ? (0, import_react22.createElement)("p", { role: "status" }, translate("appearance.mvuLoading")) : null,
     mvuFailure && !writesBlocked ? (0, import_react22.createElement)("button", { type: "button", onClick: () => setRuntimeRevision((value) => value + 1) }, translate("appearance.mvuRetry")) : null,
-    !enabled && data3.scripts.length ? (0, import_react22.createElement)("small", null, translate("appearance.scriptsOff")) : null,
     ...!diagnosticsOutside ? [unsupportedMessage, visibleError, mvuNotice, photoError].filter(Boolean).map((message) => (0, import_react22.createElement)(CardDiagnosticNotice, { key: message, message, cardId: diagnosticId })) : [],
     media?.failed > 0 ? (0, import_react22.createElement)("small", { className: "dtv-card-media", role: "alert" }, translate("appearance.imageUnavailable")) : null,
     openingProgress ? (0, import_react22.createElement)("p", { role: "status" }, translate("appearance.openingProgress")) : null,
@@ -51996,8 +52181,8 @@ var MessageContent = (0, import_react22.memo)(function MessageContent2({ text: t
 
 // packages/client/src/play/presentation.js
 var Presentation = (0, import_react23.createContext)(null);
-function ConversationPresentation({ state, playthrough, playClient, sessionId, disabled, busy: busy2, changed, composer, children }) {
-  return (0, import_react23.createElement)(Presentation.Provider, { value: { state, playthrough, playClient, sessionId, disabled, busy: busy2, changed, composer } }, children);
+function ConversationPresentation({ state, playthrough, playClient, sessionId, disabled, busy: busy2, changed, composer, sendMessage, children }) {
+  return (0, import_react23.createElement)(Presentation.Provider, { value: { state, playthrough, playClient, sessionId, disabled, busy: busy2, changed, composer, sendMessage } }, children);
 }
 function messageAvatarKey(turn, role2, index = 0) {
   return role2 === "user" ? `${turn.id}:user` : `${turn.id}:${turn.variant?.id ?? "live"}:assistant:${index}`;
@@ -52064,7 +52249,8 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
     onSend: disabled || context?.busy ? void 0 : async (text4, options) => {
       const current4 = latest.current;
       if (current4.disabled || current4.busy) throw Error("Session input is busy");
-      await current4.playClient.postUserMessage(current4.sessionId, text4, options);
+      if (current4.sendMessage) await current4.sendMessage(text4, options);
+      else await current4.playClient.postUserMessage(current4.sessionId, text4, options);
       current4.changed?.();
     }
   }), [text3, scopeKey, writeKey, context?.busy, disabled, context?.composer, context?.playClient, owners, helpers, cardContext, settings.interactiveCards, context?.disabled, streaming]);
@@ -52120,6 +52306,93 @@ function characterAvatarUrl(id) {
 
 // packages/client/src/play/chat.js
 var import_react26 = require("react");
+
+// packages/client/src/play/display-name-macros.js
+function userAliases(source) {
+  const tokenizer2 = new x({ gfm: true }).tokenizer;
+  const candidates = [], wrappers = [], protectedRanges = [];
+  for (let offset2 = 0; offset2 < source.length; ) {
+    const rest = source.slice(offset2);
+    if (offset2 === 0 || source[offset2 - 1] === "\n") {
+      const code = tokenizer2.fences(rest) ?? tokenizer2.code(rest);
+      if (code) {
+        offset2 += code.raw.length;
+        continue;
+      }
+    }
+    if (source[offset2] === "\\") {
+      offset2 += 2;
+      continue;
+    }
+    if (source[offset2] === "`") {
+      const span = tokenizer2.codespan(rest);
+      if (span) {
+        offset2 += span.raw.length;
+        continue;
+      }
+      offset2 += /^`+/.exec(rest)[0].length;
+      continue;
+    }
+    if (source[offset2] !== "<") {
+      offset2++;
+      continue;
+    }
+    const tag = tokenizer2.tag(rest);
+    if (!tag) {
+      offset2++;
+      continue;
+    }
+    const raw = tag.raw;
+    const opaque = /^<(html|head|script|style|pre|code|textarea)\b/i.exec(raw);
+    if (opaque && !/\/\s*>$/.test(raw)) {
+      const closing = new RegExp(`</${opaque[1]}\\s*>`, "gi");
+      closing.lastIndex = offset2 + raw.length;
+      const end = closing.exec(source);
+      offset2 = end ? end.index + end[0].length : source.length;
+      continue;
+    }
+    if (/^<user(?:\s[^<>]*)?>$/i.test(raw) && !/\/\s*>$/.test(raw)) {
+      wrappers.push(offset2);
+      if (/^<user>$/i.test(raw)) candidates.push(offset2);
+    } else if (/^<\/user\s*>$/i.test(raw) && wrappers.length) {
+      protectedRanges.push([wrappers.pop(), offset2 + raw.length]);
+    }
+    offset2 += raw.length;
+  }
+  protectedRanges.sort((a, b2) => a[0] - b2[0]);
+  const ranges = [];
+  for (const range of protectedRanges) {
+    const previous = ranges.at(-1);
+    if (previous && range[0] <= previous[1]) previous[1] = Math.max(previous[1], range[1]);
+    else ranges.push(range);
+  }
+  let rangeIndex = 0;
+  return candidates.filter((offset2) => {
+    while (ranges[rangeIndex]?.[1] <= offset2) rangeIndex++;
+    return !ranges[rangeIndex] || offset2 < ranges[rangeIndex][0];
+  });
+}
+function applyDisplayNameMacros(text3, { user = "User", character = "Assistant" } = {}) {
+  const names2 = {
+    user: typeof user === "string" && user !== "" ? user : "User",
+    char: typeof character === "string" && character !== "" ? character : "Assistant"
+  };
+  const source = String(text3 ?? "");
+  const replacements = [...source.matchAll(/\{\{\s*(user|char)\s*\}\}/gi)].map((match) => ({ offset: match.index, length: match[0].length, value: names2[match[1].toLowerCase()] }));
+  if (/<user>/i.test(source)) {
+    const value = names2.user.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    replacements.push(...userAliases(source).map((offset2) => ({ offset: offset2, length: 6, value })));
+  }
+  replacements.sort((a, b2) => a.offset - b2.offset);
+  const parts = [];
+  let copied = 0;
+  for (const { offset: offset2, length, value } of replacements) {
+    parts.push(source.slice(copied, offset2), value);
+    copied = offset2 + length;
+  }
+  parts.push(source.slice(copied));
+  return parts.join("");
+}
 
 // packages/client/src/play/chat-model.js
 function normalizedPath2(value) {
@@ -52414,16 +52687,6 @@ function projectGreeting({
     text: selected.text,
     options
   };
-}
-function applyDisplayNameMacros(text3, {
-  user = "User",
-  character = "Assistant"
-} = {}) {
-  const names2 = {
-    user: typeof user === "string" && user !== "" ? user : "User",
-    char: typeof character === "string" && character !== "" ? character : "Assistant"
-  };
-  return String(text3 ?? "").replace(/\{\{\s*(user|char)\s*\}\}/gi, (_match, name2) => names2[name2.toLowerCase()]);
 }
 function adjacentGreetingIndex(greeting, direction) {
   const options = greeting?.options ?? [];
@@ -53457,11 +53720,33 @@ function MowanChatView({ sessionId, useSession, useChat, useInput, inputActions,
   );
 }
 
+// packages/client/src/play/workspace-notice.js
+var import_react27 = require("react");
+var h22 = createLocalizedElement(import_react27.createElement);
+function RpWorkspaceNotice() {
+  const [dismissed, setDismissed] = (0, import_react27.useState)(false);
+  if (dismissed) return null;
+  return h22(
+    "aside",
+    { className: "dtv-rp-workspace-warning", role: "note" },
+    h22("button", {
+      className: "dtv-close",
+      type: "button",
+      title: uiMessage("settings.rpWorkspace.warningClose"),
+      "aria-label": uiMessage("settings.rpWorkspace.warningClose"),
+      onClick: () => setDismissed(true)
+    }, "\u2715"),
+    h22("h3", null, uiMessage("settings.rpWorkspace.warningTitle")),
+    h22("p", null, uiMessage("settings.rpWorkspace.warningUse")),
+    h22("p", null, uiMessage("settings.rpWorkspace.warningResidue"))
+  );
+}
+
 // packages/client/src/play/sidebar.js
-var import_react29 = require("react");
+var import_react30 = require("react");
 
 // packages/client/src/play/diagnostics.js
-var import_react27 = require("react");
+var import_react28 = require("react");
 
 // packages/client/src/play/title.js
 function playthroughNumber(playthrough) {
@@ -53720,7 +54005,7 @@ function operationLocator(row) {
 }
 
 // packages/client/src/play/diagnostics.js
-var h22 = createLocalizedElement(import_react27.createElement);
+var h23 = createLocalizedElement(import_react28.createElement);
 var diagnosticsCss = `
 .dtv-panel.dtv-diagnostics{position:fixed;z-index:3;box-sizing:border-box;width:min(440px,calc((100vw - 56px)/var(--dtv-ui-scale,1)))}
 .dtv-diagnostic-summary{display:flex;align-items:center;gap:4px;margin:4px 8px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;font-size:11px}
@@ -53744,19 +54029,19 @@ var diagnosticsCss = `
 `;
 function WorkspaceDiagnosticSummary({ snapshot, controller: controller2 }) {
   if (snapshot.loading || !snapshot.showSummary) return null;
-  return h22(
+  return h23(
     "div",
     { className: "dtv-diagnostic-summary", role: "status" },
-    h22(
+    h23(
       "button",
       { type: "button", onClick: () => controller2.open() },
       uiMessage(snapshot.error ? "diagnostics.workspaceSummary" : "diagnostics.timelineSummary", { count: snapshot.issues.length })
     ),
-    h22("button", { type: "button", onClick: () => controller2.dismiss(), title: uiMessage("diagnostics.dismiss"), "aria-label": uiMessage("diagnostics.dismiss") }, "\xD7")
+    h23("button", { type: "button", onClick: () => controller2.dismiss(), title: uiMessage("diagnostics.dismiss"), "aria-label": uiMessage("diagnostics.dismiss") }, "\xD7")
   );
 }
 function PlaythroughDiagnosticWarning({ playthrough, controller: controller2 }) {
-  return h22("button", {
+  return h23("button", {
     type: "button",
     className: "dtv-diagnostic-warning",
     title: uiMessage("diagnostics.playthrough", { name: playthroughDisplayTitle(playthrough) }),
@@ -53771,8 +54056,8 @@ function explanation(issue) {
   return [issue.kind === "workspace" ? "diagnostics.workspaceFailed" : "diagnostics.timelineFailed", "diagnostics.retryHint"];
 }
 function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroughId = null, showAll, close: close2 }) {
-  const snapshot = (0, import_react27.useSyncExternalStore)(controller2.subscribe, controller2.getSnapshot);
-  const [copyStatus, setCopyStatus] = (0, import_react27.useState)(null);
+  const snapshot = (0, import_react28.useSyncExternalStore)(controller2.subscribe, controller2.getSnapshot);
+  const [copyStatus, setCopyStatus] = (0, import_react28.useState)(null);
   const issues = playthroughId === null ? snapshot.issues : snapshot.issues.filter((issue) => issue.kind === "workspace" || issue.playthroughId === playthroughId);
   const copy2 = async (selected) => {
     try {
@@ -53782,63 +54067,63 @@ function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroug
       setCopyStatus("diagnostics.copyFailed");
     }
   };
-  return h22(
+  return h23(
     "section",
     { className: "dtv-panel dtv-diagnostics", "aria-label": uiMessage("nav.diagnostics") },
-    h22(
+    h23(
       "div",
       { className: "dtv-header" },
-      h22("span", { className: "dtv-title" }, uiMessage("nav.diagnostics")),
-      h22("button", { type: "button", className: "dtv-close", onClick: close2, "aria-label": uiMessage("common.close") }, "\xD7")
+      h23("span", { className: "dtv-title" }, uiMessage("nav.diagnostics")),
+      h23("button", { type: "button", className: "dtv-close", onClick: close2, "aria-label": uiMessage("common.close") }, "\xD7")
     ),
-    h22(
+    h23(
       "div",
       { className: "dtv-body" },
-      h22(OperationLogsPanel, { client }),
-      h22("p", { className: "dtv-note" }, uiMessage("diagnostics.scope")),
-      snapshot.resources?.workspace?.rootPath ? h22("p", { className: "dtv-note" }, rawText(snapshot.resources.workspace.rootPath)) : null,
-      h22(
+      h23(OperationLogsPanel, { client }),
+      h23("p", { className: "dtv-note" }, uiMessage("diagnostics.scope")),
+      snapshot.resources?.workspace?.rootPath ? h23("p", { className: "dtv-note" }, rawText(snapshot.resources.workspace.rootPath)) : null,
+      h23(
         "div",
         { className: "dtv-actions" },
-        h22("button", { type: "button", className: "dtv-button", disabled: snapshot.loading, onClick: () => {
+        h23("button", { type: "button", className: "dtv-button", disabled: snapshot.loading, onClick: () => {
           setCopyStatus(null);
           void controller2.refresh();
         } }, uiMessage("diagnostics.recheck")),
-        h22("button", { type: "button", className: "dtv-button", disabled: snapshot.loading || issues.length === 0, onClick: () => copy2(issues) }, uiMessage("diagnostics.copy"))
+        h23("button", { type: "button", className: "dtv-button", disabled: snapshot.loading || issues.length === 0, onClick: () => copy2(issues) }, uiMessage("diagnostics.copy"))
       ),
-      playthroughId !== null ? h22("button", { type: "button", className: "dtv-button", onClick: showAll }, uiMessage("diagnostics.showAll", { count: snapshot.issues.length })) : null,
-      copyStatus ? h22("p", { className: "dtv-status", role: "status", "data-error": copyStatus === "diagnostics.copyFailed" }, uiMessage(copyStatus)) : null,
-      snapshot.loading ? h22("p", { className: "dtv-note", role: "status" }, uiMessage("diagnostics.loading")) : issues.length === 0 ? h22("p", { className: "dtv-note", role: "status" }, uiMessage(snapshot.resources?.workspace?.selected === false ? "diagnostics.noWorkspace" : playthroughId !== null ? "diagnostics.noPlaythroughIssues" : "diagnostics.empty")) : null,
+      playthroughId !== null ? h23("button", { type: "button", className: "dtv-button", onClick: showAll }, uiMessage("diagnostics.showAll", { count: snapshot.issues.length })) : null,
+      copyStatus ? h23("p", { className: "dtv-status", role: "status", "data-error": copyStatus === "diagnostics.copyFailed" }, uiMessage(copyStatus)) : null,
+      snapshot.loading ? h23("p", { className: "dtv-note", role: "status" }, uiMessage("diagnostics.loading")) : issues.length === 0 ? h23("p", { className: "dtv-note", role: "status" }, uiMessage(snapshot.resources?.workspace?.selected === false ? "diagnostics.noWorkspace" : playthroughId !== null ? "diagnostics.noPlaythroughIssues" : "diagnostics.empty")) : null,
       ...issues.map((issue) => {
         const [cause, suggestion] = explanation(issue);
         const title = [issue.characterName, playthroughDisplayTitle(issue.playthrough)].filter(Boolean).join(" \xB7 ");
-        return h22(
+        return h23(
           "article",
           { className: "dtv-diagnostic-card", key: issue.key },
-          title ? h22("h3", null, rawText(title)) : null,
-          h22("p", null, uiMessage(cause)),
-          h22("p", { className: "dtv-note" }, uiMessage(suggestion)),
-          h22(
+          title ? h23("h3", null, rawText(title)) : null,
+          h23("p", null, uiMessage(cause)),
+          h23("p", { className: "dtv-note" }, uiMessage(suggestion)),
+          h23(
             "details",
             null,
-            h22("summary", null, uiMessage("diagnostics.technical")),
-            h22("pre", null, rawText(workspaceDiagnosticReport(snapshot, [issue])))
+            h23("summary", null, uiMessage("diagnostics.technical")),
+            h23("pre", null, rawText(workspaceDiagnosticReport(snapshot, [issue])))
           ),
-          h22("button", { type: "button", className: "dtv-button", onClick: () => copy2([issue]) }, uiMessage("diagnostics.copyOne"))
+          h23("button", { type: "button", className: "dtv-button", onClick: () => copy2([issue]) }, uiMessage("diagnostics.copyOne"))
         );
       })
     )
   );
 }
 function OperationLogsPanel({ client }) {
-  const [operationId, setOperationId] = (0, import_react27.useState)("");
-  const [page, setPage] = (0, import_react27.useState)(null);
-  const [status, setStatus] = (0, import_react27.useState)(null);
-  const [copyStatus, setCopyStatus] = (0, import_react27.useState)(null);
-  const [busy2, setBusy] = (0, import_react27.useState)(false);
-  const generation = (0, import_react27.useRef)(0);
-  const filterHelpId = (0, import_react27.useId)();
-  (0, import_react27.useEffect)(() => {
+  const [operationId, setOperationId] = (0, import_react28.useState)("");
+  const [page, setPage] = (0, import_react28.useState)(null);
+  const [status, setStatus] = (0, import_react28.useState)(null);
+  const [copyStatus, setCopyStatus] = (0, import_react28.useState)(null);
+  const [busy2, setBusy] = (0, import_react28.useState)(false);
+  const generation = (0, import_react28.useRef)(0);
+  const filterHelpId = (0, import_react28.useId)();
+  (0, import_react28.useEffect)(() => {
     setPage(null);
     setStatus(null);
     setBusy(false);
@@ -53892,7 +54177,7 @@ function OperationLogsPanel({ client }) {
       setCopyStatus("diagnostics.copyFailed");
     }
   };
-  return h22(
+  return h23(
     "details",
     {
       className: "dtv-diagnostic-card dtv-operation-log",
@@ -53906,21 +54191,21 @@ function OperationLogsPanel({ client }) {
         }
       }
     },
-    h22("summary", null, uiMessage("diagnostics.logsTitle")),
-    h22("p", null, uiMessage("diagnostics.logsScope")),
-    h22(
+    h23("summary", null, uiMessage("diagnostics.logsTitle")),
+    h23("p", null, uiMessage("diagnostics.logsScope")),
+    h23(
       "details",
       { className: "dtv-operation-guide" },
-      h22("summary", null, uiMessage("diagnostics.logsTroubleshoot")),
-      h22("p", null, uiMessage("diagnostics.logsBoundary")),
-      h22("p", null, uiMessage("diagnostics.logsTraceGuide"))
+      h23("summary", null, uiMessage("diagnostics.logsTroubleshoot")),
+      h23("p", null, uiMessage("diagnostics.logsBoundary")),
+      h23("p", null, uiMessage("diagnostics.logsTraceGuide"))
     ),
-    h22(
+    h23(
       "details",
       { className: "dtv-operation-advanced" },
-      h22("summary", null, uiMessage("diagnostics.logsAdvanced")),
-      h22("p", { id: filterHelpId, className: "dtv-note" }, uiMessage("diagnostics.logsIdHelp")),
-      h22("label", null, uiMessage("diagnostics.logsFilter"), h22("input", {
+      h23("summary", null, uiMessage("diagnostics.logsAdvanced")),
+      h23("p", { id: filterHelpId, className: "dtv-note" }, uiMessage("diagnostics.logsIdHelp")),
+      h23("label", null, uiMessage("diagnostics.logsFilter"), h23("input", {
         value: operationId,
         maxLength: 128,
         placeholder: "operationId",
@@ -53941,65 +54226,65 @@ function OperationLogsPanel({ client }) {
         }
       }))
     ),
-    operationId.trim() ? h22("p", { className: "dtv-note" }, uiMessage("diagnostics.logsFiltered", { id: operationId.trim() })) : null,
-    h22(
+    operationId.trim() ? h23("p", { className: "dtv-note" }, uiMessage("diagnostics.logsFiltered", { id: operationId.trim() })) : null,
+    h23(
       "div",
       { className: "dtv-actions" },
-      h22("button", { type: "button", className: "dtv-button", disabled: busy2, onClick: () => load() }, uiMessage("diagnostics.logsLoad")),
-      h22("button", { type: "button", className: "dtv-button", disabled: busy2 || !page?.nextCursor, onClick: () => load(page.nextCursor) }, uiMessage("diagnostics.logsOlder")),
-      h22("button", { type: "button", className: "dtv-button", disabled: busy2 || !page, onClick: download }, uiMessage("diagnostics.logsExport"))
+      h23("button", { type: "button", className: "dtv-button", disabled: busy2, onClick: () => load() }, uiMessage("diagnostics.logsLoad")),
+      h23("button", { type: "button", className: "dtv-button", disabled: busy2 || !page?.nextCursor, onClick: () => load(page.nextCursor) }, uiMessage("diagnostics.logsOlder")),
+      h23("button", { type: "button", className: "dtv-button", disabled: busy2 || !page, onClick: download }, uiMessage("diagnostics.logsExport"))
     ),
-    h22("p", { className: "dtv-note" }, uiMessage("diagnostics.logsPrivacy")),
-    busy2 ? h22("p", { role: "status" }, uiMessage("diagnostics.logsLoading")) : null,
-    status ? h22("p", { role: "status" }, uiMessage(status)) : null,
-    copyStatus ? h22("p", { role: "status" }, uiMessage(copyStatus)) : null,
-    page ? h22(
+    h23("p", { className: "dtv-note" }, uiMessage("diagnostics.logsPrivacy")),
+    busy2 ? h23("p", { role: "status" }, uiMessage("diagnostics.logsLoading")) : null,
+    status ? h23("p", { role: "status" }, uiMessage(status)) : null,
+    copyStatus ? h23("p", { role: "status" }, uiMessage(copyStatus)) : null,
+    page ? h23(
       "div",
       { "aria-busy": busy2 },
-      h22("p", { role: "status" }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? "diagnostics.logsReady" : "diagnostics.logsDegraded", { count: page.records.length })),
-      page.records.length === 0 ? h22("p", { className: "dtv-note" }, uiMessage(operationId.trim() ? "diagnostics.logsNoMatch" : "diagnostics.logsEmpty")) : null,
-      h22("ol", { className: "dtv-operation-list", "aria-label": uiMessage("diagnostics.logsRecords") }, ...page.records.map((row, index) => {
+      h23("p", { role: "status" }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? "diagnostics.logsReady" : "diagnostics.logsDegraded", { count: page.records.length })),
+      page.records.length === 0 ? h23("p", { className: "dtv-note" }, uiMessage(operationId.trim() ? "diagnostics.logsNoMatch" : "diagnostics.logsEmpty")) : null,
+      h23("ol", { className: "dtv-operation-list", "aria-label": uiMessage("diagnostics.logsRecords") }, ...page.records.map((row, index) => {
         const result = operationResult(row);
-        return h22(
+        return h23(
           "li",
           { className: "dtv-operation-row", key: row.id ?? index },
-          h22(
+          h23(
             "div",
             { className: "dtv-operation-heading" },
-            h22("strong", null, operationLabel(row)),
-            row.timestamp ? h22("time", { dateTime: row.timestamp }, rawText(new Date(row.timestamp).toLocaleString())) : null
+            h23("strong", null, operationLabel(row)),
+            row.timestamp ? h23("time", { dateTime: row.timestamp }, rawText(new Date(row.timestamp).toLocaleString())) : null
           ),
-          h22("span", { className: "dtv-operation-result", "data-tone": result.tone }, result.label),
-          ...operationObjects(row).map((object) => h22("div", { className: "dtv-operation-object", key: object.key }, h22("span", null, object.label), object.key === "scope" ? h22("span", null, object.value) : h22("code", { title: rawText(object.value) }, rawText(object.value)))),
-          h22(
+          h23("span", { className: "dtv-operation-result", "data-tone": result.tone }, result.label),
+          ...operationObjects(row).map((object) => h23("div", { className: "dtv-operation-object", key: object.key }, h23("span", null, object.label), object.key === "scope" ? h23("span", null, object.value) : h23("code", { title: rawText(object.value) }, rawText(object.value)))),
+          h23(
             "details",
             null,
-            h22("summary", null, uiMessage("diagnostics.logsDetails")),
-            row.operationId ? h22(
+            h23("summary", null, uiMessage("diagnostics.logsDetails")),
+            row.operationId ? h23(
               "div",
               null,
-              h22("p", null, uiMessage("diagnostics.logsIdShort")),
-              h22("code", { className: "dtv-operation-id" }, rawText(row.operationId)),
-              h22("button", { type: "button", className: "dtv-button", onClick: () => copyId(row.operationId), "aria-label": uiMessage("diagnostics.logsCopyIdFor", { id: row.operationId }) }, uiMessage("diagnostics.logsCopyId"))
+              h23("p", null, uiMessage("diagnostics.logsIdShort")),
+              h23("code", { className: "dtv-operation-id" }, rawText(row.operationId)),
+              h23("button", { type: "button", className: "dtv-button", onClick: () => copyId(row.operationId), "aria-label": uiMessage("diagnostics.logsCopyIdFor", { id: row.operationId }) }, uiMessage("diagnostics.logsCopyId"))
             ) : null,
-            h22("button", { type: "button", className: "dtv-button", onClick: () => copyLocator(row) }, uiMessage("diagnostics.logsCopyLocator")),
-            h22("p", { className: "dtv-note" }, uiMessage(row.sessionId ? "diagnostics.logsLocatorHelp" : "diagnostics.logsLocatorNoSession")),
-            h22("pre", { className: "dtv-operation-raw", tabIndex: 0, "aria-label": uiMessage("diagnostics.logsRawRecord") }, rawText(JSON.stringify(row, null, 2)))
+            h23("button", { type: "button", className: "dtv-button", onClick: () => copyLocator(row) }, uiMessage("diagnostics.logsCopyLocator")),
+            h23("p", { className: "dtv-note" }, uiMessage(row.sessionId ? "diagnostics.logsLocatorHelp" : "diagnostics.logsLocatorNoSession")),
+            h23("pre", { className: "dtv-operation-raw", tabIndex: 0, "aria-label": uiMessage("diagnostics.logsRawRecord") }, rawText(JSON.stringify(row, null, 2)))
           )
         );
       })),
-      h22(
+      h23(
         "details",
         null,
-        h22("summary", null, uiMessage("diagnostics.logsMetadata")),
-        h22("pre", { className: "dtv-operation-raw", tabIndex: 0, "aria-label": uiMessage("diagnostics.logsMetadata") }, rawText(JSON.stringify(Object.fromEntries(Object.entries(page).filter(([key2]) => key2 !== "records")), null, 2)))
+        h23("summary", null, uiMessage("diagnostics.logsMetadata")),
+        h23("pre", { className: "dtv-operation-raw", tabIndex: 0, "aria-label": uiMessage("diagnostics.logsMetadata") }, rawText(JSON.stringify(Object.fromEntries(Object.entries(page).filter(([key2]) => key2 !== "records")), null, 2)))
       )
     ) : null
   );
 }
 
 // packages/client/src/play/io-menu.js
-var import_react28 = require("react");
+var import_react29 = require("react");
 
 // packages/client/src/play/export.js
 function rootSessionId5(playthrough, timeline) {
@@ -54116,13 +54401,13 @@ async function loadPlaythroughExport(client, playthrough) {
       resourceId: bindings.characterId
     })
   ];
-  const render4 = (text3, target) => applyDisplayRegex(text3, rules, bindings, target).text;
   const character = characterResponse?.character ?? null;
   const characterData = character?.data ?? character;
   const greetingMacros = {
     user: active?.resources?.user?.name || "User",
     character: characterData?.nickname || characterData?.name || character?.name || "Assistant"
   };
+  const render4 = (text3, target) => applyDisplayRegex(applyDisplayNameMacros(text3, greetingMacros), rules, bindings, target).text;
   return {
     playthrough,
     timeline,
@@ -54246,7 +54531,7 @@ async function setPlaythroughArchived(client, playthrough, archived, { now = () 
 }
 
 // packages/client/src/play/io-menu.js
-var h23 = createLocalizedElement(import_react28.createElement);
+var h24 = createLocalizedElement(import_react29.createElement);
 var css8 = `
 .dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
@@ -54277,13 +54562,13 @@ function downloadDocument(playthrough, document2) {
 }
 function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRelink }) {
   installStyles2();
-  const root = (0, import_react28.useRef)(null);
-  const [open2, setOpen] = (0, import_react28.useState)(false);
-  const [busy2, setBusy] = (0, import_react28.useState)(false);
-  const [error, setError] = (0, import_react28.useState)("");
+  const root = (0, import_react29.useRef)(null);
+  const [open2, setOpen] = (0, import_react29.useState)(false);
+  const [busy2, setBusy] = (0, import_react29.useState)(false);
+  const [error, setError] = (0, import_react29.useState)("");
   const displayTitle = playthroughDisplayTitle(playthrough);
   const archived = isPlaythroughArchived(playthrough);
-  (0, import_react28.useEffect)(() => {
+  (0, import_react29.useEffect)(() => {
     if (!open2) return void 0;
     const close2 = (event) => {
       if (!root.current?.contains(event.target)) setOpen(false);
@@ -54340,10 +54625,10 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       setBusy(false);
     }
   };
-  return h23(
+  return h24(
     "div",
     { ref: root, className: "dtv-play-io", "data-placement": placement },
-    h23("button", {
+    h24("button", {
       type: "button",
       className: "dtv-play-io-trigger",
       title: uiMessage("play.io.menu"),
@@ -54354,11 +54639,11 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
         setOpen((value) => !value);
       }
     }, rawText(trigger)),
-    !open2 ? null : h23(
+    !open2 ? null : h24(
       "div",
       { className: "dtv-play-io-menu" },
-      h23("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: rename }, uiMessage("play.io.rename")),
-      typeof onRelink !== "function" ? null : h23("button", {
+      h24("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: rename }, uiMessage("play.io.rename")),
+      typeof onRelink !== "function" ? null : h24("button", {
         type: "button",
         className: "dtv-play-io-item",
         disabled: busy2,
@@ -54367,16 +54652,16 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
           onRelink();
         }
       }, uiMessage("play.io.relinkCharacter")),
-      h23("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
-      h23("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
-      h23("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: toggleArchive }, uiMessage(archived ? "play.io.restore" : "play.io.archive")),
-      error === "" ? null : h23("p", { className: "dtv-play-io-error" }, rawText(error))
+      h24("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
+      h24("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
+      h24("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: toggleArchive }, uiMessage(archived ? "play.io.restore" : "play.io.archive")),
+      error === "" ? null : h24("p", { className: "dtv-play-io-error" }, rawText(error))
     )
   );
 }
 
 // packages/client/src/play/sidebar.js
-var h24 = createLocalizedElement(import_react29.createElement);
+var h25 = createLocalizedElement(import_react30.createElement);
 var css9 = `
 .dtv-play-restore{flex:none;border:0;border-radius:7px;padding:6px 9px;background:transparent;color:var(--dsw-alias-state-business-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-restore:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-restore:disabled{opacity:.5;cursor:default}
 .dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
@@ -54406,11 +54691,11 @@ function installStyles3() {
 }
 function Avatar({ character }) {
   const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
-  return h24(
+  return h25(
     "span",
     { className: "dtv-play-avatar", "aria-hidden": "true" },
     rawText(fallback),
-    h24("img", {
+    h25("img", {
       src: `${API_V1}/characters/${encodeURIComponent(character.id)}/png`,
       alt: "",
       onError: (event) => {
@@ -54420,18 +54705,18 @@ function Avatar({ character }) {
   );
 }
 function Rail({ model, scale, expandSidebar }) {
-  return h24(
+  return h25(
     "div",
     { className: "dtv-play-rail", style: { "--dtv-ui-scale": scale } },
-    ...model.characters.map((character) => h24("button", {
+    ...model.characters.map((character) => h25("button", {
       key: character.id,
       type: "button",
       className: "dtv-play-rail-button",
       title: rawText(character.name),
       "aria-label": rawText(character.name),
       onClick: expandSidebar
-    }, h24(Avatar, { character }))),
-    h24("button", {
+    }, h25(Avatar, { character }))),
+    h25("button", {
       type: "button",
       className: "dtv-play-rail-button",
       title: uiMessage("play.sidebar.other"),
@@ -54441,7 +54726,7 @@ function Rail({ model, scale, expandSidebar }) {
   );
 }
 function CharacterDropPlaceholder() {
-  return h24("div", { className: "dtv-play-character-drop", "aria-hidden": true }, uiMessage("preset.dropHere"));
+  return h25("div", { className: "dtv-play-character-drop", "aria-hidden": true }, uiMessage("preset.dropHere"));
 }
 function characterInsertionBoundary(event) {
   const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-character-index]");
@@ -54452,7 +54737,7 @@ function characterInsertionBoundary(event) {
 }
 function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
   const count = character.playthroughs.length + character.unassigned.length;
-  return h24(
+  return h25(
     "section",
     {
       className: "dtv-play-section",
@@ -54460,10 +54745,10 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
       "data-character-index": index,
       "data-dragging": dragging || void 0
     },
-    h24(
+    h25(
       "div",
       { className: "dtv-play-group-line" },
-      h24("button", {
+      h25("button", {
         type: "button",
         className: "dtv-play-character-drag",
         disabled: reorderDisabled,
@@ -54475,7 +54760,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         onPointerUp,
         onPointerCancel
       }, "\u283F"),
-      h24(
+      h25(
         "button",
         {
           type: "button",
@@ -54483,12 +54768,12 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           "aria-expanded": !collapsed,
           onClick: toggle
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
-        h24(Avatar, { character }),
-        h24("span", { className: "dtv-play-title" }, rawText(character.name)),
-        h24("span", { className: "dtv-play-count" }, rawText(String(count)))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h25(Avatar, { character }),
+        h25("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h25("span", { className: "dtv-play-count" }, rawText(String(count)))
       ),
-      h24("button", {
+      h25("button", {
         type: "button",
         className: "dtv-play-create",
         disabled: createDisabled,
@@ -54497,14 +54782,14 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         onClick: () => createPlaythrough(character)
       }, creating ? "\u2026" : "+")
     ),
-    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h24("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
-    collapsed ? null : character.playthroughs.map((playthrough) => h24(
+    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h25("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
+    collapsed ? null : character.playthroughs.map((playthrough) => h25(
       "div",
       {
         key: playthrough.id,
         className: "dtv-play-row-line"
       },
-      h24(
+      h25(
         "button",
         {
           type: "button",
@@ -54514,11 +54799,11 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthroughDisplayTitle(playthrough)),
           onClick: () => openPlaythrough(playthrough)
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
-        h24("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+        h25("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
       ),
-      diagnosticIds.has(playthrough.id) ? h24(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
-      h24(PlayIoMenu, {
+      diagnosticIds.has(playthrough.id) ? h25(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
+      h25(PlayIoMenu, {
         playClient,
         playthrough,
         openSession,
@@ -54527,10 +54812,10 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         onRelink: () => beginPlaythroughRelink(playthrough, character)
       })
     )),
-    collapsed || character.unassigned.length === 0 ? null : h24(
+    collapsed || character.unassigned.length === 0 ? null : h25(
       "div",
       { className: "dtv-play-subgroup" },
-      h24(
+      h25(
         "button",
         {
           type: "button",
@@ -54538,11 +54823,11 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           "aria-expanded": unassignedOpen,
           onClick: toggleUnassigned
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
-        h24("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
-        h24("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
+        h25("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
+        h25("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
       ),
-      unassignedOpen ? character.unassigned.map((session) => h24(
+      unassignedOpen ? character.unassigned.map((session) => h25(
         "button",
         {
           key: session.id,
@@ -54551,20 +54836,20 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           "data-active": session.active,
           onClick: () => openSession(session.id)
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
-        h24("span", { className: "dtv-play-title" }, rawText(session.title))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h25("span", { className: "dtv-play-title" }, rawText(session.title))
       )) : null
     )
   );
 }
 function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
-  return h24(
+  return h25(
     "section",
     { className: "dtv-play-section dtv-play-missing-card", "data-open": !collapsed },
-    h24(
+    h25(
       "div",
       { className: "dtv-play-group-line" },
-      h24(
+      h25(
         "button",
         {
           type: "button",
@@ -54572,12 +54857,12 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
           "aria-expanded": !collapsed,
           onClick: toggle
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
-        h24("span", { className: "dtv-play-avatar", "aria-hidden": "true" }, "?"),
-        h24("span", { className: "dtv-play-title" }, rawText(character.name)),
-        h24("span", { className: "dtv-play-count" }, rawText(String(character.playthroughs.length)))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h25("span", { className: "dtv-play-avatar", "aria-hidden": "true" }, "?"),
+        h25("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h25("span", { className: "dtv-play-count" }, rawText(String(character.playthroughs.length)))
       ),
-      h24("button", {
+      h25("button", {
         type: "button",
         className: "dtv-play-relink",
         disabled: relinkDisabled,
@@ -54586,13 +54871,13 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
         onClick: () => beginRelink(character)
       }, "\u21BB")
     ),
-    collapsed ? null : character.playthroughs.map((playthrough) => h24(
+    collapsed ? null : character.playthroughs.map((playthrough) => h25(
       "div",
       {
         key: playthrough.id,
         className: "dtv-play-row-line"
       },
-      h24(
+      h25(
         "button",
         {
           type: "button",
@@ -54602,11 +54887,11 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
           title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthroughDisplayTitle(playthrough)),
           onClick: () => openPlaythrough(playthrough)
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
-        h24("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+        h25("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
       ),
-      diagnosticIds.has(playthrough.id) ? h24(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
-      h24(PlayIoMenu, {
+      diagnosticIds.has(playthrough.id) ? h25(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
+      h25(PlayIoMenu, {
         playClient,
         playthrough,
         openSession,
@@ -54637,10 +54922,10 @@ function PlayWorkspaceBrowser({
   const currentId = useSessions(mainSessionId);
   const workspaceItems = useWorkspaces((state) => state.items);
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
-  const cache = (0, import_react29.useRef)(null);
+  const cache = (0, import_react30.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
-  const automaticRelinks = (0, import_react29.useRef)(/* @__PURE__ */ new Set());
-  const creator = (0, import_react29.useRef)(null);
+  const automaticRelinks = (0, import_react30.useRef)(/* @__PURE__ */ new Set());
+  const creator = (0, import_react30.useRef)(null);
   if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
     creator.current = {
       client: playClient,
@@ -54648,37 +54933,37 @@ function PlayWorkspaceBrowser({
       controller: playthroughController ?? createPlaythroughController(playClient)
     };
   }
-  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react29.useState)(null);
-  const [revision, setRevision] = (0, import_react29.useState)(0);
-  const diagnosticSnapshot = (0, import_react29.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
+  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react30.useState)(null);
+  const [revision, setRevision] = (0, import_react30.useState)(0);
+  const diagnosticSnapshot = (0, import_react30.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
   const resources = diagnosticSnapshot.resources;
   const setResources = diagnostics.updateResources;
   const diagnosticIds = new Set(diagnosticSnapshot.issues.map((issue) => issue.playthroughId));
-  const [sessionCharacters, setSessionCharacters] = (0, import_react29.useState)({});
-  const [status, setStatus] = (0, import_react29.useState)(null);
-  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react29.useState)(() => /* @__PURE__ */ new Set());
-  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react29.useState)(() => /* @__PURE__ */ new Set());
-  const [otherOpen, setOtherOpen] = (0, import_react29.useState)(false);
-  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react29.useState)(false);
-  const [missingOpen, setMissingOpen] = (0, import_react29.useState)(true);
-  const [archiveOpen, setArchiveOpen] = (0, import_react29.useState)(false);
-  const [restoringId, setRestoringId] = (0, import_react29.useState)(null);
-  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react29.useState)(() => /* @__PURE__ */ new Set());
-  const [relinkRequest, setRelinkRequest] = (0, import_react29.useState)(null);
-  const [relinkTargetId, setRelinkTargetId] = (0, import_react29.useState)("");
-  const [relinkBusy, setRelinkBusy] = (0, import_react29.useState)(false);
-  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react29.useState)(
+  const [sessionCharacters, setSessionCharacters] = (0, import_react30.useState)({});
+  const [status, setStatus] = (0, import_react30.useState)(null);
+  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react30.useState)(() => /* @__PURE__ */ new Set());
+  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react30.useState)(() => /* @__PURE__ */ new Set());
+  const [otherOpen, setOtherOpen] = (0, import_react30.useState)(false);
+  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react30.useState)(false);
+  const [missingOpen, setMissingOpen] = (0, import_react30.useState)(true);
+  const [archiveOpen, setArchiveOpen] = (0, import_react30.useState)(false);
+  const [restoringId, setRestoringId] = (0, import_react30.useState)(null);
+  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react30.useState)(() => /* @__PURE__ */ new Set());
+  const [relinkRequest, setRelinkRequest] = (0, import_react30.useState)(null);
+  const [relinkTargetId, setRelinkTargetId] = (0, import_react30.useState)("");
+  const [relinkBusy, setRelinkBusy] = (0, import_react30.useState)(false);
+  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react30.useState)(
     () => getActivePlaythroughId?.() ?? null
   );
-  const [characterDragFrom, setCharacterDragFrom] = (0, import_react29.useState)(null);
-  const [characterDropIndex, setCharacterDropIndex] = (0, import_react29.useState)(null);
-  const [reorderingCharacters, setReorderingCharacters] = (0, import_react29.useState)(false);
-  (0, import_react29.useEffect)(() => {
+  const [characterDragFrom, setCharacterDragFrom] = (0, import_react30.useState)(null);
+  const [characterDropIndex, setCharacterDropIndex] = (0, import_react30.useState)(null);
+  const [reorderingCharacters, setReorderingCharacters] = (0, import_react30.useState)(false);
+  (0, import_react30.useEffect)(() => {
     if (typeof subscribeActivePlaythroughId !== "function") return void 0;
     setActivePlaythroughId(getActivePlaythroughId?.() ?? null);
     return subscribeActivePlaythroughId(setActivePlaythroughId);
   }, [getActivePlaythroughId, subscribeActivePlaythroughId]);
-  (0, import_react29.useEffect)(() => {
+  (0, import_react30.useEffect)(() => {
     const refresh = () => {
       cache.current.clear();
       setStatus(null);
@@ -54693,7 +54978,7 @@ function PlayWorkspaceBrowser({
     sessions
   })];
   const rpKey = rpIds.join("\0");
-  (0, import_react29.useEffect)(() => {
+  (0, import_react30.useEffect)(() => {
     let active = true;
     if (resources === null) {
       setSessionCharacters({});
@@ -54730,7 +55015,7 @@ function PlayWorkspaceBrowser({
     "|",
     ...model.missingCharacters.map((item) => `${item.id}:${item.name}:${item.sha256 ?? ""}`)
   ].join("\0");
-  (0, import_react29.useEffect)(() => {
+  (0, import_react30.useEffect)(() => {
     if (resources === null || model.missingCharacters.length === 0 || model.characters.length === 0) return void 0;
     let active = true;
     const normalizedName = (value) => String(value ?? "").trim().toLocaleLowerCase("zh-CN");
@@ -54795,6 +55080,10 @@ function PlayWorkspaceBrowser({
   const openPlaythrough = async (playthrough) => {
     setStatus(null);
     try {
+      if (!playthrough.ext?.pmpDshTavern?.rootSessionId && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id) {
+        openSession(null, playthrough);
+        return;
+      }
       const pending2 = pendingSwipe(playClient, playthrough);
       if (pending2 !== null) {
         openSession(pending2.sessionId, playthrough);
@@ -54915,24 +55204,24 @@ function PlayWorkspaceBrowser({
       setRelinkBusy(false);
     }
   };
-  if (wide === false) return h24(Rail, { model, scale, expandSidebar });
+  if (wide === false) return h25(Rail, { model, scale, expandSidebar });
   const toggleSet = (setter, id) => setter((current4) => {
     const next = new Set(current4);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     return next;
   });
-  return h24(
+  return h25(
     "div",
     { className: "dtv-play-sidebar", style: { "--dtv-ui-scale": scale } },
-    diagnosticSnapshot.loading ? h24("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
-    resources?.workspace?.selected === false ? h24(
+    diagnosticSnapshot.loading ? h25("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
+    resources?.workspace?.selected === false ? h25(
       "section",
       { className: "dtv-play-section", "data-open": true },
-      h24("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
+      h25("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
       ...workspaceItems.map((workspace) => {
         const label = uiMessage("play.sidebar.selectWorkspace", { name: workspace.title });
-        return h24(
+        return h25(
           "button",
           {
             key: workspace.workspaceId,
@@ -54942,33 +55231,33 @@ function PlayWorkspaceBrowser({
             "aria-label": label,
             onClick: () => bindWorkspace(workspace)
           },
-          h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
-          h24("span", { className: "dtv-play-title" }, rawText(workspace.title))
+          h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
+          h25("span", { className: "dtv-play-title" }, rawText(workspace.title))
         );
       })
     ) : null,
-    status === null ? null : h24("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
-    h24(WorkspaceDiagnosticSummary, { snapshot: diagnosticSnapshot, controller: diagnostics }),
-    resources === null ? null : h24(
+    status === null ? null : h25("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
+    h25(WorkspaceDiagnosticSummary, { snapshot: diagnosticSnapshot, controller: diagnostics }),
+    resources === null ? null : h25(
       "label",
       { className: "dtv-play-sort" },
-      h24("span", null, uiMessage("play.sidebar.sort")),
-      h24(
+      h25("span", null, uiMessage("play.sidebar.sort")),
+      h25(
         "select",
         {
           value: resources.characterSorting?.mode ?? "updated",
           disabled: reorderingCharacters,
           onChange: changeCharacterSortMode
         },
-        h24("option", { value: "updated" }, uiMessage("play.sidebar.sortUpdated")),
-        h24("option", { value: "name" }, uiMessage("play.sidebar.sortName")),
-        h24("option", { value: "custom" }, uiMessage("play.sidebar.sortCustom"))
+        h25("option", { value: "updated" }, uiMessage("play.sidebar.sortUpdated")),
+        h25("option", { value: "name" }, uiMessage("play.sidebar.sortName")),
+        h25("option", { value: "custom" }, uiMessage("play.sidebar.sortCustom"))
       )
     ),
-    resources !== null && model.characters.length === 0 ? h24("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
+    resources !== null && model.characters.length === 0 ? h25("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
     ...model.characters.flatMap((character, index) => [
-      characterDragFrom !== null && characterDropIndex === index ? h24(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
-      h24(CharacterGroup, {
+      characterDragFrom !== null && characterDropIndex === index ? h25(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
+      h25(CharacterGroup, {
         key: character.id,
         character,
         index,
@@ -55013,11 +55302,11 @@ function PlayWorkspaceBrowser({
         diagnosticIds
       })
     ]),
-    characterDragFrom !== null && characterDropIndex === model.characters.length ? h24(CharacterDropPlaceholder, { key: "drop-end" }) : null,
-    model.missingCharacters.length === 0 ? null : h24(
+    characterDragFrom !== null && characterDropIndex === model.characters.length ? h25(CharacterDropPlaceholder, { key: "drop-end" }) : null,
+    model.missingCharacters.length === 0 ? null : h25(
       "section",
       { className: "dtv-play-section dtv-play-missing", "data-open": missingOpen },
-      h24(
+      h25(
         "button",
         {
           type: "button",
@@ -55025,11 +55314,11 @@ function PlayWorkspaceBrowser({
           "aria-expanded": missingOpen,
           onClick: () => setMissingOpen((value) => !value)
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, missingOpen ? "\u2304" : "\u203A"),
-        h24("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.missingCharacters")),
-        h24("span", { className: "dtv-play-count" }, rawText(String(model.missingCharacters.length)))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, missingOpen ? "\u2304" : "\u203A"),
+        h25("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.missingCharacters")),
+        h25("span", { className: "dtv-play-count" }, rawText(String(model.missingCharacters.length)))
       ),
-      missingOpen ? model.missingCharacters.map((character) => h24(MissingCharacterGroup, {
+      missingOpen ? model.missingCharacters.map((character) => h25(MissingCharacterGroup, {
         key: character.id,
         character,
         collapsed: collapsedMissingCharacters.has(character.id),
@@ -55044,13 +55333,13 @@ function PlayWorkspaceBrowser({
         diagnosticIds
       })) : null
     ),
-    h24(
+    h25(
       "section",
       { className: "dtv-play-section", "data-open": otherOpen },
-      h24(
+      h25(
         "div",
         { className: "dtv-play-group-line" },
-        h24(
+        h25(
           "button",
           {
             type: "button",
@@ -55058,11 +55347,11 @@ function PlayWorkspaceBrowser({
             "aria-expanded": otherOpen,
             onClick: () => setOtherOpen((value) => !value)
           },
-          h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
-          h24("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
-          h24("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
+          h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
+          h25("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
+          h25("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
         ),
-        h24("button", {
+        h25("button", {
           type: "button",
           className: "dtv-play-create",
           title: uiMessage("play.sidebar.createOrdinary"),
@@ -55070,8 +55359,8 @@ function PlayWorkspaceBrowser({
           onClick: () => setOrdinaryPromptOpen(true)
         }, "+")
       ),
-      otherOpen && model.otherSessions.length === 0 ? h24("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
-      otherOpen ? model.otherSessions.map((session) => h24(
+      otherOpen && model.otherSessions.length === 0 ? h25("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
+      otherOpen ? model.otherSessions.map((session) => h25(
         "button",
         {
           key: session.id,
@@ -55081,14 +55370,14 @@ function PlayWorkspaceBrowser({
           "data-kind": session.kind,
           onClick: () => openSession(session.id)
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
-        h24("span", { className: "dtv-play-title" }, rawText(session.title))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h25("span", { className: "dtv-play-title" }, rawText(session.title))
       )) : null
     ),
-    h24(
+    h25(
       "section",
       { className: "dtv-play-section", "data-open": archiveOpen },
-      h24(
+      h25(
         "button",
         {
           type: "button",
@@ -55096,26 +55385,26 @@ function PlayWorkspaceBrowser({
           "aria-expanded": archiveOpen,
           onClick: () => setArchiveOpen((value) => !value)
         },
-        h24("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, archiveOpen ? "\u2304" : "\u203A"),
-        h24("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.archive")),
-        h24("span", { className: "dtv-play-count" }, rawText(String(model.archivedPlaythroughs.length)))
+        h25("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, archiveOpen ? "\u2304" : "\u203A"),
+        h25("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.archive")),
+        h25("span", { className: "dtv-play-count" }, rawText(String(model.archivedPlaythroughs.length)))
       ),
-      archiveOpen ? h24("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.archiveHint")) : null,
-      archiveOpen && model.archivedPlaythroughs.length === 0 ? h24("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.archiveEmpty")) : null,
-      archiveOpen ? model.archivedPlaythroughs.map((playthrough) => h24(
+      archiveOpen ? h25("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.archiveHint")) : null,
+      archiveOpen && model.archivedPlaythroughs.length === 0 ? h25("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.archiveEmpty")) : null,
+      archiveOpen ? model.archivedPlaythroughs.map((playthrough) => h25(
         "div",
         {
           key: playthrough.id,
           className: "dtv-play-row-line"
         },
-        h24("button", {
+        h25("button", {
           type: "button",
           className: "dtv-play-row",
           disabled: playthrough.missing,
           onClick: () => openPlaythrough(playthrough),
           title: rawText(`${playthrough.characterName} \xB7 ${playthroughDisplayTitle(playthrough)}`)
-        }, h24("span", { className: "dtv-play-title" }, rawText(`${playthrough.characterName} \xB7 ${playthroughDisplayTitle(playthrough)}`))),
-        h24("button", {
+        }, h25("span", { className: "dtv-play-title" }, rawText(`${playthrough.characterName} \xB7 ${playthroughDisplayTitle(playthrough)}`))),
+        h25("button", {
           type: "button",
           className: "dtv-play-restore",
           disabled: restoringId !== null,
@@ -55124,24 +55413,25 @@ function PlayWorkspaceBrowser({
         }, uiMessage("play.io.restore"))
       )) : null
     ),
-    ordinaryPromptOpen ? h24("div", {
+    ordinaryPromptOpen ? h25("div", {
       className: "dtv-play-modal-backdrop",
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": "dtv-play-ordinary-prompt"
-    }, h24(
+    }, h25(
       "div",
       { className: "dtv-play-modal" },
-      h24("p", { id: "dtv-play-ordinary-prompt" }, uiMessage("play.sidebar.ordinaryPrompt")),
-      h24(
+      h25("p", { id: "dtv-play-ordinary-prompt" }, uiMessage("play.sidebar.ordinaryPrompt")),
+      h25(RpWorkspaceNotice),
+      h25(
         "div",
         { className: "dtv-play-modal-actions" },
-        h24("button", {
+        h25("button", {
           type: "button",
           className: "dtv-play-modal-button",
           onClick: () => setOrdinaryPromptOpen(false)
         }, uiMessage("play.sidebar.ordinaryClose")),
-        h24("button", {
+        h25("button", {
           type: "button",
           className: "dtv-play-modal-button",
           "data-primary": true,
@@ -55149,36 +55439,36 @@ function PlayWorkspaceBrowser({
         }, uiMessage("play.sidebar.returnNative"))
       )
     )) : null,
-    relinkRequest === null ? null : h24("div", {
+    relinkRequest === null ? null : h25("div", {
       className: "dtv-play-modal-backdrop",
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": "dtv-play-relink-prompt"
-    }, h24(
+    }, h25(
       "div",
       { className: "dtv-play-modal" },
-      h24("p", { id: "dtv-play-relink-prompt" }, relinkRequest.kind === "playthrough" ? uiMessage("play.sidebar.relinkPlaythroughPrompt", { name: playthroughDisplayTitle(relinkRequest.playthrough) }) : uiMessage("play.sidebar.relinkPrompt", { name: relinkRequest.character.name })),
-      h24("select", {
+      h25("p", { id: "dtv-play-relink-prompt" }, relinkRequest.kind === "playthrough" ? uiMessage("play.sidebar.relinkPlaythroughPrompt", { name: playthroughDisplayTitle(relinkRequest.playthrough) }) : uiMessage("play.sidebar.relinkPrompt", { name: relinkRequest.character.name })),
+      h25("select", {
         value: relinkTargetId,
         disabled: relinkBusy,
         onChange: (event) => setRelinkTargetId(event.currentTarget.value)
-      }, ...(resources?.characters ?? []).filter((character) => relinkRequest.kind !== "playthrough" || character.id !== relinkRequest.character.id).map((character) => h24("option", { key: character.id, value: character.id }, rawText(character.name)))),
+      }, ...(resources?.characters ?? []).filter((character) => relinkRequest.kind !== "playthrough" || character.id !== relinkRequest.character.id).map((character) => h25("option", { key: character.id, value: character.id }, rawText(character.name)))),
       relinkRequest.kind !== "playthrough" || assessPlaythroughCharacterRelink({
         playthrough: relinkRequest.playthrough,
         target: resources?.characters.find((character) => character.id === relinkTargetId),
         characters: resources?.characters,
         missingCharacters: resources?.missingCharacters
-      }).automatic ? null : h24("p", { className: "dtv-play-relink-warning" }, uiMessage("play.sidebar.relinkMismatchWarning")),
-      h24(
+      }).automatic ? null : h25("p", { className: "dtv-play-relink-warning" }, uiMessage("play.sidebar.relinkMismatchWarning")),
+      h25(
         "div",
         { className: "dtv-play-modal-actions" },
-        h24("button", {
+        h25("button", {
           type: "button",
           className: "dtv-play-modal-button",
           disabled: relinkBusy,
           onClick: () => setRelinkRequest(null)
         }, uiMessage("play.sidebar.ordinaryClose")),
-        h24("button", {
+        h25("button", {
           type: "button",
           className: "dtv-play-modal-button",
           "data-primary": true,
@@ -55191,8 +55481,8 @@ function PlayWorkspaceBrowser({
 }
 
 // packages/client/src/play/notice.js
-var import_react30 = require("react");
-var h25 = createLocalizedElement(import_react30.createElement);
+var import_react31 = require("react");
+var h26 = createLocalizedElement(import_react31.createElement);
 var css10 = `
 ${OPENING_CARD_VIEWPORT_CSS}
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;max-width:var(--dsh-composer-card-max-width,100%);align-self:center;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
@@ -55217,19 +55507,19 @@ function PlaySessionDock({ session, useSessions, useConversation, useInput, inpu
   const conversation = useConversation((state) => state);
   const composerPhase = conversationPhase2(session, conversation);
   const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
-  const [revision, setRevision] = (0, import_react30.useState)(0);
-  const [content, setContent] = (0, import_react30.useState)(null);
-  const [greetingBusy, setGreetingBusy] = (0, import_react30.useState)(false);
-  const [error, setError] = (0, import_react30.useState)("");
+  const [revision, setRevision] = (0, import_react31.useState)(0);
+  const [content, setContent] = (0, import_react31.useState)(null);
+  const [greetingBusy, setGreetingBusy] = (0, import_react31.useState)(false);
+  const [error, setError] = (0, import_react31.useState)("");
   const displaySettings = useConversationDisplaySettings();
   useRestoredRenderingDisplay(content?.sessionId === sessionId && content?.kind === "opening" && sessionBlank && composerPhase === "blank" ? content.display : null, displaySettings, setError);
   const composer = useCardComposer({ sessionId, useInput, inputActions, active: content?.kind === "opening" && content.sessionId === sessionId, blocked: !sessionBlank || greetingBusy || composerPhase !== "blank", send: (text3, { signal } = {}) => playClient.postUserMessage(sessionId, text3, { signal }) });
-  (0, import_react30.useEffect)(() => {
+  (0, import_react31.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react30.useEffect)(() => {
+  (0, import_react31.useEffect)(() => {
     let active = true;
     if (composer?.pending && content?.kind === "opening" && content.sessionId === sessionId) return () => {
       active = false;
@@ -55302,7 +55592,7 @@ function PlaySessionDock({ session, useSessions, useConversation, useInput, inpu
   };
   if (content?.sessionId !== sessionId) return null;
   if (content.kind === "unbound") {
-    return h25("p", {
+    return h26("p", {
       className: "dtv-play-unbound-notice",
       role: "note"
     }, uiMessage("play.notice.unbound"));
@@ -55312,7 +55602,7 @@ function PlaySessionDock({ session, useSessions, useConversation, useInput, inpu
   const importTurns = content.importTurns ?? [];
   const options = greeting?.options ?? [];
   const position = greeting === null ? 0 : Math.max(0, options.findIndex((option) => option.index === greeting.index)) + 1;
-  const importControls = h25(ImportControls, {
+  const importControls = h26(ImportControls, {
     playClient,
     playthrough: content.playthrough,
     binding: content.importBinding,
@@ -55320,34 +55610,34 @@ function PlaySessionDock({ session, useSessions, useConversation, useInput, inpu
     changed: () => setRevision((value) => value + 1),
     onError: setError
   });
-  return h25(
+  return h26(
     "section",
     {
       className: "dtv-play-opening-dock",
       style: conversationDisplayStyle(displaySettings)
     },
-    greeting === null ? null : h25(
+    greeting === null ? null : h26(
       "header",
       { className: "dtv-play-opening-header" },
-      h25("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
-      h25("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${options.length}`))
+      h26("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
+      h26("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${options.length}`))
     ),
-    importTurns.length > 0 ? h25(
+    importTurns.length > 0 ? h26(
       "div",
       { className: "dtv-play-opening-body dtv-play-chat-list" },
-      ...importTurns.map((turn) => h25(
+      ...importTurns.map((turn) => h26(
         "div",
         { key: turn.id, className: "dtv-play-chat-row" },
-        turn.userText === "" ? null : h25(RichText, {
+        turn.userText === "" ? null : h26(RichText, {
           className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich",
           text: turn.userText
         }),
-        turn.assistantText === "" ? null : h25(RichText, {
+        turn.assistantText === "" ? null : h26(RichText, {
           className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
           text: turn.assistantText
         })
       ))
-    ) : greeting === null ? h25("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h25("div", { className: "dtv-play-opening-body", "data-dtv-card-viewport-boundary": "opening" }, h25(MessageContent, {
+    ) : greeting === null ? h26("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h26("div", { className: "dtv-play-opening-body", "data-dtv-card-viewport-boundary": "opening" }, h26(MessageContent, {
       text: greeting.text,
       openingBinding: openingSourceIdentity({ sessionId, greeting }),
       composer,
@@ -55363,18 +55653,18 @@ function PlaySessionDock({ session, useSessions, useConversation, useInput, inpu
         setRevision((value) => value + 1);
       }
     })),
-    error === "" ? null : h25("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
-    h25(
+    error === "" ? null : h26("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
+    h26(
       "footer",
       { className: "dtv-play-opening-actions" },
-      h25("button", {
+      h26("button", {
         type: "button",
         className: "dtv-play-opening-button",
         disabled: greetingBusy || adjacentGreetingIndex(greeting, "previous") === null,
         onClick: () => changeGreeting("previous")
       }, uiMessage("play.chat.previousGreeting")),
       importControls,
-      h25("button", {
+      h26("button", {
         type: "button",
         className: "dtv-play-opening-button",
         disabled: greetingBusy || adjacentGreetingIndex(greeting, "next") === null,
@@ -55385,7 +55675,7 @@ function PlaySessionDock({ session, useSessions, useConversation, useInput, inpu
 }
 
 // packages/client/src/play/view-default.js
-var import_react31 = require("react");
+var import_react32 = require("react");
 function defaultViewTarget(selectedView, targetViewId) {
   return selectedView === null || selectedView === void 0 ? targetViewId : null;
 }
@@ -55395,10 +55685,10 @@ function sessionViewTarget(selectedView, targetViewId, binding, shouldDefault) {
   return shouldDefault(binding) ? defaultViewTarget(selectedView, targetViewId) : null;
 }
 function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete, shouldDefault, getBinding, subscribeBindings }) {
-  const binding = (0, import_react31.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
+  const binding = (0, import_react32.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
   const hasStore = typeof useStore === "function";
   const selectedView = hasStore ? useStore((state) => state.view) : void 0;
-  (0, import_react31.useLayoutEffect)(() => {
+  (0, import_react32.useLayoutEffect)(() => {
     const target = sessionViewTarget(selectedView, targetViewId, binding, shouldDefault);
     if (hasStore && target !== null && typeof actions?.setView === "function") {
       try {
@@ -55412,9 +55702,9 @@ function DefaultConversationViewAdapter({ useStore, actions, targetViewId, compl
 }
 
 // packages/client/src/play/opening-layout.js
-var import_react32 = require("react");
+var import_react33 = require("react");
 var OPENING_SESSION_SLOT = "pmp-dsh-tavern.opening.session";
-var Opening = (0, import_react32.createContext)(null);
+var Opening = (0, import_react33.createContext)(null);
 var css11 = `
 .dtv-rp-opening-shell{flex:1;width:100%;height:100%;min-height:0;min-width:0;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}
 .dtv-rp-opening-header{flex:none;display:flex;align-items:center;gap:12px;padding:12px 72px 12px 16px;border-bottom:1px solid var(--dsw-alias-border-l3);min-width:0}
@@ -55434,8 +55724,8 @@ function installStyles5() {
   document.head.append(style);
 }
 function OpeningViews(props) {
-  const opening = (0, import_react32.useContext)(Opening);
-  return (0, import_react32.createElement)("div", { className: "dtv-rp-opening-view", "data-dtv-opening-session": props.sessionId }, (0, import_react32.createElement)(MowanChatView, {
+  const opening = (0, import_react33.useContext)(Opening);
+  return (0, import_react33.createElement)("div", { className: "dtv-rp-opening-view", "data-dtv-opening-session": props.sessionId }, (0, import_react33.createElement)(MowanChatView, {
     ...props,
     playClient: opening.playClient,
     playthrough: opening.binding.playthrough,
@@ -55449,15 +55739,15 @@ function OpeningConversationRoot({ renderSlot }) {
 }
 function OpeningConversationSession({ sessionId, useSession, useSessions, useConversation, useStore, actions, renderFactorySlot, getBinding, subscribeBindings, playClient, openSession, conversationPhase: conversationPhase2, switchToNative, activateView, getComposerPending = () => false, onComposerPending }) {
   installStyles5();
-  const binding = (0, import_react32.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
-  const composerPending = (0, import_react32.useSyncExternalStore)(subscribeBindings, getComposerPending, getComposerPending);
+  const binding = (0, import_react33.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
+  const composerPending = (0, import_react33.useSyncExternalStore)(subscribeBindings, getComposerPending, getComposerPending);
   const session = useSession((s) => s), conversation = useConversation((s) => s);
   const selected = useStore((s) => s.view);
   const title = useSessions((s) => s.byId?.[sessionId]?.displayTitle ?? sessionId);
   const current4 = binding?.sessionId === sessionId;
   const blank = current4 && session?.blank === true && conversationPhase2(session, conversation) === "blank";
   const rp = selected === null || selected === void 0 || selected === "rp";
-  (0, import_react32.useLayoutEffect)(() => {
+  (0, import_react33.useLayoutEffect)(() => {
     if (current4 && (selected === null || selected === void 0)) actions.setView("rp");
   }, [actions, current4, selected]);
   if (!current4) return null;
@@ -55465,24 +55755,24 @@ function OpeningConversationSession({ sessionId, useSession, useSessions, useCon
     activateView?.(sessionId, view);
     actions.setView(view);
   };
-  return (0, import_react32.createElement)(Opening.Provider, { value: { binding, playClient, openSession, onComposerPending } }, (0, import_react32.createElement)(
+  return (0, import_react33.createElement)(Opening.Provider, { value: { binding, playClient, openSession, onComposerPending } }, (0, import_react33.createElement)(
     "section",
     {
       className: "dtv-rp-opening-shell",
       "data-dtv-rp-opening": "",
       "data-phase": blank && !rp ? "hero" : "active"
     },
-    (0, import_react32.createElement)(
+    (0, import_react33.createElement)(
       "header",
       { className: "dtv-rp-opening-header" },
-      (0, import_react32.createElement)("span", { className: "dtv-rp-opening-title" }, title),
-      (0, import_react32.createElement)(
+      (0, import_react33.createElement)("span", { className: "dtv-rp-opening-title" }, title),
+      (0, import_react33.createElement)(
         "div",
         { className: "dtv-rp-opening-tabs", role: "tablist", "aria-label": translate("play.opening.views") },
-        (0, import_react32.createElement)("button", { type: "button", role: "tab", "aria-selected": rp, onClick: () => choose("rp") }, translate("play.chat.label")),
-        (0, import_react32.createElement)("button", { type: "button", role: "tab", "aria-selected": !rp, onClick: () => choose("chat") }, translate("play.opening.chat"))
+        (0, import_react33.createElement)("button", { type: "button", role: "tab", "aria-selected": rp, onClick: () => choose("rp") }, translate("play.chat.label")),
+        (0, import_react33.createElement)("button", { type: "button", role: "tab", "aria-selected": !rp, onClick: () => choose("chat") }, translate("play.opening.chat"))
       ),
-      (0, import_react32.createElement)("button", { type: "button", onClick: switchToNative }, translate("play.opening.native"))
+      (0, import_react33.createElement)("button", { type: "button", onClick: switchToNative }, translate("play.opening.native"))
     ),
     renderFactorySlot("conversation.content", { variant: "embedded", phase: blank && !rp ? "hero" : "active", hero: blank && !rp }, (blank || composerPending) && rp ? { slots: OPENING_VIEWS } : void 0)
   ));
@@ -55492,6 +55782,312 @@ function openingLayoutSession(snapshot, bindings, pendingSessionId = null) {
   const main2 = rows.find((row) => (row.retainedBy?.mainView ?? 0) > 0);
   const binding = main2 && bindings.get(main2.id), ext = binding?.playthrough?.ext?.pmpDshTavern;
   return (main2?.blank === true || main2?.id === pendingSessionId) && binding?.characterId && binding.characterId === ext?.characterId && ext?.rootSessionId === main2.id ? main2.id : null;
+}
+
+// packages/client/src/play/draft-opening.js
+var import_react34 = require("react");
+async function resource(path3) {
+  const response = await tavernFetch(`${API_V1}/${path3}`, { cache: "no-store" }), result = await response.json();
+  if (!response.ok) throw Error(result.error ?? `HTTP ${response.status}`);
+  return result;
+}
+async function loadDraftDisplay(client, draft, playthrough) {
+  const selection = draft.selection;
+  const [characterResponse, presetResponse, userResponse, regex, timeline] = await Promise.all([
+    client.getCharacter(selection.characterCardId),
+    selection.presetId ? client.getPreset(selection.presetId) : null,
+    selection.userId ? resource(`users/${encodeURIComponent(selection.userId)}`) : null,
+    readRenderingWorkspace(client, () => getRegexDocument(client)),
+    client.getTimeline(playthrough)
+  ]);
+  const character = characterResponse.character, preset = presetResponse?.preset, user = userResponse?.user;
+  const bindings = { characterId: selection.characterCardId, presetId: selection.presetId };
+  const macros2 = { user: user?.name || "User", character: character?.data?.nickname || character?.name || "Assistant" };
+  const rules = [...regex.resource.rules, ...resourceRegexRules(preset, { kind: "preset", resourceId: selection.presetId }), ...resourceRegexRules(character, { kind: "character", resourceId: selection.characterCardId })];
+  const greeting = projectGreeting({ openingCharacterId: selection.characterCardId, selectionResponse: { selection }, characterResponse });
+  const expanded = greeting ? applyDisplayNameMacros(greeting.text, macros2) : "";
+  const renderingSources = await identifyRenderingSources([...renderingInventory(character, { kind: "character", resourceId: selection.characterCardId }), ...renderingInventory(preset, { kind: "preset", resourceId: selection.presetId })]);
+  const imported = draft.importContextRef ? JSON.parse((await client.getFile(draft.importContextRef.path)).content) : null;
+  return {
+    timeline,
+    turns: [],
+    importContext: imported,
+    greeting: greeting ? { ...greeting, ...applyGreetingDisplayRegex(expanded, rules, bindings, { depth: 0 }), sourceText: expanded, messageCount: 1 } : null,
+    avatars: { user: user?.avatar ?? null, assistant: characterAvatarUrl(selection.characterCardId) },
+    display: { rules, bindings, macros: macros2, globalRenderingOwner: regex.owner, renderingSources }
+  };
+}
+var css12 = `.dtv-draft-opening{height:100%;min-height:0;display:flex;flex-direction:column;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base)}.dtv-draft-opening>header{display:flex;align-items:center;gap:12px;padding:14px 72px 14px 18px;border-bottom:1px solid var(--dsw-alias-border-l3)}.dtv-draft-opening>header strong{flex:1}.dtv-draft-opening>header small{color:var(--dsw-alias-label-tertiary)}.dtv-draft-body{flex:1;min-height:0;overflow:auto;padding:20px max(16px,calc((100% - 1040px)/2))}.dtv-draft-opening .dtv-play-chat-bubble{max-width:100%}.dtv-draft-settings{margin:18px 0;border-top:1px solid var(--dsw-alias-border-l3);padding-top:16px}.dtv-draft-settings fieldset{border:0;margin:16px 0;padding:16px 0 0;border-top:1px solid var(--dsw-alias-border-l3)}.dtv-draft-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}.dtv-draft-opening label{display:grid;gap:8px}.dtv-draft-opening select,.dtv-draft-opening textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;padding:10px;background:var(--dsw-alias-bg-layer-1);color:inherit;font:inherit}.dtv-draft-opening button{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px 12px;background:var(--dsw-alias-bg-layer-1);color:inherit;font:inherit;cursor:pointer}.dtv-draft-opening button:disabled{opacity:.5;cursor:default}.dtv-draft-books{display:flex;gap:16px;flex-wrap:wrap}.dtv-draft-books label{display:flex;align-items:center;gap:8px}.dtv-draft-composer{flex:none;padding:14px max(16px,calc((100% - 1040px)/2));border-top:1px solid var(--dsw-alias-border-l3)}.dtv-draft-composer>div{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.dtv-draft-composer textarea{resize:vertical;min-height:80px}.dtv-draft-opening [role=alert]{color:var(--dsw-alias-state-error);overflow-wrap:anywhere}.dtv-draft-settings>summary{cursor:pointer;font-weight:600}.dtv-draft-notice{margin:10px 0;font-size:12px;color:var(--dsw-alias-label-tertiary)}`;
+function styles2() {
+  installPlayChatStyles();
+  if (document.querySelector("style[data-dtv-drafts]")) return;
+  const node = document.createElement("style");
+  node.dataset.dtvDrafts = "";
+  node.textContent = css12;
+  document.head.append(node);
+}
+function DraftOpening({ draftId, playClient, openSession, switchToNative }) {
+  styles2();
+  const [loaded, setLoaded] = (0, import_react34.useState)(null), [display, setDisplay] = (0, import_react34.useState)(null), [error, setError] = (0, import_react34.useState)(""), [busy2, setBusy] = (0, import_react34.useState)(false);
+  const [text3, setText] = (0, import_react34.useState)(""), [variableText, setVariableText] = (0, import_react34.useState)("");
+  const settings = useClientUiSettings(), current4 = (0, import_react34.useRef)(null), generation = (0, import_react34.useRef)(0), sending = (0, import_react34.useRef)(null), input = (0, import_react34.useRef)({ draft: "", draftRev: 0, phase: "plain", attachmentIds: [], occurrences: [] });
+  const variableRevision = (0, import_react34.useRef)(null), inputHydrated = (0, import_react34.useRef)(false);
+  const recovering = (0, import_react34.useRef)(null);
+  const life = (0, import_react34.useRef)(true), file = (0, import_react34.useRef)(null), operation = (0, import_react34.useRef)(null);
+  current4.current = { loaded, display, busy: busy2 };
+  const report = (0, import_react34.useCallback)((value) => setError(value), []);
+  useRestoredRenderingDisplay(display?.display, settings, report);
+  const refresh = (0, import_react34.useCallback)(async () => {
+    const epoch = ++generation.current;
+    let next = await playClient.getDraft(draftId);
+    if (!inputHydrated.current) {
+      inputHydrated.current = true;
+      input.current.draft = next.draft.claim?.text ?? next.draft.lastInput ?? "";
+      input.current.draftRev++;
+      setText(input.current.draft);
+    }
+    if (next.draft.claim && next.draft.phase !== "started" && !sending.current) {
+      const retained = next.draft.claim.text;
+      input.current.draft = retained;
+      input.current.draftRev++;
+      setText(retained);
+      if (!recovering.current) {
+        const pending2 = playClient.cancelDraft(draftId);
+        recovering.current = pending2;
+        pending2.finally(() => {
+          if (recovering.current === pending2) recovering.current = null;
+        }).catch(() => {
+        });
+      }
+      const result = await recovering.current;
+      if (!life.current || epoch !== generation.current) return;
+      if (result.sessionId) {
+        openSession(result.sessionId, next.playthrough);
+        return;
+      }
+      operation.current = null;
+      input.current.draft = retained;
+      input.current.draftRev++;
+      setText(retained);
+      next = await playClient.getDraft(draftId);
+    }
+    if (!life.current || epoch !== generation.current) return;
+    if (next.draft.phase === "started") {
+      openSession(next.draft.claim.sessionId, next.playthrough);
+      return;
+    }
+    const projection = await loadDraftDisplay(playClient, next.draft, next.playthrough);
+    if (!life.current || epoch !== generation.current) return;
+    setLoaded(next);
+    setDisplay(projection);
+    if (variableRevision.current !== next.draft.variableRevision) {
+      variableRevision.current = next.draft.variableRevision;
+      setVariableText(JSON.stringify(next.draft.variables?.stat_data ?? {}, null, 2));
+    }
+    if (next.draft.claim) {
+      operation.current = next.draft.claim.operationId;
+      input.current.draft = next.draft.claim.text;
+      input.current.draftRev++;
+      setText(input.current.draft);
+    }
+  }, [draftId, playClient, openSession]);
+  (0, import_react34.useEffect)(() => {
+    life.current = true;
+    void refresh().catch((reason) => {
+      if (life.current) setError(reason.message);
+    });
+    const onRefresh = (event) => {
+      if (event.detail?.source !== "draft-opening") void refresh().catch((reason) => {
+        if (life.current) setError(reason.message);
+      });
+    };
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => {
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+      life.current = false;
+      generation.current++;
+      sending.current?.abort();
+    };
+  }, [refresh]);
+  const change = (0, import_react34.useCallback)(async (patch) => {
+    if (current4.current.busy || sending.current) return;
+    setBusy(true);
+    setError("");
+    try {
+      const fresh = await playClient.getDraft(draftId);
+      await playClient.putDraft(draftId, { ...patch, expectedRevision: fresh.draft.revision });
+      await refresh();
+      window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: "draft-opening" } }));
+    } catch (reason) {
+      if (life.current) setError(reason.message);
+    } finally {
+      if (life.current) setBusy(false);
+    }
+  }, [draftId, playClient, refresh]);
+  const send = (0, import_react34.useCallback)(async (value, { signal } = {}) => {
+    if (sending.current || current4.current.busy) throw Error(translate("play.draft.busy"));
+    const controller2 = new AbortController(), abort = () => controller2.abort();
+    input.current.draft = value;
+    input.current.draftRev++;
+    setText(value);
+    signal?.throwIfAborted();
+    signal?.addEventListener("abort", abort, { once: true });
+    sending.current = controller2;
+    setBusy(true);
+    setError("");
+    try {
+      const fresh = await playClient.getDraft(draftId, { signal: controller2.signal });
+      operation.current = fresh.draft.claim?.operationId ?? operation.current ?? crypto.randomUUID();
+      const prepared = await playClient.materializeDraft(draftId, { expectedRevision: fresh.draft.revision, operationId: operation.current, text: value }, { signal: controller2.signal });
+      controller2.signal.throwIfAborted();
+      if (!prepared.accepted) await playClient.postUserMessage(prepared.sessionId, value, { requestId: prepared.requestId, signal: controller2.signal });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      setTimeout(() => {
+        if (life.current) openSession(prepared.sessionId, fresh.playthrough);
+      }, 0);
+      return { accepted: true };
+    } catch (reason) {
+      try {
+        const observed = await playClient.getDraft(draftId);
+        if (observed.draft.phase === "started") {
+          if (life.current) openSession(observed.draft.claim.sessionId, observed.playthrough);
+          return { accepted: true };
+        }
+        const result = await playClient.cancelDraft(draftId);
+        if (life.current && result.sessionId) {
+          openSession(result.sessionId, current4.current.loaded.playthrough);
+          return { accepted: true };
+        }
+        operation.current = null;
+        await refresh();
+      } catch (rollback) {
+        if (life.current) setError(translate("play.draft.sendFailed", { message: rollback.message }));
+        throw rollback;
+      }
+      if (life.current) setError(reason.name === "AbortError" ? translate("play.draft.cancelled") : translate("play.draft.sendFailed", { message: reason.message }));
+      throw reason;
+    } finally {
+      signal?.removeEventListener("abort", abort);
+      if (sending.current === controller2) sending.current = null;
+      if (life.current) setBusy(false);
+    }
+  }, [draftId, openSession, playClient, refresh]);
+  const cancel = (0, import_react34.useCallback)(async () => {
+    if (sending.current) {
+      sending.current.abort();
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await playClient.cancelDraft(draftId);
+      if (!life.current) return;
+      if (result.sessionId) openSession(result.sessionId, current4.current.loaded.playthrough);
+      else {
+        operation.current = null;
+        await refresh();
+        setError(translate("play.draft.cancelled"));
+      }
+    } catch (reason) {
+      if (life.current) {
+        setError(reason.message);
+        await refresh().catch(() => {
+        });
+      }
+    } finally {
+      if (life.current) setBusy(false);
+    }
+  }, [draftId, playClient, openSession, refresh]);
+  const composer = (0, import_react34.useMemo)(() => createComposerAdapter({
+    inputActions: { captureInsertion: () => ({ draftRev: input.current.draftRev }), insertText: (value, range) => {
+      if (input.current.draftRev !== range.draftRev) return false;
+      input.current.draft = value;
+      input.current.draftRev++;
+      setText(value);
+      return true;
+    } },
+    getState: () => input.current,
+    isCurrent: () => life.current && current4.current.loaded?.draft.id === draftId,
+    isReady: () => !current4.current.busy && !sending.current,
+    send
+  }), [draftId, send]);
+  const draft = loaded?.draft, playthrough = loaded?.playthrough, locked = busy2 || draft?.phase !== "draft";
+  return (0, import_react34.createElement)(
+    "section",
+    { className: "dtv-draft-opening", "data-dtv-draft": draftId },
+    (0, import_react34.createElement)("header", null, (0, import_react34.createElement)("strong", null, playthrough?.title ?? translate("play.draft.opening")), (0, import_react34.createElement)("small", null, translate("play.draft.notStarted")), (0, import_react34.createElement)("button", { onClick: switchToNative }, translate("play.opening.native"))),
+    (0, import_react34.createElement)(
+      "div",
+      { className: "dtv-draft-body" },
+      !display ? (0, import_react34.createElement)("p", null, translate("common.loading")) : (0, import_react34.createElement)(
+        ConversationPresentation,
+        { state: display, playthrough, playClient, sessionId: null, busy: busy2, disabled: draft.phase !== "draft", changed: () => {
+        }, composer, sendMessage: send },
+        display.importContext ? (0, import_react34.createElement)(
+          "section",
+          null,
+          display.importContext.greeting && (0, import_react34.createElement)(MessageBubble, { text: display.importContext.greeting, editable: false, messageKey: "draft-import-greeting" }),
+          ...(display.importContext.qa ?? []).map((qa, index) => (0, import_react34.createElement)("div", { key: index }, (0, import_react34.createElement)(MessageBubble, { text: qa.user, role: "user", editable: false, messageKey: `draft-import-u-${index}` }), (0, import_react34.createElement)(MessageBubble, { text: qa.assistant, editable: false, messageKey: `draft-import-a-${index}` })))
+        ) : (0, import_react34.createElement)(Greeting, { greeting: display.greeting, busy: busy2, locked: draft.phase !== "draft", change: (direction) => {
+          const index = adjacentGreetingIndex(display.greeting, direction);
+          if (index !== null) void change({ selection: { ...draft.selection, character: { ...draft.selection.character, greetingIndex: index } } });
+        } })
+      ),
+      draft && (0, import_react34.createElement)(
+        "details",
+        { className: "dtv-draft-settings" },
+        (0, import_react34.createElement)("summary", null, translate("play.draft.settings")),
+        (0, import_react34.createElement)("p", { className: "dtv-draft-notice" }, translate("play.draft.launcherHint")),
+        draft.variables && (0, import_react34.createElement)(
+          "fieldset",
+          { disabled: locked },
+          (0, import_react34.createElement)("legend", null, translate("play.draft.variables")),
+          (0, import_react34.createElement)("p", { className: "dtv-draft-notice" }, translate("play.draft.variablesHint")),
+          (0, import_react34.createElement)("textarea", { rows: 7, value: variableText, "aria-label": translate("play.draft.variables"), onChange: (event) => setVariableText(event.target.value) }),
+          (0, import_react34.createElement)("button", { onClick: () => {
+            try {
+              void change({ variables: { stat_data: JSON.parse(variableText) } });
+            } catch (reason) {
+              setError(reason.message);
+            }
+          } }, translate("play.draft.saveVariables")),
+          (0, import_react34.createElement)("button", { onClick: () => change({ resetVariables: true }) }, translate("play.draft.resetVariables"))
+        ),
+        (0, import_react34.createElement)("fieldset", { disabled: locked }, (0, import_react34.createElement)("legend", null, translate("play.draft.import")), (0, import_react34.createElement)("input", { type: "file", hidden: true, accept: ".jsonl", ref: file, onChange: async (event) => {
+          const selected = event.target.files?.[0];
+          event.target.value = "";
+          if (!selected) return;
+          try {
+            if (selected.size > 2 * 1024 * 1024) throw Error(translate("play.draft.importLimit"));
+            const document2 = parsePlaythroughImport(await selected.text(), selected.name), path3 = `${playthrough.path.slice(0, -"timeline.json".length)}import-context-${crypto.randomUUID()}.json`;
+            await playClient.putFile(path3, JSON.stringify(document2));
+            await change({ importContextRef: { path: path3 } });
+          } catch (reason) {
+            setError(reason.message);
+          }
+        } }), (0, import_react34.createElement)("button", { onClick: () => file.current.click() }, translate("play.draft.importFile")), draft.importContextRef && (0, import_react34.createElement)("button", { onClick: () => change({ importContextRef: null }) }, translate("play.draft.removeImport")))
+      ),
+      error && (0, import_react34.createElement)("p", { role: "alert" }, error)
+    ),
+    (0, import_react34.createElement)(
+      "form",
+      { className: "dtv-draft-composer", onSubmit: (event) => {
+        event.preventDefault();
+        void send(input.current.draft).catch(() => {
+        });
+      } },
+      (0, import_react34.createElement)("textarea", { value: text3, readOnly: locked, "aria-label": translate("play.draft.input"), placeholder: translate("play.draft.input"), onChange: (event) => {
+        input.current.draft = event.target.value;
+        input.current.draftRev++;
+        setText(event.target.value);
+      } }),
+      (0, import_react34.createElement)(
+        "div",
+        null,
+        (0, import_react34.createElement)("small", { className: "dtv-draft-notice" }, translate("play.draft.sendHint")),
+        busy2 ? (0, import_react34.createElement)("button", { type: "button", onClick: cancel }, translate("play.draft.cancel")) : (0, import_react34.createElement)("button", { type: "submit", disabled: locked || !text3.trim() }, translate("play.draft.send"))
+      )
+    )
+  );
 }
 
 // packages/client/src/play/occupancy.js
@@ -55522,6 +56118,15 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
   let disposeChatEntry = null;
   let disposeDefaultViewEntry = null;
   let mainDeclared = false, disposeOpeningRoot = null, disposeOpeningBody = null, openingSessionId = null, openingRequest = null;
+  const draftKey = "pmp-dsh-tavern:active-opening-draft:v1";
+  let activeDraftId = null, disposeDraftRoot = null, renderedDraftId = null;
+  try {
+    const saved = window.sessionStorage.getItem(draftKey);
+    if (saved && /^[A-Za-z0-9._-]{1,200}$/.test(saved)) activeDraftId = saved;
+  } catch {
+  }
+  let draftMainSessionId = mainSessionId(ctx.sessions?.list?.getSnapshot?.());
+  let draftRosterReady = ctx.sessions?.list?.getSnapshot?.()?.phase === "ready";
   let disposeSessionSubscription = null;
   let refreshChatListener = null;
   let refreshLocaleListener = null;
@@ -55529,7 +56134,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
   const pendingChats = /* @__PURE__ */ new Map();
   const preferredPlaythroughs = /* @__PURE__ */ new Map();
   const bindingListeners = /* @__PURE__ */ new Set();
-  let preferredPlaythroughId = null;
+  let preferredPlaythroughId = activeDraftId;
   const playthroughSelectionListeners = /* @__PURE__ */ new Set();
   const completedDefaultViewAttempts = /* @__PURE__ */ new Set();
   const selectPlaythrough = (playthroughId) => {
@@ -55655,6 +56260,25 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
   const sessionSignature = (session) => `${session.id}\0${String(session.cwd ?? "")}`;
   const defaultViewKey = (binding) => `${binding.signature}\0${binding.playthrough.path}`;
   const openPlaySession = (sessionId, playthrough = null) => {
+    if (!sessionId && playthrough?.ext?.pmpDshTavern?.draftId === playthrough?.id) {
+      activeDraftId = playthrough.id;
+      draftMainSessionId = mainSessionId(ctx.sessions?.list?.getSnapshot?.());
+      draftRosterReady = ctx.sessions?.list?.getSnapshot?.()?.phase === "ready";
+      try {
+        window.sessionStorage.setItem(draftKey, activeDraftId);
+      } catch {
+      }
+      selectPlaythrough(playthrough.id);
+      syncOpeningEntries();
+      notifyBindings();
+      return;
+    }
+    activeDraftId = null;
+    try {
+      window.sessionStorage.removeItem(draftKey);
+    } catch {
+    }
+    syncOpeningEntries();
     if (playthrough?.id) preferredPlaythroughs.set(sessionId, playthrough.id);
     selectPlaythrough(playthrough?.id);
     const result = ctx.uiWorkspace.openSession(sessionId);
@@ -55668,8 +56292,24 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     disposeOpeningBody = null;
     disposeOpeningRoot?.();
     disposeOpeningRoot = null;
+    disposeDraftRoot?.();
+    disposeDraftRoot = null;
+    renderedDraftId = null;
   };
   const syncOpeningEntries = () => {
+    const draftId = mainDeclared && mode === "play" ? activeDraftId : null;
+    if (draftId) {
+      if (renderedDraftId === draftId) return;
+      dropOpeningEntries();
+      disposeDraftRoot = ctx.slots.register({ name: "main.conversation", priority: PLAY_SLOT_PRIORITY, inject: () => ({ draftId, playClient, switchToNative, openSession: (id2, playthrough) => openPlaySession(id2, playthrough) }) }, DraftOpening);
+      renderedDraftId = draftId;
+      return;
+    }
+    if (disposeDraftRoot) {
+      disposeDraftRoot();
+      disposeDraftRoot = null;
+      renderedDraftId = null;
+    }
     const id = mainDeclared && mode === "play" ? openingLayoutSession(ctx.sessions?.list?.getSnapshot?.(), chatBindings, openingRequest?.sessionId) : null;
     if (id === openingSessionId) return;
     dropOpeningEntries();
@@ -55742,6 +56382,18 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     }
   };
   const reconcileChat = (force = false) => {
+    const roster = ctx.sessions?.list?.getSnapshot?.();
+    if (!draftRosterReady && roster?.phase === "ready") {
+      draftMainSessionId = mainSessionId(roster);
+      draftRosterReady = true;
+    }
+    if (activeDraftId && draftRosterReady && roster?.phase === "ready" && mainSessionId(roster) !== draftMainSessionId) {
+      activeDraftId = null;
+      try {
+        window.sessionStorage.removeItem(draftKey);
+      } catch {
+      }
+    }
     if (!chatDeclared || mode !== "play") {
       chatGeneration += 1;
       pendingChats.clear();
@@ -55755,7 +56407,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     for (const id of pendingChats.keys()) if (!retained.has(id)) pendingChats.delete(id);
     for (const id of preferredPlaythroughs.keys()) if (!retained.has(id)) preferredPlaythroughs.delete(id);
     const mainId = mainSessionId(snapshot);
-    selectPlaythrough(chatBindings.get(mainId)?.playthrough.id ?? preferredPlaythroughs.get(mainId) ?? null);
+    if (!activeDraftId) selectPlaythrough(chatBindings.get(mainId)?.playthrough.id ?? preferredPlaythroughs.get(mainId) ?? null);
     for (const session of sessions) {
       const signature = sessionSignature(session);
       if (force !== true && (chatBindings.get(session.id)?.signature === signature || pendingChats.get(session.id)?.signature === signature)) continue;
@@ -55769,7 +56421,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
         pendingChats.delete(session.id);
         if (match === null) chatBindings.delete(session.id);
         else chatBindings.set(session.id, { signature, sessionId: session.id, playthrough: match.playthrough, characterId: typeof selectedCharacter?.character?.id === "string" && selectedCharacter.character.id === selectedCharacter?.selection?.characterCardId ? selectedCharacter.character.id : null });
-        if (mainSessionId(ctx.sessions?.list?.getSnapshot?.()) === session.id) selectPlaythrough(match?.playthrough.id);
+        if (!activeDraftId && mainSessionId(ctx.sessions?.list?.getSnapshot?.()) === session.id) selectPlaythrough(match?.playthrough.id);
         syncChatEntries();
         notifyBindings();
       }).catch(() => {
@@ -55860,10 +56512,17 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     };
   });
   return {
+    openPlaythrough: openPlaySession,
+    getActiveDraftId: () => mode === "play" ? activeDraftId : null,
+    subscribeDraft: (listener) => {
+      bindingListeners.add(listener);
+      return () => bindingListeners.delete(listener);
+    },
     setMode(next) {
       const normalized = next === "play" ? "play" : "native";
       if (mode === normalized) return;
       mode = normalized;
+      notifyBindings();
       reconcile();
       reconcileNotice();
       reconcileChat(true);
@@ -55871,14 +56530,14 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
   };
 }
 function ScopedPlaySessionDock({ getOpeningSessionId, subscribeBindings, ...props }) {
-  const opening = (0, import_react33.useSyncExternalStore)(subscribeBindings, getOpeningSessionId, getOpeningSessionId);
-  return props.session?.sessionId === opening ? null : (0, import_react33.createElement)(PlaySessionDock, props);
+  const opening = (0, import_react35.useSyncExternalStore)(subscribeBindings, getOpeningSessionId, getOpeningSessionId);
+  return props.session?.sessionId === opening ? null : (0, import_react35.createElement)(PlaySessionDock, props);
 }
 function ScopedPlayChatView({ getBinding, subscribeBindings, useStore, actions, ...props }) {
-  const binding = (0, import_react33.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
+  const binding = (0, import_react35.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
   const selectedView = typeof useStore === "function" ? useStore((state) => state.view) : PLAY_VIEW_ID;
-  const surface = (0, import_react33.useRef)(null), [displayActive, setDisplayActive] = (0, import_react33.useState)(false);
-  (0, import_react33.useLayoutEffect)(() => {
+  const surface = (0, import_react35.useRef)(null), [displayActive, setDisplayActive] = (0, import_react35.useState)(false);
+  (0, import_react35.useLayoutEffect)(() => {
     const node = surface.current;
     if (!node) {
       setDisplayActive(false);
@@ -55900,13 +56559,13 @@ function ScopedPlayChatView({ getBinding, subscribeBindings, useStore, actions, 
       mutation.disconnect();
     };
   }, [binding == null, selectedView]);
-  (0, import_react33.useLayoutEffect)(() => {
+  (0, import_react35.useLayoutEffect)(() => {
     if (binding === null && selectedView === PLAY_VIEW_ID) actions?.setView?.("chat");
   }, [actions, binding, selectedView]);
-  return binding == null || selectedView !== PLAY_VIEW_ID ? null : (0, import_react33.createElement)("div", {
+  return binding == null || selectedView !== PLAY_VIEW_ID ? null : (0, import_react35.createElement)("div", {
     ref: surface,
     style: { height: "100%", minHeight: 1, minWidth: 0 }
-  }, displayActive ? (0, import_react33.createElement)(MowanChatView, {
+  }, displayActive ? (0, import_react35.createElement)(MowanChatView, {
     key: JSON.stringify([props.sessionId, binding.playthrough.id, binding.playthrough.path]),
     ...props,
     playthrough: binding.playthrough
@@ -56151,7 +56810,22 @@ function createLivePlayClient({
       return v2("POST", `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId });
     },
     postUserMessage(sessionId, text3, options) {
-      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text3 }, options);
+      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text3, ...options?.requestId ? { requestId: options.requestId } : {} }, options);
+    },
+    postDraft(body2) {
+      return v2("POST", "/drafts", body2);
+    },
+    getDraft(id, options) {
+      return v2("GET", `/drafts/${encodeURIComponent(id)}`, void 0, options);
+    },
+    putDraft(id, patch) {
+      return v2("PUT", `/drafts/${encodeURIComponent(id)}`, patch);
+    },
+    materializeDraft(id, body2, options) {
+      return v2("POST", `/drafts/${encodeURIComponent(id)}/materialize`, body2, options);
+    },
+    cancelDraft(id) {
+      return v2("POST", `/drafts/${encodeURIComponent(id)}/cancel`, {});
     },
     postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
@@ -56557,8 +57231,8 @@ function startChromeModeTransport({
 }
 
 // packages/client/src/index.js
-var h27 = createLocalizedElement(import_react34.createElement);
-var css12 = `
+var h29 = createLocalizedElement(import_react37.createElement);
+var css13 = `
 [data-conversation-tabs] > [role="tab"]{white-space:nowrap;flex-shrink:0}
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
@@ -56575,6 +57249,7 @@ var css12 = `
 .dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-rp-workspace-warning{position:relative;padding:12px 36px 12px 12px;border:1px solid #d8a82b;border-radius:9px;background:rgba(218,165,32,.16);color:var(--dsw-alias-label-primary);font-size:12px;line-height:1.6}.dtv-rp-workspace-warning h3{margin:0 0 5px;font-size:12px}.dtv-rp-workspace-warning p{margin:0}.dtv-rp-workspace-warning p+p{margin-top:6px}.dtv-rp-workspace-warning .dtv-close{position:absolute;right:5px;top:5px}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;font-family:inherit;line-height:1.4;min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
 .dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions,.dtv-template-toolbar,.dtv-template-footer,.dtv-template-name{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-template-name{grid-template-columns:minmax(0,1fr) auto}.dtv-template-footer,.dtv-settings-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dtv-settings-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
@@ -56676,7 +57351,7 @@ async function conversationSettingsRequest(method = "GET", body2) {
   return data3.settings;
 }
 function Field6({ label, children }) {
-  return h27("label", { className: "dtv-field" }, h27("span", { className: "dtv-label" }, label), children);
+  return h29("label", { className: "dtv-field" }, h29("span", { className: "dtv-label" }, label), children);
 }
 function SettingsPanel({
   settings,
@@ -56696,23 +57371,23 @@ function SettingsPanel({
   selectWorkspace
 }) {
   const percent = Math.round(settings.scale * 100);
-  return h27(
+  return h29(
     "div",
     { className: "dtv-panel" },
-    h27(
+    h29(
       "div",
       { className: "dtv-header" },
-      h27("div", { className: "dtv-title" }, translate("settings.title")),
-      h27("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close2 }, "\u2715")
+      h29("div", { className: "dtv-title" }, translate("settings.title")),
+      h29("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close2 }, "\u2715")
     ),
-    h27(
+    h29(
       "div",
       { className: "dtv-body" },
-      h27("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h27(
+      h29("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h29(
         "div",
         { className: "dtv-settings-section" },
-        h27(Field6, { label: translate("settings.language") }, h27(
+        h29(Field6, { label: translate("settings.language") }, h29(
           "select",
           {
             className: "dtv-select",
@@ -56720,29 +57395,29 @@ function SettingsPanel({
             disabled: busy2,
             onChange: (event) => update({ ...settings, locale: event.target.value })
           },
-          ...UI_LOCALES.map((locale) => h27("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
+          ...UI_LOCALES.map((locale) => h29("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
         )),
-        h27(Field6, { label: translate("settings.scale") }, h27("select", {
+        h29(Field6, { label: translate("settings.scale") }, h29("select", {
           className: "dtv-select",
           value: settings.scale,
           disabled: busy2,
           onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-        }, ...UI_SCALE_OPTIONS.map((scale) => h27("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-        h27("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-        h27("p", { className: "dtv-note" }, translate("settings.scale.help")),
-        h27(
+        }, ...UI_SCALE_OPTIONS.map((scale) => h29("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h29("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+        h29("p", { className: "dtv-note" }, translate("settings.scale.help")),
+        h29(
           "label",
           { className: "dtv-check" },
-          h27("input", {
+          h29("input", {
             type: "checkbox",
             checked: settings.rpFollowCharacter !== false,
             disabled: busy2,
             onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
           }),
-          h27("span", null, translate("settings.rpFollow"))
+          h29("span", null, translate("settings.rpFollow"))
         ),
-        h27("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
-        h27(Field6, { label: translate("settings.rpWorkspace") }, h27(
+        h29("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+        h29(Field6, { label: translate("settings.rpWorkspace") }, h29(
           "select",
           {
             className: "dtv-select",
@@ -56750,29 +57425,30 @@ function SettingsPanel({
             disabled: busy2 || workspaceBusy || workspaceSetting === null,
             onChange: (event) => selectWorkspace(event.target.value)
           },
-          workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h27("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
-          workspaceSetting?.current?.unavailable === true ? h27("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
-          workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h27("option", { key: item.id, value: item.path }, rawText(item.title))) : h27("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
+          workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h29("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
+          workspaceSetting?.current?.unavailable === true ? h29("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
+          workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h29("option", { key: item.id, value: item.path }, rawText(item.title))) : h29("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
         )),
-        h27("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
-        h27(Field6, { label: translate("settings.rpPolicy") }, h27("textarea", {
+        h29("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
+        h29(RpWorkspaceNotice),
+        h29(Field6, { label: translate("settings.rpPolicy") }, h29("textarea", {
           className: "dtv-textarea dtv-policy",
           value: policyDraft,
           placeholder: translate("settings.rpPolicy.placeholder"),
           disabled: busy2 || policyBusy || policyLoaded !== true,
           onChange: (event) => onPolicyDraft(event.target.value)
         })),
-        h27("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
-        h27(
+        h29("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+        h29(
           "div",
           { className: "dtv-actions" },
-          h27("button", {
+          h29("button", {
             className: "dtv-button dtv-primary",
             type: "button",
             disabled: busy2 || policyBusy || policyLoaded !== true,
             onClick: savePolicy
           }, translate("settings.rpPolicy.save")),
-          h27("button", {
+          h29("button", {
             className: "dtv-button",
             type: "button",
             disabled: busy2 || policyBusy || policyLoaded !== true,
@@ -56780,10 +57456,10 @@ function SettingsPanel({
           }, translate("settings.rpPolicy.reset"))
         )
       ),
-      h27(
+      h29(
         "div",
         { className: "dtv-settings-footer" },
-        h27("button", { className: "dtv-button", type: "button", disabled: busy2, onClick: reset2 }, translate("settings.reset"))
+        h29("button", { className: "dtv-button", type: "button", disabled: busy2, onClick: reset2 }, translate("settings.reset"))
       )
     )
   );
@@ -56795,7 +57471,7 @@ var LOGIC_KEYS = Object.freeze({
   not_all: "world.logic.notAll"
 });
 function RpHighRiskDialog({ onDismiss }) {
-  return h27(
+  return h29(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -56803,16 +57479,16 @@ function RpHighRiskDialog({ onDismiss }) {
       "aria-modal": "true",
       "aria-labelledby": "dtv-rp-block-body"
     },
-    h27(
+    h29(
       "div",
       { className: "dtv-modal" },
-      h27("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
-      h27("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
+      h29("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
+      h29("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
     )
   );
 }
 function ImportFailureDialog({ message, onDismiss }) {
-  return h27(
+  return h29(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -56821,12 +57497,12 @@ function ImportFailureDialog({ message, onDismiss }) {
       "aria-labelledby": "dtv-import-failure-title",
       "aria-describedby": "dtv-import-failure-body"
     },
-    h27(
+    h29(
       "div",
       { className: "dtv-modal" },
-      h27("h2", { id: "dtv-import-failure-title", className: "dtv-modal-title" }, uiMessage("import.failureTitle")),
-      h27("p", { id: "dtv-import-failure-body", className: "dtv-modal-body" }, rawText(message)),
-      h27("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, uiMessage("common.close"))
+      h29("h2", { id: "dtv-import-failure-title", className: "dtv-modal-title" }, uiMessage("import.failureTitle")),
+      h29("p", { id: "dtv-import-failure-body", className: "dtv-modal-body" }, rawText(message)),
+      h29("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, uiMessage("common.close"))
     )
   );
 }
@@ -56842,7 +57518,7 @@ function WorkspaceAdmission({ setting, state, error, busy: busy2, selectWorkspac
   else if (busy2) status = uiMessage("workspaceAdmission.saving");
   else if (unavailable) status = uiMessage("workspaceAdmission.unavailable", { path: setting.current.path });
   else if (candidates.length === 0) status = uiMessage("workspaceAdmission.none");
-  return h27(
+  return h29(
     "div",
     {
       className: "dtv-workspace-admission",
@@ -56850,20 +57526,21 @@ function WorkspaceAdmission({ setting, state, error, busy: busy2, selectWorkspac
       "aria-modal": "true",
       "aria-labelledby": "dtv-workspace-admission-title"
     },
-    h27(
+    h29(
       "div",
       { className: "dtv-workspace-admission-card" },
-      h27("h2", { id: "dtv-workspace-admission-title", className: "dtv-workspace-admission-title" }, uiMessage("workspaceAdmission.title")),
-      h27("p", { className: "dtv-workspace-admission-copy" }, uiMessage("workspaceAdmission.body")),
-      status === null ? null : h27("p", {
+      h29("h2", { id: "dtv-workspace-admission-title", className: "dtv-workspace-admission-title" }, uiMessage("workspaceAdmission.title")),
+      h29("p", { className: "dtv-workspace-admission-copy" }, uiMessage("workspaceAdmission.body")),
+      h29(RpWorkspaceNotice),
+      status === null ? null : h29("p", {
         className: "dtv-status",
         "data-error": ["error", "verify-error", "save-error"].includes(state) || unavailable,
         role: ["error", "verify-error", "save-error"].includes(state) ? "alert" : "status"
       }, status),
-      candidates.length === 0 ? null : h27(
+      candidates.length === 0 ? null : h29(
         "div",
         { className: "dtv-workspace-admission-list" },
-        ...candidates.map((item) => h27(
+        ...candidates.map((item) => h29(
           "button",
           {
             key: item.id,
@@ -56874,20 +57551,20 @@ function WorkspaceAdmission({ setting, state, error, busy: busy2, selectWorkspac
             "aria-label": uiMessage("workspaceAdmission.choose", { name: item.title }),
             onClick: () => selectWorkspace(item.path)
           },
-          h27(
+          h29(
             "span",
             { className: "dtv-workspace-admission-choice-copy" },
-            h27("span", { className: "dtv-workspace-admission-choice-title" }, rawText(item.title)),
-            h27("span", { className: "dtv-workspace-admission-choice-path" }, rawText(item.path))
+            h29("span", { className: "dtv-workspace-admission-choice-title" }, rawText(item.title)),
+            h29("span", { className: "dtv-workspace-admission-choice-path" }, rawText(item.path))
           ),
-          h27("span", { "aria-hidden": "true" }, "\u2192")
+          h29("span", { "aria-hidden": "true" }, "\u2192")
         ))
       ),
-      h27(
+      h29(
         "div",
         { className: "dtv-workspace-admission-actions" },
-        h27("button", { type: "button", className: "dtv-button", disabled: busy2, onClick: reload }, uiMessage("workspaceAdmission.retry")),
-        h27("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy2, onClick: returnToNative }, uiMessage("workspaceAdmission.native"))
+        h29("button", { type: "button", className: "dtv-button", disabled: busy2, onClick: reload }, uiMessage("workspaceAdmission.retry")),
+        h29("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy2, onClick: returnToNative }, uiMessage("workspaceAdmission.native"))
       )
     )
   );
@@ -56923,39 +57600,41 @@ function createSurfaceNavigation(commit) {
   };
 }
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
-  const [menuOpen, setMenuOpen] = (0, import_react34.useState)(false);
-  const [surface, setSurface] = (0, import_react34.useState)(null);
-  const surfaceNavigation = (0, import_react34.useRef)(null);
+  const [menuOpen, setMenuOpen] = (0, import_react37.useState)(false);
+  const [surface, setSurface] = (0, import_react37.useState)(null);
+  const surfaceNavigation = (0, import_react37.useRef)(null);
   if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation((next) => {
     setSurface(next);
     setMenuOpen(false);
   });
-  const requestSurface = (0, import_react34.useCallback)((next) => surfaceNavigation.current.request(next, surface), [surface]);
+  const requestSurface = (0, import_react37.useCallback)((next) => surfaceNavigation.current.request(next, surface), [surface]);
   const registerBeforeLeave = surfaceNavigation.current.register;
-  const [assemblyOpen, setAssemblyOpen] = (0, import_react34.useState)(false);
-  const assemblyNavigation = (0, import_react34.useRef)(null);
+  const [assemblyOpen, setAssemblyOpen] = (0, import_react37.useState)(false);
+  const assemblyNavigation = (0, import_react37.useRef)(null);
   if (assemblyNavigation.current === null) assemblyNavigation.current = createSurfaceNavigation(setAssemblyOpen);
-  const requestAssembly = (0, import_react34.useCallback)((next) => assemblyNavigation.current.request(next, assemblyOpen), [assemblyOpen]);
+  const requestAssembly = (0, import_react37.useCallback)((next) => assemblyNavigation.current.request(next, assemblyOpen), [assemblyOpen]);
   const registerAssemblyBeforeLeave = assemblyNavigation.current.register;
-  const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = (0, import_react34.useState)(null);
-  const diagnosticSnapshot = (0, import_react34.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
-  (0, import_react34.useEffect)(() => diagnostics.subscribeOpen((playthroughId) => {
+  const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = (0, import_react37.useState)(null);
+  const diagnosticSnapshot = (0, import_react37.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
+  (0, import_react37.useEffect)(() => diagnostics.subscribeOpen((playthroughId) => {
     if (!requestSurface("diagnostics")) return;
     setMenuOpen(false);
     setDiagnosticPlaythroughId(playthroughId);
   }), [diagnostics, requestSurface]);
-  const [anchor, setAnchor] = (0, import_react34.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react34.useState)(() => chromeService.getMode());
-  const [chromeAnimation, setChromeAnimation] = (0, import_react34.useState)(0);
-  const [chromeError, setChromeError] = (0, import_react34.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react34.useState)(null);
-  const [assemblyState, setAssemblyState] = (0, import_react34.useState)({ presets: [], selection: null });
-  const [statusError, setStatusError] = (0, import_react34.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react34.useState)(getClientUiSettings);
-  const [conversationSettings, setConversationSettings] = (0, import_react34.useState)(getClientConversationSettings);
-  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react34.useState)({ text: translate("conversationSettings.saved"), error: false });
-  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react34.useState)(true);
-  const conversationPersistence = (0, import_react34.useRef)(null);
+  const [anchor, setAnchor] = (0, import_react37.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react37.useState)(() => chromeService.getMode());
+  const activeDraftId = (0, import_react37.useSyncExternalStore)(playSlots.subscribeDraft, playSlots.getActiveDraftId);
+  const bindingTarget = (0, import_react36.useMemo)(() => activeDraftId ? createDraftResourceTarget({ client: playClient, draftId: activeDraftId, label: translate("play.draft.opening") }) : null, [activeDraftId, playClient]);
+  const [chromeAnimation, setChromeAnimation] = (0, import_react37.useState)(0);
+  const [chromeError, setChromeError] = (0, import_react37.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react37.useState)(null);
+  const [assemblyState, setAssemblyState] = (0, import_react37.useState)({ presets: [], selection: null });
+  const [statusError, setStatusError] = (0, import_react37.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react37.useState)(getClientUiSettings);
+  const [conversationSettings, setConversationSettings] = (0, import_react37.useState)(getClientConversationSettings);
+  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react37.useState)({ text: translate("conversationSettings.saved"), error: false });
+  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react37.useState)(true);
+  const conversationPersistence = (0, import_react37.useRef)(null);
   if (!conversationPersistence.current) conversationPersistence.current = createConversationSettingsPersistence({
     request: conversationSettingsRequest,
     apply: (next) => setConversationSettings(setClientConversationSettings(next)),
@@ -56965,25 +57644,25 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       error: key2 === "saveError" || key2 === "loadError"
     })
   });
-  const [settingsStatus, setSettingsStatus] = (0, import_react34.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react34.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react34.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react34.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react34.useState)(false);
-  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react34.useState)(null);
-  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react34.useState)("idle");
-  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react34.useState)("");
-  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react34.useState)(false);
-  const rpWorkspaceBusyRef = (0, import_react34.useRef)(false);
-  const rpWorkspaceLoadGeneration = (0, import_react34.useRef)(0);
-  const [rpAlert, setRpAlert] = (0, import_react34.useState)(null);
-  const [importFailure, setImportFailure] = (0, import_react34.useState)(null);
-  const drag = (0, import_react34.useRef)(null);
-  const suppressClick = (0, import_react34.useRef)(false);
-  const chromeController = (0, import_react34.useRef)(null);
-  const statusGeneration = (0, import_react34.useRef)(0);
-  const rpAlertRef = (0, import_react34.useRef)(null);
-  const dismissedRpAlerts = (0, import_react34.useRef)(/* @__PURE__ */ new Set());
+  const [settingsStatus, setSettingsStatus] = (0, import_react37.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react37.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react37.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react37.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react37.useState)(false);
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react37.useState)(null);
+  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react37.useState)("idle");
+  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react37.useState)("");
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react37.useState)(false);
+  const rpWorkspaceBusyRef = (0, import_react37.useRef)(false);
+  const rpWorkspaceLoadGeneration = (0, import_react37.useRef)(0);
+  const [rpAlert, setRpAlert] = (0, import_react37.useState)(null);
+  const [importFailure, setImportFailure] = (0, import_react37.useState)(null);
+  const drag = (0, import_react37.useRef)(null);
+  const suppressClick = (0, import_react37.useRef)(false);
+  const chromeController = (0, import_react37.useRef)(null);
+  const statusGeneration = (0, import_react37.useRef)(0);
+  const rpAlertRef = (0, import_react37.useRef)(null);
+  const dismissedRpAlerts = (0, import_react37.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions(mainSessionId);
   const sessionBlank = useSessions(mainSessionBlank);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
@@ -56992,7 +57671,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const diagnosticSessionsPhase = useSessions((state) => state.phase);
   const diagnosticArchived = useWorkspaces((state) => state.archivedSessionIds);
   const diagnosticWorkspacesPhase = useWorkspaces((state) => state.phase);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     diagnostics.setSessionAvailability({
       sessions: diagnosticSessions,
       workspaceItems,
@@ -57001,14 +57680,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       workspacesPhase: diagnosticWorkspacesPhase
     });
   }, [diagnostics, diagnosticSessions, diagnosticSessionsPhase, workspaceItems, diagnosticArchived, diagnosticWorkspacesPhase]);
-  const hasConversationHistory = (0, import_react34.useCallback)(async (targetSessionId) => {
+  const hasConversationHistory = (0, import_react37.useCallback)(async (targetSessionId) => {
     const messages = await playClient.getMessages(targetSessionId);
     return sessionHasConversationHistory(messages);
   }, [playClient]);
   const close2 = () => requestSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     const commitChrome = (snapshot) => {
       setChromeMode(snapshot.mode);
       playSlots.setMode(snapshot.mode);
@@ -57034,7 +57713,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       unsubscribe();
     };
   }, [chromeService, playSlots]);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -57049,7 +57728,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, []);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     const persistence = conversationPersistence.current;
     persistence.load();
     return () => persistence.dispose();
@@ -57092,7 +57771,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   };
   const persistConversationSettings = (next) => conversationPersistence.current.save(next);
   const resetConversationSettings = () => conversationPersistence.current.reset();
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -57108,7 +57787,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, [surface]);
-  const refreshRpWorkspace = (0, import_react34.useCallback)(async () => {
+  const refreshRpWorkspace = (0, import_react37.useCallback)(async () => {
     const generation = ++rpWorkspaceLoadGeneration.current;
     setRpWorkspaceLoadState("loading");
     setRpWorkspaceError("");
@@ -57127,12 +57806,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }
   }, [playClient, workspaceItems]);
   const needsRpWorkspace = chromeMode === "play" || surface === "settings";
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     if (!needsRpWorkspace) return void 0;
     refreshRpWorkspace();
     return void 0;
   }, [needsRpWorkspace, refreshRpWorkspace]);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     if (surface !== "settings" || rpWorkspaceLoadState !== "error") return;
     setSettingsStatus({ text: translate("settings.loadError", { message: rpWorkspaceError }), error: true });
   }, [rpWorkspaceError, rpWorkspaceLoadState, surface]);
@@ -57204,23 +57883,23 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react34.useCallback)(async () => {
+  const refreshStatus = (0, import_react37.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
-      const [next, assembly] = await Promise.all([activeView(sessionId), tavernFetch(`${API_V1}/assembly-presets?sessionId=${encodeURIComponent(sessionId ?? "")}`).then(async (res) => {
+      const [next, assembly, openingAssembly] = await Promise.all([bindingTarget ? bindingTarget.active() : activeView(sessionId), tavernFetch(`${API_V1}/assembly-presets?sessionId=${encodeURIComponent(bindingTarget ? "" : sessionId ?? "")}`).then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
-      })]);
+      }), bindingTarget?.getSelection()]);
       if (generation !== statusGeneration.current) return;
       setActiveSnapshot(next);
-      setAssemblyState(assembly);
+      setAssemblyState(bindingTarget ? { ...assembly, selection: openingAssembly } : assembly);
       setStatusError("");
     } catch (reason) {
       if (generation !== statusGeneration.current) return;
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
-  }, [sessionId, chromeMode]);
-  (0, import_react34.useEffect)(() => {
+  }, [sessionId, chromeMode, bindingTarget]);
+  (0, import_react37.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -57229,12 +57908,16 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
-    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    window.addEventListener(ASSEMBLY_REFRESH_EVENT, onRefresh);
+    return () => {
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+      window.removeEventListener(ASSEMBLY_REFRESH_EVENT, onRefresh);
+    };
   }, [refreshStatus]);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     const onResize = () => setAnchor((current4) => {
       const next = clampLauncherAnchor(current4, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -57243,14 +57926,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     setAnchor((current4) => {
       const next = clampLauncherAnchor(current4, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -57286,7 +57969,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     } catch {
     }
   };
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     const onImportFailure = (event) => {
       const message = typeof event?.detail?.message === "string" ? event.detail.message.trim() : "";
       if (message !== "") setImportFailure(message.slice(0, 1e3));
@@ -57294,7 +57977,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
     return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
   }, []);
-  (0, import_react34.useEffect)(() => {
+  (0, import_react37.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (importFailure !== null) setImportFailure(null);
@@ -57370,30 +58053,34 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   };
   let panel = null;
   if (surface === "preset") {
-    panel = h27("div", { className: "dtv-panel" }, h27(PresetSidebar, {
+    panel = h29("div", { className: "dtv-panel" }, h29(PresetSidebar, {
+      key: activeDraftId ?? sessionId,
       closePanel: close2,
       openPanel: () => {
       },
-      sessionId,
-      sessionBlank,
+      sessionId: bindingTarget ? null : sessionId,
+      bindingTarget,
+      sessionBlank: bindingTarget ? true : sessionBlank,
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h27(CharacterPanel, {
-      sessionId,
-      sessionBlank,
+    panel = h29(CharacterPanel, {
+      key: activeDraftId ?? sessionId,
+      sessionId: bindingTarget ? null : sessionId,
+      bindingTarget,
+      sessionBlank: bindingTarget ? true : sessionBlank,
       hasConversationHistory,
       detachPlaythroughSession: (playthroughId, targetSessionId) => playClient.detachPlaythroughSession(playthroughId, targetSessionId),
       close: close2
     });
   } else if (surface === "regex" && chromeMode === "play") {
-    panel = h27(ConversationSettingsPanel, { settings: conversationSettings, status: conversationSettingsStatus, busy: conversationSettingsBusy, update: persistConversationSettings, reset: resetConversationSettings, client: playClient, activeSnapshot, registerBeforeLeave, initialTab: "regex", close: close2 });
+    panel = h29(ConversationSettingsPanel, { settings: conversationSettings, status: conversationSettingsStatus, busy: conversationSettingsBusy, update: persistConversationSettings, reset: resetConversationSettings, client: playClient, activeSnapshot, registerBeforeLeave, initialTab: "regex", close: close2 });
   } else if (surface === "world-info") {
-    panel = h27(WorldBookPanel, { sessionId, close: close2 });
+    panel = h29(WorldBookPanel, { key: activeDraftId ?? sessionId, sessionId: bindingTarget ? null : sessionId, bindingTarget, close: close2 });
   } else if (surface === "user") {
-    panel = h27(UserPanel, { sessionId, sessionBlank, close: close2 });
+    panel = h29(UserPanel, { key: activeDraftId ?? sessionId, sessionId: bindingTarget ? null : sessionId, sessionBlank: bindingTarget ? true : sessionBlank, bindingTarget, close: close2 });
   } else if (surface === "session-template") {
-    panel = h27(SessionTemplatePanel, {
+    panel = h29(SessionTemplatePanel, {
       sessionId,
       workspaceId,
       chromeMode,
@@ -57403,7 +58090,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       close: close2
     });
   } else if (surface === "conversation-settings" && chromeMode === "play") {
-    panel = h27(ConversationSettingsPanel, {
+    panel = h29(ConversationSettingsPanel, {
       client: playClient,
       activeSnapshot,
       registerBeforeLeave,
@@ -57415,9 +58102,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       reset: resetConversationSettings
     });
   } else if (surface === "diagnostics") {
-    panel = h27(WorkspaceDiagnosticsPanel, { client: playClient, controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close: close2 });
+    panel = h29(WorkspaceDiagnosticsPanel, { client: playClient, controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close: close2 });
   } else if (surface === "settings") {
-    panel = h27(SettingsPanel, {
+    panel = h29(SettingsPanel, {
       settings: uiSettings,
       status: settingsStatus,
       busy: settingsBusy,
@@ -57441,14 +58128,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
   const workspaceAdmissionOpen = chromeMode === "play" && rpWorkspaceLoadState !== "idle" && rpWorkspaceLoadState !== "loading" && rpWorkspaceSetting?.ready !== true;
-  return h27(
+  return h29(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null || assemblyOpen, style: { "--dtv-ui-scale": uiSettings.scale } },
-    assemblyOpen && h27(AssemblyPanel2, { sessionId, close: () => requestAssembly(false), registerBeforeLeave: registerAssemblyBeforeLeave, chromeMode }),
+    assemblyOpen && h29(AssemblyPanel2, { sessionId: bindingTarget ? null : sessionId, selectionTarget: bindingTarget, sessionLabel: bindingTarget?.label, close: () => requestAssembly(false), registerBeforeLeave: registerAssemblyBeforeLeave, chromeMode }),
     panel,
-    importFailure === null ? null : h27(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
-    rpAlert === null ? null : h27(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
-    workspaceAdmissionOpen ? h27(WorkspaceAdmission, {
+    importFailure === null ? null : h29(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
+    rpAlert === null ? null : h29(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    workspaceAdmissionOpen ? h29(WorkspaceAdmission, {
       setting: rpWorkspaceSetting,
       state: rpWorkspaceLoadState,
       error: rpWorkspaceError,
@@ -57457,7 +58144,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       reload: refreshRpWorkspace,
       returnToNative: switchChrome
     }) : null,
-    h27(
+    h29(
       "div",
       {
         className: "dtv-launcher",
@@ -57466,7 +58153,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h27("div", { className: "dtv-ball-row" }, h27(
+      h29("div", { className: "dtv-ball-row" }, h29(
         "button",
         {
           className: "dtv-ball",
@@ -57481,14 +58168,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           onClick: clickLauncher,
           onContextMenu: contextSwitchLauncher
         },
-        h27("span", { key: chromeAnimation, className: "dtv-ball-face", "data-animate": chromeAnimation > 0, "aria-hidden": "true" }),
-        h27("span", { className: "dtv-ball-label" }, "DT")
+        h29("span", { key: chromeAnimation, className: "dtv-ball-face", "data-animate": chromeAnimation > 0, "aria-hidden": "true" }),
+        h29("span", { className: "dtv-ball-label" }, "DT")
       )),
-      h27(
+      h29(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h27("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
-        h27(
+        h29("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: bindingTarget?.label || sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h29(
           "button",
           {
             className: "dtv-menu-item",
@@ -57499,14 +58186,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
             "data-show-binding": false,
             onClick: switchChrome
           },
-          h27("span", { "aria-hidden": "true" }, "\u2194"),
-          h27(
+          h29("span", { "aria-hidden": "true" }, "\u2194"),
+          h29(
             "span",
             { className: "dtv-item-copy" },
-            h27("span", { className: "dtv-item-label" }, chromeSwitchLabel),
-            h27("span", { className: "dtv-item-status" }, chromeStatusLabel)
+            h29("span", { className: "dtv-item-label" }, chromeSwitchLabel),
+            h29("span", { className: "dtv-item-status" }, chromeStatusLabel)
           ),
-          h27("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
+          h29("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
         ),
         ...TAVERN_MENU_ITEMS.filter((item) => !item.playOnly || chromeMode === "play").map((item) => {
           const isDiagnostics = item.id === "diagnostics";
@@ -57516,7 +58203,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h27(
+          return h29(
             "button",
             {
               className: "dtv-menu-item",
@@ -57532,14 +58219,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
               "aria-label": ariaText,
               onClick: () => open2(item.id)
             },
-            item.binding === false ? h27("span", { "aria-hidden": "true" }) : h27("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
-            h27(
+            item.binding === false ? h29("span", { "aria-hidden": "true" }) : h29("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            h29(
               "span",
               { className: "dtv-item-copy" },
-              h27("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
-              h27("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
+              h29("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
+              h29("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
-            status.count >= (isDiagnostics ? 1 : 2) ? h27("span", { className: "dtv-item-count", "aria-label": uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count }) }, uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count })) : item.available ? null : h27("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
+            status.count >= (isDiagnostics ? 1 : 2) ? h29("span", { className: "dtv-item-count", "aria-label": uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count }) }, uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count })) : item.available ? null : h29("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
       )
@@ -57550,7 +58237,7 @@ function installStyles6() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
-  style.textContent = css12 + diagnosticsCss + presentationCss;
+  style.textContent = css13 + diagnosticsCss + presentationCss;
   document.head.append(style);
 }
 var name = PLUGIN_ID;
@@ -57637,7 +58324,7 @@ function apply3(ctx, { conversationPhase: conversationPhase2 }) {
           source: selectedSource
         }),
         playthroughController,
-        openSession: (id) => ctx.uiWorkspace.openSession(id),
+        openSession: (id, playthrough) => playSlots.openPlaythrough(id, playthrough),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       })
     })

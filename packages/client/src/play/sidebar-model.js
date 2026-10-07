@@ -305,6 +305,7 @@ export function projectPlaySidebar({
   const archivedPlaythroughs = []
   for (const playthrough of catalog.playthroughs ?? []) {
     const rootId = rootSessionId(playthrough)
+    const draft = rootId === null && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id
     const characterId = playthroughCharacterId(playthrough)
     if (characterId === null) continue
     const characterReference = playthrough.ext?.pmpDshTavern ?? {}
@@ -321,7 +322,7 @@ export function projectPlaySidebar({
           ?? historicalCharacterName(playthrough, sessions, characterId),
         rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
         sessionIds: members,
-        missing: members.length === 0,
+        missing: members.length === 0 && !draft,
       })
       continue
     }
@@ -337,7 +338,7 @@ export function projectPlaySidebar({
       active: typeof activePlaythroughId === 'string' && activePlaythroughId !== ''
         ? playthrough.id === activePlaythroughId
         : currentId !== null && members.includes(currentId),
-      missing: members.length === 0,
+      missing: members.length === 0 && !draft,
     })
   }
 

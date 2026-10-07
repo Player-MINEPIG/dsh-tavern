@@ -287,8 +287,13 @@ export function createLivePlayClient({
     },
 
     postUserMessage(sessionId, text, options) {
-      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text }, options)
+      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text, ...(options?.requestId ? { requestId: options.requestId } : {}) }, options)
     },
+    postDraft(body) { return v2('POST', '/drafts', body) },
+    getDraft(id, options) { return v2('GET', `/drafts/${encodeURIComponent(id)}`, undefined, options) },
+    putDraft(id, patch) { return v2('PUT', `/drafts/${encodeURIComponent(id)}`, patch) },
+    materializeDraft(id, body, options) { return v2('POST', `/drafts/${encodeURIComponent(id)}/materialize`, body, options) },
+    cancelDraft(id) { return v2('POST', `/drafts/${encodeURIComponent(id)}/cancel`, {}) },
 
     postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {

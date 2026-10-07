@@ -1,5 +1,6 @@
 import { pendingSwipe, pendingSwipes } from './pending-swipe.js'
 import { mainSessionId } from '../session-selection.js'
+import { RpWorkspaceNotice } from './workspace-notice.js'
 import {
   createElement,
   useEffect,
@@ -447,6 +448,10 @@ export function PlayWorkspaceBrowser({
   const openPlaythrough = async playthrough => {
     setStatus(null)
     try {
+      if (!playthrough.ext?.pmpDshTavern?.rootSessionId && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id) {
+        openSession(null, playthrough)
+        return
+      }
       const pending = pendingSwipe(playClient, playthrough)
       if (pending !== null) {
         openSession(pending.sessionId, playthrough)
@@ -767,6 +772,7 @@ export function PlayWorkspaceBrowser({
       'aria-labelledby': 'dtv-play-ordinary-prompt',
     }, h('div', { className: 'dtv-play-modal' },
       h('p', { id: 'dtv-play-ordinary-prompt' }, uiMessage('play.sidebar.ordinaryPrompt')),
+      h(RpWorkspaceNotice),
       h('div', { className: 'dtv-play-modal-actions' },
         h('button', {
           type: 'button',

@@ -41,7 +41,7 @@ function errorMessage(data, status) {
   return `HTTP ${status}`
 }
 
-async function api(path, options = {}) {
+async function resourceApi(path, options = {}) {
   const method = String(options.method ?? 'GET').toUpperCase()
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
@@ -328,7 +328,9 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
   )
 }
 
-export function WorldBookPanel({ sessionId, close }) {
+export function WorldBookPanel({ bindingTarget, sessionId, close }) {
+  const api = bindingTarget?.request ?? resourceApi
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId)
   const [catalog, setCatalog] = useState(null)
   const [document, setDocument] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -375,7 +377,7 @@ export function WorldBookPanel({ sessionId, close }) {
   const refresh = useCallback(async preferredId => {
     const currentGeneration = ++generation.current
     const list = await api('/world-books')
-    const selected = sessionId
+    const selected = bindingTarget || sessionId
       ? await api(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`)
       : { selection: { worldBookIds: [] } }
     const activeView = await api(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`)
@@ -424,7 +426,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDocument(detail.worldBook)
     setDraft(structuredClone(detail.worldBook.book))
     setDirty(false)
-  }, [document?.id, sessionId])
+  }, [document?.id, sessionId, bindingTarget])
 
   useEffect(() => {
     run(() => refresh(), 'world.status.loaded')
@@ -482,7 +484,7 @@ export function WorldBookPanel({ sessionId, close }) {
   }, 'world.status.saved')
 
   const saveSelection = () => run(async () => {
-    if (!sessionId) throw uiError('world.error.needSession')
+    if (!canBind) throw uiError('world.error.needSession')
     const data = await api('/world-book-selection', { method: 'POST', body: JSON.stringify({ sessionId, worldBookIds: selection }) })
     setSelection(data.selection.worldBookIds)
     setAppliedSelection(data.selection.worldBookIds)
@@ -648,11 +650,11 @@ export function WorldBookPanel({ sessionId, close }) {
         ))) : h('p', { className: 'dwb-note' }, uiMessage('world.libraryEmpty')),
         selectionDirty ? h('div', { className: 'dwb-status', 'data-warning': true }, uiMessage('world.bindingUnsaved')) : h('p', { className: 'dwb-note' }, uiMessage('world.bindingApplied')),
         h('div', { className: 'dwb-actions' },
-          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage('world.applyBinding') : uiMessage('world.bindingAppliedButton')),
-          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.clearPending')),
+          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !canBind || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage('world.applyBinding') : uiMessage('world.bindingAppliedButton')),
+          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !canBind || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.clearPending')),
         ),
       ),
-      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translate('common.none') })),
+      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: bindingTarget?.label || sessionId || translate('common.none') })),
       h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       draft === null ? null : h('div', { className: 'dwb-resource', ref: standaloneEditorRef },
         h(Field, { label: uiMessage('world.bookName') }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),

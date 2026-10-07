@@ -9,6 +9,7 @@ import { PlaySessionDock } from './notice.js'
 import { DefaultConversationViewAdapter } from './view-default.js'
 import { setSwipeTransitionSource } from './swipe-transition.js'
 import {OPENING_SESSION_SLOT,OpeningConversationRoot,OpeningConversationSession,openingLayoutSession} from './opening-layout.js'
+import { DraftOpening } from './draft-opening.js'
 
 export const PLAY_SLOT_PRIORITY = -100
 export const PLAY_VIEW_ID = 'rp'
@@ -39,6 +40,11 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   let disposeChatEntry = null
   let disposeDefaultViewEntry = null
   let mainDeclared=false,disposeOpeningRoot=null,disposeOpeningBody=null,openingSessionId=null,openingRequest=null
+  const draftKey = 'pmp-dsh-tavern:active-opening-draft:v1'
+  let activeDraftId = null, disposeDraftRoot = null, renderedDraftId = null
+  try { const saved = window.sessionStorage.getItem(draftKey); if (saved && /^[A-Za-z0-9._-]{1,200}$/.test(saved)) activeDraftId = saved } catch {}
+  let draftMainSessionId = mainSessionId(ctx.sessions?.list?.getSnapshot?.())
+  let draftRosterReady = ctx.sessions?.list?.getSnapshot?.()?.phase === 'ready'
   let disposeSessionSubscription = null
   let refreshChatListener = null
   let refreshLocaleListener = null
@@ -46,7 +52,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   const pendingChats = new Map()
   const preferredPlaythroughs = new Map()
   const bindingListeners = new Set()
-  let preferredPlaythroughId = null
+  let preferredPlaythroughId = activeDraftId
   const playthroughSelectionListeners = new Set()
   const completedDefaultViewAttempts = new Set()
 
@@ -186,6 +192,15 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   const defaultViewKey = binding => `${binding.signature}\u0000${binding.playthrough.path}`
 
   const openPlaySession = (sessionId, playthrough = null) => {
+    if (!sessionId && playthrough?.ext?.pmpDshTavern?.draftId === playthrough?.id) {
+      activeDraftId = playthrough.id; draftMainSessionId = mainSessionId(ctx.sessions?.list?.getSnapshot?.())
+      draftRosterReady = ctx.sessions?.list?.getSnapshot?.()?.phase === 'ready'
+      try { window.sessionStorage.setItem(draftKey, activeDraftId) } catch {}
+      selectPlaythrough(playthrough.id); syncOpeningEntries(); notifyBindings(); return
+    }
+    activeDraftId = null
+    try { window.sessionStorage.removeItem(draftKey) } catch {}
+    syncOpeningEntries()
     if (playthrough?.id) preferredPlaythroughs.set(sessionId, playthrough.id)
     selectPlaythrough(playthrough?.id)
     const result = ctx.uiWorkspace.openSession(sessionId)
@@ -198,8 +213,17 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     openingSessionId=null
     disposeOpeningBody?.();disposeOpeningBody=null
     disposeOpeningRoot?.();disposeOpeningRoot=null
+    disposeDraftRoot?.();disposeDraftRoot=null;renderedDraftId=null
   }
   const syncOpeningEntries=()=>{
+    const draftId = mainDeclared && mode === 'play' ? activeDraftId : null
+    if (draftId) {
+      if (renderedDraftId === draftId) return
+      dropOpeningEntries()
+      disposeDraftRoot = ctx.slots.register({ name: 'main.conversation', priority: PLAY_SLOT_PRIORITY, inject: () => ({ draftId, playClient, switchToNative, openSession: (id, playthrough) => openPlaySession(id, playthrough) }) }, DraftOpening)
+      renderedDraftId = draftId; return
+    }
+    if (disposeDraftRoot) { disposeDraftRoot(); disposeDraftRoot = null; renderedDraftId = null }
     const id=mainDeclared&&mode==='play'?openingLayoutSession(ctx.sessions?.list?.getSnapshot?.(),chatBindings,openingRequest?.sessionId):null
     if(id===openingSessionId)return
     dropOpeningEntries()
@@ -271,6 +295,11 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   }
 
   const reconcileChat = (force = false) => {
+    const roster = ctx.sessions?.list?.getSnapshot?.()
+    if (!draftRosterReady && roster?.phase === 'ready') { draftMainSessionId = mainSessionId(roster); draftRosterReady = true }
+    if (activeDraftId && draftRosterReady && roster?.phase === 'ready' && mainSessionId(roster) !== draftMainSessionId) {
+      activeDraftId = null; try { window.sessionStorage.removeItem(draftKey) } catch {}
+    }
     if (!chatDeclared || mode !== 'play') {
       chatGeneration += 1
       pendingChats.clear()
@@ -284,7 +313,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     for (const id of pendingChats.keys()) if (!retained.has(id)) pendingChats.delete(id)
     for (const id of preferredPlaythroughs.keys()) if (!retained.has(id)) preferredPlaythroughs.delete(id)
     const mainId = mainSessionId(snapshot)
-    selectPlaythrough(chatBindings.get(mainId)?.playthrough.id ?? preferredPlaythroughs.get(mainId) ?? null)
+    if (!activeDraftId) selectPlaythrough(chatBindings.get(mainId)?.playthrough.id ?? preferredPlaythroughs.get(mainId) ?? null)
     for (const session of sessions) {
       const signature = sessionSignature(session)
       if (force !== true && (chatBindings.get(session.id)?.signature === signature
@@ -299,7 +328,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
         pendingChats.delete(session.id)
         if (match === null) chatBindings.delete(session.id)
         else chatBindings.set(session.id, { signature, sessionId: session.id, playthrough: match.playthrough,characterId:typeof selectedCharacter?.character?.id==='string'&&selectedCharacter.character.id===selectedCharacter?.selection?.characterCardId?selectedCharacter.character.id:null })
-        if (mainSessionId(ctx.sessions?.list?.getSnapshot?.()) === session.id) selectPlaythrough(match?.playthrough.id)
+        if (!activeDraftId && mainSessionId(ctx.sessions?.list?.getSnapshot?.()) === session.id) selectPlaythrough(match?.playthrough.id)
         syncChatEntries()
         notifyBindings()
       }).catch(() => {
@@ -396,10 +425,14 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   })
 
   return {
+    openPlaythrough: openPlaySession,
+    getActiveDraftId: () => mode === 'play' ? activeDraftId : null,
+    subscribeDraft: listener => { bindingListeners.add(listener); return () => bindingListeners.delete(listener) },
     setMode(next) {
       const normalized = next === 'play' ? 'play' : 'native'
       if (mode === normalized) return
       mode = normalized
+      notifyBindings()
       reconcile()
       reconcileNotice()
       reconcileChat(true)

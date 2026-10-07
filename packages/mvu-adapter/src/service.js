@@ -95,10 +95,14 @@ export class MvuService {
       const existing = this.templates.find(r => r.id === definition.id)
       if (existing && (!existing.discovered || existing.characterId !== definition.characterId)) fail('MVU_ID_CONFLICT', 'Discovered identity conflicts with configured resource')
       let resource
-      if (existing && (!existing.sourceError || definition.sourceError || this.resources.some(r => r.templateId === existing.id && this.#record(r.id).versions.length))) resource = { ...existing }
+      // Upgrade only the factory for future instances, with the exact same
+      // declaration. Existing instances and their historical interpreter stay pinned.
+      const upgrade = existing?.initial?.mvu_schema?.interpreterVersion === 1
+        && definition.schemaSource === existing.initial.mvu_schema.source
+      if (existing && !upgrade && (!existing.sourceError || definition.sourceError || this.resources.some(r => r.templateId === existing.id && this.#record(r.id).versions.length))) resource = { ...existing }
       else {
         const managementMode = existing?.managementMode ?? 'native'
-        try { resource = prepareResource({ ...definition, sessionIds: existing?.sessionIds ?? [], managementMode, discovered: true }) }
+        try { resource = prepareResource({ ...definition, sessionIds: existing?.sessionIds ?? [], managementMode, discovered: true, ...(existing?.activationSeqs ? { activationSeqs: existing.activationSeqs } : {}) }) }
         catch (error) { resource = prepareResource({ id: definition.id, name: definition.name, characterId: definition.characterId, sessionIds: [], managementMode, discovered: true, sourceError: error.code ?? 'MVU_INITIALIZATION_INVALID', initial: { stat_data: {} } }) }
         delete resource.schemaSource
       }
@@ -625,7 +629,7 @@ export class MvuService {
       const prior = record.versions.find(v => v.operationId === operationId)
       if (prior) { if (prior.fingerprint !== fingerprint) fail('MVU_IDEMPOTENCY_CONFLICT', 'Operation id reused with different input'); return cloneMvuReceipt(prior.result) }
       if (record.revision !== expectedRevision) fail('REVISION_CONFLICT', 'MVU revision changed')
-      if (variables.mvu_schema) { variables.stat_data = applyMvuSchema(variables.stat_data, variables.mvu_schema); variables.display_data = json(variables.stat_data) }
+      if (variables.mvu_schema) { variables.schema = normalizeVariables(variables).schema; variables.stat_data = applyMvuSchema(variables.stat_data, variables.mvu_schema); variables.display_data = json(variables.stat_data) }
       json(variables)
       const previousVersion = record.versions.find(v => v.key === record.currentKey) ?? record.versions.find(v => v.key === record.seed?.anchorKey)
       const source = resource.instance && previousVersion?.source.messageSeq >= 0 ? { ...previousVersion.source, manual: true, card: false }
@@ -861,6 +865,17 @@ export class MvuService {
       if (evidence?.mode !== scope.mode || evidence.checkCurrent?.() !== true) fail('MVU_READ_ONLY', 'Current card scope is no longer current')
       rows = rows.filter(row => this.#cardResourceActive(this.resources.find(r => r.id === row.id), scope))
       if (rows.length !== 1) fail('MVU_AMBIGUOUS', 'Current card scope requires one active resource')
+      if (scope.mode === 'greeting') {
+        const session = this.#sessions.get(scope.sessionId) ?? await this.inspect?.(scope.sessionId)
+        if (evidence.checkCurrent() !== true) fail('MVU_READ_ONLY', 'Greeting scope changed while reading its opening')
+        const start = session?.events?.find(event => event.type === 'turn/start')
+        if (start) {
+          const row = rows[0], resource = this.resources.find(r => r.id === row.id)
+          const opening = this.#record(row.id).checkpoints?.find(checkpoint => checkpoint.turn === start.data?.turn && checkpoint.seq === start.seq && (checkpoint.sessionId === scope.sessionId || (resource.instance && checkpoint.sessionId === undefined)))
+          if (!opening) fail('MVU_BASELINE_REQUIRED', 'Greeting requires the persisted opening checkpoint')
+          row.content = json(opening.variables); row.revision = opening.revision; row.versionKey = opening.versionKey
+        }
+      }
       viewIdentity = evidence.viewIdentity
       evidence = null
     }
@@ -971,7 +986,7 @@ export class MvuService {
   validateResolved(context) { if ((this.#requestChecks.get(context) ?? []).some(check => !check())) fail('MVU_USAGE_CANCELLED', 'Request usage lease changed before assembly') }
   observeRequest(options, session) {
     const event = session?.snapshotEvents?.().findLast(e => e.type === 'request/assembly')
-    if (!event || event.data.metadata?.owner !== 'pmp-dsh-tavern' || hash(event.data.messages) !== hash(options.messages)) return
+    if (!event || !['pmp-dsh-tavern', 'dsh-prompt-assembler'].includes(event.data.metadata?.owner) || hash(event.data.messages) !== hash(options.messages)) return
     const assembly = event.data.metadata.assembly
     for (const entry of assembly.diagnostics ?? []) {
       if (!['MVU_RESOURCE_VERSION', 'WORLD_BOOK_MVU_VARIABLE_VERSION'].includes(entry.code)) continue

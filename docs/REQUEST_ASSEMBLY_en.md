@@ -76,7 +76,7 @@ Uninitialized MVU state or state requiring repair returns `MVU_PREVIEW_STATE_UNA
 
 Stock DSH `0.2.0-rc.2` does not expose this seam. `scripts/prepare-request-assembly.mjs` produces a separate build from the pinned rc.2 source (both source trees are verified against SHA-256 digests in the script). It never edits the source checkout or an installed runtime and rejects other revisions.
 
-This feature is in the local candidate branch `codex/prompt-assembler`, not the published `v2.5.1` tag. Use the candidate checkout supplied by the maintainer; the branch is not assumed to exist on the remote. From that directory, run the following commands before installing its root package into an isolated profile. The stable-tag installation instructions do not include the assembler.
+Standalone assembler 0.2.0 is available from its private repository; the combined Tavern integration remains a local candidate and is absent from the published `v2.5.1` tag. Use the Tavern candidate checkout supplied by the maintainer and explicitly activate both bundles following [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md). Do not assume a candidate branch exists on the remote. Run the following core-preparation commands from that checkout; the stable-tag installation does not include the new interface.
 
 ```sh
 npm ci

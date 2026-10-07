@@ -4,6 +4,14 @@
 
 Tavern depends on `dsh-prompt-assembler` 0.2.0. The assembler owns strategy storage, source registration, the request hook, secure API and sidebar entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
 
+## Optional Memory Manager
+
+[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) is an independent optional extension. Neither Tavern package nor Host service dependencies require it. While installed it provides resource inspection, usage rules and observed application facts. Removal revokes management leases so subsequent requests use source defaults, preserving DSH sessions, source content and the Manager configuration file. Reinstallation reapplies retained rules; those rules are not permanently copied into Tavern or assembler. The assembler owns `adapters/memory-manager`; removal withdraws that generic source while Tavern continues providing native MVU and world books.
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#main
+```
+
 ## Installation and development
 
 Tavern's manifest and lockfile pin a commit in the private GitHub repository. Installation needs authorized repository access; no corresponding npm version has been published. npm installs the dependency, but DSH only activates explicitly installed bundles. Enable both plugins in the target profile:
@@ -24,6 +32,8 @@ Real requests still require explicit protocol 1 core preparation. Stock rc.2 sup
 Tavern shares the `dshPromptAssembler` store, registry and runtime. It registers sources and attaches read-only resource compilation, session leases, mode defaults and post-assembly policy checks through `attachTavern`. The assembler executes request assembly once and records one `request/assembly` per request. Tavern retains resources, restricted EJS, MVU commits and Trace presentation. Legacy `tavernRequestSources` and package exports continue forwarding.
 
 The UI uses the assembler's `/dsh-prompt-assembler/api/v1/assembly-presets`, secure fetch and read-only actual-request endpoint. Legacy Tavern assembly-presets routes still forward to the same store/runtime, and Trace continues resolving recorded requests from DSH. Current records use owner `dsh-prompt-assembler`; prior `pmp-dsh-tavern` records remain readable. Legacy migration only merges missing entries and preserves the original file. New applications bind by session ID and take precedence over old play/native scope, including after reinstalling Tavern.
+
+The standalone sidebar entry and embedded Tavern panel share the strategy library and session binding, with no plugin priority. The last successful application determines the snapshot for future requests. Editing a draft or saving a strategy leaves the applied snapshot unchanged. Both panels use the assembler refresh event to synchronize applied status while preserving their own unsaved drafts.
 
 Removing Tavern unregisters its sources and read provider. The assembler entry, strategies and native DSH text remain usable. Missing source modules report diagnostics without rebuilding absent resources or rewriting native history. The Manager adapter consumes public services; native assembly does not require Manager installation.
 

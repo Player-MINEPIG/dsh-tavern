@@ -153,13 +153,13 @@ export async function loadPlaythroughExport(client, playthrough) {
       resourceId: bindings.characterId,
     }),
   ]
-  const render = (text, target) => applyDisplayRegex(text, rules, bindings, target).text
   const character = characterResponse?.character ?? null
   const characterData = character?.data ?? character
   const greetingMacros = {
     user: active?.resources?.user?.name || 'User',
     character: characterData?.nickname || characterData?.name || character?.name || 'Assistant',
   }
+  const render = (text, target) => applyDisplayRegex(applyDisplayNameMacros(text, greetingMacros), rules, bindings, target).text
   return {
     playthrough,
     timeline,

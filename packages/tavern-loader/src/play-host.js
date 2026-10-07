@@ -41,6 +41,7 @@ export function createPlayHost({
   importContexts,
   onSelectionCopied,
   stateSeeds,
+  drafts,
 } = {}) {
   return {
     async coordinates(sessionId) {
@@ -132,13 +133,16 @@ export function createPlayHost({
       return runtime.copyLineageForBranch(fromSessionId, toSessionId, atSeq)
     },
 
-    async promptSession({ sessionId, text, mode = 'queue' }) {
-      await callController('session.prompt', sessionController, 'prompt', {
-        requestId: randomUUID(),
+    async promptSession({ sessionId, text, mode = 'queue', requestId = randomUUID() }) {
+      const draftService = drafts?.()
+      const admit = () => callController('session.prompt', sessionController, 'prompt', {
+        requestId,
         sessionId,
         mode,
         content: [{ type: 'text', text }],
       }, new AbortController().signal)
+      if (draftService) await draftService.admitPrompt({ sessionId, text, requestId }, admit)
+      else await admit()
       return { accepted: true }
     },
 

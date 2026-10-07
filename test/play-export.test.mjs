@@ -28,8 +28,8 @@ test('HTML honors display state while ST keeps authoritative raw data and swipes
   const messages = { incompleteTurn: false, messages: [
     { id: 'u1', role: 'user', seq: 1, content: [], text: 'Hello' },
     { id: 'a1', role: 'assistant', seq: 2, content: [], text: 'Original reply' },
-    { id: 'u2', role: 'user', seq: 3, content: [], text: 'Second user' },
-    { id: 'a2', role: 'assistant', seq: 4, content: [], text: 'Second reply' },
+    { id: 'u2', role: 'user', seq: 3, content: [], text: 'Second user <user>' },
+    { id: 'a2', role: 'assistant', seq: 4, content: [], text: 'Second reply <user> / {{user}}' },
   ] }
   const alternateMessages = { incompleteTurn: false, messages: [
     { id: 'u1-alt', role: 'user', seq: 1, content: [], text: 'Hello' },
@@ -56,14 +56,16 @@ test('HTML honors display state while ST keeps authoritative raw data and swipes
   assert.match(html, /Displayed &lt;reply&gt;/)
   assert.doesNotMatch(html, /Original reply|<script/i)
   assert.match(html, /Second reply/)
+  assert.match(html, /Second user Reader/)
+  assert.match(html, /Second reply Reader \/ Reader/)
 
   const st = playthroughExportDocument(snapshot, 'st').content
   assert.ok(st.includes('Alt Reader from Ally'))
   assert.match(st, /Original reply/)
   assert.doesNotMatch(st, /Displayed/)
   assert.match(st, /Second reply/)
-  assert.doesNotMatch(st, /\{\{(?:user|char)\}\}/)
   const stRows = st.trim().split('\n').map(line => JSON.parse(line))
+  assert.doesNotMatch(stRows[1].mes, /\{\{(?:user|char)\}\}/)
   assert.deepEqual(stRows[1].swipes, ['Hi', 'Alt Reader from Ally'])
   assert.equal(stRows[1].swipe_id, 1)
   assert.equal(stRows[1].mes, 'Alt Reader from Ally')
@@ -71,7 +73,8 @@ test('HTML honors display state while ST keeps authoritative raw data and swipes
   assert.equal(stRows[3].swipe_id, 0)
   assert.equal(stRows[3].mes, 'Original reply')
   assert.equal(stRows[3].swipe_info.length, 2)
-  assert.equal(stRows[5].mes, 'Second reply')
+  assert.equal(stRows[5].mes, 'Second reply <user> / {{user}}')
+  assert.equal(messages.messages[3].text, 'Second reply <user> / {{user}}')
   assert.throws(() => playthroughExportDocument(snapshot, 'bundle'), /Unknown export format/)
 
 })

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { MvuService, createCharacterDiscovery, characterMvuId, stateInstanceId, normalizeVariables } from '../packages/mvu-adapter/src/index.js'
+import { MvuService, createCharacterDiscovery, characterMvuId, stateInstanceId, normalizeVariables, compileMvuSchema } from '../packages/mvu-adapter/src/index.js'
 
 test('character discovery exposes native session instances; templates never alias current state', async t => {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-discovery-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
@@ -188,3 +188,19 @@ test('missing history during initialization repair stays closed until a real bou
   available = true; await refresh('s'); await service.ingest(session)
   assert.equal((await service.read({ id: stateInstanceId(characterMvuId('a'), { sessionId: 's', createdAt: 1 }), scope: { sessionId: 's' } })).content.stat_data.hp, 100)
 })
+
+ test('upgrading a cached schema factory leaves existing Session interpreter and variables untouched',async t=>{
+  const storageDir=mkdtempSync(join(tmpdir(),'mvu-schema-factory-upgrade-'));t.after(()=>rmSync(storageDir,{recursive:true,force:true}))
+  const source="import { registerMvuSchema } from 'https://example.invalid/mvu_zod.js'; const Schema=z.object({hp:z.number()}); $(()=>registerMvuSchema(Schema));"
+  const id=characterMvuId('card'),instance={sessionId:'old',createdAt:'old'},oldId=stateInstanceId(id,instance)
+  const template={id,characterId:'card',discovered:true,sessionIds:['old'],managementMode:'managed',initial:normalizeVariables({stat_data:{hp:100},schema:{type:'object',properties:{},extensible:true},mvu_schema:{...compileMvuSchema(source),interpreterVersion:1}})}
+  const record={revision:0,currentKey:null,versions:[],managementMode:'managed',definition:{...template,id:oldId,templateId:id,instance}}
+  writeFileSync(join(storageDir,'mvu-instances.json'),JSON.stringify({version:1,resources:{[oldId]:record},templates:{[id]:template}}))
+  let service;const refresh=createCharacterDiscovery({characters:{list:()=>[{id:'card',name:'card'}],get:()=>({data:{character_book:{entries:[{comment:'[initvar]',content:'hp: 100'},{content:source}]}}})},selections:{get:()=>({characterCardId:'card'})},service:()=>service})
+  service=new MvuService({storageDir,refresh,inspect:async sid=>({header:{id:sid,version:4,createdAt:sid},events:[]}),isActive:()=>true});t.after(()=>service.dispose())
+  await refresh('new')
+  const [fresh]=await service.list({scope:{sessionId:'new'}})
+  assert.equal(fresh.content.mvu_schema.interpreterVersion,2);assert.equal(fresh.storedManagementMode,'managed')
+  assert.deepEqual(JSON.parse(readFileSync(join(storageDir,'mvu-instances.json'),'utf8')).resources[oldId],record)
+  assert.equal((await service.read({id:oldId,scope:{sessionId:'old'}})).content.mvu_schema.interpreterVersion,1)
+ })

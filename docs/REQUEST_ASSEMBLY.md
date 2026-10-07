@@ -76,7 +76,7 @@ flowchart TD
 
 官方 DSH `0.2.0-rc.2` 没有此请求装配接口。`scripts/prepare-request-assembly.mjs` 从固定 rc.2 核心源码（脚本内以两份源码树 SHA-256 校验） 生成独立核心构建；不修改源码 checkout 或任何安装目录，不适用于其他版本。
 
-此功能位于本地候选分支 `codex/prompt-assembler`，已发布的 `v2.5.1` tag 不含装配器。请使用维护者提供的候选源码/工作树，不假设远端已有该分支。在包含此文档和准备脚本的候选目录执行下列命令，再把根包安装到隔离 profile；稳定版 tag 的安装步骤不会获得新界面。
+独立 assembler 0.2.0 已提供私有仓库安装；Tavern 的组合接入仍是本地候选，已发布的 `v2.5.1` tag 不含该接入。请使用维护者提供的 Tavern 候选源码/工作树，并按[独立 assembler 接入](ASSEMBLER_INTEGRATION.md)显式启用两个 bundle，不假设远端已有候选分支。在包含此文档和准备脚本的候选目录执行下列核心准备命令；稳定版 tag 的安装步骤不会获得新界面。
 
 ```sh
 npm ci

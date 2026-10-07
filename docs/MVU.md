@@ -1,5 +1,7 @@
 # MVU 状态来源
 
+新周目的初始 schema 按当前解释器编译。同一来源的旧版缓存模板仅升级供后续新实例使用，既有会话和历史继续保留原解释器。开场手动编辑只转移变量内容，schema 由会话来源保留，不作为正文替换。
+
 [English](MVU_en.md) · [HTTP API](API.md) · [请求装配](REQUEST_ASSEMBLY.md)
 
 MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（协议 1）拥有状态、历史、版本、CAS 和幂等记录；可选管理器通过公开服务管理来源。Tavern 不依赖管理器，也不把状态复制到管理器数据库。
@@ -120,17 +122,21 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 已观察的签名仍是返回整份变量的 `Mvu.getMvuData(options?)`、`Mvu.updateVariablesWith(JSONPatchArray)` 与 `await Mvu.replaceMvuData(variables,options?)`；不宣称 callback updater 重载。VARIABLE_UPDATE_ENDED 在此绑定观察到更新版本，或不可用快照恢复为可用时提供无参回调；恢复读取不表示发生新提交。跨 scope fallback 仍拒绝；下载代码不会开放网络、父页面 DOM 或 Host 工具。
 
-## 开场的当前只读变量
+## 开场的只读变量快照
 
-同一 snapshot API 接受 `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}`，只读取选定角色资源的当前值。Host 核对周目根会话或持久 timeline 中已保存回复的会话 membership、角色选择、会话身份与唯一活动资源；不恢复 Agent，不回放事件，不重置状态。该绑定可在用户已经发起回合后继续读取，即使还没有已完成的 assistant 消息。它不是历史消息快照，不跟随其他会话的 focus，也不能创建写 capability。导入或缺失本地会话不能借此伪造绑定。
+新周目的开场变量先读取角色卡共用的 `[initvar]` 和来源 schema，再应用所选 greeting 正文中显式的 `<UpdateVariable>` / `<JSONPatch>` / `<json_patch>` 更新块。只解析支持的 literal 更新指令，不执行显示脚本；字段或 schema 校验失败时拒绝该开场初始化，不能静默跳过更新。开场更新只执行一次，不计作 DSH 对话轮次。
 
-swipe 切换到已保存分支后，开场读取该分支自己的当前状态，不读取根会话或其他分支的当前值。历史回复仍按各自持久消息坐标读取，不随后一轮更新失败而换成当前值。
+发送前每个 greeting 保存自己的变量副本：切换从该开场的初始值或已保存修改恢复，不累加上一开场的更新；刷新后仍保留。手动变量编辑优先于开场默认值。“重新读取初始变量”重新生成当前开场；来源角色卡发生变化时同时清除旧开场缓存。首次发送只转移所选开场的变量，随后固定为首轮快照。已有已开始周目不补执行开场更新，也不改写真实请求历史；旧版未发送草稿保留现有变量，可用“重新读取初始变量”载入对应开场的初始值。
+
+同一 snapshot API 接受 `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}`，首次发送前读取选定角色资源的开场配置；首次回合开始后固定读取该会话持久保存的首轮请求前快照，包含用户在开场所做的修改。Host 核对周目根会话或持久 timeline 中已保存回复的会话 membership、角色选择、会话身份与唯一活动资源；不恢复 Agent，不回放事件，不重置状态。该绑定可在用户已经发起回合后继续读取，即使还没有已完成的 assistant 消息。后续回复和变量编辑不会改写这个开场快照；缺失首轮快照时报告不可用，不退回最新变量。它不跟随其他会话的 focus，也不能创建写 capability。导入或缺失本地会话不能借此伪造绑定。
+
+swipe 切换到已保存分支后，开场读取该分支自己的首轮请求前快照，不读取根会话或其他分支的最新值。历史回复仍按各自持久消息坐标读取，不随后一轮更新失败而换成当前值。
 
 开场渲染将只读 greeting scope 与空会话 initial 写 scope 分开；角色或周目切换会取消旧读取及订阅。缺失变量和初始化错误应显示错误，而非补造默认状态。
 
 显示端可用 `greetingIndex` 固定自己实际读取的选中开场；来源拒绝不匹配的索引。HTTP 只在 `greeting`、`initial` scope 接纳 `greetingIndex/selectionToken`，历史消息 scope 不能附带未验证的选择身份。当前开场快照带 `viewIdentity:{greetingIndex,selectionToken}`，token 绑定来源 Host 实例、会话和选择代次，不是写授权。带索引的 initial 写 scope 还必须带该已观察 token，并纳入原有独立 grant 的完整 scope。切换 A→B、A→B→A、Host 重启或领能力前切换都会拒绝旧视图；不能以懒领取的新能力替换旧显示意图。
 
-隔离 Worker 提供有限的首消息读取：`getChatMessages(0|'0')` 只返回本绑定选中开场的 source 正文（名称宏展开、显示正则之前）。`SillyTavern.getContext().chat[0]` 是同一投影，数组 length 为该根会话的 user/assistant 持久消息数加开场；其余项为 null，未开放其他聊天正文或完整 ST context。`Mvu.getMvuData({type:'message',message_id:0|'0'})` 仅在本 greeting/initial 绑定上作为当前资源别名；`latest` 只有开场是唯一消息时可用。全局 `getVariables` 的严格 scope 规则保留，别名不授予写权限。
+隔离 Worker 提供有限的首消息读取：`getChatMessages(0|'0')` 只返回本绑定选中开场的 source 正文（名称宏展开、显示正则之前）。`SillyTavern.getContext().chat[0]` 是同一投影，数组 length 为该根会话的 user/assistant 持久消息数加开场；其余项为 null，未开放其他聊天正文或完整 ST context。`Mvu.getMvuData({type:'message',message_id:0|'0'})` 仅在本 greeting/initial 绑定上作为对应开场快照的别名；`latest` 只有开场是唯一消息时可用。全局 `getVariables` 的严格 scope 规则保留，别名不授予写权限。
 
 只有同一绑定会话读回不同的选中开场索引，才生成一次选择通知。成功启动并完成监听器注册后，Worker 派发 `tavern_events.CHARACTER_FIRST_MESSAGE_SELECTED`（`character_first_message_selected`）的 `{input,output}`，两者均为已选 source 正文；这是已确认选择通知，回调不能改写 Host 开场。随后 `tavern_events.MESSAGE_SWIPED`（`message_swiped`）携带首消息 ID 0。首次挂载、刷新和重启不会伪造选择或 swipe；失败启动未消费通知，同一选择成功投递后不重放。DOM ready 或卡片调用不能生成可信生命周期事件。延迟回调的变量写仍按 script/interval 原因、选择 token、独立 grant、策略、CAS 和来源租约验证。这些是绑定视图的有限适配，未承诺上游的群聊选择中间件、任意消息事件、提示注入或父页面 DOM。
 
@@ -208,6 +214,8 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 已激活世界书条目里的 `{{format_message_variable::stat_data}}` 在原条目位置展开：来源校验当前绑定和自身模型检索策略后读取 MVU，输出 YAML，递归去除以 `$` 开头的对象字段。变量里的宏字符按字面保留，多行值按宏前缀缩进。未激活或不引用该宏的条目不读取 MVU；拒绝或缺失依赖终止装配，不回退 raw read。此路径不添加独立 MVU preset，也不重复注入卡片既有更新说明。
 
 来源通过 `resolvePromptDependency` 发出 `usage:'world-book-variable'`，consumer 为真实 `tavern.world-books` 资源。省略 id 时仅可解析当前已选会话唯一实例；branch/swipe 使用各自 session 状态，不借用父会话最新值。实际发送带 turn 时使用该轮持久 checkpoint，较旧 turn 不可读取后续轮回复。预览读取显式当前会话。原生与新装配都复用同一次激活和同一来源策略过滤；最终 await 后同步复核状态、绑定、注册和策略租约。
+
+请求读取租约允许本轮已认领输入的正式入账、官方系统消息、请求上下文与请求头（含严格 `startsSeries:true`），以及不改变模型历史的显式标题和自动标题；自动标题的消息引用必须属于已存在或本轮已认领的用户输入。这些装配元数据不应误报世界书策略变化。未知字段、未认领输入、未来回复、新轮次或原有历史变更仍撤销租约。初始卡片写入和命令写入保持原有完整事件租约；标题变化仍撤销旧写入能力。
 
 fork 时间线可以保留同一祖先 session 的引用。当前会话的提示词读取与来源默认规则允许这些引用，但每个引用都必须确认同一来源角色卡，读取仍绑定显式 session 和状态实例；跨卡引用或缺少来源角色身份的多重引用仍拒绝。任何目录或 timeline 变更都会使旧租约失效，须重新读取。此规则不授予历史卡片写权限，也不将旧会话重定向到当前周目。
 

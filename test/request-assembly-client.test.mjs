@@ -8,6 +8,58 @@ import { AssemblyPanel } from '../packages/request-assembler/client.js'
 import { BUILTINS, createDefaultRegistry } from '../packages/request-assembler/index.js'
 import { registerTavernMvuSource, registerTavernTemplateSource } from 'dsh-prompt-assembler/adapters/tavern'
 import { getClientUiSettings, setClientUiSettings } from '../packages/client/src/i18n.js'
+import { Readable } from 'node:stream'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { AssemblyPresetStore } from '../packages/request-assembler/store.js'
+import { RequestAssembler } from '../packages/request-assembler/runtime.js'
+import { createAssemblyApi } from 'dsh-prompt-assembler/server'
+
+test('standalone and embedded panels share last applied snapshot and refresh without losing drafts', async t => {
+  const { AssemblyPanel: Standalone } = await import('dsh-prompt-assembler/panel')
+  const directory = mkdtempSync(join(tmpdir(), 'shared-panel-'))
+  const keys = ['window', 'document', 'fetch', 'getComputedStyle', 'IS_REACT_ACT_ENVIRONMENT']
+  const previous = Object.fromEntries(keys.map(key => [key, globalThis[key]])), settings = getClientUiSettings()
+  const { window, document } = parseHTML('<html><body><div id="standalone"></div><div id="embedded"></div></body></html>')
+  Object.assign(globalThis, { window, document, getComputedStyle: () => ({ display: 'block' }), IS_REACT_ACT_ENVIRONMENT: true })
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  const store = new AssemblyPresetStore(directory)
+  const a = store.save({ ...BUILTINS[0], name: 'From sidebar' }), b = store.save({ ...BUILTINS[0], name: 'From Tavern' })
+  store.apply('shared', a.id)
+  const runtime = new RequestAssembler({ ctx: { get: () => ({ requestAssemblyVersion: 1 }) }, store, resources: { compile: () => ({ assemblyInput: {} }) } })
+  const api = createAssemblyApi({ store, runtime, agents: () => new Map(), sessions: () => ({ get: () => null }) })
+  const fetcher = async (url, options = {}) => {
+    assert.ok(url.startsWith('/dsh-prompt-assembler/api/v1/assembly-presets'))
+    const req = Readable.from(options.body ? [Buffer.from(options.body)] : [])
+    Object.assign(req, { url, method: options.method ?? 'GET' })
+    let response
+    await api(req, { setHeader() {}, end(body) { response = new Response(body, { status: this.statusCode, headers: { 'Content-Type': 'application/json' } }) } })
+    return response
+  }
+  globalThis.fetch = fetcher
+  const one = document.getElementById('standalone'), two = document.getElementById('embedded'), roots = [createRoot(one), createRoot(two)]
+  const button = (container, text) => [...container.querySelectorAll('button')].find(b => b.textContent === text)
+  const select = container => container.querySelector('.dta-library select') ?? container.querySelector('select')
+  t.after(async () => { await act(() => roots.forEach(root => root.unmount())); setClientUiSettings(settings, { announce: false }); for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value } rmSync(directory, { recursive: true, force: true }) })
+  await act(() => { roots[0].render(h(Standalone, { sessionId: 'shared', standalone: true, locale: 'en', fetcher, close() {} })); roots[1].render(h(AssemblyPanel, { sessionId: 'shared', close() {} })) })
+  await act(() => Simulate.change(select(two), { target: { value: b.id } }))
+  await act(() => Simulate.click(button(two, 'Apply to this session')))
+  assert.equal(store.selection('shared').id, b.id)
+  for (const container of [one, two]) assert.ok(container.textContent.includes('Applied: From Tavern'))
+  const name = one.querySelector('.dta-grid label input')
+  await act(() => Simulate.change(name, { target: { value: 'Sidebar draft' } }))
+  assert.equal(store.selection('shared').id, b.id)
+  await act(() => Simulate.click(button(two, 'Apply to this session')))
+  assert.equal(one.querySelector('.dta-grid label input').value, 'Sidebar draft')
+  await act(() => Simulate.click(button(one, 'Save rules')))
+  assert.equal(store.get(a.id).name, 'Sidebar draft')
+  assert.equal(store.selection('shared').id, b.id)
+  assert.ok(two.textContent.includes('Sidebar draft'), 'other panel refreshes the library')
+  await act(() => Simulate.click(button(one, 'Apply to this session')))
+  assert.equal(store.selection('shared').name, 'Sidebar draft')
+  for (const container of [one, two]) assert.ok(container.textContent.includes('Applied: Sidebar draft'))
+})
 
 for (const [locale, label, sourceName, help, add] of [
   ['zh-CN', '添加模块（当前有独立内容）', 'MVU 状态与更新指令', '模块只列出当前提供独立内容的来源', '添加'],

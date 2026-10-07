@@ -44,7 +44,7 @@ function errorMessage(data, status) {
   return `HTTP ${status}`
 }
 
-async function api(path, options = {}) {
+async function resourceApi(path, options = {}) {
   const method = String(options.method ?? 'GET').toUpperCase()
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
@@ -80,7 +80,9 @@ function patchDraft(setter, field, value) {
   setter((current) => current === null ? current : { ...current, [field]: value })
 }
 
-export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close }) {
+export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close }) {
+  const api = bindingTarget?.request ?? resourceApi
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId)
   const [catalog, setCatalog] = useState(null)
   const [detail, setDetail] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -139,7 +141,7 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
     const list = await api('/characters')
     let currentSelection = null
     let currentRp = { active: false }
-    if (sessionId) {
+    if (bindingTarget || sessionId) {
       const selected = await api(`/character-selection?sessionId=${encodeURIComponent(sessionId)}`)
       currentSelection = selected.selection
       const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
@@ -157,7 +159,7 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
     const data = await api(`/characters/${encodeURIComponent(id)}`)
     if (generation !== refreshGeneration.current) return
     applyCharacter(data.character, currentSelection)
-  }, [applyCharacter, sessionId])
+  }, [applyCharacter, sessionId, bindingTarget])
 
   useEffect(() => {
     run(() => refresh(), 'character.status.loaded')
@@ -257,7 +259,7 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
       }
       throw error
     }
-  }, [])
+  }, [bindingTarget])
 
   const applySelectionResult = useCallback(async (data, action) => {
     if (action === 'unbind') {
@@ -269,10 +271,10 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
       setRp(rpData.rp ?? { active: false })
     }
     announceTavernRefresh()
-  }, [detail?.id, refresh, sessionId])
+  }, [detail?.id, refresh, sessionId, bindingTarget])
 
   const bind = useCallback(() => run(async () => {
-    if (!sessionId) throw uiError('character.error.needSession')
+    if (!canBind) throw uiError('character.error.needSession')
     if (dirty) throw uiError('character.error.saveFirst')
     if (selection?.characterCardId !== binding?.characterCardId) {
       const historical = typeof hasConversationHistory === 'function'
@@ -283,14 +285,14 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
     const data = await requestSelection({ sessionId, ...binding }, 'bind')
     if (data === RUN_SKIPPED) return RUN_SKIPPED
     await applySelectionResult(data, 'bind')
-  }, 'character.status.bound'), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId])
+  }, 'character.status.bound'), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId, bindingTarget])
 
   const unbind = useCallback(() => run(async () => {
-    if (!sessionId) throw uiError('character.error.noSessionToUnbind')
+    if (!canBind) throw uiError('character.error.noSessionToUnbind')
     const data = await requestSelection({ sessionId, characterCardId: null }, 'unbind')
     if (data === RUN_SKIPPED) return RUN_SKIPPED
     await applySelectionResult(data, 'unbind')
-  }, 'character.status.unbound'), [applySelectionResult, requestSelection, run, sessionId])
+  }, 'character.status.unbound'), [applySelectionResult, requestSelection, run, sessionId, bindingTarget])
 
   const confirmDetach = useCallback(() => {
     if (detachPrompt === null) return
@@ -306,14 +308,14 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
   }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run])
 
   const toggleRp = useCallback(() => run(async () => {
-    if (!sessionId) throw uiError('character.error.needSession')
+    if (!canBind) throw uiError('character.error.needSession')
     const data = await api('/rp-mode', {
       method: 'PUT',
       body: JSON.stringify({ sessionId, active: rp.active !== true }),
     })
     setRp(data.rp ?? { active: rp.active !== true })
     announceTavernRefresh()
-  }, 'character.status.rpUpdated'), [rp.active, run, sessionId])
+  }, 'character.status.rpUpdated'), [rp.active, run, sessionId, bindingTarget])
 
   const remove = useCallback(() => run(async () => {
     if (detail === null || !window.confirm(unwrapText(uiMessage('character.confirmDelete', { name: detail.name })))) return
@@ -371,12 +373,13 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
           run(() => refresh(detail?.id), 'character.status.libraryRefreshed')
         } }, uiMessage('common.refresh')),
       )),
+      bindingTarget && h('p', { className: 'dcc-note' }, uiMessage('play.draft.characterHint')),
       h('div', { className: 'dcc-actions' },
-        h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !sessionId || detail === null || dirty || (boundHere && !bindingDirty), onClick: bind }, dirty ? uiMessage('character.saveFirst') : boundHere ? (bindingDirty ? uiMessage('character.bindUpdate') : uiMessage('character.bindingAppliedButton')) : uiMessage('character.bind')),
-        h('button', { className: 'dcc-button', type: 'button', disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage('character.unbind')),
+        h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !canBind || (bindingTarget && detail?.id !== selection?.characterCardId) || detail === null || dirty || (boundHere && !bindingDirty), onClick: bind }, dirty ? uiMessage('character.saveFirst') : boundHere ? (bindingDirty ? uiMessage('character.bindUpdate') : uiMessage('character.bindingAppliedButton')) : uiMessage('character.bind')),
+        h('button', { className: 'dcc-button', type: 'button', disabled: busy || !canBind || Boolean(bindingTarget) || selection === null, onClick: unbind }, uiMessage('character.unbind')),
       ),
       h('p', { className: 'dcc-note' }, uiMessage('character.sessionBinding', {
-        session: sessionId || translate('common.none'),
+        session: bindingTarget?.label || sessionId || translate('common.none'),
         name: activeName,
       })),
       h('div', { className: 'dcc-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
@@ -436,7 +439,7 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
           h('input', {
             type: 'checkbox',
             checked: rp.active === true,
-            disabled: busy || !sessionId,
+            disabled: busy || !canBind || Boolean(bindingTarget),
             onChange: toggleRp,
           }),
           h('span', null, uiMessage('character.rpMode')),

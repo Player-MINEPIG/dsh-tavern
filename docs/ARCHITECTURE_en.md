@@ -260,3 +260,25 @@ Global blue/red frontend state is held by `packages/play`'s own `ChromeStore`. `
 The client composition root creates a transport-independent mode core and registers it on the stable plugin fiber with `ctx.provide('pmpDshTavernChrome', face)`. SSE/focus/polling commit server snapshots only through an internal adapter. TavernShell, the orb controller, and `playSlots.setMode()` are ordinary consumers of that service. They no longer each maintain GET, focus, or BroadcastChannel state machines.
 
 The service's `when(mode, setup)` expresses only mode lifecycle. It does not grant surface ownership. Several plugins may subscribe at once and register their own public DSH slots. Contention for the same slot stays under that public slot contract. On provider unload, transport stops and effects are cleaned first; then Cordis revokes the service and drives required-consumer unload. Native mode still does not modify the native DSH surface.
+
+## Sessionless opening lifecycle
+
+`PlaythroughDrafts` owns unsent playthrough configuration, assembly snapshot and initial MVU in plugin storage; catalog and empty timeline remain in the RP workspace. Draft IDs never enter DSH Session APIs. Preparation and message admission remain separate composable primitives. A unique Session/request identity is persisted before preparation; public Workspace archive APIs isolate the prepared real blank. Only a real `turn/start` and matching first-input identity add `rootSessionId` to the catalog. Public `agent/pre-step` middleware waits for temporary unarchive before the native gate proceeds. Cancellation coordinates with admission and never clears admitted history. Existing native playthrough IDs remain unchanged; no DSH core modification is required.
+
+```mermaid
+sequenceDiagram
+  participant UI as Tavern UI
+  participant Draft as PlaythroughDrafts
+  participant DSH as Public DSH APIs
+  UI->>Draft: Save playthrough, configuration and initial variables
+  Note over Draft: No DSH Session
+  UI->>Draft: Prepare unique first input
+  Draft->>DSH: Create and temporarily archive real Session
+  Draft->>Draft: Transfer configuration and initial variables
+  Draft-->>UI: sessionId + requestId
+  UI->>DSH: Existing message API
+  DSH-->>Draft: Real turn/start
+  Draft->>Draft: Link catalog
+  Draft->>DSH: Unarchive
+  DSH-->>UI: Native conversation and streaming reply
+```

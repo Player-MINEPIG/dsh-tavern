@@ -115,7 +115,11 @@ function validate(value, schema) {
 export function normalizeVariables(input) {
   const result = json(input)
   if (!result || typeof result.stat_data !== 'object' || result.stat_data === null || Array.isArray(result.stat_data)) fail('MVU_SCHEMA', 'stat_data must be an object')
-  result.schema ??= deriveSchema(result.stat_data)
+  // v2 source Zod rules govern fields. Inferring a schema from one snapshot
+  // must not freeze dictionary keys. Normalization does not run transforms;
+  // command candidates still pass through applyMvuSchema.
+  if (result.mvu_schema?.mvuSchema === 1 && result.mvu_schema.interpreterVersion === 2) result.schema = { type: 'object', properties: {}, extensible: true, strictSet: true }
+  else result.schema ??= deriveSchema(result.stat_data)
   validate(result.stat_data, result.schema)
   result.initialized_lorebooks ??= {}
   result.display_data ??= json(result.stat_data); result.delta_data ??= {}

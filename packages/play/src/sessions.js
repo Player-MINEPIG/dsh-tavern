@@ -254,10 +254,12 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       requireSessionId(sessionId)
       operation?.identify({ sessionId })
       if (typeof body?.text !== 'string') throw httpError(400, 'text must be a string', 'PLAY_MESSAGE_INVALID')
+      if (body.requestId !== undefined && (typeof body.requestId !== 'string' || !SESSION_ID_PATTERN.test(body.requestId))) throw httpError(400, 'requestId must be a safe id', 'PLAY_MESSAGE_INVALID')
       await host.promptSession({
         sessionId,
         mode: 'queue',
         text: body.text,
+        ...(body.requestId === undefined ? {} : { requestId: body.requestId }),
       })
       return sendJson(res, 200, { ok: true, accepted: true })
     },

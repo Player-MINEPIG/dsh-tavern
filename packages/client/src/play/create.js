@@ -153,6 +153,7 @@ export async function createCharacterPlaythrough(client, {
   character,
   selectionFromSessionId = null,
   configureSession = null,
+  configurationSource = null,
   reuseEmpty = true,
   now = () => new Date(),
   randomUUID = () => globalThis.crypto.randomUUID(),
@@ -160,6 +161,9 @@ export async function createCharacterPlaythrough(client, {
   if (client == null) throw new TypeError('playClient.required')
   if (typeof reuseEmpty !== 'boolean') throw new TypeError('reuseEmpty must be a boolean')
   const characterId = safeSegment(character?.id, 'character.id')
+  if (typeof client.postDraft === 'function') {
+    return { ...await client.postDraft({ characterId, ...(configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: 'current', sessionId: selectionFromSessionId } } : {}) }), reused: false }
+  }
   const createdAt = isoNow(now)
   const playthroughId = safeSegment(`playthrough-${randomUUID()}`, 'playthrough.id')
   const directory = `${characterId}/${playthroughId}`

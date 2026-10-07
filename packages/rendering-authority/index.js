@@ -15,7 +15,8 @@ export function createRenderingAuthority() {
    if(downloaded!==true||enabled!==true)throw new TypeError('Execution requires downloaded sources and enabled scripts')
    if(typeof source!=='string'||Buffer.byteLength(source)>MAX_SOURCE)throw new TypeError('Rendering source bundle exceeds limit')
    const bundle=JSON.parse(source)
-   if(bundle?.version!==1||!bundle.scope||typeof bundle.scope.sessionId!=='string'||!Array.isArray(bundle.runs)||!bundle.modules||typeof bundle.html!=='string')throw new TypeError('Invalid rendering source bundle')
+   const draftScope=bundle?.scope?.mode==='draft'&&typeof bundle.scope.playthroughId==='string'&&typeof bundle.scope.characterId==='string'&&!Object.hasOwn(bundle.scope,'sessionId')
+   if(bundle?.version!==1||!bundle.scope||(!draftScope&&typeof bundle.scope.sessionId!=='string')||!Array.isArray(bundle.runs)||!bundle.modules||typeof bundle.html!=='string')throw new TypeError('Invalid rendering source bundle')
    const identity={version:1,sha256:createHash('sha256').update(source).digest('hex'),scope:bundle.scope}
    if(canonical(identity)!==canonical(sourceIdentity))throw new TypeError('Rendering source identity mismatch')
    if(executionId!==undefined&&!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(executionId))throw new TypeError('Invalid execution identity')

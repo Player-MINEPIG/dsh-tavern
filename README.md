@@ -2,6 +2,8 @@
 
 独立提示词装配插件：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)（私有仓库，需要访问权限）。Tavern 的单向依赖与两插件启用方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
 
+[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) 是可选的查看与管理扩展（私有仓库）。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
+
 [候选分支功能（不包含在 v2.5.1 tag）：提示词装配设置。](docs/REQUEST_ASSEMBLY.md)
 
 [English](README_en.md)

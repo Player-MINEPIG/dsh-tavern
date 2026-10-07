@@ -30,7 +30,7 @@ function errorMessage(data, status) {
   return data?.error?.message ?? data?.error ?? `HTTP ${status}`
 }
 
-async function api(path, options = {}) {
+async function resourceApi(path, options = {}) {
   const method = String(options.method ?? 'GET').toUpperCase()
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
@@ -52,7 +52,9 @@ function notifyRefresh() {
   window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
 }
 
-export function UserPanel({ sessionId, sessionBlank, close }) {
+export function UserPanel({ bindingTarget, sessionId, sessionBlank, close }) {
+  const api = bindingTarget?.request ?? resourceApi
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId)
   const [users, setUsers] = useState(null)
   const [draft, setDraft] = useState(null)
   const [savedDraft, setSavedDraft] = useState(null)
@@ -96,7 +98,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     const [catalog, worldBookCatalog, binding] = await Promise.all([
       api('/users'),
       api('/world-books'),
-      sessionId
+      (bindingTarget || sessionId)
         ? api(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`)
         : Promise.resolve({ selection: null }),
     ])
@@ -118,7 +120,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     setSavedDraft(nextDraft === null ? null : structuredClone(nextDraft))
     setWorldBookIds(ids)
     setAppliedWorldBookIds(ids)
-  }, [sessionId])
+  }, [sessionId, bindingTarget])
 
   useEffect(() => {
     run(() => refresh(), 'user.status.loaded')
@@ -204,7 +206,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, [dirty, refresh, run])
 
   const bind = useCallback(() => run(async () => {
-    if (!sessionId || draft === null) throw uiError('user.error.needSession')
+    if (!canBind || draft === null) throw uiError('user.error.needSession')
     if (selectedUserId !== draft.id && sessionBlank === false
       && !window.confirm(unwrapText(uiMessage('user.confirmHistoricalSwitch')))) return
     const data = await api('/user-selection', {
@@ -213,14 +215,14 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     })
     setSelectedUserId(data.selection.userId)
     notifyRefresh()
-  }, 'user.status.bound'), [draft, run, selectedUserId, sessionBlank, sessionId])
+  }, 'user.status.bound'), [draft, run, selectedUserId, sessionBlank, sessionId, bindingTarget])
 
   const unbind = useCallback(() => run(async () => {
-    if (!sessionId) throw uiError('user.error.noSessionToUnbind')
+    if (!canBind) throw uiError('user.error.noSessionToUnbind')
     await api('/user-selection', { method: 'POST', body: JSON.stringify({ sessionId, userId: null }) })
     setSelectedUserId(null)
     notifyRefresh()
-  }, 'user.status.unbound'), [run, sessionId])
+  }, 'user.status.unbound'), [run, sessionId, bindingTarget])
 
   const remove = useCallback(() => run(async () => {
     if (draft === null || !window.confirm(unwrapText(uiMessage('user.confirmDelete', { name: draft.name })))) return
@@ -272,10 +274,10 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
         h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmDiscardRefresh')))) run(() => refresh(draft?.id), 'user.status.refreshed') } }, uiMessage('common.refresh')),
       )),
       h('div', { className: 'dtu-actions' },
-        h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId || draft === null || dirty, onClick: bind }, dirty ? uiMessage('user.saveFirst') : selectedUserId === draft?.id ? uiMessage('user.refreshBinding') : uiMessage('user.bind')),
-        h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage('user.unbind')),
+        h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !canBind || draft === null || dirty, onClick: bind }, dirty ? uiMessage('user.saveFirst') : selectedUserId === draft?.id ? uiMessage('user.refreshBinding') : uiMessage('user.bind')),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy || !canBind || selectedUserId === null, onClick: unbind }, uiMessage('user.unbind')),
       ),
-      h('p', { className: 'dtu-note' }, uiMessage('user.sessionBinding', { session: sessionId || translate('common.none'), name: activeName })),
+      h('p', { className: 'dtu-note' }, uiMessage('user.sessionBinding', { session: bindingTarget?.label || sessionId || translate('common.none'), name: activeName })),
       h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       dirty
         ? h('div', { className: 'dtu-status', 'data-warning': true, role: 'status' }, dirtyText)

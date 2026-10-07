@@ -1,4 +1,5 @@
 import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
+import { PlaythroughDrafts } from './playthrough-drafts.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
 import { createCharacterDiscovery } from '../../mvu-adapter/src/discovery.js'
 import { installMvu } from '../../mvu-adapter/src/host.js'
@@ -373,6 +374,7 @@ export function apply(ctx, config = {}) {
     }
   }
   let importContexts = null
+  let playthroughDrafts
   const playHost = createPlayHost({
     sessionController: ctx.get('sessionController'),
     workspaceController: ctx.get('workspaceController'),
@@ -383,6 +385,7 @@ export function apply(ctx, config = {}) {
     characters: characterStore,
     importContexts: () => importContexts,
     stateSeeds: () => ctx.get('tavernMvu'),
+    drafts: () => playthroughDrafts,
     onSelectionCopied: (sessionId, from) => { assemblyPresets.copySelection(from, sessionId); reconcileRpAfterSelection(sessionId) },
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
@@ -546,6 +549,19 @@ export function apply(ctx, config = {}) {
     users: userStore,
     worldBooks: worldBookStore,
   })
+  playthroughDrafts = new PlaythroughDrafts({ storageDir, workspace: playWorkspaceStore, characters: characterStore, configurations: sessionConfigurations, selections, assembly: assemblyPresets, mvu,
+    controller: ctx.get('sessionController'), workspaces: ctx.get('workspaceController'), agents: ctx.get('agents'), renderingAuthority, reconcileRp: reconcileRpAfterSelection,
+    releaseRp: sessionId => rpMode.setBySessionId(sessionId, false, { followSuppressed: true }),
+    onError: error => recordFailure('playthrough.draft', error) })
+  playthroughDrafts.importContexts = importContexts
+  ctx.on('session/event', (session, event) => playthroughDrafts.observe(session, event))
+  // The public archive gate runs at pre-step. Publish an admitted first turn
+  // before that gate evaluates; an unstarted preparation remains archived.
+  ctx.on('agent/pre-step', async (payload, next) => {
+    await playthroughDrafts.beforeStep(payload.agent)
+    return next()
+  }, { prepend: true })
+  ctx.effect(() => () => playthroughDrafts.dispose(), 'dsh-tavern: playthrough drafts')
 
   const selectionPolicy = {
     selectedPresetId: (sessionId) => runtime.selection({ sessionId }).presetId,
@@ -716,7 +732,7 @@ export function apply(ctx, config = {}) {
   })
 
   const registerHttpApi = webCtx => {
-    const mvuApi = createMvuApi(mvu)
+    const mvuApi = createMvuApi(mvu, { drafts: playthroughDrafts })
     const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), notify: notifyChange })
     const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore, requestAssembler,
       readBodies: createAssemblyBodyReader(ctx.get('sessionController')) })
@@ -791,6 +807,7 @@ export function apply(ctx, config = {}) {
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
     const playApi = createPlayApiHandler({
+      drafts: playthroughDrafts,
       chromeStore,
       workspaceStore: playWorkspaceStore,
       operationJournal,
@@ -883,6 +900,7 @@ export function apply(ctx, config = {}) {
     conversationSettingsStore: { value: conversationSettingsStore, enumerable: false },
     chromeStore: { value: chromeStore, enumerable: false },
     playWorkspaceStore: { value: playWorkspaceStore, enumerable: false },
+    playthroughDrafts: { value: playthroughDrafts, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
     assemblyStore: { value: assemblyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
