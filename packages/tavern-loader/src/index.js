@@ -493,7 +493,12 @@ export function apply(ctx, config = {}) {
   if (traceStore.resetOversizedFile) {
     recordFailure('trace.record', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
-  const nativeRequests = createNativeRequestReader({ assemblies: assemblyStore, sessionController: ctx.get('sessionController'), sessions: () => ctx.get('sessions') })
+  const nativeRequests = createNativeRequestReader({ assemblies: assemblyStore, sessionController: ctx.get('sessionController'), sessions: () => ctx.get('sessions'),
+    resolveSourceName(source) {
+      if (source.plugin !== 'pmp-dsh-tavern' || source.module !== 'preset' || !source.resourceId || !source.field) return null
+      const matches = store.get(source.resourceId).prompts.filter(prompt => prompt.identifier === source.field)
+      return matches.length === 1 ? matches[0].name : null
+    } })
   const traceRecorder = new TavernTraceRecorder(traceStore)
   const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: sessionId => requestAssembler.requestAssemblyAvailable(sessionId), requiresNativeRequest: sessionId => requestAssembler.selected(sessionId)?.backend === 'native' })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))

@@ -1,8 +1,8 @@
 import { createAssemblyBodyReader } from './body-references.js'
 
 /** Replay the recorded cut through public DSH Session primitives, never attach it. */
-export function createNativeRequestReader({ assemblies, sessionController, sessions }) {
-  const readBodies = createAssemblyBodyReader(sessionController, { deriveAtCut(inspection, cut) {
+export function createNativeRequestReader({ assemblies, sessionController, sessions, resolveSourceName }) {
+  const readBodies = createAssemblyBodyReader(sessionController, { resolveSourceName, deriveAtCut(inspection, cut) {
     const service = sessions(), id = inspection.meta.id
     const prefix = inspection.events.filter(event => event.seq <= cut)
     const inherited = Math.min(inspection.inheritedEventCount ?? 0, prefix.length)

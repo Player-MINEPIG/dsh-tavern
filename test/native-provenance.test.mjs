@@ -69,3 +69,17 @@ test('persistence strips hydrated provenance and child text without a second bod
     assert.equal(store.get('session','capture').nativeSourceRefs[0].name,'Authored Main')
   } finally {rmSync(directory,{recursive:true,force:true})}
 })
+
+test('legacy current labels preserve recorded bodies and prefer recorded names',()=>{
+  const f=fixture(), original=structuredClone(f.record), request={messages:f.messages}
+  const resolveSourceName=s=>s.resourceId==='preset-id'&&s.field==='main'?'Readable current name':null
+  const current=nativeRequestProvenance(f.record,request,{resolveSourceName}).nodes.find(n=>n.source.field==='main')
+  assert.equal(current.name,'Readable current name');assert.equal(current.sourceStatus,'current-name')
+  assert.equal(current.nameRecorded,false);assert.equal(current.text,'😀CARD')
+  assert.deepEqual(f.record,original);assert.deepEqual(request.messages,f.messages)
+  f.record.nativeSourceRefs=captureNativeSourceReferences(f.record,{messages:f.messages,nodes:f.nodes},f.messages)
+  const recorded=nativeRequestProvenance(f.record,request,{resolveSourceName}).nodes.find(n=>n.source.field==='main')
+  assert.equal(recorded.name,'Authored Main');assert.equal(recorded.sourceStatus,'recorded')
+  f.record.nativeSourceRefs=[]
+  assert.equal(nativeRequestProvenance(f.record,request,{resolveSourceName:()=>{throw new Error('deleted')}}).nodes.find(n=>n.source.field==='main').sourceStatus,'name-unrecorded')
+})

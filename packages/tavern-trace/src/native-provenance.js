@@ -68,7 +68,7 @@ function hydrateNode(stored, messages) {
 }
 
 /** Project only recorded, verified provenance onto immutable request bodies. */
-export function nativeRequestProvenance(record, request) {
+export function nativeRequestProvenance(record, request, { resolveSourceName } = {}) {
   if (!request?.messages || request.metadata?.assembly) return null
   const messages = request.messages
   const candidates = (record.nativeSourceRefs ?? []).map(node => hydrateNode(node, messages)).filter(Boolean)
@@ -84,7 +84,16 @@ export function nativeRequestProvenance(record, request) {
       name: source?.field ? `${module}:${source.field}` : part.name,
       source: source ?? { plugin: 'DSH', field: part.name, sourceKind: 'official-section' },
       nameRecorded: false, hash: part.hash, reference: anchor, children: [], stability: 'snapshot' }, messages)
-    if (node) { if (!source) node.sourceStatus = 'section-only'; candidates.push(node) }
+    if (node) {
+      if (!source) node.sourceStatus = 'section-only'
+      else if (resolveSourceName) {
+        // A current label helps identify an old item; it is never historical evidence.
+        let name
+        try { name = resolveSourceName(source) } catch {}
+        if (typeof name === 'string' && name.trim()) { node.name = name; node.sourceStatus = 'current-name' }
+      }
+      candidates.push(node)
+    }
   }
   const nodes = []
   messages.forEach((message, messageIndex) => {

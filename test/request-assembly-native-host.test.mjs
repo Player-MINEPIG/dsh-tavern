@@ -64,6 +64,7 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     const records = store.assemblyStore.list(agent.id)
     assert.equal(records.length, 5)
     const nativeReader = createNativeRequestReader({ assemblies: store.assemblyStore,
+      resolveSourceName: source => source.module === 'preset' ? store.get(source.resourceId).prompts.find(p => p.identifier === source.field)?.name : null,
       sessionController: { inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) }, sessions: () => ctx.sessions })
     store.update(resource.id, { prompts: [{ identifier: 'main', name: 'Main Renamed', enabled: true, role: 'system', content: 'NEW MAIN' }] })
     const beforeSeq = agent.session.seq
@@ -80,6 +81,12 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
       const read = await nativeReader.readBodies(store.assemblyStore.get(agent.id, summary.id))
       assert.deepEqual(read.nativeRequest.messages, requests[index], 'replay excludes later answers and later context replacements')
     }
+    const legacy = store.assemblyStore.get(agent.id, records[0].id)
+    delete legacy.nativeSourceRefs
+    const legacyRead = await nativeReader.readBodies(legacy)
+    const renamed = legacyRead.nativeProvenance.nodes.find(n => n.source.field === 'main')
+    assert.equal(renamed.name, 'Main Renamed'); assert.equal(renamed.sourceStatus, 'current-name')
+    assert.equal(renamed.text, 'MAIN'); assert.deepEqual(legacyRead.nativeRequest.messages, requests[0])
     const coldReader = createNativeRequestReader({ assemblies: store.assemblyStore,
       sessionController: { inspect: async () => ({ meta: restored.header, events: restored.snapshotEvents() }) },
       sessions: () => ({ get: () => undefined, messageProjections: ctx.sessions.messageProjections,

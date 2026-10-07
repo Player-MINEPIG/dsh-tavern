@@ -110,7 +110,7 @@ function readReference(reference, sessionRef, events, cache, expectedHash) {
 }
 
 /** One cold inspection per detail; never resumes an Agent or reassembles text. */
-export function createAssemblyBodyReader(sessionController, { deriveAtCut } = {}) {
+export function createAssemblyBodyReader(sessionController, { deriveAtCut, resolveSourceName } = {}) {
   return async function readBodies(stored, signal = new AbortController().signal) {
     const record = structuredClone(stored)
     if (record.bodyStorage !== 'official-session') return record
@@ -179,7 +179,7 @@ export function createAssemblyBodyReader(sessionController, { deriveAtCut } = {}
     }
     delete record.nativeProvenance
     if (!error) {
-      const provenance = nativeRequestProvenance(record, record.requestAssembly ?? record.nativeRequest)
+      const provenance = nativeRequestProvenance(record, record.requestAssembly ?? record.nativeRequest, { resolveSourceName })
       if (provenance) record.nativeProvenance = provenance
     }
     return record

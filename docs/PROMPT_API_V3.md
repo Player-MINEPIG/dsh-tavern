@@ -247,7 +247,7 @@ metadata 和官方引用，不保存新的 section/context/system-message/source
 
 原生请求的 `nativeRequestRef` 保存 version 1 与整组冻结消息的 `messagesHash`，沿用 `sessionRef.logCutSeq`。详情读取以公共 Session detached replay 恢复该边界并核验哈希，成功后提供 `nativeRequest.messages` 和 `requestContentStatus:available`；失败返回 `nativeRequestError`，不回退到当前历史或预览。存储会移除 hydrated `nativeRequest` 正文。没有该引用的旧原生记录仍可读已有段落/context，不能冒充完整实际请求。
 
-实际请求视图按实际消息顺序展示当时记录的来源段落，不重新求值当前预设。新原生请求的 `nativeSourceRefs` 保存 version 1、条目名称、来源字段/资源标识及消息哈希和 UTF-16 范围；system、context、pre-step PHI 和可唯一核验的嵌套引用均可关联。正文只从 DSH 历史读取。旧记录可利用已核验段落引用恢复来源标识，缺失的条目名称明确标为未记录；无法核验的区间显示“来源未记录”，不将合并的 system 全文标为官方基础指令。 详情的 `nativeProvenance` 返回已核验的 nodes 与来源状态；Assembler actual 接口将其投影到 `request.metadata.assembly`，`request.messages` 与 v3 原始 `requestAssembly` 保持不变。存储移除 hydrated `nativeProvenance`、node text/messages；列表不返回 `nativeSourceRefs`。
+实际请求视图按实际消息顺序展示当时记录的来源段落，不重新求值当前预设。新原生请求的 `nativeSourceRefs` 保存 version 1、条目名称、来源字段/资源标识及消息哈希和 UTF-16 范围；system、context、pre-step PHI 和可唯一核验的嵌套引用均可关联。正文只从 DSH 历史读取。旧记录可利用已核验段落引用恢复来源标识；缺少历史名称的预设条目按记录中的预设 ID 与条目 ID 查询当前名称，并标明“名称来自当前预设；正文来自当时请求”。当前名称不会覆盖已保存的历史名称，也不参与正文恢复；条目已删除时显示可读的序号标签，来源 ID 保留在详情中。无法核验的区间显示“来源未记录”，不将合并的 system 全文标为官方基础指令。 详情的 `nativeProvenance` 返回已核验的 nodes 与来源状态；Assembler actual 接口将其投影到 `request.metadata.assembly`，`request.messages` 与 v3 原始 `requestAssembly` 保持不变。存储移除 hydrated `nativeProvenance`、node text/messages；列表不返回 `nativeSourceRefs`。
 
 
 ## UI 与第三方边界
