@@ -675,7 +675,7 @@ export function apply(ctx, config = {}) {
   ctx.on('llm/stream', async function* (options, next) {
     const agent = ctx.get('agents')?.get?.(options.sessionId)
     if (agent) traceSafely(() => assemblyRecorder.parameters(options.sessionId, parameterFallback.snapshot(agent, options)))
-    traceSafely(() => assemblyRecorder.request(options, ctx.get('agents')?.get?.(options.sessionId)?.session))
+    traceSafely(() => assemblyRecorder.request(options, agent?.session, requestAssembler.observeNativeRequest(options, agent?.session)))
     yield* next()
   })
   ctx.effect(() => () => traceSafely(() => assemblyRecorder.dispose()))

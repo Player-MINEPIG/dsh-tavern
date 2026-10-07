@@ -121,6 +121,9 @@ node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-buil
 
 导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。独立界面通过 `GET /actual?sessionId=…` 只读获取最近的实际请求，标准版同样可用：优先读取 DSH 的冻结 `request/assembly`，普通原生宿主使用 Tavern 在 `llm/stream` 保存的历史边界与整组消息哈希，公共 Session detached replay 恢复后必须核验相同哈希。后续回复、资源修改不会进入该次结果。旧原生记录没有完整请求证据时明确不可用；更新后下一次发送会保存读取所需的引用。Tavern v3 detail 的 `requestAssembly` 继续可用，原生详情提供 `nativeRequest`；都从 DSH 历史读取正文，不建立额外历史。
 
+实际请求视图按实际消息顺序展示当时记录的来源段落，不重新求值当前预设。新原生请求的 `nativeSourceRefs` 保存 version 1、条目名称、来源字段/资源标识及消息哈希和 UTF-16 范围；system、context、pre-step PHI 和可唯一核验的嵌套引用均可关联。正文只从 DSH 历史读取。旧记录可利用已核验段落引用恢复来源标识，缺失的条目名称明确标为未记录；无法核验的区间显示“来源未记录”，不将合并的 system 全文标为官方基础指令。
+
+
 
 ## 独立 assembler 与 adapter
 

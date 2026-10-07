@@ -1,3 +1,4 @@
+import { captureNativeSourceReferences } from './native-provenance.js'
 import { randomUUID } from 'node:crypto'
 import { digest, counts } from '../../prompt-metadata.js'
 import { captureBodyReferences, messageText } from './body-references.js'
@@ -73,7 +74,7 @@ export class AssemblyRecorder {
     record.parameters = structuredClone(parameters)
     this.store.put(record)
   }
-  request(options, session) {
+  request(options, session, observedNative) {
     const record = this.pending.get(options.sessionId)
     if (!record) return null
     if (this.requiresNativeRequest(options.sessionId) && (!Object.isFrozen(options) || digest(options.messages) !== digest(session?.deriveMessages?.()))) return null
@@ -99,6 +100,7 @@ export class AssemblyRecorder {
     }
     if (this.requiresNativeRequest(options.sessionId) && record.sessionRef) {
       record.nativeRequestRef = { version: 1, messagesHash: digest(options.messages) }
+      record.nativeSourceRefs = captureNativeSourceReferences(record, observedNative, options.messages)
     }
     record.delivery.historyVerified = verified && Boolean(record.systemMessageRefs?.[indices[0]])
     record.status = 'request-observed'

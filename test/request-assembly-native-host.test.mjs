@@ -36,7 +36,7 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     const face = ctx.get('dshPromptAssembler')
     const tavernHandle = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(scope) { store = tavern.apply(scope, { storageDir: join(directory, 'tavern') }) } }); await tavernHandle
     assert.equal(face.store.defaultPresetId, 'builtin-native-st'); assert.equal(face.runtime.capabilities().core, false)
-    const resource = store.create({ name: 'Native fixture' }); store.update(resource.id, { prompts: [{ identifier: 'main', enabled: true, role: 'system', content: 'MAIN' }, { identifier: 'jailbreak', enabled: true, role: 'system', content: 'PHI' }] }); store.select(resource.id)
+    const resource = store.create({ name: 'Native fixture' }); store.update(resource.id, { prompts: [{ identifier: 'main', name: 'Main Original', enabled: true, role: 'system', content: 'MAIN' }, { identifier: 'jailbreak', name: 'PHI Original', enabled: true, role: 'system', content: 'PHI' }] }); store.select(resource.id)
     const configPath = join(directory, 'manager.json')
     writeFileSync(configPath, JSON.stringify({ schemaVersion: 1, revision: 1, entries: [{ id: 'example:resource', adapterId: 'example', type: 'text', whitelist: [{ global: true }], blacklist: [], retrieve: { on: 'before_model_request', rule: true, strategy: [{ operation: 'memory.read_content' }, { operation: 'memory.to_text' }] } }], presets: {} }))
     const managerPlugin = await import(pathToFileURL(join(resolve(managerRoot), 'src/index.js')))
@@ -65,10 +65,17 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     assert.equal(records.length, 5)
     const nativeReader = createNativeRequestReader({ assemblies: store.assemblyStore,
       sessionController: { inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) }, sessions: () => ctx.sessions })
+    store.update(resource.id, { prompts: [{ identifier: 'main', name: 'Main Renamed', enabled: true, role: 'system', content: 'NEW MAIN' }] })
     const beforeSeq = agent.session.seq
     const beforeEvents = structuredClone(agent.session.snapshotEvents())
     const latest = await nativeReader.readActual(agent.id)
     assert.deepEqual(latest.request.messages, requests.at(-1))
+    const actualNodes = latest.request.metadata.assembly.nodes
+    assert.ok(actualNodes.some(n => n.name === 'Main Original' && n.text === 'MAIN' && n.source.field === 'main'))
+    assert.ok(actualNodes.some(n => n.name === 'PHI Original' && n.text === 'PHI' && n.role === 'user' && n.source.field === 'jailbreak'))
+    assert.ok(actualNodes.some(n => n.text === 'REMEMBER' && n.role === 'user' && n.source.plugin === 'dsh-memory-manager'))
+    assert.ok(!actualNodes.some(n => n.name === 'Main Renamed' || n.text.includes('NEW MAIN')))
+    assert.deepEqual(actualNodes.map(n => n.messageIndex), [...actualNodes.map(n => n.messageIndex)].sort((a,b) => a-b))
     for (const [index, summary] of records.entries()) {
       const read = await nativeReader.readBodies(store.assemblyStore.get(agent.id, summary.id))
       assert.deepEqual(read.nativeRequest.messages, requests[index], 'replay excludes later answers and later context replacements')

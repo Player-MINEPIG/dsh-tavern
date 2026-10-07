@@ -13,10 +13,12 @@ export function createNativeRequestReader({ assemblies, sessionController, sessi
     return replay.deriveMessages()
   } })
   return { readBodies, async readActual(sessionId) {
-    const summary = assemblies.list(sessionId).filter(row => row.nativeRequestRef).at(-1)
+    const summary = assemblies.list(sessionId).filter(row => row.nativeRequestRef || row.requestAssemblyRef).at(-1)
     if (!summary) return null
     const record = await readBodies(assemblies.get(sessionId, summary.id))
-    return { request: record.nativeRequest ?? null, backend: 'native', recordKind: 'native-request-reference',
-      seq: record.sessionRef.logCutSeq }
+    const raw = record.requestAssembly ?? record.nativeRequest
+    const request = raw ? { ...raw, metadata: { ...raw.metadata, ...(record.nativeProvenance ? { assembly: record.nativeProvenance } : {}) } } : null
+    return { request, backend: record.nativeProvenance ? 'native' : raw?.metadata?.backend ?? raw?.metadata?.assembly?.backend ?? (record.nativeRequestRef ? 'native' : 'core'), recordKind: record.requestAssemblyRef ? 'request/assembly' : 'native-request-reference',
+      seq: record.requestAssemblyRef?.seq ?? record.sessionRef.logCutSeq }
   } }
 }

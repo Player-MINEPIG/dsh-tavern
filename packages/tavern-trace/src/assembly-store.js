@@ -26,7 +26,10 @@ function metadataOnly(record) {
     delete row.systemMessages
     delete row.failure
     delete row.requestAssembly
+    delete row.nativeProvenance
     delete row.nativeRequest
+    const stripNode = node => { delete node.text; delete node.messages; for (const child of node.children ?? []) stripNode(child) }
+    for (const node of row.nativeSourceRefs ?? []) stripNode(node)
     delete row.failureReferenceError
     if (row.failureRef) row.failureStatus = 'reference-only'
     for (const part of [...row.sections ?? [], ...row.contexts ?? []]) {
@@ -114,7 +117,7 @@ export class AssemblyStore {
     return this.rows.filter(row => row.sessionId === id && row.audit?.id).map(row => structuredClone(row.audit))
   }
   list(id) {
-    return this.retained(id).map(({ sections, contexts, systemMessages, audit, ...row }) => ({
+    return this.retained(id).map(({ sections, contexts, nativeSourceRefs, systemMessages, audit, ...row }) => ({
       ...structuredClone(row), ...legacyLink({ audit, legacyCaptureId: row.legacyCaptureId }), sectionCount: sections?.length ?? 0,
     }))
   }

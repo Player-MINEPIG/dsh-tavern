@@ -1,3 +1,4 @@
+import { nativeRequestProvenance } from './native-provenance.js'
 import { digest } from '../../prompt-metadata.js'
 import { snapshotSessionEvents } from '../../session-events.js'
 import { readFailureReference } from './failure-references.js'
@@ -175,6 +176,11 @@ export function createAssemblyBodyReader(sessionController, { deriveAtCut } = {}
     if (record.contentStatus !== 'assembly-unavailable' && record.contentStatus !== 'omitted-size-limit') {
       record.contentStatus = available > 0 && missing === 0 ? 'available'
         : available > 0 ? 'partially-available' : 'reference-unavailable'
+    }
+    delete record.nativeProvenance
+    if (!error) {
+      const provenance = nativeRequestProvenance(record, record.requestAssembly ?? record.nativeRequest)
+      if (provenance) record.nativeProvenance = provenance
     }
     return record
   }
