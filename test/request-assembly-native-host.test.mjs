@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 import assembler from 'dsh-prompt-assembler/plugin'
 import { textOf } from 'dsh-prompt-assembler'
 import * as tavern from '../packages/tavern-loader/src/index.js'
+import { createNativeRequestReader } from '../packages/tavern-trace/src/native-request-reader.js'
 import { createAssemblyBodyReader } from '../packages/tavern-trace/src/body-references.js'
 const root = process.env.DSH_ASSEMBLER_STOCK_ROOT
 const managerRoot = process.env.DSH_ASSEMBLER_MANAGER_ROOT
@@ -62,6 +63,22 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     const reader = createAssemblyBodyReader({ inspect: async () => ({ meta: restored.header, events: restored.snapshotEvents() }) })
     const records = store.assemblyStore.list(agent.id)
     assert.equal(records.length, 5)
+    const nativeReader = createNativeRequestReader({ assemblies: store.assemblyStore,
+      sessionController: { inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) }, sessions: () => ctx.sessions })
+    const beforeSeq = agent.session.seq
+    const beforeEvents = structuredClone(agent.session.snapshotEvents())
+    const latest = await nativeReader.readActual(agent.id)
+    assert.deepEqual(latest.request.messages, requests.at(-1))
+    for (const [index, summary] of records.entries()) {
+      const read = await nativeReader.readBodies(store.assemblyStore.get(agent.id, summary.id))
+      assert.deepEqual(read.nativeRequest.messages, requests[index], 'replay excludes later answers and later context replacements')
+    }
+    const coldReader = createNativeRequestReader({ assemblies: store.assemblyStore,
+      sessionController: { inspect: async () => ({ meta: restored.header, events: restored.snapshotEvents() }) },
+      sessions: () => ({ get: () => undefined, messageProjections: ctx.sessions.messageProjections,
+        prepare: (id, options) => sessions.Session.fromRestore(id, options.seed, options.meta, 0, 'detached', ctx.sessions.messageProjections) }) })
+    assert.deepEqual((await coldReader.readActual(agent.id)).request.messages, requests.at(-1))
+    assert.equal(agent.session.seq, beforeSeq); assert.deepEqual(agent.session.snapshotEvents(), beforeEvents)
     for (const summary of records) {
       const record = await reader(store.assemblyStore.get(agent.id, summary.id))
       assert.equal(record.status, 'request-observed'); assert.equal(record.delivery.historyVerified, true)

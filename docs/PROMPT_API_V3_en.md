@@ -297,3 +297,5 @@ the UI does not label them as historical originals.
 reads never trigger assembly. Third parties may reorder or replace Tavern `:part:` sections in
 the official waterfall. Import context and RP policy remain separate contributions. Sampling
 still flows through `agent/request`; this API does not arbitrate third-party composition order.
+
+Native `nativeRequestRef` contains version 1 and the frozen whole-message `messagesHash`, using `sessionRef.logCutSeq`. Detail reads replay that cut through public detached Session primitives and verify the digest. Success exposes `nativeRequest.messages` and `requestContentStatus:available`; failure exposes `nativeRequestError`, without current-history or preview fallback. Storage removes hydrated `nativeRequest` bodies. Older native records without this reference retain their existing section/context reads but cannot supply a complete actual request.

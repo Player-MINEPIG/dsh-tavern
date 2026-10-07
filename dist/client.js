@@ -23282,8 +23282,8 @@ var labels = {
   nativePreviewScope: ["\u4EE5\u4E0B\u662F\u5F53\u524D\u7B56\u7565\u7684\u903B\u8F91\u6392\u5217\uFF0C\u4E0D\u662F\u5B8C\u6574\u7684\u5B9E\u9645\u8BF7\u6C42\u3002DSH \u4F1A\u4FDD\u5B58 user \u8D21\u732E\uFF1B\u540E\u7EED\u8BF7\u6C42\u8FD8\u53EF\u80FD\u5305\u542B\u5DF2\u4FDD\u5B58\u7684\u65E7\u8D21\u732E\u3002\u9884\u89C8\u4E0D\u542B\u5F85\u53D1\u9001\u8F93\u5165\u3002", "This shows the current strategy\u2019s logical order, not a complete actual request. DSH saves user contributions, so later requests may also contain earlier contributions. Pending input is excluded."],
   logicalMessages: ["\u903B\u8F91\u6392\u5217", "Logical order"],
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
-  noActual: ["\u6682\u65E0\u8FDB\u9636\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No advanced request assembly record yet"],
-  noActualNative: ["\u6807\u51C6\u7248\u6CBF\u7528 DSH \u539F\u751F\u5386\u53F2\uFF1B\u5F53\u524D\u88C5\u914D\u53EF\u9884\u89C8\uFF0C\u5DF2\u8BB0\u5F55\u7684 system/context \u6B63\u6587\u53EF\u5728 Tavern Trace \u67E5\u770B\u3002", "Standard mode uses native DSH history. Preview the current assembly; read recorded system/context text in Tavern Trace."],
+  noActual: ["\u6682\u65E0\u53EF\u8BFB\u53D6\u7684\u5B9E\u9645\u8BF7\u6C42\u8BB0\u5F55", "No readable actual request record yet"],
+  noActualNative: ["\u6682\u65E0\u53EF\u8BFB\u53D6\u7684\u539F\u751F\u5B9E\u9645\u8BF7\u6C42\u8BB0\u5F55\uFF1B\u66F4\u65B0\u524D\u672A\u8BB0\u5F55\u8BF7\u6C42\u8FB9\u754C\u7684\u4F1A\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u4E00\u6B21\u53D1\u9001\u540E\u67E5\u770B\u3002", "No readable native request record yet. If this session predates request capture, view it after the next send."],
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
   addSource: ["\u6DFB\u52A0\u6A21\u5757\uFF08\u5F53\u524D\u6709\u72EC\u7ACB\u5185\u5BB9\uFF09", "Add a module (current independent content)"],
   chooseSource: ["\u9009\u62E9\u6765\u6E90\u2026", "Choose source\u2026"],
@@ -23591,10 +23591,6 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   };
   const sourceInfo = (kind) => sourceDescriptor2(kind)?.generationRequiresPlugin === false ? t("nativeSource") : t("removed");
   async function actualRequest() {
-    if (selection?.backend === "native") {
-      setStatus(t("noActualNative"));
-      return;
-    }
     const show = (record) => {
       if (!record?.messages) return false;
       const result = record.metadata?.assembly ?? { diagnostics: [], nodes: record.messages.map((m2, index) => ({ id: m2.id ?? `actual-${index}`, module: m2.role === "system" ? "native-system" : "history", name: m2.role === "system" ? "native-system" : m2.role, role: m2.role, source: { plugin: m2.source?.plugin ?? "DSH", field: m2.source?.kind }, stability: "snapshot", lifetime: "native", locked: true, text: (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n") })) };
@@ -23614,7 +23610,8 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     for (const item of [...list2.records ?? []].reverse().slice(0, 20)) {
       const res = await fetcher(`${traceRoot}/sessions/${encodeURIComponent(sessionId)}/assemblies/${encodeURIComponent(item.id)}`);
       if (!res.ok) continue;
-      const record = (await res.json()).record?.requestAssembly;
+      const detail = (await res.json()).record;
+      const record = detail?.requestAssembly ?? detail?.nativeRequest;
       if (!mounted.current) return;
       if (show(record)) return;
     }

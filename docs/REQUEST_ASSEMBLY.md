@@ -119,7 +119,7 @@ node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-buil
 | `PUT /selection` | `{sessionId,id}`；`id:null` 关闭当前会话的策略（扩展核心使用 DSH 默认装配）；`id:"builtin-st"` 应用默认 ST 策略 |
 | `POST /preview` | `{sessionId,preset}` 或 `{sessionId,presetId}`，不应用、不运行 Agent |
 
-导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。独立界面通过 `GET /actual?sessionId=…` 只读获取 DSH 最近的 `request/assembly`；Tavern v3 assemblies detail 的 `requestAssembly` 继续可用，两者都读取同一持久记录，不建立额外历史。
+导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。独立界面通过 `GET /actual?sessionId=…` 只读获取最近的实际请求，标准版同样可用：优先读取 DSH 的冻结 `request/assembly`，普通原生宿主使用 Tavern 在 `llm/stream` 保存的历史边界与整组消息哈希，公共 Session detached replay 恢复后必须核验相同哈希。后续回复、资源修改不会进入该次结果。旧原生记录没有完整请求证据时明确不可用；更新后下一次发送会保存读取所需的引用。Tavern v3 detail 的 `requestAssembly` 继续可用，原生详情提供 `nativeRequest`；都从 DSH 历史读取正文，不建立额外历史。
 
 
 ## 独立 assembler 与 adapter

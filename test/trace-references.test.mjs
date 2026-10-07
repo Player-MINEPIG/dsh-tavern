@@ -166,3 +166,26 @@ test('existing v1 audits and v3 snapshots stay readable and byte-for-byte unchan
     assert.equal(readFileSync(legacyStore.statePath, 'utf8'), v1Before)
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })
+
+test('native request hydration uses the saved cut and exact frozen digest, never a cached body', async () => {
+  const f = fixture(), original = [f.system, f.context]
+  f.row.nativeRequestRef = { version: 1, messagesHash: digest(original) }
+  f.events.push({ seq: 2, type: 'assistant/message', data: { message: message('later', 'assistant', 'LATER') } })
+  const read = deriveAtCut => createAssemblyBodyReader({ inspect: async () => f.inspection() }, { deriveAtCut })(f.row)
+  const hydrated = await read((inspection, cut) => { assert.equal(cut, 1); assert.equal(inspection.events.length, 3); return original })
+  assert.deepEqual(hydrated.nativeRequest.messages, original)
+  assert.equal(hydrated.requestContentStatus, 'available')
+  f.row.systemMessageRefs = [null]
+  assert.equal((await read(() => original)).requestContentStatus, 'available', 'full verified request does not require section provenance')
+  f.row.nativeRequest = { messages: ['CACHED BODY'] }
+  const mismatch = await read(() => [message('bad', 'user', 'WRONG')])
+  assert.equal(mismatch.nativeRequest, undefined)
+  assert.equal(mismatch.nativeRequestError, 'hash-mismatch')
+  assert.equal((await read(undefined)).nativeRequest, undefined)
+  const directory = mkdtempSync(join(tmpdir(), 'native-request-metadata-'))
+  try {
+    const store = new AssemblyStore(directory); store.put(hydrated)
+    assert.equal(store.get('session', 'capture').nativeRequest, undefined)
+    assert.ok(!readFileSync(store.path, 'utf8').includes('FIRST'))
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})

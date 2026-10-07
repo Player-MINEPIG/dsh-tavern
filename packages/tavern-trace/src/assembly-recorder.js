@@ -97,6 +97,9 @@ export class AssemblyRecorder {
     if (requestEvent && digest(requestEvent.data.messages) === digest(options.messages)) {
       record.requestAssemblyRef = { seq: requestEvent.seq, hash: digest(requestEvent.data), version: 1 }
     }
+    if (this.requiresNativeRequest(options.sessionId) && record.sessionRef) {
+      record.nativeRequestRef = { version: 1, messagesHash: digest(options.messages) }
+    }
     record.delivery.historyVerified = verified && Boolean(record.systemMessageRefs?.[indices[0]])
     record.status = 'request-observed'
     this.store.put(record)

@@ -245,6 +245,8 @@ metadata 和官方引用，不保存新的 section/context/system-message/source
 新 schema 4 文件本身不含提示词正文，但 reference metadata、资源 ID、模型名与工具名仍可能敏感；
 详情 API 还可能从 DSH 历史返回提示词正文。本地数据目录和 API 应按 DSH Session 数据保护。
 
+原生请求的 `nativeRequestRef` 保存 version 1 与整组冻结消息的 `messagesHash`，沿用 `sessionRef.logCutSeq`。详情读取以公共 Session detached replay 恢复该边界并核验哈希，成功后提供 `nativeRequest.messages` 和 `requestContentStatus:available`；失败返回 `nativeRequestError`，不回退到当前历史或预览。存储会移除 hydrated `nativeRequest` 正文。没有该引用的旧原生记录仍可读已有段落/context，不能冒充完整实际请求。
+
 ## UI 与第三方边界
 
 世界书 `included` 仅表示通过激活判定的候选，不保证最终注入。Trace 分别展示激活候选与同次已核验 `requestAssembly` 中的结果：带匹配来源节点和版本诊断的已观察请求可显示已进入请求；`WORLD_BOOK_POLICY_SKIPPED` 显示策略跳过及当次原因。旧诊断缺原因时显示具体原因未记录，无法唯一关联资源或缺请求记录时不推断最终使用情况。读取不重跑激活、不改写历史或 manager journal。

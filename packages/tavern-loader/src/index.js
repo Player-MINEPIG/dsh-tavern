@@ -10,7 +10,7 @@ import { mvuResourceFromCharacter } from '../../mvu-adapter/src/character.js'
 import { createContractOperation, recordDiagnosticFailure } from '../../play/src/operation-contract.js'
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
-import { createAssemblyBodyReader } from '../../tavern-trace/src/body-references.js'
+import { createNativeRequestReader } from '../../tavern-trace/src/native-request-reader.js'
 import { createPromptTraceApi } from './prompt-trace-api.js'
 import {
   PresetStore,
@@ -441,7 +441,7 @@ export function apply(ctx, config = {}) {
   const requestAssembler = sharedAssembler?.runtime ?? new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry, sessionReads })
   if (sharedAssembler) {
     ctx.effect(() => registerTavernSources(registry, sourceOptions))
-    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-st', coreDefaultPresetId: 'builtin-st', afterAssembly: diagnoseTavernAssembly,
+    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-st', coreDefaultPresetId: 'builtin-st', readActual: id => nativeRequests.readActual(id), afterAssembly: diagnoseTavernAssembly,
       validateResult: (result, agent) => { const nativeContext = runtime.assembledFor(agent)?.memoryContext; if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext); memorySources.validateAssembly(result.metadata?.assembly) } }))
   }
   installMemorySources(ctx, memorySources, registry)
@@ -493,6 +493,7 @@ export function apply(ctx, config = {}) {
   if (traceStore.resetOversizedFile) {
     recordFailure('trace.record', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
+  const nativeRequests = createNativeRequestReader({ assemblies: assemblyStore, sessionController: ctx.get('sessionController'), sessions: () => ctx.get('sessions') })
   const traceRecorder = new TavernTraceRecorder(traceStore)
   const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: sessionId => requestAssembler.requestAssemblyAvailable(sessionId), requiresNativeRequest: sessionId => requestAssembler.selected(sessionId)?.backend === 'native' })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
@@ -749,9 +750,9 @@ export function apply(ctx, config = {}) {
 
   const registerHttpApi = webCtx => {
     const mvuApi = createMvuApi(mvu, { drafts: playthroughDrafts })
-    const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), notify: notifyChange })
+    const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), readActual: id => nativeRequests.readActual(id), notify: notifyChange })
     const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore, requestAssembler,
-      readBodies: createAssemblyBodyReader(ctx.get('sessionController')) })
+      readBodies: nativeRequests.readBodies })
     const presetApi = createPresetApiHandler(
       store,
       notifyChange,

@@ -26,6 +26,7 @@ function metadataOnly(record) {
     delete row.systemMessages
     delete row.failure
     delete row.requestAssembly
+    delete row.nativeRequest
     delete row.failureReferenceError
     if (row.failureRef) row.failureStatus = 'reference-only'
     for (const part of [...row.sections ?? [], ...row.contexts ?? []]) {
