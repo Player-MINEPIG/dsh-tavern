@@ -1,3 +1,4 @@
+import { CoreRequestBackend } from 'dsh-prompt-assembler/core-backend'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { assembleRequest, textOf } from '../packages/request-assembler/assemble.js'
@@ -24,13 +25,15 @@ function fixture(beforeKiB = 82, tailKiB = 12) {
 
 function runtimeFor(input, maxProfileBytes = profileLimit) {
   const snapshot = { assemblyInput: input.assets }
-  return new RequestAssembler({
+  const runtime = new RequestAssembler({
     ctx: { get: key => key === 'systemPrompt'
       ? { assemble: async () => ({ sections: [{ text: textOf(input.nativeMessages[0]) }] }) }
       : { requestAssemblyVersion: 1 } },
     store: { selection: () => BUILTINS[0] },
     resources: { maxProfileBytes, assembledFor: () => snapshot, compile: () => snapshot },
   })
+  runtime.registerRequestBackend(new CoreRequestBackend(runtime))
+  return runtime
 }
 
 function payloadFor(input) {

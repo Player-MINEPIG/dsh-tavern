@@ -2,7 +2,25 @@
 
 [English](REQUEST_ASSEMBLY_en.md)
 
-请求装配器在 DSH 原生消息已经准备好、请求冻结之前，排列原生输入与 Tavern 资源。Provider、工具执行、Inbox、会话分支和原生历史仍由 DSH 管理。装配策略按会话及前端模式保存：魔丸默认启用 ST 兼容，灵珠默认关闭。已有显式选择保留；关闭时使用 DSH 默认装配，不再通过旧 loader 重复注入 Tavern 正文。未安装核心扩展的原生模式仍兼容旧 loader。
+标准 assembler 通过 stock rc.2 的公开 sections/context/pre-step 接口工作，Tavern 正常依赖它；Manager 可选。可选 core addon 保留已验证的协议 1 进阶后端。两种后端共享策略、来源与 UI，旧策略缺 backend 仍为 core。明确 session 选择（含 null）不随灵珠/魔丸视图变化；独立新会话无默认，新 Tavern 开场默认原生 ST 风格，显式 addon 可提供进阶默认。
+
+## 标准策略
+
+标准模式保留历史→本步输入，不允许关闭两者或重排块内对话。官方基础指令可在当前 system 内容中关闭/排序；预设、用户设定、角色、世界书和 PHI 可作为历史前 system，或在历史后作为 user。system 更新仍由 DSH 的 head/in-history 路由处理，不任意移动。
+
+user context 在本步输入后，变化时写原生快照；user pre-step 可在输入前/后，在实际步骤写消息。输入后为 context→pre-step，相同区域内可排序；相反布局明确拒绝。两者都进入历史，关闭来源停止新增，旧正文保留。标准版没有任意 depth/assistant/进阶 snapshot，不静默转换旧策略。
+
+| 标准内置策略 | 布局 |
+| --- | --- |
+| builtin-native-st | 官方基础指令、预设、用户/角色、世界书、PHI 作为 system，随后历史与输入；近似 ST |
+| builtin-native-cache | 稳定 system→历史→输入→世界书 context→PHI pre-step |
+| builtin-native-phi | system 资产→历史→输入→PHI pre-step user 提醒 |
+
+末尾 user 提醒的角色优先级仍是 user；缓存和遵循效果取决于模型。标准版 Trace 核对 DSH 持久 system/context 引用，不创建 request/assembly 或另一套历史。完整冻结请求按钮仅展示进阶记录，标准模式明确说明证据范围。
+
+## 进阶策略合同
+
+以下 ST slot、depth、request/snapshot 与完整 system 投影属于显式 core addon 路径；缺 addon 或协议 1 时应用返回 409。标准策略遵循上一节边界。
 
 ## 页面与预设
 
@@ -64,7 +82,7 @@ flowchart TD
 
 快照保留的是原文，不会自动把旧版本改写为过去式。记忆来源应自行写明时间或当前/历史状态，避免模型把旧位置理解为仍然有效。
 
-所有实际装配结果作为 log-only `request/assembly` 事件进入 DSH 日志。它们不是 `deriveMessages()` 的消息节点；记录轨迹与进入未来模型上下文是两回事。Tavern Trace 只存事件引用与哈希，正文按需从 DSH 读取。随机宏冻结在该事件中，查看历史不会重新运行宏。每次请求都会记录完整消息快照，因此日志体积随请求历史增长；逻辑新增正文受 `limits.maxProfileBytes` 限制，投影后的新增物理正文另受 2 MiB 上限限制。
+进阶实际装配结果作为 log-only `request/assembly` 事件进入 DSH 日志。它们不是 `deriveMessages()` 的消息节点；记录轨迹与进入未来模型上下文是两回事。Tavern Trace 只存事件引用与哈希，正文按需从 DSH 读取。随机宏冻结在该事件中，查看历史不会重新运行宏。每次请求都会记录完整消息快照，因此日志体积随请求历史增长；逻辑新增正文受 `limits.maxProfileBytes` 限制，投影后的新增物理正文另受 2 MiB 上限限制。
 
 卸载 Tavern 后，原生用户消息、回复和工具结果仍可继续使用；请求型正文和 Tavern 保留快照不再注入。已记录的正文仍存在日志中。恢复官方核心时，`request/assembly` 的 `ignorable:true` 使其可被旧解析器保留但不参与投影。仅移除核心扩展、却保留已应用的装配规则时会明确报错；先关闭策略即可继续。
 
@@ -76,7 +94,7 @@ flowchart TD
 
 官方 DSH `0.2.0-rc.2` 没有此请求装配接口。`scripts/prepare-request-assembly.mjs` 从固定 rc.2 核心源码（脚本内以两份源码树 SHA-256 校验） 生成独立核心构建；不修改源码 checkout 或任何安装目录，不适用于其他版本。
 
-独立 assembler 0.2.0 已提供私有仓库安装；Tavern 的组合接入仍是本地候选，已发布的 `v2.5.1` tag 不含该接入。请使用维护者提供的 Tavern 候选源码/工作树，并按[独立 assembler 接入](ASSEMBLER_INTEGRATION.md)显式启用两个 bundle，不假设远端已有候选分支。在包含此文档和准备脚本的候选目录执行下列核心准备命令；稳定版 tag 的安装步骤不会获得新界面。
+当前源码需要按[独立 assembler 接入](ASSEMBLER_INTEGRATION.md)显式启用两个 bundle。历史 `v2.5.1` tag 不含该组合接入。请求协议 1 是独立的宿主能力前提；下列工具仅生成可审阅的独立构建，不在插件安装中修改 DSH 核心。实际运行环境的核心替换需要另行授权。
 
 ```sh
 npm ci

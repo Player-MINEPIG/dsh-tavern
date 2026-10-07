@@ -4,11 +4,11 @@
 
 [MVU 状态来源](MVU.md)
 
-候选源码的装配来源协议：Host 服务 `tavernRequestSources` 统一注册内置和外部来源，既有装配策略目录同时返回来源能力；接入方式与旧 loader 边界见[统一来源 API](REQUEST_ASSEMBLY.md#统一内容来源-api协议-1)。这部分尚不属于已发布 v2.5.1。
+当前装配来源使用共享 `dshPromptSources` 协议 1；旧 `tavernRequestSources` 为同一 registry 的兼容别名。第三方入口、全部扩展路由与稳定边界见[完整接口索引](API_SURFACES.md)。
 
 装配规则的 CRUD、应用、预览、实际请求引用与所需核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
-合同版本：Tavern 2.5.1，仅支持 DSH `0.2.0-rc.2`。
+合同范围：当前 Tavern 源码（package 版本见 package.json），仅支持 DSH `0.2.0-rc.2`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -673,3 +673,5 @@ Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 | DELETE | `/rendering-write-grants/:grantId` | 停止内部绑定；重复删除幂等 | 200 |
 
 沿用本机 peer、Host、Origin／桌面 token、JSON 媒体类型与 DSH admission 检查。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent` 在 MVU 最终提交前复核。内存最多保留 64 个活动绑定，不保存源码正文；没有批准到期期限，卸载全部清除。脚本开关与运行时清理撤销旧绑定，刷新时从持久下载缓存自动建立当前新绑定。scope、来源 schema、CAS 与幂等仍保留。原生卡片变量发出事实供 manager 观察；manager 的模型/store/retrieve 策略保持独立。详见 [MVU](MVU.md)。
+
+标准版与可选 core 的能力、迁移及证据范围见[装配策略](REQUEST_ASSEMBLY.md)。对所选后端检查 capabilities() 与 requireAvailable(preset)。

@@ -2,22 +2,23 @@
 
 [中文](INSTALLATION.md)
 
-The commands using `v2.5.1` below install the stable release. Standalone assembler 0.2.0 is available from its private repository. See [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md) for installing it with the local Tavern candidate, and [core extension and installation](REQUEST_ASSEMBLY_en.md#core-extension-and-installation-boundary) for the required core preparation. The stable tag does not include this combined integration.
+Current source requires both Tavern and the independent assembler to be enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Manager. The immutable historical v2.5.1 tag predates this combination; older documentation remains available at that tag.
 
 Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
-Tavern **2.5.1** supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
+Current Tavern source supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
 
 Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_en.md) for older external references. Already migrated V4 references need no further conversion; no rollback tool is provided. Put the target DSH on `PATH` and initialize the intended profile before installation.
 
-## Install 2.5.1
+## Install current source
 
-From Tavern 2.5.0, update the plugin and restart the Host while retaining DSH `0.2.0-rc.2`; sessions, timelines, Trace and settings need no migration. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
+Updating current source requires the additional assembler bundle. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.0-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
 
-Stop the target Host, then install the fixed version:
+Stop the target Host and install both bundles at the implementation commits below. They identify the current code baseline, not a newly published release. Assembler is public. These fixed commits are the advanced baseline; standard strategies use stock core, while advanced strategies require the addon plus protocol 1. Plugin installation never patches core:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#c2d5b1194beca7cfd561e3aaab17db17e7e26298
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#fa5a5f9bb4ae130ffc673fdf2372f5d0d26aad54
 ```
 
 <a id="source-candidate"></a>
@@ -27,7 +28,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 Use an isolated test profile/home initialized with the target DSH:
 
 ```sh
-git clone --branch v2.5.1 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch codex/assembler-extraction https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
@@ -184,3 +185,5 @@ does not implicitly erase user content.
 All common options work for uninstall too: `--profile`, `--dsh-home`,
 `--store-dir`, `--storage-dir`, and `--dry-run`. Use `--help` for the complete
 command summary.
+
+For the standard candidate and optional core package, see [assembler integration](ASSEMBLER_INTEGRATION_en.md). Standard user context/pre-step persist in DSH history; they are not the advanced request-only transport.

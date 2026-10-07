@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import assembler from 'dsh-prompt-assembler/plugin'
+import { installCoreExtension } from './helpers/assembler-host.mjs'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 
 const root = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT
@@ -36,7 +37,7 @@ test('native and ST assembly accept official request preparation with world-book
     }
     ctx.llm.registerAdapter(['offline'], new Provider())
     ctx.on('agent/pre-step', async (_payload, next) => ({ ...await next(), startsRequestSeries: true }))
-    await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') })
+    await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') }); await installCoreExtension(ctx)
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(scope) {
       store = tavern.apply(scope, { storageDir: join(directory, 'tavern'), mvu: { resources: [{ id: 'mvu:template', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }] } })
     } })

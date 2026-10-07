@@ -4,11 +4,11 @@
 
 [MVU state source](MVU_en.md)
 
-Candidate-source assembly protocol: the Host service `tavernRequestSources` registers built-in and external sources uniformly; the existing strategy catalog also returns source capabilities. See the [unified source API](REQUEST_ASSEMBLY_en.md#unified-content-source-api-protocol-1) for integration and legacy-loader boundaries. This is not part of published v2.5.1.
+Current assembly sources use shared `dshPromptSources` protocol 1; legacy `tavernRequestSources` aliases that registry. See the [complete API surface](API_SURFACES_en.md) for all extension routes, public imports and compatibility boundaries.
 
 Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
-Contract: Tavern 2.5.1, supporting only DSH `0.2.0-rc.2`.
+Contract: current Tavern source (package version in package.json), supporting only DSH `0.2.0-rc.2`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -692,3 +692,5 @@ These internal routes bind available, enabled card execution to its exact source
 | DELETE | `/rendering-write-grants/:grantId` | Stop an internal binding; repeated removal is idempotent | 200 |
 
 Existing local peer, Host, Origin/desktop-token, JSON media-type and DSH admission checks apply. `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` returns null or `{valid:true,write:true,scope}`; synchronous `isCurrent` is checked immediately before MVU commit. At most 64 live execution bindings are held in memory; no source body is stored. Bindings have no approval expiry and are cleared on unload. Script switches/runtime cleanup revoke them; persisted downloads recreate fresh current bindings on refresh. They do not bypass scope, source schema, CAS or idempotency. Native card variables emit facts for manager observation; manager model/store/retrieve policies remain separate. See [MVU](MVU_en.md).
+
+Standard versus optional core capabilities, migration and evidence are defined in [assembly strategies](REQUEST_ASSEMBLY_en.md). Check capabilities() and requireAvailable(preset) for the selected backend.

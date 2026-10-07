@@ -1,3 +1,4 @@
+import { CoreRequestBackend } from 'dsh-prompt-assembler/core-backend'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { RequestSourceRegistry, createDefaultRegistry, registerBuiltinSources, assembleRequestAsync, assembleRequest, BUILTINS, normalizePreset, textOf } from '../packages/request-assembler/index.js'
@@ -30,6 +31,7 @@ test('async source is evaluated for preview and each actual step with detached i
   const events = [{ seq: 1, type: 'step/start' }, { seq: 2, type: 'user/message', data: native[1] }]
   const agent = { id: 'session', session: { snapshotEvents: () => events, deriveMessages: () => native } }
   const runtime = new RequestAssembler({ registry, ctx: { get: name => name === 'agentLoop' ? { requestAssemblyVersion: 1 } : null }, store: { selection: () => preset }, resources: { assembledFor: () => ({ assemblyInput: {} }), compile: () => ({ assemblyInput: {} }) } })
+  runtime.registerRequestBackend(new CoreRequestBackend(runtime))
   await runtime.preview({ preset, agent, sessionId: agent.id })
   for (const step of [1, 2, 3]) {
     const result = await runtime.execute({ agent, turn: 1, step }, async () => ({ messages: native, metadata: { from: 'other-middleware' } }))

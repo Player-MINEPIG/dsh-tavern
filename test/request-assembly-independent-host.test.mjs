@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtempSync, rmSync } from 'node:fs'
 import assembler from 'dsh-prompt-assembler/plugin'
+import { installCoreExtension } from './helpers/assembler-host.mjs'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 const root = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT
 
@@ -24,6 +25,7 @@ test('independent assembler remains mounted after Tavern removal and keeps sessi
     }
     ctx.llm.registerAdapter(['offline'], new Provider())
     await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') })
+    await installCoreExtension(ctx)
     const core = ctx.get('dshPromptAssembler')
     const handle = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(scope) { store = tavern.apply(scope, { storageDir: join(directory, 'tavern') }) } }); await handle
     assert.ok(store); assert.equal(store.requestAssembler, core.runtime); assert.equal(store.assemblyPresets, core.store)

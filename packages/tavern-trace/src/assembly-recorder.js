@@ -12,7 +12,7 @@ function render(text, variables) {
   })
 }
 function sectionSnapshot(section, variables, known, index) {
-  const text = render(section.text, variables)
+  const text = section.interpolate === false ? section.text : render(section.text, variables)
   const origin = known.find(p => p.name === section.name && p.text === section.text)
   return { name: section.name, index, text, ...counts(text), hash: digest(text),
     provenance: origin?.provenance ?? 'unknown', sources: (origin?.sources ?? []).map(({ text, ...source }) => ({
@@ -21,8 +21,8 @@ function sectionSnapshot(section, variables, known, index) {
 }
 
 export class AssemblyRecorder {
-  constructor(store, { requiresRequestAssembly = () => false } = {}) {
-    this.store = store; this.requiresRequestAssembly = requiresRequestAssembly
+  constructor(store, { requiresRequestAssembly = () => false, requiresNativeRequest = () => false } = {}) {
+    this.store = store; this.requiresRequestAssembly = requiresRequestAssembly; this.requiresNativeRequest = requiresNativeRequest
     this.pending = new Map(); this.active = new Map()
   }
   track(record) {
@@ -76,11 +76,12 @@ export class AssemblyRecorder {
   request(options, session) {
     const record = this.pending.get(options.sessionId)
     if (!record) return null
+    if (this.requiresNativeRequest(options.sessionId) && (!Object.isFrozen(options) || digest(options.messages) !== digest(session?.deriveMessages?.()))) return null
     const requestEvent = session?.snapshotEvents?.().findLast(event => event.type === 'request/assembly')
     // Title generation and other side calls may share the session id. They must
     // not consume the pending AgentLoop capture or replace its frozen evidence.
     const currentAssembly = requestEvent?.data.turn === record.turn && requestEvent.data.step === record.step
-    if (this.requiresRequestAssembly() && !currentAssembly) return null
+    if (this.requiresRequestAssembly(options.sessionId) && !currentAssembly) return null
     if (currentAssembly && digest(requestEvent.data.messages) !== digest(options.messages)) return null
     const systems = typeof options.system === 'string' ? [options.system]
       : (options.messages ?? []).filter(m => m.role === 'system').map(messageText)

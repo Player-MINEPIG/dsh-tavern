@@ -2,22 +2,23 @@
 
 [English](INSTALLATION_en.md)
 
-下文 `v2.5.1` 命令用于已发布稳定版。独立 assembler 0.2.0 已提供私有仓库安装；本地 Tavern 候选源码的组合安装见[独立 assembler 接入](ASSEMBLER_INTEGRATION.md)，所需核心扩展见[核心扩展和安装边界](REQUEST_ASSEMBLY.md#核心扩展和安装边界)。稳定版 tag 不包含该组合接入。
+当前源码需要显式启用 Tavern 与独立 assembler 两个 bundle，服务加载与可选 Manager 见[接入说明](ASSEMBLER_INTEGRATION.md)。历史不可变 v2.5.1 tag 早于该组合接入；旧完整说明可在对应 tag 查看。
 
 装配规则的 CRUD、应用、预览、实际请求引用与所需核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
-Tavern **2.5.1** 支持 DSH **0.2.0-rc.2**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
+当前 Tavern 源码支持 DSH **0.2.0-rc.2**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
 
 保留备份；旧外部引用按[坐标迁移指南](DSH_0.1.7_MIGRATION.md)处理，已完成迁移的 V4 引用无需再次转换，不提供回退工具。安装前将目标 DSH 放在 `PATH` 并初始化所需 profile。
 
-## 安装 2.5.1
+## 安装当前源码
 
-从 Tavern 2.5.0 升级只需更新插件并重启 Host，继续使用 DSH `0.2.0-rc.2`；无需迁移会话、timeline、Trace 或设置。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
+更新当前源码需要额外启用 assembler bundle。原 Tavern 资源、设置、原生会话、timeline 与 Trace 保留；loader 启动时把旧策略存储中缺少的条目合并到 assembler，并保留旧文件。历史坐标升级另按迁移指南处理，DSH 目标仍为 `0.2.0-rc.2`。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
 
-停止目标 Host 后，使用固定版本标签安装：
+停止目标 Host 后，使用固定实现提交安装两个 bundle（assembler 为 public 仓库）。下列提交标识实现基线，不声明已经发布新版本。这些固定提交是进阶基线；标准策略使用 stock 核心，可选进阶策略要求 addon 与协议 1，安装不改核心：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#c2d5b1194beca7cfd561e3aaab17db17e7e26298
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#fa5a5f9bb4ae130ffc673fdf2372f5d0d26aad54
 ```
 
 <a id="source-candidate"></a>
@@ -27,7 +28,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 使用目标 DSH 初始化的独立测试 profile/home：
 
 ```sh
-git clone --branch v2.5.1 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch codex/assembler-extraction https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
@@ -122,3 +123,5 @@ node scripts/uninstall.mjs --no-backup
 `--storage-dir` 让卸载器为显式配置的自定义存储目录创建快照。`--no-backup` 只跳过这次快照；普通卸载仍保留默认或自定义持久目录，也不删除当初用于导入的外部 ST 源文件。若用户明确要清除数据，应在确认备份后单独删除持久目录，而不是把“卸载软件包”与“清空用户内容”合并为一个隐式动作。
 
 卸载同样支持这些常用参数：`--profile`、`--dsh-home`、`--store-dir`、`--storage-dir` 和 `--dry-run`。完整命令摘要见 `--help`。
+
+标准版候选与可选 core 包见[assembler 接入](ASSEMBLER_INTEGRATION.md)。标准 user context/pre-step 会进入 DSH 历史，与进阶 request-only 路径不同。

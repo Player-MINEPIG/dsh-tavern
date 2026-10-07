@@ -2,7 +2,7 @@
 
 [English](ARCHITECTURE_en.md)
 
-可选的[请求装配器](REQUEST_ASSEMBLY.md)在应用装配预设后接管消息排列。下文原有 loader 路径继续用于未应用装配预设的会话；两条路径都保留 DSH 对持久历史和 Provider 序列化的所有权。
+必需的独立 [assembler 插件](ASSEMBLER_INTEGRATION.md)拥有 registry、策略存储与请求装配；标准版通过 DSH 公开接口排列官方 system 段落并贡献 user context/pre-step；只有显式安装可选 `dsh-prompt-assembler-core` 并准备配套核心时，进阶策略才启用完整请求排列。下文原有 loader 路径继续用于未应用装配预设的会话；两条路径都保留 DSH 对持久历史和 Provider 序列化的所有权。
 
 DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-dependencies/README.md)（含交互 HTML、仓库相对源码链接和升级检查入口）。
 
@@ -10,9 +10,7 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走
 `/v2`，装配审计走 `/v3`。本文记录当前架构决策与发布审查门槛。
 
-![当前架构](assets/dsh-tavern-architecture.png)
-
-可编辑源文件：[dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio)。图中 DSH session history 是唯一权威事件历史；Tavern 的外部目录只保存资源、选择、设置、Trace 与周目投影。
+[Tavern 交互架构图](assets/architecture/tavern.zh-CN.html) · [三插件组合架构图](assets/architecture/ecosystem.zh-CN.html)。同目录 JSON 是可编辑的 Archify 规格。DSH durable history 为权威历史；Tavern 保存资源、状态、草稿、配置与有界 Trace 引用。
 
 ## 操作诊断与兼容边界
 
@@ -48,7 +46,7 @@ Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过
 
 ## 决策结论
 
-`dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成单向依赖的内部层。preset、角色卡、用户、独立世界书和 Tavern Trace 均由统一 loader/client 组合；不要求用户安装多个互相配套的 DSH 插件。
+Tavern 是包含内部资源层的独立 DSH 插件，单向依赖另行启用的 `dsh-prompt-assembler` Host bundle。Memory Manager 为可选扩展。assembler 中的 adapter 读取来源公开服务，不读取来源私有文件。
 
 ```text
 SillyTavern JSON
@@ -71,7 +69,7 @@ chrome / 扮演工作区 files / timeline 校验 / focus 派生（纯逻辑+HTTP
        │
        ▼
 packages/tavern-loader ◄── DSH session/event（PendingInputProjection）
-DSH 装配策略、session/request 策略、Host hooks、v1/v2/v3 HTTP
+资源编译、session/request 策略、Host hooks、v1/v2/v3 HTTP；装配委托独立 assembler
         │
         ├── packages/session-template（由 loader 组合）
         │   干净会话配置投影、原子存储/API（不含历史）
@@ -214,22 +212,9 @@ RP snapshot cache 按 client 有界保存，key 包含周目路径与 Session ID
 
 Tavern 语言与 DSH 语言独立。RP、侧栏和开场 dock 订阅完整 UI 设置，而不是只订阅缩放值。语言变化还会刷新 Tavern 自己的 RP 页签注册项，因为 DSH 将 label 缓存在视图列表中；Conversation store 与已完成的默认视图选择保持不变。生成周目名随 locale 显示，用户自定标题及角色正文不翻译；不以 locale 事件替代 DSH 的 Session/Chat 订阅。
 
-## 为什么不是两个 DSH 插件
+## 安装单位与纯库
 
-格式解析器有独立价值，但其合适形态是纯库，不是一个可单独安装的 DSH 插件：
-
-- 可被浏览器导入预览、服务端导入、迁移 CLI、快照测试和未来角色卡/世界书工具复用；
-- 可在没有 DSH、session、文件系统的测试环境中验证格式兼容；
-- 能把“ST 文件解析错误”和“DSH 加载策略错误”分开定位。
-
-理论上可以给 `tavern-format` 增加自己的 package manifest 并单独发布为 npm library，但当前没有必要。它没有 Host entry、bundle patch 或独立用户功能，不能单独把内容发送给 agent。把它包装成第二个 DSH 插件会产生以下问题：
-
-- 用户看到“安装成功”却没有对话效果，形成半安装状态；
-- loader 与 parser 版本必须额外协商；
-- 两个插件都可能争用 API、存储或 UI 生命周期；
-- 安装、卸载、备份和故障排查成本翻倍。
-
-因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`、`API_V3`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；资源与配置走 `/v1`，扮演元 API 走 `/v2`，历史装配 Trace 走 `/v3`。`packages/play` 不导入 DSH；loader 以显式注入的 `sessionController`、`workspaceController` 与 `directoryPickerController` 实现 Tavern Play Host port，并挂到现有 `secureTavernApi`。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
+安装单位是 Tavern 与必需的独立 assembler；Manager 可选。Tavern 内部 `tavern-format` 与 `world-book` 仍是根包内的纯库，公开 exports 是可组合程序接口，不是可单独启用的 Host bundle。loader 把来源拥有的只读编译接到共享 assembler；兼容包入口与 HTTP 路径保留。新接入见[完整接口索引](API_SURFACES.md)。
 
 ## 开发验证
 

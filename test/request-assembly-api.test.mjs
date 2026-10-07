@@ -1,3 +1,4 @@
+import { CoreRequestBackend } from 'dsh-prompt-assembler/core-backend'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Readable } from 'node:stream'
@@ -15,6 +16,7 @@ test('assembly API keeps edits distinct from apply, rejects running/unsupported 
     const store = new AssemblyPresetStore(root)
     let core = null, running = false, prepared, notifications = 0
     const runtime = new RequestAssembler({ ctx: { get: () => core }, store, resources: { compile: () => ({ assemblyInput: {} }) } })
+  runtime.registerRequestBackend(new CoreRequestBackend(runtime))
     const handler = createAssemblyApi({ store, runtime, agents: () => new Map(running ? [['session', { status: 'running' }]] : []),
       sessions: () => ({ get: () => null, prepare(id, options) { prepared = { id, options }; return { deriveMessages: () => [] } } }),
       inspect: async () => ({ events: [], meta: { id: 'session' }, inheritedEventCount: 0 }), notify: () => notifications++ })
@@ -60,6 +62,7 @@ test('preview rebuilds current native instructions and never duplicates historic
   const events = [{ id: 'old', role: 'system', content: [{ type: 'text', text: 'OLD CHARACTER' }] }, { id: 'user', role: 'user', content: [{ type: 'text', text: 'hello' }] }]
   let previewContext
   const runtime = new RequestAssembler({ ctx: { get: key => key === 'systemPrompt' ? { async assemble(context) { previewContext = context; return { sections: [{ name: 'core', text: 'CURRENT {{name}}' }], variables: { name: 'CORE' } } } } : { requestAssemblyVersion: 1 } }, store: {}, resources: { compile: () => ({ assemblyInput: { character: { data: { description: 'CHARACTER' } } } }) } })
+  runtime.registerRequestBackend(new CoreRequestBackend(runtime))
   const result = await runtime.preview({ preset: BUILTINS[0], agent: { session: { deriveMessages: () => events } } })
   assert.equal(previewContext.tavernAssemblyPreview, true)
   assert.deepEqual(result.messages.map(m => m.content[0].text), ['CURRENT CORE\n\nCHARACTER', 'hello'])
@@ -69,6 +72,7 @@ test('preview rebuilds current native instructions and never duplicates historic
 test('empty runtime assembly fails locally with an actionable error', async () => {
   const preset = { ...BUILTINS[0], rules: BUILTINS[0].rules.map(r => ({ ...r, enabled: false })) }
   const runtime = new RequestAssembler({ ctx: { get: () => ({ requestAssemblyVersion: 1 }) }, store: { selection: () => preset }, resources: { assembledFor: () => ({ assemblyInput: {} }) } })
+  runtime.registerRequestBackend(new CoreRequestBackend(runtime))
   const payload = { agent: { id: 'empty', session: { snapshotEvents: () => [] } } }
   await assert.rejects(runtime.execute(payload, async () => ({ messages: [] })), { code: 'ASSEMBLY_EMPTY' })
 })

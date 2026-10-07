@@ -2,7 +2,25 @@
 
 [中文](REQUEST_ASSEMBLY.md)
 
-The assembler arranges native DSH inputs and Tavern resources after native messages are prepared and before the request is frozen. DSH continues to own providers, tool execution, Inbox, branches and native history. Strategies are stored per session and frontend mode: play defaults to ST compatible; native defaults to disabled. Existing explicit choices are retained. Disabling uses native DSH assembly without injecting Tavern bodies through the old loader. Stock hosts without the core extension retain the legacy loader in native mode.
+The standard assembler uses public DSH sections/context/pre-step on stock rc.2. Tavern normally depends on it; optional Manager supplies management and observations. The optional core addon retains the validated protocol-1 advanced backend. Both share strategies/registry/UI; legacy strategies without backend remain core. Native/play views cannot change explicit session selections, including null. New standalone sessions have no implicit strategy; new Tavern openings use native ST style unless an explicitly installed addon supplies the advanced default.
+
+## Standard strategies
+
+Native mode preserves history→current input and cannot disable either or reorder internal conversation messages. Official instructions can be disabled/reordered within current system content. Preset/persona/character/lore/PHI can contribute system before history or user after history. DSH retains its head/in-history update route.
+
+User context follows current input, appending a native snapshot when text changes. User pre-step accepts messages before/after input at actual steps. After input, context precedes pre-step; contributions within one region can be reordered, while reversed layouts are refused. Both persist in history; removal stops future contributions and retains old bodies. No arbitrary depth, assistant contributions or advanced snapshot retention; legacy strategies are never silently converted.
+
+| Standard built-in | Layout |
+| --- | --- |
+| builtin-native-st | Official/preset/persona/character/lore/PHI system assets → history → input; approximate ST order |
+| builtin-native-cache | Stable systems → history → input → lore context → PHI pre-step |
+| builtin-native-phi | System assets → history → input → PHI user reminder |
+
+A final user reminder retains user priority. Cache hits and model adherence depend on the model. Native Trace verifies durable system/context references without creating request/assembly or a second history. The complete frozen-request view is limited to advanced evidence; standard mode reports this scope explicitly.
+
+## Advanced contract
+
+The following ST slots, depth, request/snapshot and complete-system projection belong to the explicitly installed core addon. Missing addon/protocol 1 refuses application with 409. Standard strategies follow the boundaries above.
 
 ## Page and presets
 
@@ -34,7 +52,7 @@ Only the officially resolved model capability `systemPromptUpdate: in-history` p
 
 `assembleRequest` / `assembleRequestAsync` remain logical contribution primitives; the Host runtime performs complete-snapshot conversion. Final `request/assembly.messages` equals the dispatched array. Metadata `systemProjection` maps input IDs to derived carrier IDs, ordered contributors and replaced native IDs. Logical nodes retain source text/hashes: `inputMessageIds` preserves their original messages before projection, while `requestMessageIds` identifies final carriers. Multiple nodes can share one system carrier; original IDs also identify contributions repeated in later snapshots. Older records may omit `inputMessageIds`; consumers must not infer them from text or private hash rules. `start/count` summarizes positions; use the exact ID list when retained snapshots make a node's messages noncontiguous. `limits.maxProfileBytes` bounds logical additional content before projection (512 KiB by default, at most 2 MiB). Complete snapshots have a separate fixed 2 MiB limit on additional physical bytes. Every carrier is charged for its serialized UTF-8 bytes, including active contributions repeated in later snapshots; unchanged native history is not plugin overhead. Runtime and preview use the same two limits and reject either excess without truncating or deduplicating sources. Metadata `logicalExtraBytes` preserves the logical charge, `extraBytes` is the projected physical charge, and `systemProjection.maxBytes` is the physical limit; older records may omit the added fields.
 
-ST compatible is the protected default: built-ins cannot be renamed or deleted. Saving modified built-in rules creates a copy. **Apply default strategy** applies and selects ST compatible, with a reminder before discarding unsaved changes. The launcher only shows the active strategy and binding indicator; selection, disabling and application happen in the settings page. Preview and actual-request controls sit beside Rules.
+Advanced ST compatible is the protected advanced default: built-ins cannot be renamed or deleted. Saving modified built-in rules creates a copy. **Apply default strategy** applies and selects ST compatible, with a reminder before discarding unsaved changes. The launcher only shows the active strategy and binding indicator; selection, disabling and application happen in the settings page. Preview and actual-request controls sit beside Rules.
 
 PHI comes from character post-history instructions, preset Post-History Instructions / jailbreak, and optional additional text in the strategy PHI module. Edit asset fields in their respective editors; additional text belongs to the strategy. Preview uses authored names and translated known fields, retaining raw identifiers in details.
 
@@ -76,7 +94,7 @@ Uninitialized MVU state or state requiring repair returns `MVU_PREVIEW_STATE_UNA
 
 Stock DSH `0.2.0-rc.2` does not expose this seam. `scripts/prepare-request-assembly.mjs` produces a separate build from the pinned rc.2 source (both source trees are verified against SHA-256 digests in the script). It never edits the source checkout or an installed runtime and rejects other revisions.
 
-Standalone assembler 0.2.0 is available from its private repository; the combined Tavern integration remains a local candidate and is absent from the published `v2.5.1` tag. Use the Tavern candidate checkout supplied by the maintainer and explicitly activate both bundles following [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md). Do not assume a candidate branch exists on the remote. Run the following core-preparation commands from that checkout; the stable-tag installation does not include the new interface.
+Current source requires both bundles to be enabled as described in [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md). The historical v2.5.1 tag predates this integration. Protocol 1 is a separate Host capability requirement. The preparation tool generates reviewable output, never patches core during plugin installation; any actual runtime replacement requires separate authorization.
 
 ```sh
 npm ci

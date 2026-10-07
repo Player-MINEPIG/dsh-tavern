@@ -2,7 +2,7 @@
 
 [中文](ARCHITECTURE.md)
 
-The optional [request assembler](REQUEST_ASSEMBLY_en.md) takes ownership of message placement when a layout is applied. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+The required independent [assembler plugin](ASSEMBLER_INTEGRATION_en.md) owns registry, strategy storage and request assembly. Standard strategies use public DSH interfaces to order official system sections and contribute user context/pre-step messages. Advanced strategies enable complete request placement only after explicitly installing `dsh-prompt-assembler-core` and preparing its matching core. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
 
 For DSH breaking-update reviews, see the [native dependency diagram and coupling matrix](assets/dsh-dependencies/README_en.md), with interactive HTML, repository-relative source links, and upgrade check entry points.
 
@@ -11,9 +11,7 @@ The install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`;
 resources use `/v1`, the play-surface contract uses `/v2`, and assembly audit uses `/v3`.
 This page records the current architecture and release-review gates.
 
-![Current architecture](assets/dsh-tavern-architecture.png)
-
-Editable source: [dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio). DSH session history is the only authoritative event history in the diagram; Tavern's external directory stores only resources, selections, settings, Trace, and playthrough projections.
+[Interactive Tavern architecture](assets/architecture/tavern.en.html) · [Three-plugin architecture](assets/architecture/ecosystem.en.html). Editable Archify JSON is stored alongside each HTML. DSH durable history remains authoritative; Tavern stores resources, state, drafts, configuration and bounded trace references.
 
 ## Operation diagnostics and compatibility
 
@@ -49,7 +47,7 @@ Math rendering lives in `packages/client/src/play/math.js` and uses Marked's pub
 
 ## Decisions
 
-`dsh-tavern` stays one installable DSH plugin, split into one-way internal layers inside the same repo and release package. Preset, character card, user, standalone world book, and Tavern Trace are composed by one loader/client. Users are not asked to install several matching DSH plugins.
+Tavern is an installable DSH plugin with internal resource layers and a one-way dependency on an independently enabled `dsh-prompt-assembler` Host bundle. Memory Manager is optional. Assembler adapters call public source services, never source-private files.
 
 ```text
 SillyTavern JSON
@@ -72,7 +70,7 @@ chrome / play-workspace files / timeline validation / focus derivation (pure log
        │
        ▼
 packages/tavern-loader ◄── DSH session/event (PendingInputProjection)
-DSH assembly policy, session/request policy, Host hooks, v1/v2/v3 HTTP
+Resource compilation, session/request policy, Host hooks and v1/v2/v3 HTTP; assembly delegates to the independent assembler
         │
         ├── packages/session-template (composed by the loader)
         │   clean-session configuration projection, atomic store/API (no history)
@@ -215,22 +213,9 @@ RP cached snapshots are bounded per client and keyed by playthrough path plus Se
 
 Tavern locale is independent of DSH locale. RP, sidebar, and opening dock subscribe to the full UI settings, not only scale. A locale change also refreshes Tavern's own RP tab registration because DSH snapshots its label in the view roster; the Conversation store and completed default-view choice stay intact. Generated playthrough names follow locale; custom titles and character bodies are not translated. Locale events do not replace DSH Session/Chat subscriptions.
 
-## Why this is not two DSH plugins
+## Installation units and pure libraries
 
-The format parser has independent value, but its right shape is a pure library, not a separately installable DSH plugin:
-
-- It can be reused by browser import preview, server import, migration CLI, snapshot tests, and future character-card/world-book tools.
-- Format compatibility can be verified in a test environment with no DSH, session, or filesystem.
-- “ST file parse error” can be diagnosed separately from “DSH load-policy error”.
-
-In theory `tavern-format` could grow its own package manifest and publish as an npm library. That is unnecessary now. It has no Host entry, bundle patch, or standalone user feature, and cannot send content to an agent by itself. Wrapping it as a second DSH plugin would:
-
-- Show “installed successfully” with no conversation effect — a half-install.
-- Force extra version negotiation between loader and parser.
-- Let both plugins contend for API, storage, or UI lifecycle.
-- Double install, uninstall, backup, and troubleshooting cost.
-
-Therefore the release and install unit stays the root package `pmp-dsh-tavern` (product name remains dsh-tavern). Internal package boundaries exist for reuse and test isolation. Browser and Host share `PLUGIN_ID`, `API_ROOT`, `API_V1`, `API_V2`, `API_V3` from `packages/identity.js`. The HTTP mount prefix is `/pmp-dsh-tavern/api`. Resources and configuration use `/v1`; play meta APIs use `/v2`; historical assembly Trace uses `/v3`. `packages/play` does not import DSH. The loader implements Tavern's Play Host port with explicitly injected `sessionController`, `workspaceController`, and `directoryPickerController`, then mounts it on the existing `secureTavernApi`. `package.json` exports `./format`, `./preset`, `./character`, `./user`, `./world-book`, `./world-book-library`, `./trace`, `./loader` are programmatic interfaces, not separately installable plugins.
+The installable units are Tavern and its required independent assembler; Manager is optional. Tavern's `tavern-format` and `world-book` layers remain pure libraries inside the Tavern package. Their exports are composable program interfaces, not separate Host bundles. The loader attaches source-owned reads to the shared assembler and preserves compatibility package entry points and HTTP routes. New integrations use [the API surface index](API_SURFACES_en.md).
 
 ## Development verification
 

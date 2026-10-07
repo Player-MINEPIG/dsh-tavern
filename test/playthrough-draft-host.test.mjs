@@ -7,6 +7,7 @@ import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import assembler from 'dsh-prompt-assembler/plugin'
+import { installCoreExtension } from './helpers/assembler-host.mjs'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { characterMvuId, normalizeVariables, compileMvuSchema } from '../packages/mvu-adapter/src/index.js'
 import { createPlayHost } from '../packages/tavern-loader/src/play-host.js'
@@ -50,7 +51,7 @@ test('sessionless production opening survives remount, transfers resources once 
       }
     }
     ctx.llm.registerAdapter(['offline'], new Offline())
-    await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') }); await mount()
+    await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') }); await installCoreExtension(ctx); await mount()
     const playRoot = join(directory, 'play'); mkdirSync(playRoot); await store.playWorkspaceStore.bindRoot(playRoot)
     const schemaSource = `import { registerMvuSchema } from 'https://example.invalid/mvu_zod.js'; const Schema=z.object({hp:z.number().prefault(100),people:z.record(z.string(),z.strictObject({hp:z.number()})).prefault({})}); $(()=>registerMvuSchema(Schema));`
     const character = store.characterStore.import({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Draft fixture', description: 'DRAFT CHARACTER', first_mes: 'Opening A <JSONPatch>[{"op":"replace","path":"/hp","value":80}]</JSONPatch>', alternate_greetings: ['Opening B <UpdateVariable>_.add("hp",-40);</UpdateVariable>'], extensions:{tavern_helper:{scripts:[{content:schemaSource}]}}, character_book: { entries: [{ id: 0, keys: [], comment: '[initvar]', content: '{"hp":100}', enabled: false, insertion_order: 0 }] } } })

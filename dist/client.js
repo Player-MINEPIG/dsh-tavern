@@ -23162,26 +23162,78 @@ function normalizePreset(value) {
   if (!value || value.format !== FORMAT || value.version !== 1) throw new TypeError("Unsupported assembly preset format/version");
   if (typeof value.name !== "string" || !value.name.trim() || value.name.length > 200) throw new TypeError("Preset name is required (max 200 characters)");
   if (!Array.isArray(value.rules) || value.rules.length > 128) throw new TypeError("Expected at most 128 assembly rules");
+  if (value.backend !== void 0 && !["native", "core"].includes(value.backend)) throw new TypeError("Invalid assembly backend");
   const ids = /* @__PURE__ */ new Set(), kinds = /* @__PURE__ */ new Set();
   const rules = value.rules.map((rule) => {
     if (!rule || !/^[a-zA-Z0-9_-]{1,80}$/.test(rule.id) || ids.has(rule.id)) throw new TypeError("Rule ids must be unique");
     if (typeof rule.kind !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,159}$/.test(rule.kind)) throw new TypeError("Invalid or duplicate module");
     ids.add(rule.id);
     kinds.add(rule.kind);
+    if (rule.delivery !== void 0 && !["context", "pre-step"].includes(rule.delivery)) throw new TypeError("Invalid native user delivery");
     const role2 = ["custom", "dsh.text"].includes(rule.kind) ? rule.role === "preserve" ? "system" : rule.role ?? "user" : rule.role ?? "preserve", lifetime = rule.lifetime ?? "request";
     if (!["preserve", "system", "user", "assistant"].includes(role2)) throw new TypeError("Invalid role");
     if (!["request", "snapshot"].includes(lifetime)) throw new TypeError("Invalid lifetime");
     if (rule.depth !== void 0 && rule.depth !== null && (!Number.isInteger(rule.depth) || rule.depth < 0 || rule.depth > 1e4)) throw new TypeError("Invalid insertion depth");
     if (typeof (rule.text ?? "") !== "string" || (rule.text ?? "").length > 524288) throw new TypeError("Custom text exceeds limit");
     if (rule.inputMode !== void 0 && !["source", "text"].includes(rule.inputMode)) throw new TypeError("Invalid rule inputMode");
-    return { ...rule.inputMode === "text" ? { inputMode: "text" } : {}, id: rule.id, kind: rule.kind, enabled: rule.enabled !== false, role: role2, lifetime, depth: rule.depth ?? null, text: rule.text ?? "", name: typeof rule.name === "string" ? rule.name.slice(0, 200) : "" };
+    return { ...rule.delivery ? { delivery: rule.delivery } : {}, ...rule.inputMode === "text" ? { inputMode: "text" } : {}, id: rule.id, kind: rule.kind, enabled: rule.enabled !== false, role: role2, lifetime, depth: rule.depth ?? null, text: rule.text ?? "", name: typeof rule.name === "string" ? rule.name.slice(0, 200) : "" };
   });
-  return { format: FORMAT, version: 1, name: value.name.trim(), placement: value.placement === "st" ? "st" : "modules", rules };
+  return { ...value.backend ? { backend: value.backend } : {}, format: FORMAT, version: 1, name: value.name.trim(), placement: value.placement === "st" ? "st" : "modules", rules };
 }
-var BUILTINS = Object.freeze([{ id: "builtin-native", ...normalizePreset({ format: FORMAT, version: 1, name: "DSH \u539F\u751F / DSH native", rules: DEFAULT_RULES }) }]);
+var BUILTINS = Object.freeze([{ id: "builtin-native", ...normalizePreset({ format: FORMAT, version: 1, name: "DSH \u539F\u751F / DSH native", backend: "native", rules: DEFAULT_RULES }) }]);
+
+// node_modules/dsh-prompt-assembler/src/native-policy.js
+var fail3 = (message, detail) => {
+  throw Object.assign(new Error(message), { status: 409, code: "ASSEMBLY_NATIVE_UNSUPPORTED", detail });
+};
+function presetBackend(preset) {
+  return preset?.backend ?? "core";
+}
+function validateNativePreset(value) {
+  const preset = normalizePreset(value);
+  if (presetBackend(preset) !== "native") fail3("This strategy requires the optional core assembly extension.", { backend: "core" });
+  for (const kind of ["history", "input"]) {
+    const rule = preset.rules.find((r) => r.kind === kind);
+    if (!rule?.enabled) fail3(`Native assembly must preserve ${kind}.`, { ruleId: rule?.id, kind });
+  }
+  let phase = "system", afterInputMessages = false;
+  for (const rule of preset.rules.filter((r) => r.enabled)) {
+    if (rule.kind === "history") {
+      if (phase !== "system") fail3("Native history cannot be moved after current input.");
+      phase = "before-input";
+      continue;
+    }
+    if (rule.kind === "input") {
+      if (phase !== "before-input") fail3("Current input must follow native history.");
+      phase = "after-input";
+      continue;
+    }
+    if (rule.lifetime === "snapshot" || rule.depth !== null) fail3("Retained request snapshots and insertion depth require core assembly.", { ruleId: rule.id });
+    if (rule.role === "assistant") fail3("Assistant-role contributions require core assembly.", { ruleId: rule.id });
+    if (rule.role === "user") {
+      if (phase === "system") fail3("Native user contributions must follow native history.", { ruleId: rule.id });
+      if (phase === "before-input" && rule.delivery !== "pre-step") fail3("User context snapshots follow current input; use pre-step before input.", { ruleId: rule.id });
+      if (phase === "after-input") {
+        if (rule.delivery === "pre-step") afterInputMessages = true;
+        else if (afterInputMessages) fail3("Native context snapshots precede post-input pre-step messages; reorder these contributions.", { ruleId: rule.id });
+      }
+    } else if (phase !== "system") fail3("Native system contributions must precede native history.", { ruleId: rule.id });
+  }
+  if (preset.placement !== "modules") fail3("ST slot/depth placement requires core assembly; choose a native strategy.");
+  return preset;
+}
 
 // node_modules/dsh-prompt-assembler/src/client.js
 var labels = {
+  backend: ["\u63A5\u5165\u65B9\u5F0F", "Backend"],
+  backendNative: ["\u6807\u51C6\u7248 \xB7 \u5B98\u65B9\u63A5\u53E3", "Standard \xB7 public interfaces"],
+  backendCore: ["\u8FDB\u9636\u7248 \xB7 \u6838\u5FC3\u6269\u5C55", "Advanced \xB7 core extension"],
+  nativeHint: ["\u7CFB\u7EDF\u5185\u5BB9\u6392\u5728\u5386\u53F2\u524D\uFF1Buser \u5185\u5BB9\u4F7F\u7528\u6301\u4E45 context \u6216 pre-step\u3002\u539F\u751F\u5386\u53F2\u4E0E\u672C\u6B65\u8F93\u5165\u5FC5\u987B\u4FDD\u7559\uFF0C\u4E0D\u80FD\u4EFB\u610F\u91CD\u6392\u3002", "System content precedes history. User content uses durable context or pre-step messages. Native history and current input remain enabled and in order."],
+  coreHint: ["\u6B64\u7B56\u7565\u8981\u6C42\u53EF\u9009\u6838\u5FC3\u88C5\u914D\u6269\u5C55\u4E0E\u914D\u5957 DSH \u6838\u5FC3\uFF1B\u6807\u51C6\u5B89\u88C5\u4E0D\u4F1A\u81EA\u52A8\u542F\u7528\u3002", "This strategy requires the optional core assembly extension and its prepared DSH core. Standard installation does not enable it."],
+  delivery: ["user \u5199\u5165\u65B9\u5F0F", "User delivery"],
+  context: ["\u5185\u5BB9\u53D8\u5316\u65F6\u5199\u5165\u4E0A\u4E0B\u6587\u5FEB\u7167", "Context snapshot when content changes"],
+  "pre-step": ["\u6BCF\u4E2A\u5B9E\u9645\u6A21\u578B\u6B65\u9AA4\u5199\u5165\u6D88\u606F", "Message at each actual model step"],
+  nativeRetentionHint: ["\u4E24\u79CD user \u5199\u5165\u65B9\u5F0F\u90FD\u4F1A\u8FDB\u5165 DSH \u5386\u53F2\uFF1B\u5173\u95ED\u6765\u6E90\u505C\u6B62\u540E\u7EED\u8D21\u732E\uFF0C\u65E7\u6B63\u6587\u4FDD\u7559\u3002", "Both user delivery modes enter DSH history. Disabling stops future contributions; earlier text remains."],
   "harness:identity": ["DSH \u8EAB\u4EFD\u6307\u4EE4", "DSH identity"],
   "deployment:persona-prefix": ["\u90E8\u7F72\u524D\u7F6E\u6307\u4EE4", "Deployment prefix"],
   "deployment:persona-suffix": ["\u90E8\u7F72\u540E\u7F6E\u6307\u4EE4", "Deployment suffix"],
@@ -23222,8 +23274,11 @@ var labels = {
   depth_prompt: ["\u89D2\u8272\u6DF1\u5EA6\u63D0\u793A", "Character depth prompt"],
   defaultHint: ["\u5185\u7F6E\u7B56\u7565\u4E0D\u80FD\u6539\u540D\u6216\u5220\u9664\uFF1B\u4FEE\u6539\u89C4\u5219\u540E\u4FDD\u5B58\u4E3A\u526F\u672C\u3002", "Built-ins cannot be renamed or deleted; save rule changes as a copy."],
   dropHere: ["\u677E\u5F00\u4EE5\u79FB\u52A8\uFF1A", "Drop to move: "],
+  nativePreviewScope: ["\u4EE5\u4E0B\u662F\u5F53\u524D\u7B56\u7565\u7684\u903B\u8F91\u6392\u5217\uFF0C\u4E0D\u662F\u5B8C\u6574\u7684\u5B9E\u9645\u8BF7\u6C42\u3002DSH \u4F1A\u4FDD\u5B58 user \u8D21\u732E\uFF1B\u540E\u7EED\u8BF7\u6C42\u8FD8\u53EF\u80FD\u5305\u542B\u5DF2\u4FDD\u5B58\u7684\u65E7\u8D21\u732E\u3002\u9884\u89C8\u4E0D\u542B\u5F85\u53D1\u9001\u8F93\u5165\u3002", "This shows the current strategy\u2019s logical order, not a complete actual request. DSH saves user contributions, so later requests may also contain earlier contributions. Pending input is excluded."],
+  logicalMessages: ["\u903B\u8F91\u6392\u5217", "Logical order"],
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
-  noActual: ["\u6682\u65E0\u65B0\u7248\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No request assembly record yet"],
+  noActual: ["\u6682\u65E0\u8FDB\u9636\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No advanced request assembly record yet"],
+  noActualNative: ["\u6807\u51C6\u7248\u6CBF\u7528 DSH \u539F\u751F\u5386\u53F2\uFF1B\u5F53\u524D\u88C5\u914D\u53EF\u9884\u89C8\uFF0C\u5DF2\u8BB0\u5F55\u7684 system/context \u6B63\u6587\u53EF\u5728 Tavern Trace \u67E5\u770B\u3002", "Standard mode uses native DSH history. Preview the current assembly; read recorded system/context text in Tavern Trace."],
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
   addSource: ["\u6DFB\u52A0\u6A21\u5757\uFF08\u5F53\u524D\u6709\u72EC\u7ACB\u5185\u5BB9\uFF09", "Add a module (current independent content)"],
   chooseSource: ["\u9009\u62E9\u6765\u6E90\u2026", "Choose source\u2026"],
@@ -23366,7 +23421,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     if (confirmation) dialog.current?.querySelector(".dta-confirm button")?.focus();
   }, [confirmation]);
   const [sources, setSources] = (0, import_react7.useState)([]), [addParser, setAddParser] = (0, import_react7.useState)("custom"), [addKind, setAddKind] = (0, import_react7.useState)(""), [defaultId3, setDefaultId] = (0, import_react7.useState)(BUILTINS[0].id);
-  const [items2, setItems] = (0, import_react7.useState)([]), [draft, setDraft] = (0, import_react7.useState)(null), [selection, setSelection] = (0, import_react7.useState)(null), [capable, setCapable] = (0, import_react7.useState)(false);
+  const [items2, setItems] = (0, import_react7.useState)([]), [draft, setDraft] = (0, import_react7.useState)(null), [selection, setSelection] = (0, import_react7.useState)(null), [capable, setCapable] = (0, import_react7.useState)(false), [capabilities, setCapabilities] = (0, import_react7.useState)(null);
   const [status, setStatus] = (0, import_react7.useState)(""), [error, setError] = (0, import_react7.useState)(false), [busy2, setBusy] = (0, import_react7.useState)(false), [tab, setTab] = (0, import_react7.useState)("rules"), [preview, setPreview] = (0, import_react7.useState)(null), [dirty, setDirty] = (0, import_react7.useState)(false), [expanded, setExpanded] = (0, import_react7.useState)({});
   const file = (0, import_react7.useRef)(), stage = (0, import_react7.useRef)(), dialog = (0, import_react7.useRef)(), generation = (0, import_react7.useRef)(0), mounted = (0, import_react7.useRef)(true);
   (0, import_react7.useLayoutEffect)(() => {
@@ -23429,6 +23484,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       setItems(data3.presets);
       setSelection(data3.selection);
       setCapable(data3.capability);
+      setCapabilities(data3.capabilities ?? null);
       setSources(data3.sources ?? []);
       setDefaultId(data3.defaultPresetId ?? data3.presets[0]?.id);
       setAddParser(data3.sources?.some((s) => s.id === "tavern.text") ? "tavern.text" : data3.sources?.find((s) => s.acceptsText && !s.textParserAliasFor)?.id ?? "");
@@ -23451,6 +23507,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       setItems(data3.presets);
       setSelection(data3.selection);
       setCapable(data3.capability);
+      setCapabilities(data3.capabilities ?? null);
       setSources(data3.sources ?? []);
     });
     window.addEventListener(refreshEvent, refresh);
@@ -23501,7 +23558,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     setTimeout(() => URL.revokeObjectURL(a.href), 0);
   }
   const button = (label, onClick, disabled = false, cls, pressed) => (0, import_react7.createElement)("button", { type: "button", onClick, disabled: busy2 || disabled, className: cls, "aria-pressed": pressed }, t(label));
-  const select = (value, values, onChange, disabled = false) => (0, import_react7.createElement)("select", { value, disabled, onChange: (e) => onChange(e.target.value) }, ...values.map((v2) => (0, import_react7.createElement)("option", { key: v2, value: v2 }, t(v2))));
+  const select = (value, values, onChange, disabled = false) => (0, import_react7.createElement)("select", { value, disabled: busy2 || disabled, onChange: (e) => onChange(e.target.value) }, ...values.map((v2) => (0, import_react7.createElement)("option", { key: v2, value: v2 }, t(v2))));
   const nodeName = (node) => {
     if (labels[node.name]) return t(node.name);
     const standard = { "Main Prompt": "main", "Post-History Instructions": "jailbreak", "Character Description": "charDescription", "Character Personality": "charPersonality", "Persona Description": "personaDescription", "Chat History": "history", "World Info (before)": "worldbook", "World Info (after)": "worldbook" };
@@ -23519,11 +23576,20 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     const source = sourceDescriptor2(kind);
     if (!source) return;
     const id = `source-${crypto.randomUUID()}`;
-    edit({ rules: [...draft.rules, { id, kind, ...inputMode ? { inputMode } : {}, enabled: true, role: inputMode === "text" && source.roles.includes("user") ? "user" : source.roles[0], lifetime: source.lifetimes[0], depth: null, text: "", name: "" }] });
+    const role2 = draft.backend === "native" ? inputMode === "text" && source.roles.includes("user") ? "user" : source.roles.includes("system") ? "system" : source.roles[0] : inputMode === "text" && source.roles.includes("user") ? "user" : source.roles[0];
+    const added = { id, kind, ...inputMode ? { inputMode } : {}, ...draft.backend === "native" && role2 === "user" ? { delivery: "context" } : {}, enabled: true, role: role2, lifetime: draft.backend === "native" ? "request" : source.lifetimes[0], depth: null, text: "", name: "" };
+    const rules = [...draft.rules];
+    const index = draft.backend !== "native" ? -1 : role2 !== "user" ? rules.findIndex((r) => r.kind === "history") : rules.findIndex((r, i3) => i3 > rules.findIndex((x2) => x2.kind === "input") && r.role === "user" && r.delivery === "pre-step");
+    rules.splice(index < 0 ? rules.length : index, 0, added);
+    edit({ rules });
     setExpanded((old) => ({ ...old, [id]: true }));
   };
   const sourceInfo = (kind) => sourceDescriptor2(kind)?.generationRequiresPlugin === false ? t("nativeSource") : t("removed");
   async function actualRequest() {
+    if (selection?.backend === "native") {
+      setStatus(t("noActualNative"));
+      return;
+    }
     const show = (record) => {
       if (!record?.messages) return false;
       const result = record.metadata?.assembly ?? { diagnostics: [], nodes: record.messages.map((m2, index) => ({ id: m2.id ?? `actual-${index}`, module: m2.role === "system" ? "native-system" : "history", name: m2.role === "system" ? "native-system" : m2.role, role: m2.role, source: { plugin: m2.source?.plugin ?? "DSH", field: m2.source?.kind }, stability: "snapshot", lifetime: "native", locked: true, text: (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n") })) };
@@ -23534,7 +23600,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     };
     if (!traceRoot) {
       const data3 = await api2(`/actual?sessionId=${encodeURIComponent(sessionId)}`);
-      if (!show(data3.request)) setStatus(t("noActual"));
+      if (!show(data3.request)) setStatus(t(data3.backend === "native" ? "noActualNative" : "noActual"));
       return;
     }
     const response = await fetcher(`${traceRoot}/sessions/${encodeURIComponent(sessionId)}/assemblies`);
@@ -23547,7 +23613,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       if (!mounted.current) return;
       if (show(record)) return;
     }
-    setStatus(t("noActual"));
+    setStatus(t(draft?.backend === "native" ? "noActualNative" : "noActual"));
   }
   const safeClose = async () => {
     if (registerBeforeLeave || await discard()) close2();
@@ -23580,6 +23646,16 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [dirty, busy2, registerBeforeLeave]);
+  const nativeDraft = draft?.backend === "native";
+  let nativeError = null;
+  if (nativeDraft) {
+    try {
+      validateNativePreset(draft);
+    } catch (error2) {
+      nativeError = error2.message;
+    }
+  }
+  const draftAvailable = capabilities ? nativeDraft ? capabilities.native && !nativeError : capabilities.core : capable;
   const displayRows = tab === "rules" ? draft?.rules ?? [] : preview?.nodes ?? [];
   function dragHandle(row, index, movable = true) {
     const reset2 = () => {
@@ -23618,7 +23694,13 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         const at4 = boundary(e) ?? dropIndex ?? index + 1;
         reset2();
         const rules = reorderAtBoundary2(draft.rules, index, at4);
-        edit({ rules });
+        try {
+          if (nativeDraft) validateNativePreset({ ...draft, rules });
+          edit({ rules });
+        } catch (error2) {
+          setError(true);
+          setStatus(error2.message);
+        }
       },
       onPointerCancel: reset2
     }, movable ? "\u283F" : "\u{1F512}");
@@ -23639,21 +23721,22 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       (0, import_react7.createElement)(
         "div",
         { className: "dta-summary" },
-        dragHandle(rule, index),
-        (0, import_react7.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: busy2, "aria-label": sourceName(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
+        dragHandle(rule, index, !nativeDraft || !["history", "input"].includes(rule.kind)),
+        (0, import_react7.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: busy2 || nativeDraft && ["history", "input"].includes(rule.kind), "aria-label": sourceName(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
         (0, import_react7.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, "aria-expanded": !!expanded[rule.id], onClick: () => toggle(rule.id), onKeyDown: (e) => {
           if (["Enter", " "].includes(e.key)) {
             e.preventDefault();
             toggle(rule.id);
           }
         } }, rule.name || sourceName(rule.kind), (0, import_react7.createElement)("small", { className: "dta-origin" }, originName(sourcePlugin(rule.kind)))),
-        summaryMetadata(ruleStability(rule), ["native-system", "history", "input"].includes(rule.kind) ? "nativeRetention" : rule.lifetime, rule.role)
+        summaryMetadata(ruleStability(rule), ["native-system", "history", "input"].includes(rule.kind) ? "nativeRetention" : nativeDraft && rule.role === "user" ? rule.delivery ?? "context" : rule.lifetime, rule.role)
       ),
       expanded[rule.id] && (0, import_react7.createElement)(
         "div",
         { className: "dta-detail" },
-        (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react7.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(ruleStability(rule)))), (0, import_react7.createElement)("label", null, t("lifetime"), ["native-system", "history", "input"].includes(rule.kind) ? (0, import_react7.createElement)("small", null, t("nativeRetention")) : select(rule.lifetime, sourceDescriptor2(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor2(rule.kind)?.lifetimes.length === 1))),
-        (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("role"), select(rule.role, sourceDescriptor2(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"], (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor2(rule.kind)?.roles.length === 1)), sourceDescriptor2(rule.kind)?.depth !== false && (0, import_react7.createElement)("label", null, t("depth"), (0, import_react7.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
+        (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react7.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(ruleStability(rule)))), (0, import_react7.createElement)("label", null, t("lifetime"), ["native-system", "history", "input"].includes(rule.kind) ? (0, import_react7.createElement)("small", null, t("nativeRetention")) : nativeDraft && rule.role === "user" ? (0, import_react7.createElement)("small", null, t(rule.delivery ?? "context")) : select(rule.lifetime, nativeDraft ? ["request"] : sourceDescriptor2(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor2(rule.kind)?.lifetimes.length === 1))),
+        nativeDraft && rule.role === "user" && (0, import_react7.createElement)("label", null, t("delivery"), select(rule.delivery ?? "context", ["context", "pre-step"], (delivery) => editRule(rule.id, { delivery }))),
+        (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("role"), select(rule.role, (sourceDescriptor2(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"]).filter((role2) => !nativeDraft || role2 !== "assistant"), (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor2(rule.kind)?.roles.length === 1)), sourceDescriptor2(rule.kind)?.depth !== false && (0, import_react7.createElement)("label", null, t("depth"), (0, import_react7.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", disabled: busy2 || nativeDraft, onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
         textInput ? (0, import_react7.createElement)(
           "div",
           { className: "dta-fields" },
@@ -23667,7 +23750,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))
         ) : (0, import_react7.createElement)("div", { className: "dta-fields" }, moduleGuide(rule.kind), rule.kind === "phi" ? (0, import_react7.createElement)("label", null, t("additional-phi"), (0, import_react7.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })) : !["native-system", "history", "input", "preset", "character", "persona", "worldbook"].includes(rule.kind) && button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
         !sourceDescriptor2(rule.kind) && (0, import_react7.createElement)("small", { role: "status" }, t("missingSource")),
-        (0, import_react7.createElement)("small", null, t("audit"))
+        (0, import_react7.createElement)("small", null, t(nativeDraft ? "nativeRetentionHint" : "audit"))
       )
     );
   }
@@ -23676,13 +23759,14 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     return (0, import_react7.createElement)("div", { className: "dta-module-guide" }, ...[["contains", "contains", "unknownContains"], ["origin", "contentOrigin", "unknownOrigin"], ["editable", "editable", "unknownEditable"], ["editAt", "editAt", "unknownEditAt"]].map(([key2, label, fallback]) => (0, import_react7.createElement)("p", { key: key2 }, (0, import_react7.createElement)("strong", null, t(label) + "\uFF1A"), guide?.[key2]?.[locale] ?? t(fallback))), (0, import_react7.createElement)("small", null, t("modulePreviewHelp")));
   }
   function nodeRow(node, index) {
+    const retention = node.nativeDelivery ?? (node.lifetime === "native" ? "nativeRetention" : node.lifetime);
     return (0, import_react7.createElement)(
       "article",
       { key: node.id, className: "dta-row", style: { "--assembly-color": sourceColor(node.source.plugin) } },
       (0, import_react7.createElement)("div", { className: "dta-summary" }, (0, import_react7.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, onClick: () => toggle(node.id), onKeyDown: (e) => {
         if (e.key === "Enter") toggle(node.id);
-      }, "aria-expanded": !!expanded[node.id], title: node.name }, nodeName(node), (0, import_react7.createElement)("small", { className: "dta-origin" }, `${originName(node.source.plugin)} \xB7 ${t("previewDepth")}: ${node.depth == null ? t("listPosition") : node.depth}`)), summaryMetadata(node.stability, node.lifetime === "native" ? "nativeRetention" : node.lifetime, node.role)),
-      expanded[node.id] && (0, import_react7.createElement)("div", { className: "dta-detail" }, (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react7.createElement)("small", null, sourceInfo(node.module))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(node.stability))), (0, import_react7.createElement)("div", null, t("lifetime"), (0, import_react7.createElement)("small", null, t(node.lifetime)), (0, import_react7.createElement)("small", null, t("recorded")))), (0, import_react7.createElement)("div", { className: "dta-preview-depth" }, `${t("previewDepth")}: ${node.depth == null ? t("listPosition") : node.depth}`), node.locked && (0, import_react7.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react7.createElement)("div", { key: child.id, className: "dta-child", style: { borderLeftColor: sourceColor(child.source?.plugin) } }, `\u{1F512} ${nodeName(child)}`, (0, import_react7.createElement)("small", null, child.lockReason), (0, import_react7.createElement)("small", null, [originName(child.source?.plugin), child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react7.createElement)("pre", null, child.text))), (0, import_react7.createElement)("pre", null, node.text))
+      }, "aria-expanded": !!expanded[node.id], title: node.name }, nodeName(node), (0, import_react7.createElement)("small", { className: "dta-origin" }, `${originName(node.source.plugin)} \xB7 ${t("previewDepth")}: ${node.depth == null ? t("listPosition") : node.depth}`)), summaryMetadata(node.stability, retention, node.role)),
+      expanded[node.id] && (0, import_react7.createElement)("div", { className: "dta-detail" }, (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react7.createElement)("small", null, sourceInfo(node.module))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(node.stability))), (0, import_react7.createElement)("div", null, t("lifetime"), (0, import_react7.createElement)("small", null, t(retention)), (0, import_react7.createElement)("small", null, t(preview?.backend === "native" ? "nativeRetentionHint" : "recorded")))), (0, import_react7.createElement)("div", { className: "dta-preview-depth" }, `${t("previewDepth")}: ${node.depth == null ? t("listPosition") : node.depth}`), node.locked && (0, import_react7.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react7.createElement)("div", { key: child.id, className: "dta-child", style: { borderLeftColor: sourceColor(child.source?.plugin) } }, `\u{1F512} ${nodeName(child)}`, (0, import_react7.createElement)("small", null, child.lockReason), (0, import_react7.createElement)("small", null, [originName(child.source?.plugin), child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react7.createElement)("pre", null, child.text))), (0, import_react7.createElement)("pre", null, node.text))
     );
   }
   return (0, import_react7.createElement)("div", { ref: stage, className: `dta-stage${standalone ? " dta-standalone" : ""}` }, (0, import_react7.createElement)(
@@ -23745,6 +23829,9 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           setPreview(null);
         }), !draft.id || draft.builtin), dirty && (0, import_react7.createElement)("span", null, t("dirty"))),
         (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("rulesSection")),
+        (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("backend"), (0, import_react7.createElement)("select", { "aria-label": t("backend"), value: draft.backend ?? "core", onChange: (e) => edit({ backend: e.target.value }) }, (0, import_react7.createElement)("option", { value: "native" }, t("backendNative")), (0, import_react7.createElement)("option", { value: "core" }, t("backendCore")))),
+        (0, import_react7.createElement)("div", { className: "dta-notice" }, t(nativeDraft ? "nativeHint" : "coreHint")),
+        nativeError && (0, import_react7.createElement)("div", { className: "dta-notice", role: "alert" }, nativeError),
         (0, import_react7.createElement)("div", { className: "dta-tabs" }, (0, import_react7.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
           setDragFrom(null);
           setDropIndex(null);
@@ -23756,14 +23843,14 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         tab === "rules" ? (0, import_react7.createElement)(
           "div",
           null,
-          (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))),
+          (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, nativeDraft ? ["modules"] : ["modules", "st"], (placement) => edit({ placement }))),
           draft.placement === "st" && (0, import_react7.createElement)("small", null, t("stHelp")),
           ...draft.rules.flatMap((row, i3) => [placeholder(i3), ruleRow(row, i3)]),
           placeholder(draft.rules.length),
           modules.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react7.createElement)("select", { id: "dta-add-source", value: modules.some((s) => s.id === addKind) ? addKind : modules[0].id, onChange: (e) => setAddKind(e.target.value) }, ...modules.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => addRule(modules.some((s) => s.id === addKind) ? addKind : modules[0].id))),
           parsers.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react7.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
           (0, import_react7.createElement)("small", null, t("sourceHelp"))
-        ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+        ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t(preview.backend === "native" ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react7.createElement)("small", { style: { marginTop: 20 } }, t("tools")),
         (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
         (0, import_react7.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, selection?.id?.startsWith("builtin-") && !items2.some((p) => p.id === selection.id) && (0, import_react7.createElement)("small", null, t("withdrawnPreset")), !capable && (0, import_react7.createElement)("small", null, t("unavailable"))),
@@ -23771,14 +23858,14 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           const preset = dirty || !draft.id ? await save() : draft;
           if (!mounted.current) return;
           await onCreateSession(preset.id);
-        }), !capable, "primary"))),
+        }), !draftAvailable, "primary"))),
         (0, import_react7.createElement)("div", { className: "dta-toolbar" }, button("apply", () => run(async () => {
           const preset = dirty || !draft.id ? await save() : draft;
           const data3 = await api2("/selection", "PUT", { sessionId, id: preset.id });
           setSelection(data3.selection);
           setStatus(t("appliedStatus"));
           window.dispatchEvent(new window.Event(refreshEvent));
-        }), !sessionId && !selectionTarget || !capable || selectionTarget?.editable === false, "primary"), button("reset", async () => {
+        }), !sessionId && !selectionTarget || !draftAvailable || selectionTarget?.editable === false, "primary"), button("reset", async () => {
           if (!await discard()) return;
           run(async () => {
             const data3 = await api2("/selection", "PUT", { sessionId, id: defaultId3 });
@@ -29262,7 +29349,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
     worker.terminate();
     tasks.clear();
   };
-  const fail3 = (message, operationId) => {
+  const fail4 = (message, operationId) => {
     if (disposed) return;
     stop();
     onError(Object.assign(Error(message), operationId ? { operationId, outcome: "unknown" } : {}));
@@ -29273,15 +29360,15 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       if (JSON.stringify(value).length > 128 * 1024) throw Error();
       worker.postMessage({ kind: "writeResult", nonce, requestId, value });
     } catch {
-      fail3("Write result could not be delivered; inspect the operation receipt before retrying", operationId);
+      fail4("Write result could not be delivered; inspect the operation receipt before retrying", operationId);
     }
   };
-  worker.onerror = () => fail3("Card worker failed");
+  worker.onerror = () => fail4("Card worker failed");
   worker.onmessage = (event) => {
     const message = event.data;
     if (disposed || message?.nonce !== nonce) return;
     if (message.kind === "busy") {
-      if (!busyTimer) busyTimer = setTimeout(() => fail3("Card worker exceeded its response deadline"), 1500);
+      if (!busyTimer) busyTimer = setTimeout(() => fail4("Card worker exceeded its response deadline"), 1500);
       return;
     }
     if (message.kind === "ready") {
@@ -29291,7 +29378,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
         const choice = onGreetingReady();
         if (choice) worker.postMessage({ kind: "greetingSelection", nonce, value: { swiped: choice.swiped === true } });
       } catch {
-        fail3("Greeting lifecycle delivery failed");
+        fail4("Greeting lifecycle delivery failed");
       }
       return;
     }
@@ -29304,13 +29391,13 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       return;
     }
     if (message.kind === "error") {
-      fail3(String(message.value).slice(0, 300));
+      fail4(String(message.value).slice(0, 300));
       return;
     }
     if (message.kind === "cardStorage") {
       const value = message.value;
       if (!data3.cardStorage || !value || !Number.isSafeInteger(value.revision) || value.revision !== lastStorageId + 1 || JSON.stringify(value).length > 128 * 1024) {
-        fail3("Invalid card storage request");
+        fail4("Invalid card storage request");
         return;
       }
       lastStorageId = value.revision;
@@ -29324,18 +29411,18 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       try {
         worker.postMessage({ kind: "cardStorageResult", nonce, requestId: value.revision, value: result });
       } catch {
-        fail3("Card storage result could not be delivered");
+        fail4("Card storage result could not be delivered");
       }
       return;
     }
     if (message.kind === "proposal") {
       if (typeof message.value === "string" && message.value.length <= 4e3) onProposal(message.value);
-      else fail3("Invalid card proposal");
+      else fail4("Invalid card proposal");
       return;
     }
     if (message.kind === "resize") {
       if (typeof message.value !== "number" || !Number.isFinite(message.value) || message.value < 0 || message.value > 800) {
-        fail3("Invalid card height");
+        fail4("Invalid card height");
         return;
       }
       onResize(message.value);
@@ -29344,7 +29431,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
     if (message.kind === "action") {
       const value = message.value;
       if (action || !value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastActionId || !["fill", "send", "saveMode", "close"].includes(value.operation) || JSON.stringify(value).length > 128 * 1024) {
-        fail3("Invalid or duplicate card input request");
+        fail4("Invalid or duplicate card input request");
         return;
       }
       lastActionId = value.requestId;
@@ -29355,7 +29442,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
         try {
           worker.postMessage({ kind: "actionResult", nonce, requestId: value.requestId, value: result });
         } catch {
-          fail3("Card input receipt could not be delivered");
+          fail4("Card input receipt could not be delivered");
         }
       };
       if (!valid) {
@@ -29365,7 +29452,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       task.actions.add(value.operation);
       clearTimeout(busyTimer);
       busyTimer = null;
-      const controller2 = new AbortController(), ticket = { controller: controller2, taskId: value.taskId, timer: setTimeout(() => fail3(value.operation === "send" ? "Card send outcome is unknown; inspect the session before retrying" : "Card input response deadline exceeded"), 1e4) };
+      const controller2 = new AbortController(), ticket = { controller: controller2, taskId: value.taskId, timer: setTimeout(() => fail4(value.operation === "send" ? "Card send outcome is unknown; inspect the session before retrying" : "Card input response deadline exceeded"), 1e4) };
       action = ticket;
       Promise.resolve().then(() => {
         if (disposed || action !== ticket) return;
@@ -29375,13 +29462,13 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
         action = null;
         clearTimeout(ticket.timer);
         if (value.operation === "send" && result?.status === "accepted") task.accepted = true;
-        busyTimer = setTimeout(() => fail3("Card worker exceeded its response deadline"), 1500);
+        busyTimer = setTimeout(() => fail4("Card worker exceeded its response deadline"), 1500);
         respond({ value: result });
       }, (error) => {
         if (disposed || action !== ticket) return;
         action = null;
         clearTimeout(ticket.timer);
-        busyTimer = setTimeout(() => fail3("Card worker exceeded its response deadline"), 1500);
+        busyTimer = setTimeout(() => fail4("Card worker exceeded its response deadline"), 1500);
         respond({ error: String(error.message).slice(0, 300) });
       });
       return;
@@ -29395,16 +29482,16 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
           if (JSON.stringify(result).length > 128 * 1024) throw Error();
           worker.postMessage({ kind: "identityActionResult", nonce, requestId: value.requestId, value: result });
         } catch {
-          fail3("Identity result could not be delivered");
+          fail4("Identity result could not be delivered");
         }
       };
       const value = message.value;
       if (data3.identityAction !== true || identityAction || !value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastIdentityActionId || JSON.stringify(value).length > 128 * 1024) {
-        fail3("Invalid identity action request");
+        fail4("Invalid identity action request");
         return;
       }
       lastIdentityActionId = value.requestId;
-      const controller2 = new AbortController(), ticket = { controller: controller2, timer: setTimeout(() => fail3("Identity confirmation expired"), 3e5) };
+      const controller2 = new AbortController(), ticket = { controller: controller2, timer: setTimeout(() => fail4("Identity confirmation expired"), 3e5) };
       identityAction = ticket;
       Promise.resolve().then(() => {
         if (disposed || identityAction !== ticket) return;
@@ -29421,17 +29508,17 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
           if (JSON.stringify(result).length > 128 * 1024) throw Error();
           worker.postMessage({ kind: "identityOpeningResult", nonce, requestId: value.requestId, value: result });
         } catch {
-          fail3("Opening result could not be delivered");
+          fail4("Opening result could not be delivered");
         }
       };
       const value = message.value;
       if (data3.identityOpening !== true || opening || !value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastOpeningId || !["default", "police_done", "hospital_done", "alisa_party", "pool"].includes(value.openingId) || JSON.stringify(value).length > 1024) {
-        fail3("Invalid opening selection request");
+        fail4("Invalid opening selection request");
         return;
       }
       lastOpeningId = value.requestId;
       const task = tasks.get(value.taskId);
-      const controller2 = new AbortController(), ticket = { controller: controller2, timer: setTimeout(() => fail3("Opening confirmation expired; select the identity again"), 3e5) };
+      const controller2 = new AbortController(), ticket = { controller: controller2, timer: setTimeout(() => fail4("Opening confirmation expired; select the identity again"), 3e5) };
       opening = ticket;
       Promise.resolve().then(() => {
         if (disposed || opening !== ticket) return;
@@ -29443,7 +29530,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
     if (message.kind === "photoPick") {
       const value = message.value, task = tasks.get(value?.taskId);
       if (!value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastPhotoPickId || !Number.isSafeInteger(value.id) || value.id <= 0 || JSON.stringify(value).length > 128 * 1024) {
-        fail3("Invalid photo selection request");
+        fail4("Invalid photo selection request");
         return;
       }
       lastPhotoPickId = value.requestId;
@@ -29459,15 +29546,15 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
     if (message.kind === "measure") {
       const value = message.value;
       if (!Number.isSafeInteger(message.controlSequence ?? 0) || (message.controlSequence ?? 0) < 0 || (message.controlSequence ?? 0) > controlSequence) {
-        fail3("Invalid card control sequence");
+        fail4("Invalid card control sequence");
         return;
       }
       if (measurement || !value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastMeasureId || !Number.isSafeInteger(value.id) || value.id < 0 || typeof value.view?.html !== "string" || typeof value.view?.styles !== "string" || JSON.stringify(value).length > 1024 * 1024) {
-        fail3("Invalid layout measurement");
+        fail4("Invalid layout measurement");
         return;
       }
       lastMeasureId = value.requestId;
-      const controller2 = new AbortController(), ticket = { controller: controller2, timer: setTimeout(() => fail3("Card layout deadline exceeded"), 1e3) };
+      const controller2 = new AbortController(), ticket = { controller: controller2, timer: setTimeout(() => fail4("Card layout deadline exceeded"), 1e3) };
       measurement = ticket;
       Promise.resolve().then(() => {
         if (disposed || measurement !== ticket) return;
@@ -29480,7 +29567,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
           if (JSON.stringify(result).length > 128 * 1024) throw Error("Card geometry output exceeds limit");
           worker.postMessage({ kind: "measurement", nonce, requestId: value.requestId, value: result });
         } catch {
-          fail3("Card geometry could not be transferred");
+          fail4("Card geometry could not be transferred");
         }
       }, (error) => {
         if (disposed || measurement !== ticket) return;
@@ -29489,7 +29576,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
         try {
           worker.postMessage({ kind: "measurement", nonce, requestId: value.requestId, error: String(error.message).slice(0, 200) });
         } catch {
-          fail3("Card measurement failed");
+          fail4("Card measurement failed");
         }
       });
       return;
@@ -29497,7 +29584,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
     if (message.kind === "write") {
       const value = message.value;
       if (!value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastWriteId || pending2.size >= 32 || !["patch", "replace"].includes(value.operation) || !Number.isSafeInteger(value.observedRevision) || value.observedRevision < 0 || JSON.stringify(value).length > 128 * 1024) {
-        fail3("Invalid or duplicate variable write request");
+        fail4("Invalid or duplicate variable write request");
         return;
       }
       lastWriteId = value.requestId;
@@ -29507,7 +29594,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       const operationId = crypto.randomUUID(), controller2 = new AbortController();
       const item = { controller: controller2, operationId, timer: setTimeout(() => {
         if (!pending2.has(value.requestId)) return;
-        fail3("Variable write outcome is unknown; inspect the operation receipt before retrying", operationId);
+        fail4("Variable write outcome is unknown; inspect the operation receipt before retrying", operationId);
       }, 3e4) };
       pending2.set(value.requestId, item);
       Promise.resolve().then(() => {
@@ -29532,11 +29619,11 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
     }
     if (message.kind === "view") {
       if (typeof message.value !== "string" || message.value.length > 1024 * 1024) {
-        fail3("Card output exceeds 1 MiB");
+        fail4("Card output exceeds 1 MiB");
         return;
       }
       if (!Number.isSafeInteger(message.controlSequence ?? 0) || (message.controlSequence ?? 0) < 0 || (message.controlSequence ?? 0) > controlSequence) {
-        fail3("Invalid card control sequence");
+        fail4("Invalid card control sequence");
         return;
       }
       if ((message.controlSequence ?? 0) !== controlSequence) return;
@@ -29548,11 +29635,11 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
         if (typeof view.html !== "string" || typeof view.styles !== "string") throw Error();
         onView(view);
       } catch {
-        fail3("Invalid card view");
+        fail4("Invalid card view");
       }
     }
   };
-  startupTimer = setTimeout(() => fail3("Card worker exceeded its startup deadline"), 15e3);
+  startupTimer = setTimeout(() => fail4("Card worker exceeded its startup deadline"), 15e3);
   try {
     worker.postMessage({ ...data3, kind: "init", nonce });
   } catch (error) {
@@ -29568,29 +29655,29 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       events = 0;
     }
     if (++events > 128) {
-      fail3("Card input rate limit exceeded");
+      fail4("Card input rate limit exceeded");
       return;
     }
     try {
       worker.postMessage({ kind, nonce, value, ...metadata });
     } catch {
-      fail3("Card input could not be transferred");
+      fail4("Card input could not be transferred");
     }
   };
   return { dispose: stop, resize: (value) => {
     if (!value || !Number.isSafeInteger(value.width) || !Number.isSafeInteger(value.height) || value.width < 1 || value.height < 1 || value.width > 16384 || value.height > 16384) {
-      fail3("Invalid card viewport");
+      fail4("Invalid card viewport");
       return;
     }
     send("viewport", { width: value.width, height: value.height });
   }, dispatch: (value, { trusted = false, control = false } = {}) => {
     for (const [id, task] of tasks) if (performance.now() - task.at > 1500 && task !== tasks.get(action?.taskId)) tasks.delete(id);
     if (tasks.size >= 128) {
-      fail3("Card event task limit exceeded");
+      fail4("Card event task limit exceeded");
       return;
     }
     if (control && controlSequence >= Number.MAX_SAFE_INTEGER) {
-      fail3("Card control sequence limit exceeded");
+      fail4("Card control sequence limit exceeded");
       return;
     }
     const taskId = crypto.randomUUID();

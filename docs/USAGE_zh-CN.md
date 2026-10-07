@@ -90,7 +90,7 @@ RP 正文与开场白默认支持 LaTeX 数学公式：行内使用 `$x^2$` 或 
 
 `<details><summary>标题</summary>` 内的 Markdown 会继续解析，不要求在 summary 后额外补空行。支持嵌套折叠、列表、强调和代码围栏。已闭合的无语言或 `html` 围栏中，如果内容是完整 `<html>…</html>` 文档，或完整 `<head>…</head><body>…</body>`，会按静态 HTML 模板显示；可带 HTML 注释及文档声明。普通 HTML 片段、其他语言、缩进代码、未闭合围栏仍显示源码。需要展示完整文档的源码时使用 `text` 围栏。正常的原始 HTML 容器保持 HTML 语义。
 
-模板可用 `<style>`、Flex/Grid 和 CSS `@keyframes` 实现横条、闪烁及过渡，用原生 `<details>` 实现展开。带样式表的消息独立隔离样式，继承当前字体、颜色和 CSS 变量，不会用模板选择器修改其他消息或 DSH 页面。识别出的完整文档分别隔离，独立的 `:root`、`html`、`body` 样式规则（包括媒体规则内的规则）映射到模板根，保留主题变量和基础字体颜色；复合选择器以及原始 HTML 片段中的文档根选择器仍应改用模板自己的根 class。模板内容受消息边界裁剪。静态模板不执行 JS、事件属性和 iframe。可选[受限交互卡片](CONVERSATION_PRESENTATION.md)实现明确的 DOM 子集，不支持 MVU 或任意浏览器库，并禁止自动外部资源。静态 HTML 导出保留同样的隔离样式，需要支持声明式 Shadow DOM 的现代浏览器。
+模板可用 `<style>`、Flex/Grid 和 CSS `@keyframes` 实现横条、闪烁及过渡，用原生 `<details>` 实现展开。带样式表的消息独立隔离样式，继承当前字体、颜色和 CSS 变量，不会用模板选择器修改其他消息或 DSH 页面。识别出的完整文档分别隔离，独立的 `:root`、`html`、`body` 样式规则（包括媒体规则内的规则）映射到模板根，保留主题变量和基础字体颜色；复合选择器以及原始 HTML 片段中的文档根选择器仍应改用模板自己的根 class。模板内容受消息边界裁剪。静态模板不执行 JS、事件属性和 iframe。可选[受限交互卡片](CONVERSATION_PRESENTATION.md)实现明确的 DOM 子集，仅提供受限 MVU 兼容，不支持任意浏览器库，并禁止自动外部资源。静态 HTML 导出保留同样的隔离样式，需要支持声明式 Shadow DOM 的现代浏览器。
 
 显示正则的 `trimStrings` 会从每个捕获结果中删除列出的所有字面字符串。若要保留内部 HTML，不要把 `<`、`>`、空格或反引号列入其中；只删除确实需要移除的包装标记，例如 `<!-- begin_of_Subtext_think -->`、`<!-- end_of_Subtext_think -->`。渲染器不会猜测并恢复已经被规则删除的标签。修改已导入的规则或替换该规则后点击“保存修改”，避免让新旧规则同时重复处理同一内容；原始 DSH 消息不变，重新显示时应用新规则。
 
@@ -261,3 +261,5 @@ import-context-bindings.json   外部记录运行时 claim 状态
 - ST macro 只实现常用子集，不具备完整 SillyTavern runtime。
 
 更精确的 ST、TauriTavern 与 DSH 消息拓扑差异见 `PROMPT_PIPELINE.md`。
+
+标准版与可选 core 的能力、迁移及证据范围见[装配策略](REQUEST_ASSEMBLY.md)。对所选后端检查 capabilities() 与 requireAvailable(preset)。

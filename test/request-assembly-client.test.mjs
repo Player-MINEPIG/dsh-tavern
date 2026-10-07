@@ -1,3 +1,4 @@
+import { CoreRequestBackend } from 'dsh-prompt-assembler/core-backend'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { parseHTML } from 'linkedom'
@@ -28,6 +29,7 @@ test('standalone and embedded panels share last applied snapshot and refresh wit
   const a = store.save({ ...BUILTINS[0], name: 'From sidebar' }), b = store.save({ ...BUILTINS[0], name: 'From Tavern' })
   store.apply('shared', a.id)
   const runtime = new RequestAssembler({ ctx: { get: () => ({ requestAssemblyVersion: 1 }) }, store, resources: { compile: () => ({ assemblyInput: {} }) } })
+  runtime.registerRequestBackend(new CoreRequestBackend(runtime))
   const api = createAssemblyApi({ store, runtime, agents: () => new Map(), sessions: () => ({ get: () => null }) })
   const fetcher = async (url, options = {}) => {
     assert.ok(url.startsWith('/dsh-prompt-assembler/api/v1/assembly-presets'))

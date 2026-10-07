@@ -74,7 +74,9 @@
     "docs/PROMPT_TEMPLATE.md",
     "docs/PROMPT_TEMPLATE_en.md",
     "docs/ASSEMBLER_INTEGRATION.md",
-    "docs/ASSEMBLER_INTEGRATION_en.md"
+    "docs/ASSEMBLER_INTEGRATION_en.md",
+    "docs/API_SURFACES.md",
+    "docs/API_SURFACES_en.md"
   ],
   "dsh": {
     "bundle": {
@@ -127,7 +129,7 @@
     "acorn": "8.15.0",
     "acorn-jsx": "5.3.2",
     "dompurify": "3.4.16",
-    "dsh-prompt-assembler": "git+https://github.com/Player-MINEPIG/dsh-prompt-assembler.git#c2d5b1194beca7cfd561e3aaab17db17e7e26298",
+    "dsh-prompt-assembler": "git+https://github.com/Player-MINEPIG/dsh-prompt-assembler.git#37421c52d8734cc94081d950cb169cc8c6ab67f5",
     "json5": "2.2.3",
     "katex": "0.16.47",
     "linkedom": "0.18.12",

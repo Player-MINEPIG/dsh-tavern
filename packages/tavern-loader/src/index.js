@@ -78,7 +78,7 @@ import {
 import { prepareStorageDir } from './storage-location.js'
 import { AssemblyPresetStore } from '../../request-assembler/store.js'
 import { RequestAssembler } from '../../request-assembler/runtime.js'
-import { registerTavernSources, BUILTINS as ASSEMBLY_BUILTINS, diagnoseTavernAssembly } from 'dsh-prompt-assembler/adapters/tavern'
+import { registerTavernSources, BUILTINS as ASSEMBLY_BUILTINS, NATIVE_BUILTINS as NATIVE_ASSEMBLY_BUILTINS, diagnoseTavernAssembly } from 'dsh-prompt-assembler/adapters/tavern'
 import { createDefaultRegistry } from '../../request-assembler/builtin-sources.js'
 import { createMemorySources, installMemorySources } from '../../memory-sources/index.js'
 import { OpeningWorldBookService, OPENING_WORLD_BOOK_SERVICE, createOpeningWorldBookHandler, isOpeningWorldBookPath } from '../../opening-worldbook/index.js'
@@ -430,7 +430,7 @@ export function apply(ctx, config = {}) {
   const requestAssembler = sharedAssembler?.runtime ?? new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry, sessionReads })
   if (sharedAssembler) {
     ctx.effect(() => registerTavernSources(registry, sourceOptions))
-    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: ASSEMBLY_BUILTINS, defaultPresetId: 'builtin-st', afterAssembly: diagnoseTavernAssembly,
+    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-st', coreDefaultPresetId: 'builtin-st', afterAssembly: diagnoseTavernAssembly,
       validateResult: (result, agent) => { const nativeContext = runtime.assembledFor(agent)?.memoryContext; if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext); memorySources.validateAssembly(result.metadata?.assembly) } }))
   }
   installMemorySources(ctx, memorySources, registry)
@@ -462,7 +462,7 @@ export function apply(ctx, config = {}) {
     memberships: playMemberships, onError: error => recordFailure('mvu.update', error) })
   runtime.requestAssemblyEnabled = sessionId => {
     const selected = requestAssembler.selected(sessionId)
-    if (selected) requestAssembler.requireAvailable()
+    if (selected) requestAssembler.requireAvailable(selected)
     return Boolean(selected)
   }
   const requestContexts = new WeakMap()
@@ -483,7 +483,7 @@ export function apply(ctx, config = {}) {
     recordFailure('trace.record', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
   const traceRecorder = new TavernTraceRecorder(traceStore)
-  const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: () => requestAssembler.available() })
+  const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: sessionId => requestAssembler.requestAssemblyAvailable(sessionId), requiresNativeRequest: sessionId => requestAssembler.selected(sessionId)?.backend === 'native' })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
   runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, { ...config.worldBook,

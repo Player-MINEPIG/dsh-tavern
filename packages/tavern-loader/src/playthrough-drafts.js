@@ -72,7 +72,7 @@ export class PlaythroughDrafts {
     let number = 0, ordinal = 0
     for (const row of catalog.playthroughs) if (row.ext?.pmpDshTavern?.characterId === value.characterCardId) { ordinal++; number = Math.max(number, row.ext.pmpDshTavern.playthroughNumber ?? ordinal) }
     const preset = assemblyPresetId !== undefined ? (assemblyPresetId === null ? null : this.assembly.get(assemblyPresetId))
-      : source?.mode === 'current' ? this.assembly.selection(source.sessionId) : this.assembly.get('builtin-st')
+      : source?.mode === 'current' ? this.assembly.selection(source.sessionId) : this.assembly.get(this.assembly.defaultPresetId ?? 'builtin-st')
     const record = { id, path: `${directory}/timeline.json`, rootPath: binding.rootPath, selection: value, assembly: preset, characterHash: hash(character), variables: this.initial(character, value.character.greetingIndex ?? 0), revision: 0, variableRevision: 0, phase: 'draft', claim: null, receipts: [] }
     record.greetingVariables = { [value.character.greetingIndex ?? 0]: copy(record.variables) }
     this.workspace.writeFile(record.path, JSON.stringify({ nodes: [] }), { validate: validatePlayDocument, expectedRevision: null, expectedRevisionPresent: true })

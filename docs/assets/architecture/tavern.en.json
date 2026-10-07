@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Tavern architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1380,
+      760
+    ]
+  },
+  "components": [
+    {
+      "id": "tavern-ui",
+      "type": "frontend",
+      "label": "RP and resource UI",
+      "sublabel": "Public DSH slots / stores",
+      "pos": [
+        40,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-loader",
+      "type": "backend",
+      "label": "Tavern loader",
+      "sublabel": "Bindings / RP policy / APIs",
+      "pos": [
+        390,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "source-adapters",
+      "type": "backend",
+      "label": "Sources and variables",
+      "sublabel": "World books / EJS / MVU",
+      "pos": [
+        740,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "assembler",
+      "type": "external",
+      "label": "Prompt Assembler",
+      "sublabel": "Shared registry / native default",
+      "pos": [
+        1090,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-storage",
+      "type": "database",
+      "label": "Tavern storage",
+      "sublabel": "Resources / drafts / state",
+      "pos": [
+        390,
+        100
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "dsh-services",
+      "type": "external",
+      "label": "Public DSH services",
+      "sublabel": "Session / Workspace / Inbox",
+      "pos": [
+        390,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-trace",
+      "type": "backend",
+      "label": "Tavern Trace",
+      "sublabel": "Metadata / official references",
+      "pos": [
+        740,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "tavern-ui-tavern-loader",
+      "to": "tavern-loader",
+      "label": "v1 / v2 / v3 HTTP",
+      "variant": "emphasis",
+      "from": "tavern-ui"
+    },
+    {
+      "id": "tavern-loader-source-adapters",
+      "to": "source-adapters",
+      "label": "Bindings / read leases",
+      "variant": "default",
+      "from": "tavern-loader"
+    },
+    {
+      "id": "source-adapters-assembler",
+      "to": "assembler",
+      "label": "Register read-only sources",
+      "variant": "default",
+      "from": "source-adapters",
+      "labelDy": 63
+    },
+    {
+      "id": "tavern-loader-tavern-storage",
+      "to": "tavern-storage",
+      "label": "Atomic writes / CAS",
+      "variant": "default",
+      "from": "tavern-loader"
+    },
+    {
+      "id": "tavern-loader-dsh-services",
+      "to": "dsh-services",
+      "label": "Public session operations",
+      "variant": "default",
+      "from": "tavern-loader",
+      "labelAt": [
+        505,
+        505
+      ]
+    },
+    {
+      "id": "dsh-services-tavern-trace",
+      "to": "tavern-trace",
+      "label": "Verify history references",
+      "variant": "default",
+      "from": "dsh-services",
+      "labelDy": 63
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "One-way dependency",
+      "items": [
+        "Tavern → standard assembler; core addon and Manager remain optional."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Source ownership",
+      "items": [
+        "Tavern owns bodies, parsing, authority and MVU commits."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Stable surfaces",
+      "items": [
+        "Retain v1/v2/v3, package entry points and native sessions."
+      ]
+    }
+  ]
+}
