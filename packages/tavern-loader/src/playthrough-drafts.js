@@ -21,8 +21,8 @@ const copy = structuredClone
 
 /** Plugin-owned openings. No draft identity is passed to a DSH Session API. */
 export class PlaythroughDrafts {
-  constructor({ storageDir, workspace, characters, configurations, selections, assembly, mvu, controller, workspaces, agents, renderingAuthority, reconcileRp, releaseRp, onError = () => {} }) {
-    Object.assign(this, { workspace, characters, configurations, selections, assembly, mvu, controller, workspaces, agents, renderingAuthority, reconcileRp, releaseRp, onError })
+  constructor({ storageDir, workspace, characters, configurations, selections, assembly, mvu, controller, workspaces, agents, renderingAuthority, reconcileRp, releaseRp, previewAssembly, onError = () => {} }) {
+    Object.assign(this, { workspace, characters, configurations, selections, assembly, mvu, controller, workspaces, agents, renderingAuthority, reconcileRp, releaseRp, previewAssembly, onError })
     this.path = join(storageDir, 'playthrough-drafts.json')
     this.state = existsSync(this.path) ? readJsonFile(this.path, 32 * 1024 * 1024) : { version: 1, records: {} }
     if (this.state.version !== 1 || !this.state.records || typeof this.state.records !== 'object' || Array.isArray(this.state.records)) throw Error('Invalid playthrough draft storage')
@@ -89,6 +89,18 @@ export class PlaythroughDrafts {
       if (inspection?.events) await this.finish(record, inspection.events)
     }
     return { draft: copy(record), playthrough: this.catalog().value.playthroughs.find(row => row.id === id) }
+  }
+  async preview(id, options = {}) {
+    if (!options || typeof options !== 'object' || Array.isArray(options) || Object.keys(options).some(key => !['expectedRevision', 'preset'].includes(key))) fail('PLAY_DRAFT_INVALID', 'Unsupported preview field', 400)
+    const { expectedRevision, preset } = options
+    const record = this.record(id)
+    if (record.phase !== 'draft') fail('PLAY_DRAFT_LOCKED', 'Opening preview requires an unstarted draft')
+    if (record.revision !== expectedRevision) fail('REVISION_CONFLICT', 'Draft changed before preview')
+    this.validateSelection(record.selection); this.currentCharacter(record)
+    const result = await this.previewAssembly(copy(record), preset ?? record.assembly)
+    if (this.record(id) !== record || record.revision !== expectedRevision || record.phase !== 'draft') fail('REVISION_CONFLICT', 'Draft changed during preview')
+    this.currentCharacter(record)
+    return { ...result, scope: 'opening-draft', draftId: id, draftRevision: record.revision, pendingInputsIncluded: false }
   }
   currentCharacter(record) {
     const character = this.characters.get(record.selection.characterCardId)

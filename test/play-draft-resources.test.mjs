@@ -24,6 +24,12 @@ import { getClientUiSettings, setClientUiSettings } from '../packages/client/src
   const client={getDraft:async()=>({draft:structuredClone(draft)}),putDraft:async(id,patch)=>{assert.equal(id,'draft');assert.equal(patch.expectedRevision,draft.revision);writes.push(patch);draft={...draft,...patch,revision:draft.revision+1};if(Object.hasOwn(patch,'assemblyPresetId'))draft.assembly=assemblies.find(row=>row.id===patch.assemblyPresetId)??null;return{draft:structuredClone(draft)}}}
   const fetcher=async(url,options={})=>{
     calls.push({url,method:options.method??'GET'})
+    if (url.endsWith('/drafts/draft/preview')) {
+      assert.equal(options.method, 'POST')
+      const body = JSON.parse(options.body)
+      assert.equal(body.expectedRevision, draft.revision); assert.equal(body.preset.id, 'a2')
+      return Response.json({ ok: true, preview: { scope: 'opening-draft', nodes: [], messages: [], diagnostics: [] } })
+    }
     assert.equal(options.method??'GET','GET','no native session writes')
     let data
     const route=url.split('?')[0].replace('/pmp-dsh-tavern/api/v1','')
@@ -63,7 +69,12 @@ import { getClientUiSettings, setClientUiSettings } from '../packages/client/src
   await act(()=>Simulate.change(container.querySelector('.dta-grid select'),{target:{value:'a2'}}))
   await act(async()=>{Simulate.click(button('Apply to this session'));await new Promise(resolve=>setImmediate(resolve))})
   assert.equal(draft.assembly.id,'a2');assert(container.textContent.includes('Applied: Assembly two'),container.textContent)
-  assert(button('Preview current configuration').disabled,'must not preview against unrelated native session')
+  assert(!button('Preview current configuration').disabled,'opening drafts have an explicit preview target')
+  assert(button('View latest actual request').disabled, 'no actual request exists before sending')
+  await act(async()=>{Simulate.click(button('Preview current configuration'));await new Promise(resolve=>setImmediate(resolve))})
+  assert(container.textContent.includes('opening draft’s logical order'), container.textContent)
+  assert(calls.some(call=>call.url.endsWith('/drafts/draft/preview')))
+  assert(!calls.some(call=>call.url.endsWith('/assembly-presets/preview')), 'never preview an unrelated native session')
   assert.equal(draft.selection.characterCardId,originals.selection.characterCardId)
   assert.equal(writes.length,2);assert(calls.every(call=>!call.url.includes('sessionId=native')))
   draft.phase='preparing'

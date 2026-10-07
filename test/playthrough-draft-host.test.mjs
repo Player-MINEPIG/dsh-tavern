@@ -23,7 +23,7 @@ test('sessionless production opening survives remount, transfers resources once 
   const mount = async () => { handle = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(scope) { store = tavern.apply(scope, { storageDir: join(directory, 'tavern') }) } }); await handle }
   try {
     ctx.provide('directoryPickerController', {})
-    await ctx.plugin(SystemPrompt, { personaPrefix: 'OFFLINE' })
+    await ctx.plugin(SystemPrompt, { personaPrefix: 'OFFLINE {{provider}}/{{model}} at {{cwd}}' })
     await ctx.plugin((await load('@deepseek-ai/dsh-session-persistence-jsonl')).default, { root: join(directory, 'sessions') })
     for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
     await ctx.plugin((await load('@deepseek-ai/dsh-storage')).default)
@@ -57,7 +57,7 @@ test('sessionless production opening survives remount, transfers resources once 
     const character = store.characterStore.import({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Draft fixture', description: 'DRAFT CHARACTER', first_mes: 'Opening A <JSONPatch>[{"op":"replace","path":"/hp","value":80}]</JSONPatch>', alternate_greetings: ['Opening B <UpdateVariable>_.add("hp",-40);</UpdateVariable>'], extensions:{tavern_helper:{scripts:[{content:schemaSource}]}}, character_book: { entries: [{ id: 0, keys: [], comment: '[initvar]', content: '{"hp":100}', enabled: false, insertion_order: 0 }] } } })
     const preset = store.create({ name: 'Draft preset' }); store.update(preset.id, { prompts: [{ identifier: 'main', name: 'Main', role: 'system', content: 'DRAFT PRESET', enabled: true }] })
     const user = store.userStore.create({ name: 'User fixture', description: 'DRAFT PERSONA' })
-    const book = store.worldBookStore.import({ entries: { 0: { uid: 0, content: 'DRAFT WORLD BOOK', constant: true } } })
+    const book = store.worldBookStore.import({ entries: { 0: { uid: 0, content: 'DRAFT WORLD BOOK {{format_message_variable::stat_data}}', constant: true } } })
     const strategy = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-st'), name: 'Draft assembly', rules: [...store.assemblyPresets.get('builtin-st').rules, { id: 'draft-mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
     await ctx.get('tavernMvu').list({scope:{authority:'local'}}); await ctx.get('tavernMvu').flush()
     // Reproduce a stored v1 factory from an earlier installation.
@@ -81,6 +81,17 @@ test('sessionless production opening survives remount, transfers resources once 
     assert.equal(store.sessionSelections.get(ordinary.sessionId).characterCardId, null)
     let draft = (await store.playthroughDrafts.read(id)).draft
     assert.equal(draft.variables.stat_data.hp, 70); assert.equal(draft.selection.character.greetingIndex, 1)
+    const beforePreview = readFileSync(store.playthroughDrafts.path, 'utf8')
+    const nativePreset = structuredClone(store.assemblyPresets.get('builtin-native-phi'))
+    nativePreset.rules.find(rule => rule.kind === 'phi').text = 'DRAFT PHI'
+    const preview = await store.playthroughDrafts.preview(id, { expectedRevision: draft.revision, preset: nativePreset })
+    const previewText = preview.messages.flatMap(message => message.content).map(block => block.text ?? '').join('\n')
+    for (const value of ['OFFLINE offline/draft-test','DRAFT PRESET','DRAFT PERSONA','DRAFT WORLD BOOK','DRAFT CHARACTER','Opening B','DRAFT PHI']) assert(previewText.includes(value), value)
+    assert(previewText.includes('hp: 70'), 'draft variables must replace the world-book state macro'); assert(!previewText.includes('{{format_message_variable::stat_data}}'))
+    assert.equal(preview.scope, 'opening-draft'); assert.equal(preview.backend, 'native'); assert.equal(preview.pendingInputsIncluded, false)
+    assert(!previewText.includes('IMPORTED QUESTION')); assert(!previewText.includes('FIRST INPUT'))
+    assert.equal(readFileSync(store.playthroughDrafts.path, 'utf8'), beforePreview); assert.equal(requests.length, 0); assert.equal(ctx.sessions.list().length,1)
+    assert.equal(store.sessionSelections.get(ordinary.sessionId).characterCardId,null)
     const aborted = new AbortController(); aborted.abort()
     await assert.rejects(store.playthroughDrafts.materialize(id, { expectedRevision: draft.revision, text: 'FIRST INPUT', operationId: 'first', signal: aborted.signal }), { name: 'AbortError' })
     assert.equal(ctx.sessions.list().length, 1)

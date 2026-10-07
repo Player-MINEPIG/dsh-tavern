@@ -1,4 +1,5 @@
 import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
+import { createDraftPreviewContext } from './draft-preview-context.js'
 import { PlaythroughDrafts } from './playthrough-drafts.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
 import { createCharacterDiscovery } from '../../mvu-adapter/src/discovery.js'
@@ -375,6 +376,15 @@ export function apply(ctx, config = {}) {
   }
   let importContexts = null
   let playthroughDrafts
+  const draftPreview = createDraftPreviewContext()
+  const draftMvu = { async resolvePromptDependency({ id, scope, event, signal } = {}) {
+    const record = draftPreview.current()
+    if (!record || id !== undefined || scope?.sessionId || event?.preview !== true || event?.usage !== 'world-book-variable') return null
+    signal?.throwIfAborted()
+    if (!record.variables) return null
+    return { id: `mvu:draft-${record.id}`, adapterId: 'tavern.mvu', content: structuredClone(record.variables), revision: record.variableRevision, configRevision: null,
+      checkCurrent: () => !signal?.aborted && draftPreview.current() === record && playthroughDrafts.record(record.id).revision === record.revision }
+  } }
   const playHost = createPlayHost({
     sessionController: ctx.get('sessionController'),
     workspaceController: ctx.get('workspaceController'),
@@ -398,6 +408,7 @@ export function apply(ctx, config = {}) {
     resourceWorldBooks,
     sessionWorldBooks: openingWorldBooks,
     maxProfileBytes: config.limits?.maxProfileBytes,
+    previewSelection: ({ sessionId }) => !sessionId ? draftPreview.current()?.selection : undefined,
   })
   const pendingInput = new PendingInputProjection({
     maxScanCharacters: config.worldBook?.maxScanCharacters,
@@ -411,10 +422,10 @@ export function apply(ctx, config = {}) {
   const assemblyPresets = sharedAssembler?.store ?? new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
   sharedAssembler?.migrateLegacy(storageDir)
   const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [], withSessionRead,
-    getSession: sessionReads.getSession, getMvu: () => ctx.get('tavernMvu'),
+    getSession: sessionReads.getSession, getMvu: () => draftPreview.current() ? draftMvu : ctx.get('tavernMvu'),
     resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
     getSelection: sessionId => {
-      const selected = selections.get(sessionId)
+      const selected = (!sessionId ? draftPreview.current()?.selection : undefined) ?? selections.get(sessionId)
       const bound = composeWorldBookSelection([...selected.worldBookIds, ...openingWorldBooks.selectedIds(sessionId, selected)],
         selected.userId ? userWorldBooks.get(selected.userId) : [],
         selected.presetId ? resourceWorldBooks.get('preset', selected.presetId) : [],
@@ -552,6 +563,10 @@ export function apply(ctx, config = {}) {
   playthroughDrafts = new PlaythroughDrafts({ storageDir, workspace: playWorkspaceStore, characters: characterStore, configurations: sessionConfigurations, selections, assembly: assemblyPresets, mvu,
     controller: ctx.get('sessionController'), workspaces: ctx.get('workspaceController'), agents: ctx.get('agents'), renderingAuthority, reconcileRp: reconcileRpAfterSelection,
     releaseRp: sessionId => rpMode.setBySessionId(sessionId, false, { followSuppressed: true }),
+    previewAssembly: (record, preset) => draftPreview.run(record, () => {
+      const model = ctx.get('agentDefaultModel')?.currentSelection?.()
+      return requestAssembler.preview({ preset, nativeVariables: { cwd: record.rootPath, ...(model?.provider ? { provider: model.provider } : {}), ...(model?.model ? { model: model.model } : {}) } })
+    }),
     onError: error => recordFailure('playthrough.draft', error) })
   playthroughDrafts.importContexts = importContexts
   ctx.on('session/event', (session, event) => playthroughDrafts.observe(session, event))
@@ -606,6 +621,7 @@ export function apply(ctx, config = {}) {
     name: rpModeConstants.sectionName,
     order: rpModeConstants.sectionOrder,
     text: (context) => {
+      if (context.tavernAssemblyPreview && draftPreview.current()) return rpMode.section
       if (context.agent === undefined) return ''
       return rpMode.isActive(context.agent) ? rpMode.section : ''
     },

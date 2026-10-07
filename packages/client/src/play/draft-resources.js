@@ -1,11 +1,11 @@
-import { API_V1, CLIENT_REFRESH_EVENT } from '../../../identity.js'
+import { API_V1, API_V2, CLIENT_REFRESH_EVENT } from '../../../identity.js'
 import { tavernFetch } from '../api-fetch.js'
 
 /** An explicit resource-selection target. It never impersonates a DSH Session. */
 export function createDraftResourceTarget({ client, draftId, label, fetcher = tavernFetch }) {
   let current
   const resource = async (path, options) => {
-    const response = await fetcher(`${API_V1}${path}`, { ...options, ...(options?.body ? { headers: { 'Content-Type': 'application/json', ...options.headers } } : {}) }), data = await response.json()
+    const response = await fetcher(path.startsWith(API_V2) ? path : `${API_V1}${path}`, { ...options, ...(options?.body ? { headers: { 'Content-Type': 'application/json', ...options.headers } } : {}) }), data = await response.json()
     if (!response.ok || data?.ok === false) throw new Error(data?.error?.message ?? data?.error ?? `HTTP ${response.status}`)
     return data
   }
@@ -48,6 +48,10 @@ export function createDraftResourceTarget({ client, draftId, label, fetcher = ta
     get editable() { return !current || current.draft.phase === 'draft' },
     read, active,
     async getSelection() { return (await read()).assembly },
+    async previewAssembly(preset) {
+      const draft = await read()
+      return resource(`${API_V2}/drafts/${encodeURIComponent(draftId)}/preview`, { method: 'POST', body: JSON.stringify({ expectedRevision: draft.revision, preset }) })
+    },
     async applyAssembly(id) { const draft = await patch(await read(), { assemblyPresetId: id }); return { selection: draft.assembly } },
     async request(path, options = {}) {
       const route = path.split('?')[0], method = options.method ?? 'GET'

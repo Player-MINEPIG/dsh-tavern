@@ -20890,7 +20890,7 @@ var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conv
 function createDraftResourceTarget({ client, draftId, label, fetcher = tavernFetch }) {
   let current4;
   const resource2 = async (path3, options) => {
-    const response = await fetcher(`${API_V1}${path3}`, { ...options, ...options?.body ? { headers: { "Content-Type": "application/json", ...options.headers } } : {} }), data3 = await response.json();
+    const response = await fetcher(path3.startsWith(API_V2) ? path3 : `${API_V1}${path3}`, { ...options, ...options?.body ? { headers: { "Content-Type": "application/json", ...options.headers } } : {} }), data3 = await response.json();
     if (!response.ok || data3?.ok === false) throw new Error(data3?.error?.message ?? data3?.error ?? `HTTP ${response.status}`);
     return data3;
   };
@@ -20944,6 +20944,10 @@ function createDraftResourceTarget({ client, draftId, label, fetcher = tavernFet
     active,
     async getSelection() {
       return (await read()).assembly;
+    },
+    async previewAssembly(preset) {
+      const draft = await read();
+      return resource2(`${API_V2}/drafts/${encodeURIComponent(draftId)}/preview`, { method: "POST", body: JSON.stringify({ expectedRevision: draft.revision, preset }) });
     },
     async applyAssembly(id) {
       const draft = await patch(await read(), { assemblyPresetId: id });
@@ -23274,6 +23278,7 @@ var labels = {
   depth_prompt: ["\u89D2\u8272\u6DF1\u5EA6\u63D0\u793A", "Character depth prompt"],
   defaultHint: ["\u5185\u7F6E\u7B56\u7565\u4E0D\u80FD\u6539\u540D\u6216\u5220\u9664\uFF1B\u4FEE\u6539\u89C4\u5219\u540E\u4FDD\u5B58\u4E3A\u526F\u672C\u3002", "Built-ins cannot be renamed or deleted; save rule changes as a copy."],
   dropHere: ["\u677E\u5F00\u4EE5\u79FB\u52A8\uFF1A", "Drop to move: "],
+  draftPreviewScope: ["\u4EE5\u4E0B\u662F\u5F53\u524D\u5F00\u573A\u8349\u7A3F\u7684\u903B\u8F91\u6392\u5217\uFF0C\u4F7F\u7528\u6240\u9009\u8D44\u6E90\u4E0E\u8349\u7A3F\u53D8\u91CF\u3002\u5C1A\u65E0\u539F\u751F\u5386\u53F2\uFF0C\u4E0D\u542B\u5F85\u53D1\u9001\u8F93\u5165\uFF1B\u5B9E\u9645\u8BF7\u6C42\u9700\u53D1\u9001\u540E\u67E5\u770B\u3002", "This shows the opening draft\u2019s logical order using its selected resources and variables. There is no native history yet; pending input is excluded. Actual requests are available after sending."],
   nativePreviewScope: ["\u4EE5\u4E0B\u662F\u5F53\u524D\u7B56\u7565\u7684\u903B\u8F91\u6392\u5217\uFF0C\u4E0D\u662F\u5B8C\u6574\u7684\u5B9E\u9645\u8BF7\u6C42\u3002DSH \u4F1A\u4FDD\u5B58 user \u8D21\u732E\uFF1B\u540E\u7EED\u8BF7\u6C42\u8FD8\u53EF\u80FD\u5305\u542B\u5DF2\u4FDD\u5B58\u7684\u65E7\u8D21\u732E\u3002\u9884\u89C8\u4E0D\u542B\u5F85\u53D1\u9001\u8F93\u5165\u3002", "This shows the current strategy\u2019s logical order, not a complete actual request. DSH saves user contributions, so later requests may also contain earlier contributions. Pending input is excluded."],
   logicalMessages: ["\u903B\u8F91\u6392\u5217", "Logical order"],
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
@@ -23320,7 +23325,7 @@ var labels = {
   appliedStatus: ["\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD", "Applied to this session"],
   unavailable: ["\u5BBF\u4E3B\u5C1A\u672A\u652F\u6301\u8BF7\u6C42\u88C5\u914D\u534F\u8BAE\u3002\u53EF\u4EE5\u7F16\u8F91\u548C\u9884\u89C8\uFF1B\u5E94\u7528\u524D\u9700\u5B89\u88C5\u6838\u5FC3\u6269\u5C55\u3002", "Editing and preview are available. Applying requires the request assembly core extension."],
   previewScope: ["\u9884\u89C8\u4F7F\u7528\u5F53\u524D\u8D44\u4EA7\u4E0E\u53EF\u8BFB\u53D6\u5386\u53F2\uFF0C\u4E0D\u542B\u5F85\u53D1\u9001\u8F93\u5165\uFF1B\u968F\u673A\u5B8F\u4F7F\u7528\u56FA\u5B9A\u6837\u4F8B\u3002\u5B9E\u9645\u8BF7\u6C42\u4EE5\u8F68\u8FF9\u4E2D\u7684\u51BB\u7ED3\u7ED3\u679C\u4E3A\u51C6\u3002", "Preview uses current assets and available history, without pending input. Random macros use a fixed sample. Recorded requests contain the frozen result."],
-  deferredSelection: ["\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u914D\u7F6E\uFF1B\u9996\u6B21\u53D1\u9001\u65F6\u63A5\u5165\u4F1A\u8BDD\u3002\u5C55\u5F00\u9884\u89C8\u9700\u771F\u5B9E\u4F1A\u8BDD\u3002", "Apply to the current opening configuration; it transfers on first send. Expanded preview requires a real session."],
+  deferredSelection: ["\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u914D\u7F6E\uFF1B\u9996\u6B21\u53D1\u9001\u65F6\u63A5\u5165\u4F1A\u8BDD\u3002\u53EF\u9884\u89C8\u5F53\u524D\u5F00\u573A\u8D44\u6E90\uFF0C\u5B9E\u9645\u8BF7\u6C42\u9700\u53D1\u9001\u540E\u67E5\u770B\u3002", "Apply to the current opening configuration; it transfers on first send. Preview opening resources now; actual requests are available after sending."],
   noSession: ["\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD", "Open a session first"],
   loading: ["\u52A0\u8F7D\u4E2D\u2026", "Loading\u2026"],
   close: ["\u5173\u95ED", "Close"],
@@ -23456,7 +23461,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   }, []);
   const [reload, setReload] = (0, import_react7.useState)(0), [dragFrom, setDragFrom] = (0, import_react7.useState)(null), [dropIndex, setDropIndex] = (0, import_react7.useState)(null);
   const api2 = async (...args) => {
-    const result = selectionTarget && args[0] === "/selection" ? await selectionTarget.applyAssembly(args[2].id) : await request(fetcher, apiRoot, ...args);
+    const result = selectionTarget && args[0] === "/preview" ? await selectionTarget.previewAssembly(args[2].preset) : selectionTarget && args[0] === "/selection" ? await selectionTarget.applyAssembly(args[2].id) : await request(fetcher, apiRoot, ...args);
     if (selectionTarget && String(args[0]).startsWith("?")) result.selection = await selectionTarget.getSelection();
     if (!mounted.current) throw new DOMException("Panel closed", "AbortError");
     return result;
@@ -23838,7 +23843,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           const data3 = await api2("/preview", "POST", { sessionId, preset: editablePreset(draft) });
           setPreview(data3.preview);
           setTab("expanded");
-        }), Boolean(selectionTarget), void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),
+        }), Boolean(selectionTarget && (typeof selectionTarget.previewAssembly !== "function" || selectionTarget.editable === false)), void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),
         (0, import_react7.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react7.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
         tab === "rules" ? (0, import_react7.createElement)(
           "div",
@@ -23850,7 +23855,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           modules.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react7.createElement)("select", { id: "dta-add-source", value: modules.some((s) => s.id === addKind) ? addKind : modules[0].id, onChange: (e) => setAddKind(e.target.value) }, ...modules.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => addRule(modules.some((s) => s.id === addKind) ? addKind : modules[0].id))),
           parsers.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react7.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
           (0, import_react7.createElement)("small", null, t("sourceHelp"))
-        ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t(preview.backend === "native" ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+        ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : preview?.scope === "opening-draft" ? "draftPreviewScope" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code) && !(preview.scope === "opening-draft" && d2.code === "ASSEMBLY_SYSTEM_ONLY")).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t(preview.backend === "native" ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react7.createElement)("small", { style: { marginTop: 20 } }, t("tools")),
         (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
         (0, import_react7.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, selection?.id?.startsWith("builtin-") && !items2.some((p) => p.id === selection.id) && (0, import_react7.createElement)("small", null, t("withdrawnPreset")), !capable && (0, import_react7.createElement)("small", null, t("unavailable"))),

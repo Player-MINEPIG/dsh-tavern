@@ -42,6 +42,7 @@ export function createPlayApiHandler({
     GET: quiet(async ({ id, res }) => sendJson(res, 200, { ok: true, ...await drafts.read(safeDecodeId(id, 'draft id')) })),
     PUT: mutation('playthrough.draft.update', async ({ id, req, res }) => sendJson(res, 200, { ok: true, ...drafts.update(safeDecodeId(id, 'draft id'), await readBoundedJson(req, 2 * 1024 * 1024)) })),
   })
+  route('/drafts/:id/preview', typeof drafts?.preview === 'function', { POST: quiet(async ({ id, req, res }) => sendJson(res, 200, { ok: true, preview: await drafts.preview(safeDecodeId(id, 'draft id'), await readBoundedJson(req, 2 * 1024 * 1024)) })) })
   route('/drafts/:id/materialize', drafts !== undefined, { POST: mutation('playthrough.draft.materialize', async ({ id, req, res }) => {
     const controller = new AbortController()
     req.on?.('aborted', () => controller.abort())

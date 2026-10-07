@@ -612,7 +612,7 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 ### 无会话开场草稿
 
-在 v2 Play 基地址下，`POST /drafts` 保存 `{ characterId, source?, selection?, assemblyPresetId? }`，不创建 DSH 会话。`GET /drafts/:id` 返回 `{ draft, playthrough }`。`PUT /drafts/:id` 要求 `expectedRevision`，接受 selection、assemblyPresetId、variables、importContextRef 或 resetVariables，不允许更换角色身份。
+在 v2 Play 基地址下，`POST /drafts` 保存 `{ characterId, source?, selection?, assemblyPresetId? }`，不创建 DSH 会话。`GET /drafts/:id` 返回 `{ draft, playthrough }`。`PUT /drafts/:id` 要求 `expectedRevision`，接受 selection、assemblyPresetId、variables、importContextRef 或 resetVariables，不允许更换角色身份。 `POST /drafts/:id/preview` 接受 `{ expectedRevision, preset? }`，只读预览此开场草稿的当前资源、变量和调用者的装配规则；省略 preset 时使用草稿快照。返回 `{ ok, preview }`，其中 `scope:'opening-draft'`、`draftId`、`draftRevision`、`pendingInputsIncluded:false`。不创建原生会话、不写历史、不调用模型；配置变化或开始首次发送后返回 409。
 
 `POST /drafts/:id/materialize` 接受 `{ expectedRevision, operationId, text }`，准备唯一、持久预留的会话并返回 `{ sessionId, requestId, accepted }`，自身不发送模型请求。若尚未受理，调用既有 `/sessions/:id/user-message`，传同一 text 与 requestId。`POST /drafts/:id/cancel` 在未受理时清理绑定、释放无绑定空会话并恢复草稿，`draft.lastInput` 保留该次输入用于重新打开开场；已受理时停止真实会话并保留历史。MVU 草稿 scope 为 `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`，不含 sessionId。卡片写授权仍要求当前精确 selection token 和已下载来源的执行证明。
 

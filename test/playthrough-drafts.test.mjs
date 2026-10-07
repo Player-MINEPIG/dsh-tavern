@@ -1,3 +1,6 @@
+import { Readable } from 'node:stream'
+import { createPlayApiHandler } from '../packages/play/src/server.js'
+import { API_V2 } from '../packages/identity.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
@@ -89,3 +92,40 @@ test('cancel before admission and retry with new input do not retain character, 
   select(0);assert.equal(service.record(id).variables.stat_data.hp,75)
   assert.equal(sessions.size,0)
 })
+
+ test('opening preview is read-only and rejects changed resources, revisions and first-send races', async t => {
+  const { service, created, sessions, selections, assembly } = fixture(t), id = created.draft.id
+  const before = readFileSync(service.path, 'utf8')
+  service.previewAssembly = async (record, preset) => {
+    assert.equal(record.id, id); assert.equal(preset.id, 'edited')
+    record.selection.character.greetingIndex = 1
+    return { nodes: [], messages: [], diagnostics: [] }
+  }
+  const preview = await service.preview(id, { expectedRevision: 0, preset: {id:'edited'} })
+  assert.equal(preview.scope, 'opening-draft'); assert.equal(preview.pendingInputsIncluded, false)
+  assert.equal(readFileSync(service.path,'utf8'), before)
+  assert.equal(sessions.size, 0); assert.equal(selections.size, 0); assert.equal(assembly.size, 0)
+  await assert.rejects(service.preview(id, {expectedRevision:1}), {code:'REVISION_CONFLICT'})
+  await assert.rejects(service.preview('missing', {expectedRevision:0}), {code:'PLAY_DRAFT_NOT_FOUND'})
+  service.previewAssembly = async () => { service.update(id, {expectedRevision:0,variables:{stat_data:{hp:90}}}); return {} }
+  await assert.rejects(service.preview(id, {expectedRevision:0}), {code:'REVISION_CONFLICT'})
+  service.record(id).phase = 'preparing'
+  await assert.rejects(service.preview(id, {expectedRevision:1}), {code:'PLAY_DRAFT_LOCKED'})
+ })
+
+ test('draft preview HTTP route is a quiet bounded read and cannot accept session overrides', async t => {
+  const { service, created } = fixture(t)
+  service.previewAssembly = async () => ({messages:[],nodes:[],diagnostics:[]})
+  let logs = 0
+  const api = createPlayApiHandler({chromeStore:{}, drafts:service, logger:{info(){logs++},warn(){logs++}}})
+  const invoke = async body => {
+    const req = Readable.from([Buffer.from(JSON.stringify(body))]); req.method='POST'; req.url=`${API_V2}/drafts/${created.draft.id}/preview`
+    let result
+    await api(req,{setHeader(){},end(text){result={status:this.statusCode,body:JSON.parse(text)}}})
+    return result
+  }
+  const good = await invoke({expectedRevision:0})
+  assert.equal(good.status,200); assert.equal(good.body.preview.scope,'opening-draft'); assert.equal(logs,0)
+  const stale = await invoke({expectedRevision:1}); assert.equal(stale.status,409); assert.equal(stale.body.code,'REVISION_CONFLICT')
+  const override = await invoke({expectedRevision:0,sessionId:'other'}); assert.equal(override.status,400); assert.equal(override.body.code,'PLAY_DRAFT_INVALID')
+ })

@@ -120,9 +120,11 @@ export class TavernProfileLoader {
     resourceWorldBooks = null,
     sessionWorldBooks = null,
     maxProfileBytes,
+    previewSelection,
   }) {
     this.presetStore = presetStore
     this.selections = selections
+    this.previewSelection = previewSelection
     this.userWorldBooks = userWorldBooks
     this.resourceWorldBooks = resourceWorldBooks
     this.sessionWorldBooks = sessionWorldBooks
@@ -162,7 +164,7 @@ export class TavernProfileLoader {
 
   selection({ agent, sessionId } = {}) {
     return agent === undefined
-      ? this.selections.get(sessionId)
+      ? this.previewSelection?.({ sessionId }) ?? this.selections.get(sessionId)
       : this.selections.ensureAgent(agent)
   }
 
