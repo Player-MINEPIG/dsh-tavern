@@ -83,3 +83,12 @@ test('legacy current labels preserve recorded bodies and prefer recorded names',
   f.record.nativeSourceRefs=[]
   assert.equal(nativeRequestProvenance(f.record,request,{resolveSourceName:()=>{throw new Error('deleted')}}).nodes.find(n=>n.source.field==='main').sourceStatus,'name-unrecorded')
 })
+
+test('an earlier native system snapshot is distinct from the current recorded contribution',()=>{
+ const f=fixture(),old=msg('old','system','EARLIER INSTRUCTIONS',{kind:'system-prompt'})
+ f.messages.unshift(old)
+ const nodes=nativeRequestProvenance(f.record,{messages:f.messages}).nodes
+ assert.equal(nodes[0].name,'historical-system-update');assert.equal(nodes[0].sourceStatus,'historical-system')
+ assert.equal(nodes[0].text,'EARLIER INSTRUCTIONS');assert.ok(nodes.some(n=>n.source.field==='main'))
+ assert.equal(nativeRequestProvenance({sections:[],contexts:[]},{messages:[old]}).nodes[0].name,'source-unrecorded')
+})

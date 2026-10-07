@@ -262,3 +262,5 @@ Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界
 [官方接口示例](examples/official-prompt-observer.mjs) 不依赖 v3。读取索引或详情不会触发装配。
 第三方可以在官方 waterfall 中重排/替换 Tavern `:part:` sections；导入 context 与 RP policy 是
 独立贡献。采样建议仍经 `agent/request`，本 API 不仲裁第三方组合顺序。
+
+实际请求中，若较早的原生 system 后存在可核验的当前 system 贡献，较早的未知段落标为“历史 system 快照”，说明它仍在该次冻结请求中生效，不将其解释为当前开启的官方基础指令。

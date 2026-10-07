@@ -108,11 +108,13 @@ export function nativeRequestProvenance(record, request, { resolveSourceName } =
       if (!whole && !value.trim()) return
       const context = message.source?.form === 'snapshot' && (message.source.kind === 'runtime-context'
         || message.source.plugin === '@deepseek-ai/dsh-system-prompt')
+      const historicalSystem = message.role === 'system' && message.source?.kind === 'system-prompt'
+        && messages.slice(messageIndex + 1).some(later => later.role === 'system' && candidates.some(n => n.reference.messageId === later.id))
       const sourceUnknown = message.role === 'system' || context || message.source?.kind === 'tavern-assembly'
       nodes.push({ id: `actual-${messageIndex}-${start}`, module: 'history',
-        name: context && !whole ? 'native-context-framing' : sourceUnknown ? 'source-unrecorded' : message.role,
+        name: historicalSystem ? 'historical-system-update' : context && !whole ? 'native-context-framing' : sourceUnknown ? 'source-unrecorded' : message.role,
         role: message.role, text: value, source: { plugin: message.source?.plugin ?? 'DSH', field: message.source?.kind },
-        sourceStatus: sourceUnknown ? 'unrecorded' : 'native', stability: 'snapshot', lifetime: 'native',
+        sourceStatus: historicalSystem ? 'historical-system' : sourceUnknown ? 'unrecorded' : 'native', stability: 'snapshot', lifetime: 'native',
         locked: true, lockReason: 'recorded-request', depth: null, messageIndex })
     }
     if (!disjoint.length) { fallback(0, text.length, true); return }
