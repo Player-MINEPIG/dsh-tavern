@@ -18184,10 +18184,6 @@ var zh_CN_default = Object.freeze({
   "preset.advancedShow": "\u5C55\u5F00\u9AD8\u7EA7\u8BBE\u7F6E",
   "preset.advancedHide": "\u6536\u8D77\u9AD8\u7EA7\u8BBE\u7F6E",
   "preset.advancedNote": "\u8FD9\u4E9B\u5B57\u6BB5\u4F1A\u88AB\u5B8C\u6574\u4FDD\u5B58\uFF1Bdsh 0.1.0 \u5F53\u524D\u8BF7\u6C42\u534F\u8BAE\u672A\u66B4\u9732\u7684\u53C2\u6570\u4E0D\u4F1A\u5F3A\u884C\u4E0B\u53D1\u7ED9\u9002\u914D\u5668\u3002",
-  "preset.systemPrompt": "DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD",
-  "preset.systemAppend": "\u4FDD\u7559 DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF0C\u5E76\u8FFD\u52A0\u9884\u8BBE\uFF08\u63A8\u8350\uFF09",
-  "preset.systemReplace": "\u4EC5\u4F7F\u7528\u9884\u8BBE\uFF0C\u79FB\u9664 DSH \u7CFB\u7EDF\u6BB5\uFF08\u9AD8\u7EA7\uFF09",
-  "preset.replaceWarning": "\u8B66\u544A\uFF1A\u8FD9\u4F1A\u79FB\u9664\u6A21\u578B\u53EF\u89C1\u7684 Harness \u8EAB\u4EFD\u3001Agent persona \u548C\u5DE5\u5177\u8BF4\u660E\uFF0C\u53EF\u80FD\u7834\u574F\u5DE5\u5177\u8C03\u7528\u6216\u7ED3\u6784\u5316\u8F93\u51FA\uFF1B\u6C99\u7BB1\u4E0E\u5BA1\u6279\u7B49\u6267\u884C\u5C42\u5B89\u5168\u4ECD\u7136\u6709\u6548\u3002",
   "preset.prompts": "\u63D0\u793A\u8BCD ({count})",
   "preset.addPrompt": "\uFF0B \u6DFB\u52A0",
   "preset.dropHere": "\u677E\u5F00\u540E\u653E\u7F6E\u4E8E\u6B64",
@@ -18355,6 +18351,8 @@ var zh_CN_default = Object.freeze({
   "world.entry.secondaryLogicShort": "Secondary logic",
   "world.entry.body": "\u6B63\u6587",
   "world.entry.content": "\u6761\u76EE\u5185\u5BB9\uFF08\u89E6\u53D1\u540E\u6CE8\u5165 system profile\uFF09",
+  "world.slotHint": "before/after \u5206\u522B\u8FDB\u5165\u9884\u8BBE\u7684 World Info (before)/(after) \u63D2\u69FD\uFF1B\u63D2\u69FD\u4F4D\u7F6E\u7531\u9884\u8BBE\u51B3\u5B9A\u3002\u6309\u6A21\u5757\u5217\u8868\u6392\u5E8F\u65F6\uFF0C\u4E16\u754C\u4E66\u4F5C\u4E3A\u6574\u4F53\u6392\u5217\u3002",
+  "world.depthHint": "\u6DF1\u5EA6\u4EE5\u804A\u5929\u6D88\u606F\u672B\u7AEF\u4E3A\u53C2\u7167\uFF0C\u4E0D\u662F\u4E16\u754C\u4E66\u6761\u76EE\u5E8F\u53F7\u3002\u6807\u51C6\u7248\u4E0D\u652F\u6301\u63D2\u5165\u65E2\u6709\u5386\u53F2\uFF0C\u4F1A\u6309\u89D2\u8272\u4E0E\u6295\u9012\u533A\u57DF\u8FD1\u4F3C\u5E76\u5728\u9884\u89C8\u63D0\u793A\uFF1B\u8FDB\u9636\u7248 ST \u6A21\u5F0F\u624D\u91C7\u7528\u6765\u6E90\u6DF1\u5EA6\u3002",
   "world.entry.position": "\u4F4D\u7F6E",
   "world.entry.insertionPosition": "\u63D2\u5165\u4F4D\u7F6E",
   "world.entry.order": "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09",
@@ -19286,10 +19284,6 @@ var en_default = Object.freeze({
   "preset.advancedShow": "Show advanced settings",
   "preset.advancedHide": "Hide advanced settings",
   "preset.advancedNote": "These fields are saved in full. Parameters not exposed by the current dsh request protocol are not forced into the adapter.",
-  "preset.systemPrompt": "DSH system prompt",
-  "preset.systemAppend": "Keep the DSH system prompt and append the preset (recommended)",
-  "preset.systemReplace": "Use only the preset and remove DSH system sections (advanced)",
-  "preset.replaceWarning": "Warning: this removes the model-visible Harness identity, Agent persona, and tool instructions, which may break tool use or structured output. Execution-layer sandboxing and approvals remain active.",
   "preset.prompts": "Prompts ({count})",
   "preset.addPrompt": "+ Add",
   "preset.dropHere": "Release to place here",
@@ -19457,6 +19451,8 @@ var en_default = Object.freeze({
   "world.entry.secondaryLogicShort": "Secondary logic",
   "world.entry.body": "Body",
   "world.entry.content": "Entry content (injected into the system profile when triggered)",
+  "world.slotHint": "Before/after feed the preset\u2019s World Info (before)/(after) slots. The preset controls their positions. Module ordering places the worldbook as one module.",
+  "world.depthHint": "Depth is measured from the end of chat messages, not among worldbook entries. Standard mode approximates it using role/delivery regions and reports this in preview; advanced ST mode applies source depth.",
   "world.entry.position": "Position",
   "world.entry.insertionPosition": "Insertion position",
   "world.entry.order": "Order (higher values first)",
@@ -24408,17 +24404,6 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
           onChange: (value) => patchSt(key2, value)
         }))) : null,
         advanced ? h9("p", { className: "dtt-note" }, uiMessage("preset.advancedNote")) : null,
-        advanced ? h9(Field2, { label: uiMessage("preset.systemPrompt") }, h9(
-          "select",
-          {
-            className: "dtt-select",
-            value: draft.systemPromptMode === "replace" ? "replace" : "append",
-            onChange: (event) => setDraft((current4) => ({ ...current4, systemPromptMode: event.target.value }))
-          },
-          h9("option", { value: "append" }, uiMessage("preset.systemAppend")),
-          h9("option", { value: "replace" }, uiMessage("preset.systemReplace"))
-        )) : null,
-        advanced && draft.systemPromptMode === "replace" ? h9("p", { className: "dtt-status", "data-error": true }, uiMessage("preset.replaceWarning")) : null,
         h9(
           "div",
           { className: "dtt-section" },
@@ -25273,6 +25258,7 @@ function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging,
         h11(Field4, { label: uiMessage("world.entry.order") }, h11("input", { className: "dwb-input", type: "number", value: entry.insertion_order ?? 100, onChange: (event) => patch({ insertion_order: Number(event.target.value) }) })),
         h11(Field4, { label: uiMessage("world.entry.probability") }, h11("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), extensions: { ...entry.extensions ?? {}, probability: Number(event.target.value), useProbability: true } }) }))
       ),
+      [0, 1, 4].includes(position) ? h11("p", { className: "dwb-note" }, uiMessage(position === 4 ? "world.depthHint" : "world.slotHint")) : null,
       h11(
         "div",
         { className: "dwb-checks" },
@@ -25418,6 +25404,7 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
         "div",
         { className: "dwb-grid" },
         h11(Field4, { label: uiMessage("world.entry.position") }, h11("select", { className: "dwb-select", value: entry.position, onChange: (event) => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, key2]) => h11("option", { key: value, value }, uiMessage(key2))))),
+        ["before_character_definition", "after_character_definition", "at_depth"].includes(entry.position) ? h11("p", { className: "dwb-note" }, uiMessage(entry.position === "at_depth" ? "world.depthHint" : "world.slotHint")) : null,
         h11(Field4, { label: uiMessage("world.entry.order") }, h11("input", { className: "dwb-input", type: "number", value: entry.insertionOrder ?? 100, onChange: (event) => patch({ insertionOrder: Number(event.target.value) }) })),
         h11(Field4, { label: uiMessage("world.entry.probability") }, h11("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), useProbability: true }) }))
       ),
