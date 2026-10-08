@@ -38,7 +38,7 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     const assemblyHandle = ctx.plugin(assembler, { storageDir: join(directory, 'assembler') }); await assemblyHandle
     const face = ctx.get('dshPromptAssembler')
     const tavernHandle = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(scope) { store = tavern.apply(scope, { storageDir: join(directory, 'tavern') }) } }); await tavernHandle
-    assert.equal(face.store.defaultPresetId, 'builtin-native-st'); assert.equal(face.runtime.capabilities().core, false)
+    assert.equal(face.store.defaultPresetId, 'builtin-native-slots'); assert.equal(face.runtime.capabilities().core, false)
     const resource = store.create({ name: 'Native fixture' }); store.update(resource.id, { prompts: [{ identifier: 'main', name: 'Main Original', enabled: true, role: 'system', content: 'MAIN' }, { identifier: 'jailbreak', name: 'PHI Original', enabled: true, role: 'system', content: 'PHI' }] }); store.select(resource.id)
     const configPath = join(directory, 'manager.json')
     writeFileSync(configPath, JSON.stringify({ schemaVersion: 1, revision: 1, entries: [{ id: 'example:resource', adapterId: 'example', type: 'text', whitelist: [{ global: true }], blacklist: [], retrieve: { on: 'before_model_request', rule: true, strategy: [{ operation: 'memory.read_content' }, { operation: 'memory.to_text' }] } }], presets: {} }))
@@ -47,7 +47,7 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     const manager = ctx.get('dshMemoryManager'); manager.registerAdapter({ id: 'example', authority: 'example', list: async () => [], read: async () => ({ id: 'example:resource', type: 'text', content: 'REMEMBER', revision: 4 }) })
     const agent = (await ctx.agents.create({ sessionId: 'native-combination', agentOptions: { provider: 'offline', model: 'offline' } })).agent
     const turn = async text => { agent.followup(llm.createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })); await agent.whenIdle(); assert.deepEqual(errors, []) }
-    for (const id of ['builtin-native-st', 'builtin-native-cache', 'builtin-native-phi']) {
+    for (const id of ['builtin-native-slots', 'builtin-native-cache', 'builtin-native-phi']) {
       const preset = face.store.get(id), rules = [...preset.rules]
       const phi = rules.findIndex(r => r.kind === 'phi' && r.role === 'user')
       rules.splice(phi < 0 ? rules.findIndex(r => r.kind === 'history') : phi, 0, { id: 'memory', kind: 'memory-manager.resources', role: phi < 0 ? 'system' : 'user', delivery: 'context' })

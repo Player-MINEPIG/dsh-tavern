@@ -4,7 +4,7 @@
 
 标准版新增“预设身份优先”和“预设插槽优先”。前者保留预设条目的 system/user，按原生投递区域排序；后者识别历史/输入引用，将历史前内容适配为 system、历史后内容适配为 user，通过 pre-step 夹住历史或本步输入。预览逐条标注角色调整，没有引用时退回身份优先。user 贡献会进入历史；原生块内部顺序保持不变。选择策略后需显式应用，既有会话不自动迁移。详见 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/main/docs/BACKENDS.md)。
 
-标准 assembler 通过 stock rc.2 的公开 sections/context/pre-step 接口工作，Tavern 正常依赖它；Manager 可选。可选 core addon 保留已验证的协议 1 进阶后端。两种后端共享策略、来源与 UI，旧策略缺 backend 仍为 core。明确 session 选择（含 null）不随灵珠/魔丸视图变化；独立新会话无默认，新 Tavern 开场默认原生 ST 风格，显式 addon 可提供进阶默认。
+标准 assembler 通过 stock rc.2 的公开 sections/context/pre-step 接口工作，Tavern 正常依赖它；Manager 可选。可选 core addon 保留已验证的协议 1 进阶后端。两种后端共享策略、来源与 UI，旧策略缺 backend 仍为 core。明确 session 选择（含 null）不随灵珠/魔丸视图变化；独立新会话无默认，新 Tavern 开场默认标准预设插槽优先，安装 addon 不改变默认方案。
 
 ## 标准策略
 
@@ -12,11 +12,20 @@
 
 user context 在本步输入后，变化时写原生快照；user pre-step 可在输入前/后，在实际步骤写消息。输入后为 context→pre-step，相同区域内可排序；相反布局明确拒绝。两者都进入历史，关闭来源停止新增，旧正文保留。标准版没有任意 depth/assistant/进阶 snapshot，不静默转换旧策略。
 
-| 标准内置策略 | 布局 |
+Tavern 提供以下互有区别的参考方案，编辑后可另存为自己的策略：
+
+| 内置策略 | 效果 |
 | --- | --- |
-| builtin-native-st | 官方基础指令、预设、用户/角色、世界书、PHI 作为 system，随后历史与输入；近似 ST |
-| builtin-native-cache | 稳定 system→历史→输入→世界书 context→PHI pre-step |
-| builtin-native-phi | system 资产→历史→输入→PHI pre-step user 提醒 |
+| 预设插槽优先（标准） `builtin-native-slots` | RP 默认。按预设插槽安排引用内容，身份适配原生历史/输入边界；无插槽时按身份回退。 |
+| 身份优先（标准） `builtin-native-roles` | 保留预设与世界书的条目身份；在合法投递区域内按预设插槽、条目顺序、模块顺序排列。 |
+| 世界书与 PHI 后置（标准） `builtin-native-cache` | 前部资产统一为 system；输入后追加世界书 user context，再追加 PHI user pre-step。 |
+| PHI 后置（标准） `builtin-native-phi` | 世界书等资产作为历史前 system；只有 PHI 作为末尾 user pre-step 提醒。 |
+| 预设插槽优先（进阶） `builtin-st` | 保留支持的预设插槽、原角色与消息级深度；要求 core addon，仍受模型能力约束。 |
+| 世界书与 PHI 后置（进阶） `builtin-cache` | 模块顺序参考：前部资产→历史→输入→当前世界书→PHI，保留来源角色，正文仅用于当前请求。 |
+
+插槽方案采用显式资源位置策略：预设插槽→用户指定位置→资源原位置→默认顺序。后置方案保留固定模块规则；它们有意覆盖相应模块位置，并不同时承诺遵循所有预设插槽。缓存命中与末尾提醒效果取决于模型/provider。“缓存友好”已改为描述实际位置的名称；“ST 风格（原生）”已撤出，避免将统一 system 误称为 ST。与后置排序重复的“追加快照”也已撤出，进阶保留方式仍可在来源规则中配置。
+
+新 RP 会话与“应用默认装配策略”使用标准插槽方案，即使安装了进阶 addon 也不自动切换。已应用的旧内置快照、自定义策略和关闭状态保持原样；重新选择并应用才采用新定义。独立 DSH 会话没有隐式 RP 策略。
 
 末尾 user 提醒的角色优先级仍是 user；缓存和遵循效果取决于模型。标准版 Trace 核对 DSH 持久 system/context 引用，不创建 request/assembly 或另一套历史。完整冻结请求按钮仅展示进阶记录，标准模式明确说明证据范围。
 
@@ -32,11 +41,6 @@ user context 在本步输入后，变化时写原生快照；user pre-step 可�
 
 左侧色条按插件身份区分（DSH、DSH Tavern、其他明确提供身份的插件），同一插件的资源使用同色；展开项显示资源标识、稳定性、保留方式、插件依赖和卸载后的行为。DSH 原生模块保留原始 source；官方 section 名称不等于贡献插件的身份，未提供身份时不猜测。
 
-| 内置预设 | 行为与取舍 |
-| --- | --- |
-| ST 兼容 | 使用已支持的 marker、角色和深度；引用占用位置并锁定，减少默认模块重复注入 |
-| 缓存友好 | 稳定资产在前，历史与本步输入随后，当前世界书与 PHI 在后；实际缓存命中仍取决于 provider |
-| 追加快照 | 世界书变化时保留新快照，旧快照固定在最初的历史锚点；内容消失时追加失效说明 |
 
 ST 兼容不等于运行完整 SillyTavern。支持 character/persona/world-info/history marker，`description`、`personality`、`scenario`、`mesexamples`、`persona`、`user`、`char`、最近消息、变量与现有随机宏；内容中的 `chatHistory/history/input/worldInfoBefore/worldInfoAfter/worldInfo` 引用可占用原生模块。未支持的宏/marker、世界书 outlet 与近似位置显示诊断。对话示例保留文本，不模拟 ST 的完整示例消息解析、token 裁剪或第三方脚本宏。
 
@@ -54,7 +58,7 @@ ST 兼容不等于运行完整 SillyTavern。支持 character/persona/world-info
 
 `assembleRequest` / `assembleRequestAsync` 是逻辑段落装配原语；Host 运行时负责上述完整快照转换。最终 `request/assembly.messages` 与实际发送数组一致。metadata 的 `systemProjection` 记录原消息 ID、派生载体 ID、有序贡献与已替换原生 ID。逻辑 nodes 保留来源原文/哈希，`inputMessageIds` 保留投影前的原始消息 ID，`requestMessageIds` 指向最终载体；多段可共享一条 system 消息，原始 ID 可用于关联后续快照重复包含的贡献。旧记录可能缺少 `inputMessageIds`，不得通过正文或私有哈希规则猜测。`start/count` 是位置摘要；保留快照使节点消息不连续时，应使用精确 ID 列表。`limits.maxProfileBytes` 限制投影前的逻辑新增正文（默认 512 KiB，最高 2 MiB）；完整快照的物理展开另受固定 2 MiB 新增字节上限约束。每条载体都按实际序列化 UTF-8 字节计费，包括后续快照重复携带的有效贡献；未修改的原生历史不计入新增开销。实际发送和预览使用相同的两阶段限制，任一超限都拒绝装配，不截断或去重来源。metadata 的 `logicalExtraBytes` 保留逻辑计费，`extraBytes` 为投影后的物理计费，`systemProjection.maxBytes` 为物理上限；旧记录可能没有新增字段。
 
-内置默认策略为 ST 兼容，不能改名或删除；编辑内置规则后保存会创建副本。「应用默认装配策略」同时应用并选中 ST 兼容，未保存的修改会先提醒。悬浮球只显示当前策略名称和绑定绿灯；点击进入设置页后选择、关闭或应用策略。预览及实际请求按钮与通用规则并排。
+RP 内置默认策略为标准预设插槽优先；内置项不能改名或删除；编辑内置规则后保存会创建副本。「应用默认装配策略」同时应用并选中标准预设插槽优先，未保存的修改会先提醒。悬浮球只显示当前策略名称和绑定绿灯；点击进入设置页后选择、关闭或应用策略。预览及实际请求按钮与通用规则并排。
 
 PHI 可来自角色卡的后置指令字段、预设的 Post-History Instructions / jailbreak，以及策略 PHI 模块展开后的追加文本。前两者在对应资产编辑器修改，追加文本只属于该策略。预览优先显示资产条目名称及已知字段的中文名，原始标识仍在展开详情中。
 
@@ -118,13 +122,12 @@ node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-buil
 | `GET /?sessionId=…` | 内置/用户预设、已应用快照、核心 capability |
 | `POST /` | 导入或创建独立预设 |
 | `GET/PUT/DELETE /:id` | 读取、编辑、删除；内置只读，应用中的预设不可删除 |
-| `PUT /selection` | `{sessionId,id}`；`id:null` 关闭当前会话的策略（扩展核心使用 DSH 默认装配）；`id:"builtin-st"` 应用默认 ST 策略 |
+| `PUT /selection` | `{sessionId,id}`；`id:null` 关闭当前会话的策略（扩展核心使用 DSH 默认装配）；`id:"builtin-native-slots"` 应用 RP 默认插槽策略 |
 | `POST /preview` | `{sessionId,preset}` 或 `{sessionId,presetId}`，不应用、不运行 Agent |
 
 导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。独立界面通过 `GET /actual?sessionId=…` 只读获取最近的实际请求，标准版同样可用：优先读取 DSH 的冻结 `request/assembly`，普通原生宿主使用 Tavern 在 `llm/stream` 保存的历史边界与整组消息哈希，公共 Session detached replay 恢复后必须核验相同哈希。后续回复、资源修改不会进入该次结果。旧原生记录没有完整请求证据时明确不可用；更新后下一次发送会保存读取所需的引用。Tavern v3 detail 的 `requestAssembly` 继续可用，原生详情提供 `nativeRequest`；都从 DSH 历史读取正文，不建立额外历史。
 
 实际请求视图按实际消息顺序展示当时记录的来源段落，不重新求值当前预设。新原生请求的 `nativeSourceRefs` 保存 version 1、条目名称、来源字段/资源标识及消息哈希和 UTF-16 范围；system、context、pre-step PHI 和可唯一核验的嵌套引用均可关联。正文只从 DSH 历史读取。旧记录可利用已核验段落引用恢复来源标识；缺少历史名称的预设条目按记录中的预设 ID 与条目 ID 查询当前名称，并标明“名称来自当前预设；正文来自当时请求”。当前名称不会覆盖已保存的历史名称，也不参与正文恢复；条目已删除时显示可读的序号标签，来源 ID 保留在详情中。无法核验的区间显示“来源未记录”，不将合并的 system 全文标为官方基础指令。
-
 
 
 ## 独立 assembler 与 adapter
@@ -214,9 +217,7 @@ Host 检查验证三轮发送、请求冻结、durable 快照、Trace 引用恢�
 
 自定义文本必须选择明确的 `user/system/assistant` 角色，新建默认 `user`。旧自定义规则的 `preserve` 按原先实际语义归一为 `system`，不会悄悄改成用户消息。只保留自定义内容时至少设置一条非空用户消息：DeepSeek 将纯系统内容移入独立 `system` 字段，只有系统指令会导致线上的 `messages` 为空。预览对此给出诊断；完全空的装配在本地阻止执行。关闭原生历史和本步输入不会删掉 DSH 保存的原生消息，也不会由装配器偷偷补回请求。
 
-
 [提示词模板与可管理来源](PROMPT_TEMPLATE.md)
-
 
 ## 列表控制与来源文本
 

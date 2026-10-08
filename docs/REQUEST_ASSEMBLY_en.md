@@ -4,7 +4,7 @@
 
 Standard adds Preset roles first and Preset slots first. Roles first preserves authored system/user roles and orders contributions within native delivery regions. Slots first detects history/input references, adapts content before history to system and after history to user, and uses pre-step delivery around history/current input. Preview identifies role adjustments; absent references fall back to roles first. User contributions enter history and native internal order is preserved. Applying remains explicit; existing sessions are not migrated automatically. See [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/main/docs/BACKENDS_en.md).
 
-The standard assembler uses public DSH sections/context/pre-step on stock rc.2. Tavern normally depends on it; optional Manager supplies management and observations. The optional core addon retains the validated protocol-1 advanced backend. Both share strategies/registry/UI; legacy strategies without backend remain core. Native/play views cannot change explicit session selections, including null. New standalone sessions have no implicit strategy; new Tavern openings use native ST style unless an explicitly installed addon supplies the advanced default.
+The standard assembler uses public DSH sections/context/pre-step on stock rc.2. Tavern normally depends on it; optional Manager supplies management and observations. The optional core addon retains the validated protocol-1 advanced backend. Both share strategies/registry/UI; legacy strategies without backend remain core. Native/play views cannot change explicit session selections, including null. New standalone sessions have no implicit strategy; new Tavern openings use standard preset slots first even with the advanced addon installed.
 
 ## Standard strategies
 
@@ -12,11 +12,20 @@ Native mode preserves history→current input and cannot disable either or reord
 
 User context follows current input, appending a native snapshot when text changes. User pre-step accepts messages before/after input at actual steps. After input, context precedes pre-step; contributions within one region can be reordered, while reversed layouts are refused. Both persist in history; removal stops future contributions and retains old bodies. No arbitrary depth, assistant contributions or advanced snapshot retention; legacy strategies are never silently converted.
 
-| Standard built-in | Layout |
+Tavern supplies distinct reference configurations that can be saved as custom strategies:
+
+| Built-in strategy | Effect |
 | --- | --- |
-| builtin-native-st | Official/preset/persona/character/lore/PHI system assets → history → input; approximate ST order |
-| builtin-native-cache | Stable systems → history → input → lore context → PHI pre-step |
-| builtin-native-phi | System assets → history → input → PHI user reminder |
+| Preset slots first (standard) `builtin-native-slots` | RP default. Place referenced content at preset slots, adapting identity to native history/input boundaries; fall back to roles when slots are absent. |
+| Roles first (standard) `builtin-native-roles` | Preserve preset and lore entry roles. Within legal delivery regions, use preset slots, entry order, then module order. |
+| Lore and PHI last (standard) `builtin-native-cache` | Prefix assets become system contributions; append lore as user context after input, then PHI as user pre-step. |
+| PHI last (standard) `builtin-native-phi` | Keep lore and other assets as system contributions before history; append only PHI as final user pre-step. |
+| Preset slots first (advanced) `builtin-st` | Preserve supported preset slots, authored roles and message-level depth. Requires the core addon and compatible model capabilities. |
+| Lore and PHI last (advanced) `builtin-cache` | Module-order reference: prefix assets → history → input → current lore → PHI, preserving source roles with request-only bodies. |
+
+Slot templates use explicit resource-position priority: preset slots → user positions → resource positions → fallback order. Tail templates retain fixed module rules; they deliberately override the relevant module positions and do not promise to follow every preset slot. Cache hits and reminder effectiveness depend on the model/provider. Cache friendly has been renamed to describe actual placement. Native ST style was withdrawn because forcing assets to system is not ST ordering. Append snapshots duplicated the tail ordering and was withdrawn; advanced retention remains configurable in source rules.
+
+New RP sessions and Apply default strategy use standard slots even with the advanced addon installed. Existing built-in snapshots, custom strategies and explicit opt-outs remain unchanged; select and apply a template again to adopt its new definition. Standalone DSH sessions have no implicit RP strategy.
 
 A final user reminder retains user priority. Cache hits and model adherence depend on the model. Native Trace verifies durable system/context references without creating request/assembly or a second history. The complete frozen-request view is limited to advanced evidence; standard mode reports this scope explicitly.
 
@@ -31,12 +40,6 @@ The launcher's **Prompt assembly strategy** item opens a full settings page: imp
 Rules cover native instructions, preset content, character, persona, world books, history, current input, PHI and custom content. Drag whole modules to reorder. Desktop cards summarize stability, retention and role; on mobile these remain in the expanded details. Native modules can be disabled independently while retaining their roles. Disabling excludes content from future requests without deleting durable history. Disable all three and add custom content for fresh input on every request; tool transactions must remain complete. Expanded preview shows resolved assets, locked references and message order. **View latest actual request** reads the recorded snapshot without reevaluating macros.
 
 Source stripes identify plugins (DSH, DSH Tavern, and other explicitly identified plugins); resources from the same plugin share a color. Expanded items expose resource identity, stability, retention, plugin dependency and removal behavior. Native messages retain their original source. A native section name is not necessarily its contributing plugin's identity; missing ownership information is not guessed.
-
-| Built-in | Behavior and tradeoff |
-| --- | --- |
-| ST compatible | Supported markers, roles and depths own positions and suppress duplicate fallback injection |
-| Cache friendly | Stable assets precede history/input, followed by current lore and PHI; cache hits still depend on the provider |
-| Append snapshots | Changed lore adds a snapshot; older snapshots retain their original history anchors; disappearance adds an expiry notice |
 
 ST compatibility does not run all of SillyTavern. Supported references include character/persona/world-info/history markers, character fields, `user`, `char`, recent messages and the existing variable/random macros. Content references `chatHistory/history/input/worldInfoBefore/worldInfoAfter/worldInfo` can claim native modules. Unsupported macros/markers, world-book outlets and approximate positions produce diagnostics. Dialogue examples remain text; full ST example-message parsing, token trimming and third-party script macros are not emulated.
 
@@ -54,7 +57,7 @@ Only the officially resolved model capability `systemPromptUpdate: in-history` p
 
 `assembleRequest` / `assembleRequestAsync` remain logical contribution primitives; the Host runtime performs complete-snapshot conversion. Final `request/assembly.messages` equals the dispatched array. Metadata `systemProjection` maps input IDs to derived carrier IDs, ordered contributors and replaced native IDs. Logical nodes retain source text/hashes: `inputMessageIds` preserves their original messages before projection, while `requestMessageIds` identifies final carriers. Multiple nodes can share one system carrier; original IDs also identify contributions repeated in later snapshots. Older records may omit `inputMessageIds`; consumers must not infer them from text or private hash rules. `start/count` summarizes positions; use the exact ID list when retained snapshots make a node's messages noncontiguous. `limits.maxProfileBytes` bounds logical additional content before projection (512 KiB by default, at most 2 MiB). Complete snapshots have a separate fixed 2 MiB limit on additional physical bytes. Every carrier is charged for its serialized UTF-8 bytes, including active contributions repeated in later snapshots; unchanged native history is not plugin overhead. Runtime and preview use the same two limits and reject either excess without truncating or deduplicating sources. Metadata `logicalExtraBytes` preserves the logical charge, `extraBytes` is the projected physical charge, and `systemProjection.maxBytes` is the physical limit; older records may omit the added fields.
 
-Advanced ST compatible is the protected advanced default: built-ins cannot be renamed or deleted. Saving modified built-in rules creates a copy. **Apply default strategy** applies and selects ST compatible, with a reminder before discarding unsaved changes. The launcher only shows the active strategy and binding indicator; selection, disabling and application happen in the settings page. Preview and actual-request controls sit beside Rules.
+Standard preset slots first is the RP default: built-ins cannot be renamed or deleted. Saving modified built-in rules creates a copy. **Apply default strategy** applies and selects standard preset slots first, with a reminder before discarding unsaved changes. The launcher only shows the active strategy and binding indicator; selection, disabling and application happen in the settings page. Preview and actual-request controls sit beside Rules.
 
 PHI comes from character post-history instructions, preset Post-History Instructions / jailbreak, and optional additional text in the strategy PHI module. Edit asset fields in their respective editors; additional text belongs to the strategy. Preview uses authored names and translated known fields, retaining raw identifiers in details.
 
@@ -118,13 +121,12 @@ Prefix: `/dsh-prompt-assembler/api/v1/assembly-presets` (legacy Tavern routes fo
 | `GET /?sessionId=…` | Built-ins, user presets, applied snapshot and core capability |
 | `POST /` | Import or create an independent preset |
 | `GET/PUT/DELETE /:id` | Read/edit/delete; built-ins are immutable and applied presets cannot be deleted |
-| `PUT /selection` | `{sessionId,id}`; `id:null` disables the strategy for this session (native assembly on extended core); `id:"builtin-st"` applies the default ST strategy |
+| `PUT /selection` | `{sessionId,id}`; `id:null` disables the strategy for this session (native assembly on extended core); `id:"builtin-native-slots"` applies the RP default slot strategy |
 | `POST /preview` | `{sessionId,preset}` or `{sessionId,presetId}`; no apply or Agent run |
 
 Export serializes preset JSON directly. Format is `dsh-tavern-request-assembly`, version 1; each rule has `id/kind/enabled/role/lifetime/depth/text/name`. Executable scripts are not accepted. `assembly-presets.json` atomically stores presets and applied snapshots, limited to 8 MiB. The independent UI reads the latest actual request through `GET /actual?sessionId=…`, including standard strategies. It uses frozen DSH `request/assembly` records or Tavern’s native log cut and whole-message digest, verified through public detached Session replay. Older native records without complete evidence remain unavailable until a subsequent send captures a reference. v3 details expose verified `requestAssembly` or `nativeRequest`; no extra body history is created.
 
 The actual request view follows actual message order and uses recorded provenance, without evaluating current presets. New native `nativeSourceRefs` retain version 1, item names, source field/resource identifiers, message hashes and UTF-16 ranges. They cover system contributions, context, pre-step PHI and uniquely verified nested references; bodies remain in DSH history. Older verified section references recover source identifiers. For preset items without recorded names, the recorded preset and item IDs resolve a current display name, explicitly labeled “Name from the current preset; body from the recorded request.” Current names never replace saved historical names or reconstruct bodies. Deleted items use readable ordinal labels, retaining source IDs in details. Unverified ranges show “Source not recorded”; a merged system body is not labeled as native base instructions.
-
 
 
 ## Independent assembler and adapters
@@ -210,9 +212,7 @@ Source resolution runs first, then each source renderer handles its text-block s
 
 Custom text uses an explicit `user/system/assistant` role and defaults to `user`. Legacy custom `preserve` normalizes to its previous effective role, `system`, without silently changing meaning. Custom-only requests should include a nonempty user message: DeepSeek moves pure system content into its separate `system` field, leaving wire `messages` empty. Preview reports this condition; completely empty assembly fails locally. Disabling native history and current input neither deletes durable native messages nor silently restores them to requests.
 
-
 [Prompt templates and managed sources](PROMPT_TEMPLATE_en.md)
-
 
 ## List ownership and source text
 

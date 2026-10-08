@@ -10,6 +10,7 @@ import { defaultAssemblyFailureInput } from './fixtures/default-assembly-failure
 const m = (id, role = 'user', text = id) => ({ id, role, source: { kind: role === 'user' ? 'user' : 'model' }, content: [{ type: 'text', text }] })
 const native = [m('s', 'system'), m('u1'), m('a1', 'assistant'), m('u2')]
 const assets = { character: { id: 'card', data: { description: 'CHAR', post_history_instructions: 'PHI' } }, preset: { id: 'preset', prompts: [{ identifier: 'main', enabled: true, role: 'system', content: 'MAIN' }] }, loreEntries: [{ id: 'w1', content: 'LORE', position: 'after', resourceId: 'book' }] }
+const snapshotPreset = { ...BUILTINS[1], name: 'Snapshot fixture', rules: BUILTINS[1].rules.map(r => r.kind === 'worldbook' ? { ...r, lifetime: 'snapshot' } : r) }
 const texts = result => result.messages.map(textOf)
 
 test('first-turn greeting precedes marker-owned input and retains trailing depth lore', () => {
@@ -68,14 +69,14 @@ test('inline history and input references occupy their authored positions exactl
   assert.ok(!texts(omitted).includes('LORE'))
 })
 test('snapshot mode retains original placement before later replies and deduplicates unchanged content', () => {
-  const first = assembleRequest({ preset: BUILTINS[2], nativeMessages: native, inputIds: ['u2'], assets })
+  const first = assembleRequest({ preset: snapshotPreset, nativeMessages: native, inputIds: ['u2'], assets })
   const nextNative = [...native, m('a2', 'assistant'), m('u3')]
-  const second = assembleRequest({ preset: BUILTINS[2], nativeMessages: nextNative, inputIds: ['u3'], assets, snapshots: first.snapshots })
+  const second = assembleRequest({ preset: snapshotPreset, nativeMessages: nextNative, inputIds: ['u3'], assets, snapshots: first.snapshots })
   assert.equal(second.snapshots.length, 1)
   assert.ok(texts(second).indexOf('LORE') < texts(second).indexOf('a2'))
-  const third = assembleRequest({ preset: BUILTINS[2], nativeMessages: nextNative, assets: { ...assets, loreEntries: [{ ...assets.loreEntries[0], content: 'NEW' }] }, snapshots: second.snapshots })
+  const third = assembleRequest({ preset: snapshotPreset, nativeMessages: nextNative, assets: { ...assets, loreEntries: [{ ...assets.loreEntries[0], content: 'NEW' }] }, snapshots: second.snapshots })
   assert.equal(third.snapshots.length, 2); assert.ok(texts(third).includes('NEW'))
-  const clear = assembleRequest({ preset: BUILTINS[2], nativeMessages: nextNative, assets: { ...assets, loreEntries: [] }, snapshots: third.snapshots })
+  const clear = assembleRequest({ preset: snapshotPreset, nativeMessages: nextNative, assets: { ...assets, loreEntries: [] }, snapshots: third.snapshots })
   assert.ok(texts(clear).some(t => t.includes('context is empty')))
 })
 test('depth insertion cannot split native tool calls and their results', () => {
@@ -168,17 +169,18 @@ test('mode defaults and explicit strategy overrides persist independently', () =
   let mode = 'play'
   try {
     const store = new AssemblyPresetStore(root, { mode: () => mode })
-    assert.equal(store.selection('session').id, 'builtin-st')
+    assert.equal(store.selection('session').id, 'builtin-native-slots')
     store.apply('session', 'builtin-cache'); mode = 'native'
     assert.equal(store.selection('session'), null)
-    store.apply('session', 'builtin-snapshots'); mode = 'play'
+    const savedSnapshot = store.save(snapshotPreset)
+    store.apply('session', savedSnapshot.id); mode = 'play'
     assert.equal(store.selection('session').id, 'builtin-cache')
     store.apply('session', null)
     assert.equal(new AssemblyPresetStore(root, { mode: () => mode }).selection('session'), null)
     store.copySelection('session', 'swipe-child')
     assert.equal(store.selection('swipe-child'), null)
     mode = 'native'
-    assert.equal(new AssemblyPresetStore(root, { mode: () => mode }).selection('session').id, 'builtin-snapshots')
+    assert.equal(new AssemblyPresetStore(root, { mode: () => mode }).selection('session').id, savedSnapshot.id)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 

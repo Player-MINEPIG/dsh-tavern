@@ -95,17 +95,18 @@ test('source nodes retain original input IDs when sharing and repeating system c
   assert.ok(later.contributorIds.includes('MAIN') && !later.inputIds.includes('MAIN'))
 })
 test('retained source snapshots keep originals and tombstones without accumulating prior carriers', () => {
+  const preset = { ...BUILTINS[1], rules: BUILTINS[1].rules.map(r => r.kind === 'worldbook' ? { ...r, lifetime: 'snapshot' } : r) }
   const firstNative = [m('BASE'), m('ONE', 'user')]
   const assets = { loreEntries: [{ id: 'lore', content: 'LORE_OLD' }] }
-  const first = assembleRequest({ preset: BUILTINS[2], nativeMessages: firstNative, inputIds: ['ONE'], assets })
+  const first = assembleRequest({ preset, nativeMessages: firstNative, inputIds: ['ONE'], assets })
   const native = [...firstNative, m('ANSWER', 'assistant'), m('TWO', 'user')]
-  const changed = assembleRequest({ preset: BUILTINS[2], nativeMessages: native, inputIds: ['TWO'], assets: { loreEntries: [{ id: 'lore', content: 'LORE_NEW' }] }, snapshots: first.snapshots })
+  const changed = assembleRequest({ preset, nativeMessages: native, inputIds: ['TWO'], assets: { loreEntries: [{ id: 'lore', content: 'LORE_NEW' }] }, snapshots: first.snapshots })
   const projected = projectSystemSnapshots(changed, native)
   assert.deepEqual(texts(projected), ['BASE', 'ONE', 'BASE\n\nLORE_OLD', 'ANSWER', 'TWO', 'BASE\n\nLORE_OLD\n\nLORE_NEW'])
   assert.deepEqual(projected.nodes.find(n => n.module === 'history').requestMessageIds, ['ONE', 'ANSWER'])
-  const again = assembleRequest({ preset: BUILTINS[2], nativeMessages: native, inputIds: ['TWO'], assets: { loreEntries: [{ id: 'lore', content: 'LORE_NEW' }] }, snapshots: projected.snapshots })
+  const again = assembleRequest({ preset, nativeMessages: native, inputIds: ['TWO'], assets: { loreEntries: [{ id: 'lore', content: 'LORE_NEW' }] }, snapshots: projected.snapshots })
   assert.deepEqual(projectSystemSnapshots(again, native).messages, projected.messages)
-  const cleared = assembleRequest({ preset: BUILTINS[2], nativeMessages: native, inputIds: ['TWO'], assets: {}, snapshots: changed.snapshots })
+  const cleared = assembleRequest({ preset, nativeMessages: native, inputIds: ['TWO'], assets: {}, snapshots: changed.snapshots })
   assert.match(texts(projectSystemSnapshots(cleared, native)).at(-1), /^BASE\n\nLORE_OLD\n\nLORE_NEW\n\nCurrent context is empty/)
   const noSystem = [m('ONLY', 'user')]
   assert.deepEqual(texts(projectSystemSnapshots(assembleRequest({ preset: BUILTINS[0], nativeMessages: noSystem, previous: projected }), noSystem)), ['ONLY'])

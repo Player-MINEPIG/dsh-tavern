@@ -441,7 +441,7 @@ export function apply(ctx, config = {}) {
   const requestAssembler = sharedAssembler?.runtime ?? new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry, sessionReads })
   if (sharedAssembler) {
     ctx.effect(() => registerTavernSources(registry, sourceOptions))
-    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-st', coreDefaultPresetId: 'builtin-st', readActual: id => nativeRequests.readActual(id), afterAssembly: diagnoseTavernAssembly,
+    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly: diagnoseTavernAssembly,
       validateResult: (result, agent) => { const nativeContext = runtime.assembledFor(agent)?.memoryContext; if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext); memorySources.validateAssembly(result.metadata?.assembly) } }))
   }
   installMemorySources(ctx, memorySources, registry)
