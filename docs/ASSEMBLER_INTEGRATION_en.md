@@ -50,3 +50,5 @@ The dependency graph is Tavern → standard assembler; the optional addon peers 
 [API surfaces](API_SURFACES_en.md) · [Tavern architecture](assets/architecture/tavern.en.html) · [Combined architecture](assets/architecture/ecosystem.en.html).
 
 Pack standard assembler and Tavern with `npm run pack:with-assembler`; add `-- --with-core` only to generate the optional addon too. Without that flag, the receipt contains only the two standard packages. Neither standard tarball contains core-preparation tooling. The core addon installs separately after preparation; see its [README](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/main/core-extension/README_en.md).
+
+The packaging command rebuilds both clients first and embeds the assembler source being packaged (including a directory selected with `--assembler`) into Tavern. This keeps the embedded panel and backend strategy formats aligned. Install build dependencies in both source directories before running it.
