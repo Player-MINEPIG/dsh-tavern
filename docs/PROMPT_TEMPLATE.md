@@ -86,6 +86,8 @@ Host 服务 `tavernMemorySources` 暴露 `{protocolVersion:1, adapters:[...]}`�
 
 `registerUsage(handler,{providerId:'dsh-memory-manager'})` 请求为 `{id,on,scope,event,managementMode}`。managed 需要返回 `{enabled:true,configRevision,strategy,checkCurrent}`；无决策、拒绝、错误、来源变化或过期租约阻断相应输出。来源在最后 await 后及全部来源解析完毕后同步复核；注册表可选 `validateResolved(context)` 钩子必须同步且只读。manager 必须跳过 `strategyOwner:'source'` 的通用执行，否则会重复输出。这里的来源策略名称仅为声明，不注册 manager 通用操作。通用来源 handler 无此标记，不改变实际管理方；它的显式拒绝仍有效。`getManagementDefaults({id,scope?})` 公开固定来源链及 source-bound 同步租约，配置只含 type/retrieve。
 
+世界书来源可在当前无会话开场预览的默认配置快照上附加 `previewScope: {characterId?,presetId?,userId?}`。这是仅限 Host 的已选资源绑定证明；`checkCurrent()` 同时校验草稿版本、选项、资源版本和来源生命周期。Manager 仅在来源回调的 `event.preview === true` 且没有 sessionId 时使用此范围，不创建虚假会话、不持久化通配许可；本地/预设白名单、黑名单、禁用与 retrieve 规则仍生效。普通资源库查询不提供此证明。旧版 Manager 不识别该可选字段时仍可能拒绝开场预览，需同步更新 Manager。
+
 实际 `llm/stream` 请求必须与 durable `request/assembly` 内容相符、且包含对应来源节点，才发 `applied` 观察。预览不发 applied；该状态不代表提供方网络送达。原文放在模板节点的 `children` 中，展开文本在节点 `text` 中。
 
 ## 世界书管理权

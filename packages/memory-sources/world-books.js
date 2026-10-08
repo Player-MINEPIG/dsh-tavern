@@ -8,10 +8,11 @@ export class WorldBookMemorySource {
   #boundDisposed = false
   id = 'tavern.world-books'; name = '世界书 / World books'; authority = 'local'; strategyOwner = 'source'
   optionCatalog = optionCatalog('world-book', '世界书激活与装配 / Activate and assemble world book', 'tavern.worldbook')
-  constructor({ storageDir, store, characters, getSelection, sessionBooks, getMvu }) {
+  constructor({ storageDir, store, characters, getSelection, sessionBooks, getMvu, getPreviewLease }) {
     this.store = store; this.characters = characters; this.getSelection = getSelection
     this.sessionBooks = sessionBooks
     this.getMvu = getMvu
+    this.getPreviewLease = getPreviewLease
     this.policy = new SourcePolicy(join(storageDir, 'world-book-ownership.json'), 'world-book')
   }
   observe = listener => this.policy.observe(listener)
@@ -20,7 +21,20 @@ export class WorldBookMemorySource {
     localScope(scope)
     scope = structuredClone(scope)
     if (!this.#document(id, scope)) return null
-    if (!scope.sessionId) return this.policy.defaults(id)
+    if (!scope.sessionId) {
+      const preview = this.getPreviewLease?.()
+      if (!preview) return this.policy.defaults(id)
+      const selected = this.getSelection?.(), token = hash(selected)
+      const ids = [...(selected?.worldBookIds ?? []).map(id => `world-book:${id}`),
+        ...(selected?.characterId ? [`world-book:character:${selected.characterId}:embedded-world-book`] : [])]
+      if (!ids.includes(id)) return null
+      const revision = this.read({ id, scope }).revision
+      const defaults = this.policy.defaults(id, () => preview.checkCurrent() === true
+        && hash(this.getSelection()) === token && this.read({ id, scope })?.revision === revision)
+      // Host-only proof of a selected resource in this active, sessionless preview.
+      return defaults && { ...defaults, previewScope: Object.fromEntries(
+        ['characterId', 'presetId', 'userId'].filter(key => selected[key]).map(key => [key, selected[key]])) }
+    }
     const bound = this.listBound({ scope })
     if (!bound.items.some(row => row.id === id)) return null
     return this.policy.defaults(id, bound.checkCurrent)

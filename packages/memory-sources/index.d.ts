@@ -5,6 +5,8 @@ export interface ResourceAccess { id: string; scope?: {sessionId?: string; autho
 export interface SourceManagementDefaults {
   protocolVersion: 1; revision: string; configuration: {type: string; store?: Record<string, unknown>; retrieve?: Record<string, unknown>};
   scopePolicy: 'source-bound'; checkCurrent(): boolean;
+  /** Host-only selected resource proof; expires with checkCurrent, valid only for sessionless preview. */
+  previewScope?: {characterId?: string; presetId?: string; userId?: string};
 }
 export interface BoundResourceMetadata {
   readonly id: string; readonly adapterId: string; readonly name: string; readonly type: 'world-book' | 'prompt-template' | 'mvu-state';
@@ -36,6 +38,7 @@ export interface MemorySources {
 }
 export function createMemorySources(options: { storageDir: string; store: unknown; resources?: TemplateResource[]; characters?: unknown;
   withSessionRead?: <T>(scope: {sessionId?: string; signal?: AbortSignal}, callback: () => T | Promise<T>) => T | Promise<T>;
-  getSelection?: (sessionId:string) => {worldBookIds:string[];characterId:string|null;selectionRevision:number|string}; getSession?: (sessionId:string) => unknown;
+  getPreviewLease?: () => {checkCurrent(): boolean} | null;
+  getSelection?: (sessionId?:string) => {worldBookIds:string[];characterId:string|null;selectionRevision:number|string}; getSession?: (sessionId:string) => unknown;
   getMvu?: () => {listBound(args:BoundResourceRequest):BoundResourceSnapshot|Promise<BoundResourceSnapshot>; resolvePromptDependency?(args:import('../mvu-adapter/src/prompt-dependency.js').MvuPromptDependencyRequest):Promise<import('../mvu-adapter/src/prompt-dependency.js').MvuPromptDependencyResult|null>}|undefined; resolveVariables?: (args: unknown) => unknown }): MemorySources
 export function installMemorySources(ctx: unknown, service: MemorySources, registry: RequestSourceRegistry): void

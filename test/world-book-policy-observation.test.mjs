@@ -33,3 +33,18 @@ test('source policy skip carries the evaluated identity/reason and emits only fo
  assert.equal(service.worldBooks.read({id}).managementMode,'managed')
  assert.equal(service.worldBooks.read({id}).revision,revision)
 })
+
+
+test('draft defaults bind only selected books and expire with draft, selection and source',async t=>{
+ const storageDir=mkdtempSync(join(tmpdir(),'worldbook-draft-'));t.after(()=>rmSync(storageDir,{recursive:true,force:true}))
+ const store=new WorldBookStore(storageDir),book=store.import({entries:{0:{uid:0,constant:true,content:'SELECTED'}}}),other=store.import({entries:{0:{uid:0,constant:true,content:'UNSELECTED'}}})
+ let active=true,selected={worldBookIds:[book.id],characterId:'character',presetId:'preset',userId:null}
+ const service=createMemorySources({storageDir,store,getSelection:()=>selected,getPreviewLease:()=>active?{checkCurrent:()=>active}:null});t.after(()=>service.dispose())
+ const source=service.worldBooks,id='world-book:'+book.id
+ assert.equal(source.getManagementDefaults({id:'world-book:'+other.id}),null)
+ const first=source.getManagementDefaults({id});assert.deepEqual(first.previewScope,{characterId:'character',presetId:'preset'});assert.equal(first.checkCurrent(),true)
+ selected={...selected,presetId:'changed'};assert.equal(first.checkCurrent(),false)
+ const second=source.getManagementDefaults({id});active=false;assert.equal(second.checkCurrent(),false)
+ assert.equal(source.getManagementDefaults({id}).previewScope,undefined,'library inspection must not grant preview scope')
+ active=true;const third=source.getManagementDefaults({id});service.dispose();assert.equal(third.checkCurrent(),false)
+})

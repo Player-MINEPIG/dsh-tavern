@@ -13,8 +13,9 @@ import * as tavern from '../packages/tavern-loader/src/index.js'
 import { characterMvuId, normalizeVariables, compileMvuSchema } from '../packages/mvu-adapter/src/index.js'
 import { createPlayHost } from '../packages/tavern-loader/src/play-host.js'
 const root = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT
+const managerRoot = process.env.DSH_ASSEMBLER_MANAGER_ROOT
 
-test('sessionless production opening survives remount, transfers resources once and leaves native sessions unbound', { skip: !root }, async () => {
+for (const managed of [false, true]) test(`sessionless production opening survives remount, transfers resources once and leaves native sessions unbound (manager=${managed})`, { skip: !root || managed && !managerRoot }, async () => {
   const require = createRequire(join(resolve(root), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt'), llm = await load('@deepseek-ai/dsh-llm')
@@ -55,10 +56,12 @@ test('sessionless production opening survives remount, transfers resources once 
     await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') }); await installCoreExtension(ctx); await mount()
     const playRoot = join(directory, 'play'); mkdirSync(playRoot); await store.playWorkspaceStore.bindRoot(playRoot)
     const schemaSource = `import { registerMvuSchema } from 'https://example.invalid/mvu_zod.js'; const Schema=z.object({hp:z.number().prefault(100),people:z.record(z.string(),z.strictObject({hp:z.number()})).prefault({})}); $(()=>registerMvuSchema(Schema));`
-    const character = store.characterStore.import({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Draft fixture', description: 'DRAFT CHARACTER', first_mes: 'Opening A <JSONPatch>[{"op":"replace","path":"/hp","value":80}]</JSONPatch>', alternate_greetings: ['Opening B <UpdateVariable>_.add("hp",-40);</UpdateVariable>'], extensions:{tavern_helper:{scripts:[{content:schemaSource}]}}, character_book: { entries: [{ id: 0, keys: [], comment: '[initvar]', content: '{"hp":100}', enabled: false, insertion_order: 0 }] } } })
+    const character = store.characterStore.import({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Draft fixture', description: 'DRAFT CHARACTER', first_mes: 'Opening A <JSONPatch>[{"op":"replace","path":"/hp","value":80}]</JSONPatch>', alternate_greetings: ['Opening B <UpdateVariable>_.add("hp",-40);</UpdateVariable>'], extensions:{tavern_helper:{scripts:[{content:schemaSource}]}}, character_book: { entries: [{ id: 0, keys: [], comment: '[initvar]', content: '{"hp":100}', enabled: false, insertion_order: 0 }, { id: 1, keys: [], comment: 'Embedded constant', content: 'EMBEDDED CONSTANT', enabled: true, constant: true, insertion_order: 1 }] } } })
     const preset = store.create({ name: 'Draft preset' }); store.update(preset.id, { prompts: [{ identifier: 'main', name: 'Main', role: 'system', content: 'DRAFT PRESET', enabled: true }] })
     const user = store.userStore.create({ name: 'User fixture', description: 'DRAFT PERSONA' })
     const book = store.worldBookStore.import({ entries: { 0: { uid: 0, content: 'DRAFT WORLD BOOK {{format_message_variable::stat_data}}', constant: true } } })
+    const boundBook = store.worldBookStore.import({ entries: { 0: { uid: 0, content: 'CHARACTER BOUND CONSTANT', constant: true } } })
+    store.resourceWorldBooks.set('character', character.id, [boundBook.id])
     const strategy = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-st'), name: 'Draft assembly', rules: [...store.assemblyPresets.get('builtin-st').rules, { id: 'draft-mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
     await ctx.get('tavernMvu').list({scope:{authority:'local'}}); await ctx.get('tavernMvu').flush()
     // Reproduce a stored v1 factory from an earlier installation.
@@ -82,17 +85,35 @@ test('sessionless production opening survives remount, transfers resources once 
     assert.equal(store.sessionSelections.get(ordinary.sessionId).characterCardId, null)
     let draft = (await store.playthroughDrafts.read(id)).draft
     assert.equal(draft.variables.stat_data.hp, 70); assert.equal(draft.selection.character.greetingIndex, 1)
+    let managerHandle
+    if (managed) {
+      const plugin = await import(pathToFileURL(join(resolve(managerRoot), 'src/index.js')))
+      managerHandle = ctx.plugin(plugin, { storageDir: join(directory, 'manager') }); await managerHandle
+    }
     const beforePreview = readFileSync(store.playthroughDrafts.path, 'utf8')
     const nativePreset = structuredClone(NATIVE_PHI_LAST)
     nativePreset.rules.find(rule => rule.kind === 'phi').text = 'DRAFT PHI'
     const preview = await store.playthroughDrafts.preview(id, { expectedRevision: draft.revision, preset: nativePreset })
     const previewText = preview.messages.flatMap(message => message.content).map(block => block.text ?? '').join('\n')
-    for (const value of ['OFFLINE offline/draft-test','DRAFT PRESET','DRAFT PERSONA','DRAFT WORLD BOOK','DRAFT CHARACTER','Opening B','DRAFT PHI']) assert(previewText.includes(value), value)
+    for (const value of ['OFFLINE offline/draft-test','DRAFT PRESET','DRAFT PERSONA','DRAFT WORLD BOOK','DRAFT CHARACTER','Opening B','DRAFT PHI','EMBEDDED CONSTANT','CHARACTER BOUND CONSTANT']) assert(previewText.includes(value), value)
     assert(previewText.includes('hp: 70'), 'draft variables must replace the world-book state macro'); assert(!previewText.includes('{{format_message_variable::stat_data}}'))
     assert.equal(preview.scope, 'opening-draft'); assert.equal(preview.backend, 'native'); assert.equal(preview.pendingInputsIncluded, false)
     assert(!previewText.includes('IMPORTED QUESTION')); assert(!previewText.includes('FIRST INPUT'))
     assert.equal(readFileSync(store.playthroughDrafts.path, 'utf8'), beforePreview); assert.equal(requests.length, 0); assert.equal(ctx.sessions.list().length,1)
     assert.equal(store.sessionSelections.get(ordinary.sessionId).characterCardId,null)
+    // The reported path: standard preset-slot preview with a real Manager mounted.
+    const slots = store.assemblyPresets.get('builtin-native-slots')
+    const slotPreview = await store.playthroughDrafts.preview(id, { expectedRevision: draft.revision, preset: slots })
+    const text = value => value.messages.flatMap(m => m.content).map(b => b.text ?? '').join('\n')
+    for (const value of ['EMBEDDED CONSTANT','CHARACTER BOUND CONSTANT','DRAFT WORLD BOOK','hp: 70']) assert(text(slotPreview).includes(value),value)
+    if (managed) {
+      const manager=ctx.get('dshMemoryManager'), resourceId=`world-book:character:${character.id}:embedded-world-book`
+      await manager.saveEntry({id:resourceId,adapterId:'tavern.world-books',entry:{id:resourceId,adapterId:'tavern.world-books',retrieve:{rule:false}},expectedRevision:manager.configuration.document.revision})
+      const denied=await store.playthroughDrafts.preview(id,{expectedRevision:draft.revision,preset:slots})
+      assert(!text(denied).includes('EMBEDDED CONSTANT'));assert(text(denied).includes('CHARACTER BOUND CONSTANT'))
+      await managerHandle.dispose()
+    }
+    assert.equal(readFileSync(store.playthroughDrafts.path, 'utf8'), beforePreview);assert.equal(requests.length,0);assert.equal(ctx.sessions.list().length,1)
     const aborted = new AbortController(); aborted.abort()
     await assert.rejects(store.playthroughDrafts.materialize(id, { expectedRevision: draft.revision, text: 'FIRST INPUT', operationId: 'first', signal: aborted.signal }), { name: 'AbortError' })
     assert.equal(ctx.sessions.list().length, 1)

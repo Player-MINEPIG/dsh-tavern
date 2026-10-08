@@ -424,6 +424,12 @@ export function apply(ctx, config = {}) {
   const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [], withSessionRead,
     getSession: sessionReads.getSession, getMvu: () => draftPreview.current() ? draftMvu : ctx.get('tavernMvu'),
     resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
+    getPreviewLease: () => {
+      const record = draftPreview.current()
+      return record ? { checkCurrent: () => draftPreview.current() === record
+        && playthroughDrafts.record(record.id).phase === 'draft'
+        && playthroughDrafts.record(record.id).revision === record.revision } : null
+    },
     getSelection: sessionId => {
       const selected = (!sessionId ? draftPreview.current()?.selection : undefined) ?? selections.get(sessionId)
       const bound = composeWorldBookSelection([...selected.worldBookIds, ...openingWorldBooks.selectedIds(sessionId, selected)],
