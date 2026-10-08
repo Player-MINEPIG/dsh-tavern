@@ -25,3 +25,20 @@ test('Tavern MVU preset is opt-in, removes only the selected assistant wrapper, 
   assert.deepEqual(messages, original)
   assert.deepEqual(result.audit.decisions[1].blocks[0].ranges[0].ruleIds, ['tavern-mvu-update'])
 })
+
+test('standard capability cleans plugin users while leaving MVU and assistant reasoning intact', { skip: !root }, async () => {
+  const { planStandardHistory, DEFAULT_HISTORY_POLICY } = await import(pathToFileURL(join(resolve(root), 'src/history-policy.js')))
+  const body = 'RP\n<UpdateVariable>\nstate\n</UpdateVariable>\nRP'
+  const messages = [
+    { id: 'p', role: 'user', source: { kind: 'dsh-prompt-assembler' }, content: [{ type: 'text', text: body }] },
+    { id: 'u', role: 'user', source: { kind: 'user' }, content: [{ type: 'text', text: body }] },
+    { id: 'a', role: 'assistant', source: { kind: 'model' }, content: [{ type: 'reasoning', text: 'complete' }, { type: 'text', text: body }] },
+  ]
+  const events = messages.map((message, seq) => ({ seq, surfaceOp: 'append', type: `${message.role}/message`, data: message.role === 'user' ? message : { message } }))
+  events.push({ seq: 3, type: 'step/end' })
+  const result = planStandardHistory({ messages, events, nodes: [0, 1, 2], policy: { ...structuredClone(DEFAULT_HISTORY_POLICY), enabled: true,
+    fragments: TAVERN_HISTORY_FRAGMENT_PRESETS.map(p => ({ ...p.rule, enabled: true })) } })
+  assert.deepEqual(result.messages, messages.slice(1))
+  assert.equal(result.operations.length, 1)
+  assert.equal(result.operations[0].targetSeq, 0)
+})
