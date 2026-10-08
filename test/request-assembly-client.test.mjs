@@ -30,7 +30,7 @@ test('standalone and embedded panels share last applied snapshot and refresh wit
   store.apply('shared', a.id)
   const runtime = new RequestAssembler({ ctx: { get: () => ({ requestAssemblyVersion: 1 }) }, store, resources: { compile: () => ({ assemblyInput: {} }) } })
   runtime.registerRequestBackend(new CoreRequestBackend(runtime))
-  const api = createAssemblyApi({ store, runtime, agents: () => new Map(), sessions: () => ({ get: () => null }) })
+  const api = createAssemblyApi({ store, runtime, agents: () => new Map(), sessions: () => ({ get: id => id === 'shared' ? { deriveMessages: () => [], snapshotEvents: () => [] } : null }) })
   const fetcher = async (url, options = {}) => {
     assert.ok(url.startsWith('/dsh-prompt-assembler/api/v1/assembly-presets'))
     const req = Readable.from(options.body ? [Buffer.from(options.body)] : [])
@@ -77,7 +77,8 @@ for (const [locale, label, sourceName, help, add] of [
   const presets = structuredClone(BUILTINS), original = structuredClone(presets), calls = []
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url, method: options.method ?? 'GET' })
-    assert.equal(options.method ?? 'GET', 'GET', 'opening or adding to a draft must not save or apply a preset')
+    assert.ok((options.method ?? 'GET') === 'GET' || options.method === 'POST' && url.endsWith('/preview'), 'opening or editing may resolve positions but must not save or apply')
+    if (url.endsWith('/preview')) return new Response(JSON.stringify({ preview: { nodes: [], messages: [], diagnostics: [] } }), { headers: { 'Content-Type': 'application/json' } })
     return new Response(JSON.stringify({ presets, sources: registry.list(), selection: presets[0], capability: true }), { headers: { 'Content-Type': 'application/json' } })
   }
   const container = document.getElementById('root'), root = createRoot(container)
@@ -107,7 +108,7 @@ for (const [locale, label, sourceName, help, add] of [
   assert([...mvuRow.querySelectorAll('button')].some(button => button.textContent === (locale === 'zh-CN' ? '删除' : 'Delete')))
   assert.equal(Boolean(container.querySelector('#dta-add-source option[value="tavern.mvu/state"]')), false)
   assert.deepEqual(presets, original)
-  assert(calls.length > 0 && calls.every(call => call.method === 'GET'))
+  assert(calls.length > 0 && calls.every(call => call.method === 'GET' || call.method === 'POST' && call.url.endsWith('/preview')))
 })
 
 // Integration of the extracted component: source descriptors drive parser discovery.
@@ -126,6 +127,7 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
   const fetcher = async (url, options = {}) => {
     calls.push({ url, ...options })
     const body = options.body ? JSON.parse(options.body) : {}
+    if (url.endsWith('/preview')) return new Response(JSON.stringify({ preview: { nodes: [], messages: [], diagnostics: [] } }), { headers: { 'Content-Type': 'application/json' } })
     return new Response(JSON.stringify(options.method === 'PUT' ? { selection: presets.find(p => p.id === body.id) } : { presets, sources: registry.list(), defaultPresetId: presets[0].id, selection: presets[0], capability: true }), { headers: { 'Content-Type': 'application/json' } })
   }
   const container = document.getElementById('root'), root = createRoot(container)
