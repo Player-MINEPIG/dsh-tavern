@@ -61,6 +61,8 @@ Reasoning effort offers inherit, off, low, medium, high, extra high, and maximum
 
 `append` keeps existing DSH system sections. `replace` keeps only the model-visible Tavern profile text. Code Mode, structured output, or tool-prompt reliability may drop, but file sandbox, approval, and tool execution stay on.
 
+The prompt assembly rule list provides **DSH native runtime hints (master)**, **Sandbox policy hints**, and **Approval policy hints**, all enabled by default. The master switch filters only DSH’s `sandbox:policy`, `approval:policy`, and `subagent:delegation`; context from other plugins, world books, and memory, as well as native history, is preserved. Disabling the master retains the child switch selections. Save and apply the strategy to affect subsequent requests. DSH keeps its native context wrapper whenever context remains. These switches control model-visible prompt text only; actual sandbox and approval enforcement is unchanged.
+
 ## 3. Character cards
 
 The character panel supports SillyTavern V1/V2/V3 JSON and PNG files that contain `chara`/`ccv3` data.

@@ -61,6 +61,8 @@
 
 `append` 保留 DSH 原有 system sections；`replace` 仅保留 Tavern profile 的模型可见 system 文本，可能使 Code Mode、结构化输出或工具提示可靠性下降，但不会关闭文件沙箱、审批和工具执行权限。
 
+提示词装配策略的规则列表提供“DSH 原生运行环境提示（总开关）”“沙箱策略提示”和“审批策略提示”。默认全部启用。总开关仅过滤 DSH 的 `sandbox:policy`、`approval:policy` 和 `subagent:delegation`；其他插件、世界书、记忆提供的 context 与原生历史不受影响。总开关关闭时会保留子开关选择；保存并应用后对后续请求生效。只要仍有 context，DSH 的原生上下文封装就会保留。这些开关只控制模型看到的提示文字，不改变实际沙箱和审批机制。
+
 ## 3. 角色卡
 
 角色卡面板支持 SillyTavern V1/V2/V3 JSON，以及包含 `chara`/`ccv3` 数据的 PNG。
