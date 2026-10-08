@@ -23455,22 +23455,23 @@ function normalizePositions(value) {
     const key2 = positionKey(p?.sourceId, p?.positionId);
     if (!p || typeof p.sourceId !== "string" || typeof p.positionId !== "string" || !idPattern.test(p.sourceId) || !idPattern.test(p.positionId) || seen.has(key2) || typeof p.enabled !== "boolean" || !["source", "list"].includes(p.placement)) throw new TypeError("Invalid resource position");
     seen.add(key2);
-    return { sourceId: p.sourceId, positionId: p.positionId, enabled: p.enabled, placement: p.placement };
+    const anchor = p.anchor;
+    if (anchor !== void 0 && anchor !== "end" && (!anchor || typeof anchor.sourceId !== "string" || typeof anchor.positionId !== "string" || !idPattern.test(anchor.sourceId) || !idPattern.test(anchor.positionId) || !["before", "after"].includes(anchor.side) || positionKey(anchor.sourceId, anchor.positionId) === key2)) throw new TypeError("Invalid position anchor");
+    return { sourceId: p.sourceId, positionId: p.positionId, enabled: p.enabled, placement: p.placement, ...anchor !== void 0 ? { anchor: anchor === "end" ? anchor : { sourceId: anchor.sourceId, positionId: anchor.positionId, side: anchor.side } } : {} };
   });
 }
 var positionKey = (sourceId, positionId) => `${sourceId}#${positionId}`;
-var POSITION_PRIORITIES = Object.freeze(["user", "preset", "resource", "default"]);
+var POSITION_PRIORITIES = Object.freeze(["preset", "resource", "default"]);
 function priorityOrder(preset) {
-  const priority = preset.layout?.priority;
-  if (Array.isArray(priority)) return [...priority];
-  return priority === "user" || !priority && preset.layout?.source === "manual" ? ["user", "preset", "resource", "default"] : ["preset", "user", "resource", "default"];
+  return normalizePriority(preset.layout?.priority) ?? [...POSITION_PRIORITIES];
 }
 function normalizePriority(priority) {
-  if (priority === void 0 || priority === "user" || priority === "preset") return priority;
-  if (!Array.isArray(priority) || priority.length !== POSITION_PRIORITIES.length || new Set(priority).size !== priority.length || priority.some((p) => !POSITION_PRIORITIES.includes(p))) throw new TypeError("Invalid position priority order");
-  return [...priority];
+  if (priority === void 0) return void 0;
+  if (priority === "user" || priority === "preset") return [...POSITION_PRIORITIES];
+  if (!Array.isArray(priority) || ![3, 4].includes(priority.length) || new Set(priority).size !== priority.length || priority.some((p) => !["user", ...POSITION_PRIORITIES].includes(p)) || POSITION_PRIORITIES.some((p) => !priority.includes(p))) throw new TypeError("Invalid position priority order");
+  return priority.filter((p) => p !== "user");
 }
-var positionPriority = (preset) => preset.layout?.priority ?? (preset.layout?.source === "manual" ? "user" : "preset");
+var positionPriority = (preset) => priorityOrder(preset);
 function declaredPositions(source) {
   return source.positions ?? [{ id: "content", name: [source.name, source.name] }];
 }
@@ -23491,8 +23492,10 @@ function positionRows(preset, sources) {
   const keys = new Set(configured.map((r) => r.key));
   return [...configured, ...rows.filter((r) => !keys.has(r.key))];
 }
-function configurePosition(preset, sources, key2, patch, beforeKey) {
-  const rows = positionRows(preset, sources), row = rows.find((r) => r.key === key2);
+function configurePosition(preset, sources, key2, patch, beforeKey, displayOrder) {
+  const rows = positionRows(preset, sources);
+  if (displayOrder) rows.sort((a, b2) => displayOrder.indexOf(a.key) - displayOrder.indexOf(b2.key));
+  const row = rows.find((r) => r.key === key2);
   if (!row || row.position.configurable === false) return preset;
   let next = rows.map((r) => r.key === key2 ? { ...r, ...patch } : r);
   if (beforeKey !== void 0 && beforeKey !== key2) {
@@ -23500,7 +23503,18 @@ function configurePosition(preset, sources, key2, patch, beforeKey) {
     next = next.filter((r) => r !== target);
     const at4 = beforeKey === null ? next.length : next.findIndex((r) => r.key === beforeKey);
     if (at4 < 0) return preset;
-    next.splice(at4, 0, { ...target, placement: "list" });
+    const before = rows.find((r) => r.key === beforeKey);
+    let cursor = before, seen = /* @__PURE__ */ new Set();
+    while (cursor?.anchor && cursor.anchor !== "end" && !seen.has(cursor.key)) {
+      seen.add(cursor.key);
+      const anchorKey = positionKey(cursor.anchor.sourceId, cursor.anchor.positionId);
+      if (anchorKey === key2) {
+        next = next.map((r) => r.key === cursor.key ? { ...r, anchor: void 0 } : r);
+        break;
+      }
+      cursor = rows.find((r) => r.key === anchorKey);
+    }
+    next.splice(at4, 0, { ...target, placement: "list", anchor: before ? { sourceId: before.sourceId, positionId: before.positionId, side: "before" } : "end" });
   }
   const rules = preset.rules.map((r) => r.kind === row.sourceId && r.inputMode !== "text" && patch.enabled === true ? { ...r, enabled: true } : r);
   if (patch.enabled === true && !rules.some((r) => r.kind === row.sourceId && r.inputMode !== "text")) {
@@ -23508,8 +23522,28 @@ function configurePosition(preset, sources, key2, patch, beforeKey) {
     while (rules.some((r) => r.id === id)) id += "-x";
     rules.push({ id, kind: row.sourceId, enabled: true, role: row.source.roles?.includes("preserve") ? "preserve" : row.source.roles?.[0] ?? "system", lifetime: row.source.lifetimes?.[0] ?? "request", depth: null, text: "", name: "" });
   }
-  const layout = preset.layout ?? { version: 1, source: "preset-slots", priority: ["user", "preset", "resource", "default"], identity: "preserve", fallback: "source-order", overrides: [] };
-  return { ...preset, rules, layout: { ...layout, source: "preset-slots", priority: positionPriority({ layout }), positions: next.map(({ sourceId, positionId, enabled, placement }) => ({ sourceId, positionId, enabled, placement })) } };
+  const layout = preset.layout ?? { version: 1, source: "preset-slots", priority: ["preset", "resource", "default"], identity: "preserve", fallback: "source-order", overrides: [] };
+  return { ...preset, rules, layout: { ...layout, source: "preset-slots", priority: positionPriority({ layout }), positions: next.map(({ sourceId, positionId, enabled, placement, anchor }) => ({ sourceId, positionId, enabled, placement, ...placement === "list" && anchor !== void 0 ? { anchor } : {} })) } };
+}
+function resolvedPositionRows(preset, sources, preview) {
+  const rows = positionRows(preset, sources);
+  if (!preview || preview.actual) return rows;
+  const occurrences = /* @__PURE__ */ new Map(), runs = [];
+  for (const node of preview.nodes ?? []) {
+    const key2 = positionKey(node.source?.module, node.positionId);
+    if (runs.at(-1) === key2) continue;
+    runs.push(key2);
+    const list2 = occurrences.get(key2) ?? [];
+    list2.push(runs.length - 1);
+    occurrences.set(key2, list2);
+  }
+  for (const row of rows) {
+    const positions = occurrences.get(row.key);
+    row.resolved = positions?.length === 1;
+    row.split = positions?.length > 1;
+  }
+  const known = rows.filter((r) => r.resolved).sort((a, b2) => occurrences.get(a.key)[0] - occurrences.get(b2.key)[0]);
+  return rows.map((row) => row.resolved ? known.shift() : row);
 }
 
 // node_modules/dsh-prompt-assembler/src/resource-layout.js
@@ -23522,13 +23556,13 @@ function normalizeLayout(value) {
     seen.add(o.target);
     return { target: o.target, anchor: o.anchor, side: o.side, detach: o.detach };
   });
-  const priority = normalizePriority(value.priority);
+  const priority = normalizePriority(value.priority) ?? ["preset", "resource", "default"];
   const positions = normalizePositions(value.positions);
   return { version: 1, source: value.source, identity: value.identity, fallback: value.fallback, overrides, ...priority ? { priority } : {}, ...positions ? { positions } : {} };
 }
 function layoutPlacement(preset) {
   if (!preset.layout) return preset.placement;
-  return preset.backend === "native" ? preset.layout.source === "preset-slots" ? "native-slots" : "native-roles" : preset.layout.source === "preset-slots" ? "st" : "modules";
+  return preset.backend === "native" ? preset.layout.source === "preset-slots" && preset.layout.identity === "position" ? "native-slots" : "native-roles" : preset.layout.source === "preset-slots" ? "st" : "modules";
 }
 
 // node_modules/dsh-prompt-assembler/src/resource-layout-client.js
@@ -23597,13 +23631,13 @@ function SortableList({ items: items2, itemKey, itemName, canMove = () => true, 
 function SummaryMetadata({ items: items2, className = "" }) {
   return (0, import_react9.createElement)("dl", { className: `dta-summary-meta ${className}`, style: { "--dta-meta-columns": items2.length } }, ...items2.map((item) => (0, import_react9.createElement)("div", { key: item.label }, (0, import_react9.createElement)("dt", null, item.label), (0, import_react9.createElement)("dd", { className: item.className }, item.content))));
 }
-function ResourcePositionEditor({ preset, sources, locale = 0, busy: busy2, onChange, sourceColor: sourceColor2, originName, sourceName = (id) => sources.find((s) => s.id === id)?.name ?? id }) {
+function ResourcePositionEditor({ preset, sources, preview, resolving, resolutionError, locale = 0, busy: busy2, onChange, sourceColor: sourceColor2, originName, sourceName = (id) => sources.find((s) => s.id === id)?.name ?? id }) {
   const t = (zh, en) => locale === 0 ? zh : en;
-  const rows = positionRows(preset, sources);
-  const policy = preset.layout ?? { version: 1, source: "preset-slots", priority: ["user", "preset", "resource", "default"], identity: "preserve", fallback: "source-order", overrides: [] };
+  const rows = resolvedPositionRows(preset, sources, preview);
+  const policy = preset.layout ?? { version: 1, source: "preset-slots", priority: ["preset", "resource", "default"], identity: "preserve", fallback: "source-order", overrides: [] };
   const changePolicy = (patch) => onChange({ ...preset, layout: { ...policy, ...patch, ...patch.priority ? { source: "preset-slots" } : {} } });
   const priorities = priorityOrder({ layout: policy });
-  const priorityNames = { user: t("\u7528\u6237\u4F4D\u7F6E\u914D\u7F6E", "User position configuration"), preset: t("\u9884\u8BBE\u63D2\u69FD\u4E0E\u5B8F\u5F15\u7528", "Preset slots and macro references"), resource: t("\u8D44\u6E90\u81EA\u5E26\u4F4D\u7F6E\u4E0E\u6DF1\u5EA6", "Resource position and depth"), default: t("\u6765\u6E90\u9ED8\u8BA4\u987A\u5E8F", "Default source order") };
+  const priorityNames = { preset: t("\u9884\u8BBE\u63D2\u69FD\u4E0E\u5B8F\u5F15\u7528", "Preset slots and macro references"), resource: t("\u8D44\u6E90\u81EA\u5E26\u4F4D\u7F6E\u4E0E\u6DF1\u5EA6", "Resource position and depth"), default: t("\u6765\u6E90\u9ED8\u8BA4\u987A\u5E8F", "Default source order") };
   const movePriority = (id, before) => {
     if (id === before) return;
     const next = priorities.filter((p) => p !== id), at4 = before == null ? next.length : next.indexOf(before);
@@ -23612,15 +23646,15 @@ function ResourcePositionEditor({ preset, sources, locale = 0, busy: busy2, onCh
     changePolicy({ priority: next });
   };
   const fixed = (row) => ["native-system", "history", "input"].includes(row.sourceId);
-  const update = (row, patch, before) => onChange(configurePosition(preset, sources, row.key, patch, before));
+  const update = (row, patch, before) => onChange(configurePosition(preset, sources, row.key, patch, before, rows.map((r) => r.key)));
   const title = (row) => row.source.positions ? row.position.name[locale] ?? row.position.name[0] : sourceName(row.sourceId);
   return (0, import_react9.createElement)(
     "section",
     { className: "dta-resource-layout", "aria-label": t("\u8D44\u6E90\u4F4D\u7F6E\u914D\u7F6E", "Resource positions") },
     (0, import_react9.createElement)("p", null, t("\u914D\u7F6E\u6240\u6709\u53EF\u80FD\u63D0\u4F9B\u5185\u5BB9\u7684\u4F4D\u7F6E\uFF0C\u4E0D\u9700\u8981\u5148\u52A0\u8F7D\u5177\u4F53\u8D44\u6E90\u3002\u5B8F\u5F15\u7528\u548C\u63D2\u69FD\u5F52\u5C5E\u5728\u88C5\u914D\u65F6\u89E3\u6790\uFF1B\u7A7A\u4F4D\u7F6E\u4E5F\u4FDD\u7559\u5728\u6B64\u6E05\u5355\u3002", "Configure every potential content position without loading assets. Macros and slots resolve during assembly; empty positions remain in this list.")),
     !preset.layout && (0, import_react9.createElement)("p", { className: "dta-notice" }, t("\u5F53\u524D\u7B56\u7565\u4FDD\u7559\u539F\u6709\u884C\u4E3A\uFF1B\u7B2C\u4E00\u6B21\u4FEE\u6539\u4F4D\u7F6E\u6216\u6392\u5E8F\u7B56\u7565\u65F6\u91C7\u7528\u8D44\u6E90\u4F4D\u7F6E\u914D\u7F6E\u3002", "The strategy keeps its existing behavior until you edit a position or sorting policy.")),
-    (0, import_react9.createElement)("h3", null, t("\u6392\u5E8F\u4F18\u5148\u7EA7", "Sorting priority")),
-    (0, import_react9.createElement)("p", null, t("\u4ECE\u4E0A\u5230\u4E0B\u9010\u4E2A\u4F7F\u7528\u6392\u5E8F\u7B56\u7565\u3002\u5DF2\u7531\u524D\u4E00\u7B56\u7565\u6392\u597D\u7684\u8D44\u6E90\u4E0D\u518D\u53C2\u4E0E\u540E\u7EED\u6392\u5E8F\uFF1B\u540E\u7EED\u7B56\u7565\u53EA\u5904\u7406\u5269\u4F59\u8D44\u6E90\u3002\u62D6\u52A8\u624B\u67C4\u8C03\u6574\u7B56\u7565\u987A\u5E8F\u3002", "Apply strategies from top to bottom. Each strategy sorts only the remaining resources; resources already placed are excluded from later passes. Drag the handles to reorder strategies.")),
+    (0, import_react9.createElement)("h3", null, t("\u81EA\u52A8\u5B9A\u4F4D\u4F18\u5148\u7EA7", "Automatic placement priority")),
+    (0, import_react9.createElement)("p", null, t("\u62D6\u62FD\u5373\u81EA\u5B9A\u4E49\u4F4D\u7F6E\uFF0C\u4E0D\u53C2\u4E0E\u4E0B\u9762\u7684\u4F18\u5148\u7EA7\u7ADE\u4E89\u3002\u5176\u4F59\u5185\u5BB9\u6309\u4ECE\u4E0A\u5230\u4E0B\u7684\u4F18\u5148\u7EA7\u81EA\u52A8\u5B9A\u4F4D\uFF1B\u8EAB\u4EFD\u8BBE\u7F6E\u548C\u8FD0\u884C\u65F6\u8FB9\u754C\u4ECD\u7136\u6709\u6548\u3002", "Dragging sets a custom position outside this priority list. Remaining content follows automatic rules from highest to lowest priority; identity settings and runtime boundaries still apply.")),
     (0, import_react9.createElement)(SortableList, {
       className: "dta-priorities",
       label: t("\u6392\u5E8F\u4F18\u5148\u7EA7\u5217\u8868", "Sorting priority list"),
@@ -23639,8 +23673,9 @@ function ResourcePositionEditor({ preset, sources, locale = 0, busy: busy2, onCh
       (0, import_react9.createElement)("label", null, t("\u8EAB\u4EFD\u5904\u7406", "Identity"), (0, import_react9.createElement)("select", { disabled: busy2, value: policy.identity, onChange: (e) => changePolicy({ identity: e.target.value }) }, (0, import_react9.createElement)("option", { value: "preserve" }, t("\u4FDD\u7559\u6765\u6E90\u8EAB\u4EFD", "Preserve source roles")), (0, import_react9.createElement)("option", { value: "position" }, t("\u5141\u8BB8\u6309\u4F4D\u7F6E\u9002\u914D", "Allow position adaptation")))),
       (0, import_react9.createElement)("label", null, t("\u7F3A\u5931\u5B9A\u4F4D", "Missing targets"), (0, import_react9.createElement)("select", { disabled: busy2, value: policy.fallback, onChange: (e) => changePolicy({ fallback: e.target.value }) }, (0, import_react9.createElement)("option", { value: "source-order" }, t("\u56DE\u9000\u5E76\u8BF4\u660E\u539F\u56E0", "Fall back with explanation")), (0, import_react9.createElement)("option", { value: "error" }, t("\u62D2\u7EDD\u88C5\u914D", "Reject assembly"))))
     ),
-    (0, import_react9.createElement)("small", null, t("\u539F\u751F\u5386\u53F2\u3001\u5DE5\u5177\u4E8B\u52A1\u548C\u7559\u5B58\u8FB9\u754C\u59CB\u7EC8\u7531 DSH \u7BA1\u7406\u3002\u5173\u95ED\u4F4D\u7F6E\u4F1A\u6392\u9664\u8BE5\u4F4D\u7F6E\u7684\u5185\u5BB9\uFF1B\u62D6\u52A8\u8BBE\u7F6E\u7528\u6237\u6392\u5217\u3002", "DSH always owns native history, tool transactions and retention boundaries. Turning a position off excludes its content; dragging sets user order.")),
+    (0, import_react9.createElement)("small", null, t("\u539F\u751F\u5386\u53F2\u3001\u5DE5\u5177\u4E8B\u52A1\u548C\u7559\u5B58\u8FB9\u754C\u59CB\u7EC8\u7531 DSH \u7BA1\u7406\u3002\u5173\u95ED\u4F4D\u7F6E\u4F1A\u6392\u9664\u8BE5\u4F4D\u7F6E\u7684\u5185\u5BB9\uFF1B\u62D6\u52A8\u8BBE\u7F6E\u624B\u52A8\u6392\u5217\u3002", "DSH always owns native history, tool transactions and retention boundaries. Turning a position off excludes its content; dragging sets user order.")),
     preset.layout?.overrides.length > 0 && (0, import_react9.createElement)("div", { className: "dta-notice" }, t("\u6B64\u7B56\u7565\u8FD8\u542B\u6709\u65E7\u7684\u5177\u4F53\u8D44\u6E90\u5B9A\u4F4D\u3002\u53EF\u5148\u5728\u7ED3\u679C\u9875\u68C0\u67E5\uFF1B\u6E05\u9664\u540E\u4EC5\u4F7F\u7528\u8FD9\u91CC\u7684\u901A\u7528\u4F4D\u7F6E\u914D\u7F6E\u3002", "This strategy also contains older asset-specific overrides. Inspect the result before clearing them to use only reusable positions."), (0, import_react9.createElement)("button", { disabled: busy2, onClick: () => changePolicy({ overrides: [] }) }, t("\u6E05\u9664\u65E7\u8D44\u6E90\u5B9A\u4F4D", "Clear asset-specific overrides"))),
+    (0, import_react9.createElement)("p", { role: resolutionError ? "alert" : "status" }, resolutionError ? `${t("\u4F4D\u7F6E\u89E3\u6790\u5931\u8D25\uFF0C\u5217\u8868\u4FDD\u7559\u914D\u7F6E\u987A\u5E8F\uFF1A", "Position resolution failed; showing configured order: ")}${resolutionError}` : resolving ? t("\u6B63\u5728\u6839\u636E\u5F53\u524D\u8D44\u6E90\u66F4\u65B0\u4F4D\u7F6E\u2026", "Resolving positions from current resources\u2026") : preview ? t("\u5DF2\u6309\u5F53\u524D\u8D44\u6E90\u66F4\u65B0\u53EF\u786E\u5B9A\u7684\u4F4D\u7F6E\uFF1B\u5206\u6563\u6216\u6682\u65E0\u5185\u5BB9\u7684\u4F4D\u7F6E\u4FDD\u7559\u914D\u7F6E\u987A\u5E8F\u3002", "Definite positions follow current resources; split or empty positions retain configured order.") : t("\u5C1A\u672A\u8BFB\u53D6\u5F53\u524D\u8D44\u6E90\uFF1B\u5217\u8868\u663E\u793A\u914D\u7F6E\u987A\u5E8F\u3002", "Current resources have not been resolved; showing configured order.")),
     (0, import_react9.createElement)(SortableList, {
       className: "dta-position-list",
       items: rows,
@@ -23662,7 +23697,7 @@ function ResourcePositionEditor({ preset, sources, locale = 0, busy: busy2, onCh
           (0, import_react9.createElement)("div", { className: "dta-position-name" }, (0, import_react9.createElement)("strong", null, title(row)), (0, import_react9.createElement)("small", { className: "dta-origin" }, `${originName(row.source.pluginId)} \xB7 ${sourceName(row.sourceId)}`)),
           (0, import_react9.createElement)(SummaryMetadata, { className: "dta-position-meta", items: [
             { label: t("\u7A33\u5B9A\u6027", "Stability"), className: "dta-position-stability", content: row.sourceId === "worldbook" ? t("\u5E38\u9A7B\u6761\u76EE\u968F\u8D44\u6E90\u53D8\u5316\uFF1B\u5176\u4ED6\u6761\u76EE\u968F\u5BF9\u8BDD\u89E6\u53D1\u3002", "Constant entries follow asset changes; other entries follow conversation activation.") : { asset: t("\u6E90\u6B63\u6587\u968F\u8D44\u6E90\u53D8\u5316\uFF1B\u5B8F\u4E0E\u5F15\u7528\u53EF\u80FD\u968F\u8BF7\u6C42\u53D8\u5316\u3002", "Source text follows assets; macros and references may vary per request."), conversation: t("\u53EF\u80FD\u968F\u5BF9\u8BDD\u53D8\u5316", "May change with conversation"), evaluation: t("\u6BCF\u6B21\u6C42\u503C\u53EF\u80FD\u53D8\u5316", "May change on each evaluation"), assembly: t("\u7531\u5B98\u65B9\u88C5\u914D\u51B3\u5B9A", "Determined by native assembly"), snapshot: t("\u5DF2\u4FDD\u5B58\u7684\u5FEB\u7167", "Saved snapshot") }[row.source.stability] ?? t("\u6765\u6E90\u672A\u58F0\u660E", "Not declared by provider") },
-            { label: t("\u4F4D\u7F6E\u8BF4\u660E", "Placement"), content: (0, import_react9.createElement)("div", null, row.missing ? t("\u6765\u6E90\u672A\u6CE8\u518C\uFF1B\u4FDD\u7559\u914D\u7F6E\u3002", "Provider unavailable; configuration retained.") : row.source.moduleAvailable === false ? t("\u5F53\u524D\u65E0\u5185\u5BB9\uFF1B\u8D44\u6E90\u53EF\u7528\u540E\u751F\u6548\u3002", "No content is currently available; applies when resources are available.") : fixed(row) ? t("\u7531\u8FD0\u884C\u65F6\u7BA1\u7406", "Managed by runtime") : row.placement === "list" ? t("\u7528\u6237\u6392\u5217\uFF1B\u53EA\u5904\u7406\u5C1A\u672A\u5B9A\u4F4D\u7684\u8D44\u6E90\u3002", "User order; applies to resources not yet placed.") : t("\u8DDF\u968F\u9884\u8BBE\u63D2\u69FD\u6216\u8D44\u6E90\u4F4D\u7F6E", "Follow preset slots or resource position"), row.position.note && (0, import_react9.createElement)("p", { className: "dta-position-note" }, row.position.note[locale]), !fixed(row) && row.position.configurable !== false && row.placement === "list" && (0, import_react9.createElement)("div", { className: "dta-position-actions" }, (0, import_react9.createElement)("button", { disabled: busy2, onClick: () => update(row, { placement: "source" }) }, t("\u8DDF\u968F\u8D44\u6E90\u4F4D\u7F6E", "Follow source position")))) },
+            { label: t("\u4F4D\u7F6E\u8BF4\u660E", "Placement"), content: (0, import_react9.createElement)("div", null, row.missing ? t("\u6765\u6E90\u672A\u6CE8\u518C\uFF1B\u4FDD\u7559\u914D\u7F6E\u3002", "Provider unavailable; configuration retained.") : row.source.moduleAvailable === false ? t("\u5F53\u524D\u65E0\u5185\u5BB9\uFF1B\u8D44\u6E90\u53EF\u7528\u540E\u751F\u6548\u3002", "No content is currently available; applies when resources are available.") : fixed(row) ? t("\u7531\u8FD0\u884C\u65F6\u7BA1\u7406", "Managed by runtime") : row.placement === "list" ? t("\u81EA\u5B9A\u4E49\u4F4D\u7F6E\uFF1B\u8986\u76D6\u81EA\u52A8\u5B9A\u4F4D\u89C4\u5219\u3002", "Custom position; overrides automatic placement.") : t("\u8DDF\u968F\u9884\u8BBE\u63D2\u69FD\u6216\u8D44\u6E90\u4F4D\u7F6E", "Follow preset slots or resource position"), row.split && (0, import_react9.createElement)("p", null, t("\u5185\u5BB9\u5206\u6563\u5728\u591A\u4E2A\u4F4D\u7F6E\uFF0C\u8BF7\u5728\u88C5\u914D\u7ED3\u679C\u4E2D\u67E5\u770B\u3002", "Content spans multiple positions; inspect the assembly result.")), row.position.note && (0, import_react9.createElement)("p", { className: "dta-position-note" }, row.position.note[locale]), !fixed(row) && row.position.configurable !== false && row.placement === "list" && (0, import_react9.createElement)("div", { className: "dta-position-actions" }, (0, import_react9.createElement)("button", { disabled: busy2, onClick: () => update(row, { placement: "source" }) }, t("\u8DDF\u968F\u8D44\u6E90\u4F4D\u7F6E", "Follow source position")))) },
             ...row.position.macros?.length ? [{ label: t("\u9884\u8BBE\u5B8F / \u63D2\u69FD", "Preset macros / slots"), content: row.position.macros.map((m2) => `{{${m2}}}`).join(" \xB7 ") }] : []
           ] })
         )
@@ -23672,10 +23707,10 @@ function ResourcePositionEditor({ preset, sources, locale = 0, busy: busy2, onCh
 }
 function PositionDecisions({ preview, sources, locale = 0, sourceName = (id) => sources.find((s) => s.id === id)?.name ?? id }) {
   const t = (zh, en) => locale === 0 ? zh : en;
-  const names2 = { user: t("\u91C7\u7528\u7528\u6237\u6392\u5217", "User order applied"), preset: t("\u91C7\u7528\u9884\u8BBE\u63D2\u69FD", "Preset slot applied"), runtime: t("\u670D\u4ECE DSH \u8FD0\u884C\u65F6\u7EA6\u675F", "DSH runtime constraint wins"), "resource-depth": t("\u91C7\u7528\u8D44\u6E90\u6DF1\u5EA6", "Resource depth applied"), source: t("\u91C7\u7528\u8D44\u6E90\u9ED8\u8BA4\u4F4D\u7F6E", "Source position applied"), default: t("\u7531\u6765\u6E90\u9ED8\u8BA4\u987A\u5E8F\u6392\u5217", "Default source order applied"), resource: t("\u7531\u8D44\u6E90\u81EA\u5E26\u4F4D\u7F6E\u6392\u5217", "Resource position applied"), unavailable: t("\u6765\u6E90\u6216\u4F4D\u7F6E\u672A\u6CE8\u518C\uFF0C\u5DF2\u56DE\u9000", "Provider/position unavailable; fallback applied"), disabled: t("\u5DF2\u5173\u95ED\uFF0C\u4E0D\u8FDB\u5165\u7ED3\u679C", "Disabled; excluded") };
+  const names2 = { user: t("\u91C7\u7528\u624B\u52A8\u6392\u5217", "Manual order applied"), preset: t("\u91C7\u7528\u9884\u8BBE\u63D2\u69FD", "Preset slot applied"), runtime: t("\u670D\u4ECE DSH \u8FD0\u884C\u65F6\u7EA6\u675F", "DSH runtime constraint wins"), "resource-depth": t("\u91C7\u7528\u8D44\u6E90\u6DF1\u5EA6", "Resource depth applied"), source: t("\u91C7\u7528\u8D44\u6E90\u9ED8\u8BA4\u4F4D\u7F6E", "Source position applied"), default: t("\u7531\u6765\u6E90\u9ED8\u8BA4\u987A\u5E8F\u6392\u5217", "Default source order applied"), resource: t("\u7531\u8D44\u6E90\u81EA\u5E26\u4F4D\u7F6E\u6392\u5217", "Resource position applied"), unavailable: t("\u6765\u6E90\u6216\u4F4D\u7F6E\u672A\u6CE8\u518C\uFF0C\u5DF2\u56DE\u9000", "Provider/position unavailable; fallback applied"), disabled: t("\u5DF2\u5173\u95ED\uFF0C\u4E0D\u8FDB\u5165\u7ED3\u679C", "Disabled; excluded") };
   const decisions = preview?.resourceLayout?.positionDecisions ?? [];
   const unique = [...new Map(decisions.map((d2) => [`${d2.sourceId}/${d2.positionId}/${d2.decision}`, d2])).values()];
-  return unique.length > 0 && (0, import_react9.createElement)("details", { className: "dta-position-decisions", open: true }, (0, import_react9.createElement)("summary", null, t("\u6392\u5E8F\u5904\u7406\u7ED3\u679C", "Sorting decisions")), preview.resourceLayout.priorityOrder && (0, import_react9.createElement)("p", null, `${t("\u672C\u6B21\u6392\u5E8F\u987A\u5E8F", "Priority used")}: ${preview.resourceLayout.priorityOrder.map((p) => ({ user: t("\u7528\u6237\u4F4D\u7F6E", "User"), preset: t("\u9884\u8BBE\u63D2\u69FD", "Preset"), resource: t("\u8D44\u6E90\u4F4D\u7F6E", "Resource"), default: t("\u6765\u6E90\u9ED8\u8BA4", "Default") })[p]).join(" \u2192 ")}`), preview.resourceLayout.sortingStages?.length > 0 && (0, import_react9.createElement)("ol", { className: "dta-sorting-stages" }, ...preview.resourceLayout.sortingStages.map((stage) => (0, import_react9.createElement)("li", { key: stage.strategy }, `${{ user: t("\u7528\u6237\u6392\u5217", "User order"), preset: t("\u9884\u8BBE\u63D2\u69FD", "Preset slots"), resource: t("\u8D44\u6E90\u4F4D\u7F6E", "Resource positions"), default: t("\u6765\u6E90\u9ED8\u8BA4", "Default order") }[stage.strategy]}: ${t("\u5B9A\u4F4D", "Placed")} ${stage.nodeIds.length} ${t("\u9879\uFF0C\u540E\u7EED\u7B56\u7565\u8DF3\u8FC7\u8FD9\u4E9B\u8D44\u6E90", "items; later strategies skip these resources")}`))), (0, import_react9.createElement)("ul", null, ...unique.map((d2, i3) => {
+  return unique.length > 0 && (0, import_react9.createElement)("details", { className: "dta-position-decisions", open: true }, (0, import_react9.createElement)("summary", null, t("\u6392\u5E8F\u5904\u7406\u7ED3\u679C", "Sorting decisions")), preview.resourceLayout.priorityOrder && (0, import_react9.createElement)("p", null, `${t("\u672C\u6B21\u81EA\u52A8\u5B9A\u4F4D\u4F18\u5148\u7EA7", "Priority used")}: ${preview.resourceLayout.priorityOrder.map((p) => ({ user: t("\u624B\u52A8\u6392\u5217", "User"), preset: t("\u9884\u8BBE\u63D2\u69FD", "Preset"), resource: t("\u8D44\u6E90\u4F4D\u7F6E", "Resource"), default: t("\u6765\u6E90\u9ED8\u8BA4", "Default") })[p]).join(" \u2192 ")}`), preview.resourceLayout.sortingStages?.length > 0 && (0, import_react9.createElement)("ol", { className: "dta-sorting-stages" }, ...preview.resourceLayout.sortingStages.map((stage) => (0, import_react9.createElement)("li", { key: stage.strategy }, `${{ preset: t("\u9884\u8BBE\u63D2\u69FD", "Preset slots"), resource: t("\u8D44\u6E90\u4F4D\u7F6E", "Resource positions"), default: t("\u6765\u6E90\u9ED8\u8BA4", "Default order") }[stage.strategy]}: ${t("\u5B9A\u4F4D", "Placed")} ${stage.nodeIds.length} ${t("\u9879\uFF0C\u4F4E\u4F18\u5148\u7EA7\u89C4\u5219\u4E0D\u8986\u76D6", "items; lower priorities do not override")}`))), (0, import_react9.createElement)("ul", null, ...unique.map((d2, i3) => {
     const source = sources.find((s) => s.id === d2.sourceId), position = source?.positions?.find((p) => p.id === d2.positionId);
     return (0, import_react9.createElement)("li", { key: i3 }, `${position?.name?.[locale] ?? sourceName(d2.sourceId)}: ${names2[d2.decision] ?? d2.decision}${d2.code === "POSITION_ANCHOR_MISSING" ? t("\uFF08\u8D44\u6E90\u951A\u70B9\u4E0D\u53EF\u7528\uFF09", " (resource anchor unavailable)") : d2.requested ? t("\uFF08\u8BE5\u8D44\u6E90\u5DF2\u7531\u6B64\u524D\u7B56\u7565\u6216\u8FD0\u884C\u65F6\u5B9A\u4F4D\uFF09", " (already placed by an earlier strategy or runtime)") : ""}`);
   })));
@@ -24014,6 +24049,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   const [items2, setItems] = (0, import_react10.useState)([]), [draft, setDraft] = (0, import_react10.useState)(null), [selection, setSelection] = (0, import_react10.useState)(null), [capable, setCapable] = (0, import_react10.useState)(false), [capabilities, setCapabilities] = (0, import_react10.useState)(null);
   const [status, setStatus] = (0, import_react10.useState)(""), [error, setError] = (0, import_react10.useState)(false), [busy2, setBusy] = (0, import_react10.useState)(false), [tab, setTab] = (0, import_react10.useState)("rules"), [preview, setPreview] = (0, import_react10.useState)(null), [dirty, setDirty] = (0, import_react10.useState)(false), [expanded, setExpanded] = (0, import_react10.useState)({});
   const [historyDirty, setHistoryDirty] = (0, import_react10.useState)(false);
+  const [validationFailure, setValidationFailure] = (0, import_react10.useState)(null);
   const appliedBackend = selection?.backend ?? "native";
   const file = (0, import_react10.useRef)(), stage = (0, import_react10.useRef)(), dialog = (0, import_react10.useRef)(), generation = (0, import_react10.useRef)(0), mounted = (0, import_react10.useRef)(true);
   (0, import_react10.useLayoutEffect)(() => {
@@ -24133,6 +24169,17 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   };
   const editablePreset = (preset) => ({ ...preset, rules: preset.rules.map(editableRule) });
   const editLayout = (next) => edit({ rules: next.rules, layout: next.layout, placement: layoutPlacement(next) });
+  async function validateCurrent(candidate = draft) {
+    try {
+      const data3 = await api2("/preview", "POST", { sessionId, preset: editablePreset(candidate) });
+      if (!data3.preview) throw new Error(locale === 0 ? "\u672A\u8FD4\u56DE\u88C5\u914D\u6821\u9A8C\u7ED3\u679C" : "Assembly validation result is unavailable");
+      setValidationFailure(null);
+      return data3.preview;
+    } catch (error2) {
+      setValidationFailure({ id: candidate.id, candidate, message: error2.message });
+      throw error2;
+    }
+  }
   const controlRows = (rules) => contextControlRows(rules, sources.map((s) => s.id));
   const editRule = (id, patch) => edit({ rules: controlRows(draft.rules).map((r) => r.id === id ? { ...editableRule(r), ...patch } : r) });
   const toggle = (id) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
@@ -24168,7 +24215,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     if (node.name?.startsWith("preset:") || node.name?.startsWith("worldbook:")) return labels[node.source?.field] ? t(node.source.field) : `${t(node.name.startsWith("preset:") ? "preset" : "worldbook")} \xB7 ${Math.max(0, preview?.nodes?.indexOf(node) ?? -1) + 1}`;
     return node.name;
   };
-  const positionReason = (decision) => ({ user: locale === 0 ? "\u7528\u6237\u6392\u5217" : "User order", preset: locale === 0 ? "\u9884\u8BBE\u63D2\u69FD" : "Preset slot", runtime: locale === 0 ? "\u8FD0\u884C\u65F6\u7EA6\u675F" : "Runtime constraint", "resource-depth": locale === 0 ? "\u8D44\u6E90\u6DF1\u5EA6" : "Resource depth", resource: locale === 0 ? "\u8D44\u6E90\u81EA\u5E26\u4F4D\u7F6E" : "Resource position", default: locale === 0 ? "\u6765\u6E90\u9ED8\u8BA4\u987A\u5E8F" : "Default source order", source: locale === 0 ? "\u8D44\u6E90\u9ED8\u8BA4\u4F4D\u7F6E" : "Source position" })[decision];
+  const positionReason = (decision) => ({ user: locale === 0 ? "\u81EA\u5B9A\u4E49\u4F4D\u7F6E" : "Custom position", preset: locale === 0 ? "\u9884\u8BBE\u63D2\u69FD" : "Preset slot", runtime: locale === 0 ? "\u8FD0\u884C\u65F6\u7EA6\u675F" : "Runtime constraint", "resource-depth": locale === 0 ? "\u8D44\u6E90\u6DF1\u5EA6" : "Resource depth", resource: locale === 0 ? "\u8D44\u6E90\u81EA\u5E26\u4F4D\u7F6E" : "Resource position", default: locale === 0 ? "\u6765\u6E90\u9ED8\u8BA4\u987A\u5E8F" : "Default source order", source: locale === 0 ? "\u8D44\u6E90\u9ED8\u8BA4\u4F4D\u7F6E" : "Source position" })[decision];
   const originName = (plugin) => plugin === "DSH" ? "DSH" : plugin === "pmp-dsh-tavern" || plugin?.startsWith("pmp-dsh-tavern/") ? "DSH Tavern" : plugin ?? (locale === 0 ? "\u6765\u6E90\u672A\u77E5" : "Unknown source");
   const sourceDescriptor2 = (kind) => sources.find((s) => s.id === kind);
   const sourcePlugin = (kind) => sourceDescriptor2(kind)?.pluginId ?? null;
@@ -24250,7 +24297,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   const adaptiveNative = nativeDraft && ["native-roles", "native-slots"].includes(draft.placement);
   const slotMode = nativeDraft && draft.placement === "native-slots";
   (0, import_react10.useEffect)(() => {
-    if (!slotMode || draft?.layout) {
+    if (!slotMode && !draft?.layout || !sessionId && !selectionTarget) {
       setSlotAnalysis(null);
       return;
     }
@@ -24405,6 +24452,12 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         }
       })),
       status && (0, import_react10.createElement)("div", { role: error ? "alert" : "status", className: "dta-notice", "data-error": error }, status),
+      validationFailure && validationFailure.id === draft?.id && (0, import_react10.createElement)(
+        "div",
+        { role: "alert", className: "dta-notice", "data-assembly-validation-error": true },
+        validationFailure.candidate === draft ? locale === 0 ? "\u5F53\u524D\u8D44\u6E90\u88C5\u914D\u6821\u9A8C\u5931\u8D25\uFF1A" : "Current-resource validation failed: " : locale === 0 ? "\u914D\u7F6E\u5DF2\u4FEE\u6539\u6216\u4FDD\u5B58\uFF0C\u5C1A\u672A\u901A\u8FC7\u91CD\u65B0\u6821\u9A8C\u3002\u4E0A\u6B21\u9519\u8BEF\uFF1A" : "Configuration changed or saved; revalidation is required. Last error: ",
+        validationFailure.message
+      ),
       !draft ? (0, import_react10.createElement)("div", null, !error && (0, import_react10.createElement)("p", null, t("loading")), error && button("retry", () => setReload((n) => n + 1))) : (0, import_react10.createElement)(
         "div",
         null,
@@ -24427,17 +24480,17 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         (0, import_react10.createElement)("h3", { className: "dta-section-title" }, t("rulesSection")),
         (0, import_react10.createElement)("p", { className: "dta-notice", "data-assembly-placement-tip": true }, t("placementTip")),
         (0, import_react10.createElement)("label", { className: "dta-toolbar" }, t("backend"), (0, import_react10.createElement)("select", { "aria-label": t("backend"), value: draft.backend ?? "core", onChange: (e) => edit({ backend: e.target.value }) }, (0, import_react10.createElement)("option", { value: "native" }, t("backendNative")), (0, import_react10.createElement)("option", { value: "core" }, t("backendCore")))),
-        (0, import_react10.createElement)("div", { className: "dta-notice" }, draft.layout ? locale === 0 ? "\u5148\u914D\u7F6E\u8D44\u6E90\u4F4D\u7F6E\uFF0C\u518D\u52A0\u8F7D\u5F53\u524D\u8D44\u6E90\u67E5\u770B\u88C5\u914D\u7ED3\u679C\u3002\u6392\u5E8F\u7B56\u7565\u6309\u5217\u8868\u4F9D\u6B21\u5904\u7406\u5C1A\u672A\u5B9A\u4F4D\u7684\u8D44\u6E90\uFF0C\u8FD0\u884C\u65F6\u7EA6\u675F\u59CB\u7EC8\u751F\u6548\u3002" : "Configure resource positions, then load current assets to see the assembled result. Sorting strategies process the remaining resources in list order, within runtime constraints." : t(adaptiveNative ? draft.placement === "native-slots" ? "nativeSlotsHint" : "nativeRolesHint" : nativeDraft ? "nativeHint" : "coreHint")),
+        (0, import_react10.createElement)("div", { className: "dta-notice" }, draft.layout ? locale === 0 ? "\u62D6\u62FD\u5373\u81EA\u5B9A\u4E49\u4F4D\u7F6E\uFF1B\u5176\u4F59\u5185\u5BB9\u6309\u81EA\u52A8\u4F18\u5148\u7EA7\u5B9A\u4F4D\u3002\u5F53\u524D\u8D44\u6E90\u53EF\u786E\u5B9A\u7684\u4F4D\u7F6E\u4F1A\u540C\u6B65\u66F4\u65B0\uFF0C\u8EAB\u4EFD\u4E0E\u8FD0\u884C\u65F6\u7EA6\u675F\u59CB\u7EC8\u751F\u6548\u3002" : "Dragging sets a custom position; other content follows automatic priority. Definite positions update from current resources, within identity and runtime constraints." : t(adaptiveNative ? draft.placement === "native-slots" ? "nativeSlotsHint" : "nativeRolesHint" : nativeDraft ? "nativeHint" : "coreHint")),
         nativeError && (0, import_react10.createElement)("div", { className: "dta-notice", role: "alert" }, nativeError),
         (0, import_react10.createElement)("div", { className: "dta-tabs" }, (0, import_react10.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
-          const data3 = await api2("/preview", "POST", { sessionId, preset: editablePreset(draft) });
-          setPreview(data3.preview);
-          if (slotMode) setSlotAnalysis({ draft, preview: data3.preview });
+          const result = await validateCurrent();
+          setPreview(result);
+          if (slotMode) setSlotAnalysis({ draft, preview: result });
           setTab("expanded");
         }), Boolean(selectionTarget && (typeof selectionTarget.previewAssembly !== "function" || selectionTarget.editable === false)), void 0, tab === "expanded" && !preview?.actual)),
         (0, import_react10.createElement)("div", { className: "dta-result-tools" }, button("actual", () => run(actualRequest), !sessionId)),
         (0, import_react10.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react10.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
-        tab === "rules" ? (0, import_react10.createElement)("div", null, (0, import_react10.createElement)(ResourcePositionEditor, { preset: draft, sources, locale, busy: busy2, sourceColor, originName, sourceName, onChange: editLayout }), (0, import_react10.createElement)(
+        tab === "rules" ? (0, import_react10.createElement)("div", null, (0, import_react10.createElement)(ResourcePositionEditor, { preset: draft, sources, preview: analysis?.preview, resolving: !!draft.layout && !!(sessionId || selectionTarget) && !analysis, resolutionError: analysis?.error, locale, busy: busy2, sourceColor, originName, sourceName, onChange: editLayout }), (0, import_react10.createElement)(
           "details",
           { className: "dta-source-settings" },
           (0, import_react10.createElement)("summary", null, locale === 0 ? "\u6765\u6E90\u3001\u6587\u672C\u4E0E\u6295\u9012\u8BBE\u7F6E" : "Source, text and delivery settings"),
@@ -24460,6 +24513,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         (0, import_react10.createElement)("div", { className: "dta-toolbar" }, button("apply", async () => {
           if (!await changeHistoryBackend(draft.backend ?? "core")) return;
           run(async () => {
+            await validateCurrent();
             const preset = dirty || !draft.id ? await save() : draft;
             const data3 = await api2("/selection", "PUT", { sessionId, id: preset.id });
             setSelection(data3.selection);
@@ -24470,6 +24524,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           const nextBackend = items2.find((p) => p.id === defaultId3)?.backend ?? "core";
           if (!await (nextBackend === appliedBackend ? discard() : leave())) return;
           run(async () => {
+            await validateCurrent(items2.find((p) => p.id === defaultId3));
             const data3 = await api2("/selection", "PUT", { sessionId, id: defaultId3 });
             setSelection(data3.selection);
             setDraft(items2.find((p) => p.id === defaultId3));

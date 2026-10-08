@@ -20,11 +20,11 @@ Tavern supplies distinct reference configurations that can be saved as custom st
 | Roles first (standard) `builtin-native-roles` | Preserve preset and lore entry roles. Within legal delivery regions, use preset slots, entry order, then module order. |
 | Preset slots first (advanced) `builtin-st` | Preserve supported preset slots, authored roles and message-level depth. Requires the core addon and compatible model capabilities. |
 
-Slot templates use explicit resource-position priority: preset slots → user positions → resource positions → fallback order. PHI-last, lore-and-PHI-last and append-snapshot references are no longer separate built-ins; placement and retention remain configurable. Native ST style was also withdrawn because forcing assets to system is not ST ordering.
+Dragged positions are custom overrides outside automatic priority; Follow source position restores automatic placement. Automatic rules default to preset slots → resource positions → fallback order and can be reordered. With position adaptation, manual placement is resolved before roles and delivery regions. The editor synchronizes definite positions; split or empty categories retain configured order. PHI-last, lore-and-PHI-last and append-snapshot references are no longer separate built-ins; placement and retention remain configurable. Native ST style was also withdrawn because forcing assets to system is not ST ordering.
 
 Tip: If the model drops formatting or misses instructions, try placing the relevant format requirements or behavior instructions later, then check their actual position in the assembly result.
 
-New RP sessions and Apply default strategy use standard slots even with the advanced addon installed. Existing built-in snapshots, custom strategies and explicit opt-outs remain unchanged; select and apply a template again to adopt its new definition. Standalone DSH sessions have no implicit RP strategy.
+New RP sessions and Apply default strategy use standard slots even with the advanced addon installed. Existing built-in snapshots, custom strategies and explicit opt-outs are not replaced. Legacy four-item lists lose the user-order item while retaining the relative order of automatic rules; existing manual positions adopt custom-override semantics; select and apply a template again to adopt its new definition. Standalone DSH sessions have no implicit RP strategy.
 
 A final user reminder retains user priority. Cache hits and model adherence depend on the model. Native Trace verifies durable system/context references without creating request/assembly or a second history. The complete frozen-request view is limited to advanced evidence; standard mode reports this scope explicitly.
 
