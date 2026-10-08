@@ -154,7 +154,7 @@ for (const nativeOnly of [false, true]) test(`extracted view exposes one parser 
   assert.equal(container.querySelectorAll('.dta-row:not([data-context-control])').length, presets[0].rules.length, 'new strategy starts from the available default')
   assert.equal(container.querySelector('.dta-grid label input').disabled, false, 'new strategies can be named')
   assert(!container.textContent.includes('内置策略不能改名或删除'))
-  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '根据当前配置预览')))
+  await act(() => Simulate.click([...container.querySelectorAll('button')].find(b => b.textContent === '装配结果')))
   const created = JSON.parse(calls.findLast(c => c.url.endsWith('/preview')).body).preset
   assert.equal(created.format, presets[0].format); assert.equal(created.rules.length, presets[0].rules.length)
 })
@@ -171,7 +171,7 @@ test('legacy text aliases preview through one parser without changing saved rule
  const root=createRoot(document.getElementById('root'));t.after(async()=>{await act(()=>root.unmount());for(const k of keys){if(old[k]===undefined)delete globalThis[k];else globalThis[k]=old[k]}})
  await act(()=>root.render(h(Panel,{sessionId:'s',fetcher,close(){}})))
  assert.deepEqual([...document.querySelectorAll('#dta-add-parser option')].map(o=>o.value),['dsh.text','tavern.text'])
- await act(()=>Simulate.click([...document.querySelectorAll('button')].find(b=>b.textContent==='根据当前配置预览')))
+ await act(()=>Simulate.click([...document.querySelectorAll('button')].find(b=>b.textContent==='装配结果')))
  const sent=JSON.parse(calls.findLast(c=>c.method==='POST').body).preset
  assert.equal(sent.rules.find(r=>r.id==='preset').kind,'preset','resource source rules retain their identity')
  assert.equal(sent.rules.find(r=>r.id==='old-custom').kind,'tavern.text')

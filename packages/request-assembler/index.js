@@ -2,4 +2,4 @@ export { ASSEMBLY_SERVICE, SOURCE_PROTOCOL_VERSION, RequestSourceRegistry } from
 export { registerBuiltinSources, createDefaultRegistry } from './builtin-sources.js'
 export { assembleRequest, assembleRequestAsync, textOf } from './assemble.js'
 export { FORMAT, BUILTINS, normalizePreset } from './model.js'
-export { normalizeLayout, describeResourceLayout, withBlockMove } from './resource-layout.js'
+export { normalizeLayout, describeResourceLayout, withBlockMove, positionRows, configurePosition } from './resource-layout.js'
