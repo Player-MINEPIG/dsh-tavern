@@ -484,6 +484,10 @@ function characterExtensions(entry) {
 
 function embeddedEntry(entry) {
   const raw = isRecord(entry?.source?.raw) ? clone(entry.source.raw) : {}
+  // Some imported books store these fields both at the top level and in extensions.
+  // Keep the higher-priority aliases current when exporting edited entries.
+  if (Object.hasOwn(raw, 'depth')) raw.depth = entry.depth
+  if (Object.hasOwn(raw, 'role')) raw.role = typeof raw.role === 'number' ? roleNumber(entry.role) : entry.role
   Object.assign(raw, {
     id: entry.uid,
     keys: clone(entry.keys),

@@ -129,3 +129,27 @@ test('edits an imported Character Book without adding standalone-only fields', (
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('depth and role edits survive save, reload and export for both worldbook formats', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'worldbook-depth-role-'))
+  try {
+    const store = new WorldBookStore(directory)
+    for (const embedded of [false,true]) {
+      const raw = embedded ? {entries:[{id:1,keys:[],content:'LORE',enabled:true,position:'after_char',depth:4,role:'system',extensions:{position:4,depth:4,role:0}}]}
+        : {entries:{one:{uid:1,key:[],content:'LORE',disable:false,position:4,depth:4,role:0}}}
+      const document = store.import(JSON.stringify(raw),{id:embedded?'embedded':'standalone'})
+      for (const depth of [0,1,7]) {
+        const book=store.get(document.id).book
+        book.entries[0].depth=depth;book.entries[0].role='user'
+        store.update(document.id,{book})
+        const saved=new WorldBookStore(directory).get(document.id).book.entries[0]
+        assert.equal(saved.depth,depth);assert.equal(saved.role,'user')
+        const copy=store.import(store.export(document.id).text,{id:`copy-${embedded}-${depth}`})
+        assert.equal(copy.book.entries[0].depth,depth);assert.equal(copy.book.entries[0].role,'user')
+      }
+      const book=store.get(document.id).book
+      for(const depth of [-1,0.5]) assert.throws(()=>store.update(document.id,{book:{...book,entries:[{...book.entries[0],depth}]}}),/depth is invalid/)
+      assert.throws(()=>store.update(document.id,{book:{...book,entries:[{...book.entries[0],role:'invalid'}]}}),/role is invalid/)
+    }
+  } finally { rmSync(directory,{recursive:true,force:true}) }
+})

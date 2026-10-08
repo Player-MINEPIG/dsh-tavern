@@ -106,7 +106,9 @@ RP 正文与开场白默认支持 LaTeX 数学公式：行内使用 `$x^2$` 或 
 
 独立世界书可以导入、创建、编辑、导出和删除。勾选当前 session 的世界书后，面板会显示未应用状态；必须点击蓝色应用按钮才写入 session。用户、预设、角色卡绑定书和角色内嵌书分别显示来源，不会混成同一资源文档；独立书可从任一来源入口打开同一个编辑器。
 
-条目编辑支持主/附加关键词（英文逗号或中文逗号分隔）、secondary logic、常驻、启用、大小写、全词匹配、position、order、probability 和正文。折叠标题会显示常驻、禁用或关键词条件。普通关键词会扫描有界的 durable history 与本步骤 claimed 输入，所以空会话第一条消息也可以在同一轮激活；JavaScript regex 关键词默认阻断。
+条目编辑支持主/附加关键词（英文逗号或中文逗号分隔）、secondary logic、常驻、启用、大小写、全词匹配、position、order、probability、条目身份和正文；at depth 条目还可查看和编辑非负整数深度。折叠标题显示深度及身份。深度不是世界书内部条目顺序。普通关键词会扫描有界的 durable history 与本步骤 claimed 输入，所以空会话第一条消息也可以在同一轮激活；JavaScript regex 关键词默认阻断。
+
+标准版插槽优先将角色定义前后放入预设 World Info 插槽，示例前后围绕 dialogueExamples，作者注释前后围绕 authorNote/authorsNote；位置决定 system/user。缺少示例或作者注释锚点时，预览提示回退。at depth 0 暂映射到原生历史后、1 到历史前；更大值保留并提示近似。身份优先保留世界书条目身份，同一投递区域内按预设插槽、模块内条目顺序、模块顺序排列。详情见 [assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/main/docs/BACKENDS.md)。
 
 组合顺序为 session 显式独立书 → 用户绑定独立书 → 预设绑定独立书 → 角色卡绑定独立书 → 角色内嵌书。独立书先按 ID 稳定去重，前一来源优先；角色内嵌书随后以独立资源参与同一次 matcher。每次请求的 matcher 输入合计最多 10,000 条；后面的资源若不能整体放入会跳过并产生诊断。
 

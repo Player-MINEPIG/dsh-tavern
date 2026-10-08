@@ -18351,8 +18351,11 @@ var zh_CN_default = Object.freeze({
   "world.entry.secondaryLogicShort": "Secondary logic",
   "world.entry.body": "\u6B63\u6587",
   "world.entry.content": "\u6761\u76EE\u5185\u5BB9\uFF08\u89E6\u53D1\u540E\u6CE8\u5165 system profile\uFF09",
-  "world.slotHint": "before/after \u5206\u522B\u8FDB\u5165\u9884\u8BBE\u7684 World Info (before)/(after) \u63D2\u69FD\uFF1B\u63D2\u69FD\u4F4D\u7F6E\u7531\u9884\u8BBE\u51B3\u5B9A\u3002\u6309\u6A21\u5757\u5217\u8868\u6392\u5E8F\u65F6\uFF0C\u4E16\u754C\u4E66\u4F5C\u4E3A\u6574\u4F53\u6392\u5217\u3002",
-  "world.depthHint": "\u6DF1\u5EA6\u4EE5\u804A\u5929\u6D88\u606F\u672B\u7AEF\u4E3A\u53C2\u7167\uFF0C\u4E0D\u662F\u4E16\u754C\u4E66\u6761\u76EE\u5E8F\u53F7\u3002\u6807\u51C6\u7248\u4E0D\u652F\u6301\u63D2\u5165\u65E2\u6709\u5386\u53F2\uFF0C\u4F1A\u6309\u89D2\u8272\u4E0E\u6295\u9012\u533A\u57DF\u8FD1\u4F3C\u5E76\u5728\u9884\u89C8\u63D0\u793A\uFF1B\u8FDB\u9636\u7248 ST \u6A21\u5F0F\u624D\u91C7\u7528\u6765\u6E90\u6DF1\u5EA6\u3002",
+  "world.slotHint": "\u8EAB\u4EFD/\u63D2\u69FD\u4F18\u5148\uFF1A\u89D2\u8272\u524D\u540E\u5BF9\u5E94 World Info \u63D2\u69FD\uFF0C\u793A\u4F8B\u524D\u540E\u5BF9\u5E94 dialogueExamples\uFF0C\u4F5C\u8005\u6CE8\u91CA\u524D\u540E\u5BF9\u5E94 authorNote/authorsNote\uFF1B\u7F3A\u5C11\u951A\u70B9\u65F6\u9884\u89C8\u4F1A\u63D0\u793A\u5E76\u6309\u539F\u6709\u524D\u540E\u4F4D\u7F6E\u56DE\u9000\u3002\u63D2\u69FD\u4F18\u5148\u6309\u4F4D\u7F6E\u9002\u914D\u8EAB\u4EFD\uFF1B\u8EAB\u4EFD\u4F18\u5148\u4FDD\u7559\u6761\u76EE\u8EAB\u4EFD\u3002\u5176\u4ED6\u6A21\u5F0F\u4ECD\u6309\u5404\u81EA\u89C4\u5219\u5904\u7406\u3002",
+  "world.depthHint": "ST \u6DF1\u5EA6\u4ECE\u804A\u5929\u672B\u7AEF\u5012\u6570\uFF0C\u53EF\u4E3A 0\u30011\u30012\u2026\uFF0C\u4E0D\u662F\u4E16\u754C\u4E66\u6761\u76EE\u5E8F\u53F7\u3002\u6807\u51C6\u7248\u63D2\u69FD\u4F18\u5148\u6682\u6620\u5C04\u4E3A\uFF1A0 \u5728\u539F\u751F\u5386\u53F2\u540E\u30011 \u5728\u539F\u751F\u5386\u53F2\u524D\uFF1B\u5927\u4E8E 1 \u4FDD\u7559\u6570\u503C\uFF0C\u6309\u89D2\u8272\u4E0E\u6295\u9012\u533A\u57DF\u8FD1\u4F3C\u5E76\u63D0\u793A\u3002\u8EAB\u4EFD\u4F18\u5148\u4FDD\u7559\u6761\u76EE\u8EAB\u4EFD\uFF0C\u4E0D\u63D2\u5165\u5386\u53F2\u3002\u8FDB\u9636\u7248 ST \u6A21\u5F0F\u6309\u539F\u751F\u6D88\u606F\u6DF1\u5EA6\u63D2\u5165\u3002",
+  "world.entry.depth": "\u804A\u5929\u6DF1\u5EA6\uFF08\u975E\u6761\u76EE\u987A\u5E8F\uFF09",
+  "world.entry.role": "\u6761\u76EE\u8EAB\u4EFD",
+  "world.entry.depthBadge": "\u6DF1\u5EA6 {depth} \xB7 {role}",
   "world.entry.position": "\u4F4D\u7F6E",
   "world.entry.insertionPosition": "\u63D2\u5165\u4F4D\u7F6E",
   "world.entry.order": "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09",
@@ -18366,11 +18369,11 @@ var zh_CN_default = Object.freeze({
   "world.logic.notAll": "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D",
   "world.position.beforeCharacter": "\u89D2\u8272\u5B9A\u4E49\u4E4B\u524D",
   "world.position.afterCharacter": "\u89D2\u8272\u5B9A\u4E49\u4E4B\u540E",
-  "world.position.beforeAuthor": "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09",
-  "world.position.afterAuthor": "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09",
-  "world.position.atDepth": "\u6307\u5B9A\u6DF1\u5EA6\uFF08\u8FD1\u4F3C\uFF09",
-  "world.position.beforeExamples": "\u793A\u4F8B\u6D88\u606F\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09",
-  "world.position.afterExamples": "\u793A\u4F8B\u6D88\u606F\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09",
+  "world.position.beforeAuthor": "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u524D",
+  "world.position.afterAuthor": "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u540E",
+  "world.position.atDepth": "\u6307\u5B9A\u6DF1\u5EA6",
+  "world.position.beforeExamples": "\u793A\u4F8B\u6D88\u606F\u4E4B\u524D",
+  "world.position.afterExamples": "\u793A\u4F8B\u6D88\u606F\u4E4B\u540E",
   "world.position.outlet": "Outlet\uFF08\u5F53\u524D\u4E0D\u6CE8\u5165\uFF09",
   "world.currentSession": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\u3002\u53EF\u7ED1\u5B9A\u96F6\u672C\u3001\u4E00\u672C\u6216\u591A\u672C\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u7ED1\u5B9A\u987A\u5E8F\u4FDD\u6301\u7A33\u5B9A\u3002",
   "world.catalogItem": "{name}\uFF08{count} \u6761\uFF09",
@@ -19451,8 +19454,11 @@ var en_default = Object.freeze({
   "world.entry.secondaryLogicShort": "Secondary logic",
   "world.entry.body": "Body",
   "world.entry.content": "Entry content (injected into the system profile when triggered)",
-  "world.slotHint": "Before/after feed the preset\u2019s World Info (before)/(after) slots. The preset controls their positions. Module ordering places the worldbook as one module.",
-  "world.depthHint": "Depth is measured from the end of chat messages, not among worldbook entries. Standard mode approximates it using role/delivery regions and reports this in preview; advanced ST mode applies source depth.",
+  "world.slotHint": "Roles/slots first: character positions follow World Info slots, example positions surround dialogueExamples, and author-note positions surround authorNote/authorsNote. Missing anchors fall back to the existing before/after placement with a preview warning. Slots first adapts roles; roles first preserves entry roles. Other modes retain their own rules.",
+  "world.depthHint": "ST depth counts back from the end of chat: 0, 1, 2\u2026; it is not a worldbook entry index. Standard slots first currently maps 0 after native history and 1 before it. Larger values are retained but approximated by role/delivery, with a warning. Roles first preserves entry roles without inserting into history. Advanced ST mode inserts by native-message depth.",
+  "world.entry.depth": "Chat depth (not entry order)",
+  "world.entry.role": "Entry role",
+  "world.entry.depthBadge": "Depth {depth} \xB7 {role}",
   "world.entry.position": "Position",
   "world.entry.insertionPosition": "Insertion position",
   "world.entry.order": "Order (higher values first)",
@@ -19466,11 +19472,11 @@ var en_default = Object.freeze({
   "world.logic.notAll": "NOT ALL: not all may match",
   "world.position.beforeCharacter": "Before character definition",
   "world.position.afterCharacter": "After character definition",
-  "world.position.beforeAuthor": "Before author note (approximate)",
-  "world.position.afterAuthor": "After author note (approximate)",
-  "world.position.atDepth": "At depth (approximate)",
-  "world.position.beforeExamples": "Before example messages (approximate)",
-  "world.position.afterExamples": "After example messages (approximate)",
+  "world.position.beforeAuthor": "Before author note",
+  "world.position.afterAuthor": "After author note",
+  "world.position.atDepth": "At depth",
+  "world.position.beforeExamples": "Before example messages",
+  "world.position.afterExamples": "After example messages",
   "world.position.outlet": "Outlet (not currently injected)",
   "world.currentSession": "Current session: {session}. Bind zero, one, or multiple standalone world books; binding order remains stable.",
   "world.catalogItem": "{name} ({count} entries)",
@@ -23237,15 +23243,21 @@ var labels = {
   backendCore: ["\u8FDB\u9636\u7248 \xB7 \u6838\u5FC3\u6269\u5C55", "Advanced \xB7 core extension"],
   "native-roles": ["\u9884\u8BBE\u8EAB\u4EFD\u4F18\u5148", "Preset roles first"],
   "native-slots": ["\u9884\u8BBE\u63D2\u69FD\u4F18\u5148", "Preset slots first"],
-  nativeRolesHint: ["\u6309\u9884\u8BBE\u6761\u76EE\u7684 system/user \u8EAB\u4EFD\u5206\u7EC4\uFF1Bsystem \u653E\u5728\u5386\u53F2\u524D\uFF0Cuser \u6309\u6295\u9012\u65B9\u5F0F\u653E\u5728\u5386\u53F2\u4E4B\u540E\u3002\u9884\u8BBE\u89D2\u8272\u4E0D\u53D7\u6574\u5757\u89D2\u8272\u8986\u76D6\u3002\u539F\u751F\u5386\u53F2\u4E0E\u8F93\u5165\u4FDD\u7559\u3002", "Group preset entries by authored system/user role. System content precedes history; user content follows history through the selected delivery. Module role overrides do not replace preset roles. Native history/input remain."],
-  nativeSlotsHint: ["\u9884\u8BBE\u6B63\u6587\u53CA\u5F15\u7528\u5185\u5BB9\u6309\u9884\u8BBE\u63D2\u69FD\u6392\u5217\uFF1B\u53EA\u6709\u8FD9\u4E9B\u5185\u5BB9\u4F1A\u9002\u914D system/user\u3002\u72EC\u7ACB\u5185\u5BB9\u4FDD\u7559\u81EA\u8EAB\u89D2\u8272\u548C\u6295\u9012\u65B9\u5F0F\u3002system \u53EA\u80FD\u5728\u5386\u53F2\u524D\uFF1B\u672B\u5C3E\u63D0\u9192\u8BF7\u660E\u786E\u8BBE\u4E3A user\u3001pre-step\u3002\u62D6\u52A8\u6DF7\u5408\u6A21\u5757\u53EA\u79FB\u52A8\u72EC\u7ACB\u90E8\u5206\uFF0C\u9884\u8BBE\u5185\u90E8\u987A\u5E8F\u4E0D\u53D8\u3002", "Preset text and references follow preset slots; only these adapt system/user roles. Independent content keeps its role and delivery. System stays before history; for a final reminder explicitly choose user and pre-step. Moving a mixed module moves only its independent part, preserving preset order."],
+  nativeRolesHint: ["\u6309\u9884\u8BBE\u6761\u76EE\u7684 system/user \u8EAB\u4EFD\u5206\u7EC4\uFF1Bsystem \u653E\u5728\u5386\u53F2\u524D\uFF0Cuser \u6309\u6295\u9012\u65B9\u5F0F\u653E\u5728\u5386\u53F2\u4E4B\u540E\u3002\u9884\u8BBE\u4E0E\u4E16\u754C\u4E66\u7684\u6761\u76EE\u89D2\u8272\u4E0D\u53D7\u6574\u5757\u89D2\u8272\u8986\u76D6\uFF1B\u540C\u4E00\u6295\u9012\u533A\u57DF\u5185\u4F18\u5148\u9075\u5FAA\u9884\u8BBE\u63D2\u69FD\uFF0C\u5176\u6B21\u6761\u76EE\u987A\u5E8F\uFF0C\u518D\u6B21\u6A21\u5757\u987A\u5E8F\u3002\u539F\u751F\u5386\u53F2\u4E0E\u8F93\u5165\u4FDD\u7559\u3002", "Group preset entries by authored system/user role. System content precedes history; user content follows history through the selected delivery. Module overrides do not replace preset or worldbook entry roles. Within a delivery region, preset slots precede entry order, then module order. Native history/input remain."],
+  nativeSlotsHint: ["\u9884\u8BBE\u6B63\u6587\u53CA\u5F15\u7528\u5185\u5BB9\u6309\u9884\u8BBE\u63D2\u69FD\u6392\u5217\uFF1B\u8FD9\u4E9B\u5185\u5BB9\u53CA\u4E16\u754C\u4E66\u6DF1\u5EA6 0/1 \u4F1A\u9002\u914D system/user\u3002\u6DF1\u5EA6 0 \u5728\u539F\u751F\u5386\u53F2\u540E\uFF0C1 \u5728\u5386\u53F2\u524D\uFF1B\u66F4\u5927\u6DF1\u5EA6\u4FDD\u7559\u5E76\u8FD1\u4F3C\u5904\u7406\u3002\u72EC\u7ACB\u5185\u5BB9\u4FDD\u7559\u81EA\u8EAB\u89D2\u8272\u548C\u6295\u9012\u65B9\u5F0F\u3002system \u53EA\u80FD\u5728\u5386\u53F2\u524D\uFF1B\u672B\u5C3E\u63D0\u9192\u8BF7\u660E\u786E\u8BBE\u4E3A user\u3001pre-step\u3002\u62D6\u52A8\u6DF7\u5408\u6A21\u5757\u53EA\u79FB\u52A8\u72EC\u7ACB\u90E8\u5206\uFF0C\u9884\u8BBE\u5185\u90E8\u987A\u5E8F\u4E0D\u53D8\u3002", "Preset text and references follow preset slots; these and worldbook depths 0/1 adapt system/user roles. Depth 0 follows native history; 1 precedes it. Larger depths are retained and approximated. Independent content keeps its role and delivery. System stays before history; for a final reminder explicitly choose user and pre-step. Moving a mixed module moves only its independent part, preserving preset order."],
   placementPending: ["\u6B63\u5728\u68C0\u67E5\u9884\u8BBE\u5F15\u7528\u2026", "Checking preset references\u2026"],
   placementFailed: ["\u65E0\u6CD5\u68C0\u67E5\u5F15\u7528\uFF0C\u8BF7\u91CD\u8BD5\u9884\u89C8\uFF1A", "Could not check references; retry preview: "],
-  controlPreset: ["\u7531\u9884\u8BBE\u63A7\u5236 \xB7 \u4F4D\u7F6E\u9501\u5B9A", "Preset controlled \xB7 position locked"],
-  controlMixed: ["\u90E8\u5206\u7531\u9884\u8BBE\u63A7\u5236 \xB7 \u4EC5\u79FB\u52A8\u72EC\u7ACB\u90E8\u5206", "Partly preset controlled \xB7 move independent content only"],
+  controlPreset: ["\u63D2\u69FD\u6216\u6DF1\u5EA6\u8FB9\u754C\u63A7\u5236 \xB7 \u4F4D\u7F6E\u9501\u5B9A", "Slot or depth boundary controlled \xB7 position locked"],
+  controlMixed: ["\u90E8\u5206\u53D7\u63D2\u69FD\u6216\u6DF1\u5EA6\u8FB9\u754C\u63A7\u5236 \xB7 \u4EC5\u79FB\u52A8\u72EC\u7ACB\u90E8\u5206", "Partly slot or depth controlled \xB7 move independent content only"],
   controlIndependent: ["\u72EC\u7ACB\u5185\u5BB9 \xB7 \u6309\u89D2\u8272\u8FB9\u754C\u79FB\u52A8", "Independent content \xB7 move within role boundaries"],
   controlNative: ["\u539F\u751F\u8FB9\u754C \xB7 \u7531\u9884\u8BBE\u63D2\u69FD\u51B3\u5B9A", "Native boundary \xB7 follows preset slots"],
   controlEmpty: ["\u5F53\u524D\u65E0\u72EC\u7ACB\u5185\u5BB9", "No independent content currently"],
+  nativeWorldRole: ["\u7531\u4E16\u754C\u4E66\u5404\u6761\u76EE\u51B3\u5B9A", "Per worldbook entry"],
+  nativeSlotRole: ["\u6309\u63D2\u69FD\u6216\u6DF1\u5EA6\u8FB9\u754C\u9002\u914D", "Adapted to slot or depth boundary"],
+  nativeDepthBoundary: ["\u6DF1\u5EA6\u6620\u5C04", "Depth mapping"],
+  "before-history": ["\u539F\u751F\u5386\u53F2\u524D", "Before native history"],
+  "after-history": ["\u539F\u751F\u5386\u53F2\u540E", "After native history"],
+  worldSlotMissing: ["\u7F3A\u5C11\u9884\u8BBE\u951A\u70B9\uFF0C\u6CBF\u7528\u539F\u6709\u524D\u540E\u4F4D\u7F6E", "Missing preset anchor; using the existing before/after fallback"],
   nativeDepthApproximated: ["\u672A\u91C7\u7528\u5386\u53F2\u6DF1\u5EA6\uFF0C\u5DF2\u6309\u5F53\u524D\u6A21\u5F0F\u6392\u5217", "History depth not applied; placed by the selected mode"],
   nativeRoleChanged: ["\u89D2\u8272\u8C03\u6574", "Role adjusted"],
   nativeDeliveryChanged: ["\u6295\u9012\u8C03\u6574\u4E3A pre-step", "Delivery changed to pre-step"],
@@ -23774,6 +23786,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   );
   function ruleRow(rule, index) {
     rule = editableRule(rule);
+    const roleLabel = adaptiveNative && rule.kind === "worldbook" && !slotMode ? "nativeWorldRole" : slotMode && controlFor(rule) === "preset" ? "nativeSlotRole" : adaptiveNative && rule.kind === "preset" ? "nativePresetRole" : null;
     const textInput = rule.inputMode === "text" || ["custom", "dsh.text"].includes(rule.kind);
     return (0, import_react7.createElement)(
       "article",
@@ -23789,14 +23802,14 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
             toggle(rule.id);
           }
         } }, rule.name || sourceName(rule.kind), (0, import_react7.createElement)("small", { className: "dta-origin" }, originName(sourcePlugin(rule.kind))), slotMode && (0, import_react7.createElement)("small", { "data-placement-control": controlFor(rule) ?? "pending" }, t(controlLabel(controlFor(rule)) ?? "placementPending"))),
-        summaryMetadata(ruleStability(rule), ["native-system", "history", "input"].includes(rule.kind) ? "nativeRetention" : nativeDraft && rule.role === "user" ? rule.delivery ?? "context" : rule.lifetime, adaptiveNative && (rule.kind === "preset" || slotMode && controlFor(rule) === "preset") ? "nativePresetRole" : rule.role)
+        summaryMetadata(ruleStability(rule), ["native-system", "history", "input"].includes(rule.kind) ? "nativeRetention" : nativeDraft && rule.role === "user" ? rule.delivery ?? "context" : rule.lifetime, roleLabel ?? rule.role)
       ),
       expanded[rule.id] && (0, import_react7.createElement)(
         "div",
         { className: "dta-detail" },
         (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react7.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(ruleStability(rule)))), (0, import_react7.createElement)("label", null, t("lifetime"), ["native-system", "history", "input"].includes(rule.kind) ? (0, import_react7.createElement)("small", null, t("nativeRetention")) : nativeDraft && rule.role === "user" ? (0, import_react7.createElement)("small", null, t(rule.delivery ?? "context")) : select(rule.lifetime, nativeDraft ? ["request"] : sourceDescriptor2(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor2(rule.kind)?.lifetimes.length === 1))),
-        nativeDraft && (rule.role === "user" || adaptiveNative && rule.kind === "preset") && (0, import_react7.createElement)("label", null, t("delivery"), select(rule.delivery ?? "context", ["context", "pre-step"], (delivery) => editRule(rule.id, { delivery }))),
-        (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("role"), adaptiveNative && (rule.kind === "preset" || slotMode && controlFor(rule) === "preset") ? (0, import_react7.createElement)("small", null, t("nativePresetRole")) : select(rule.role, (sourceDescriptor2(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"]).filter((role2) => !nativeDraft || role2 !== "assistant"), (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor2(rule.kind)?.roles.length === 1)), sourceDescriptor2(rule.kind)?.depth !== false && (0, import_react7.createElement)("label", null, t("depth"), (0, import_react7.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", disabled: busy2 || nativeDraft, onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
+        nativeDraft && (rule.role === "user" || adaptiveNative && ["preset", "worldbook"].includes(rule.kind)) && (0, import_react7.createElement)("label", null, t("delivery"), select(rule.delivery ?? "context", ["context", "pre-step"], (delivery) => editRule(rule.id, { delivery }))),
+        (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("role"), roleLabel ? (0, import_react7.createElement)("small", null, t(roleLabel)) : select(rule.role, (sourceDescriptor2(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"]).filter((role2) => !nativeDraft || role2 !== "assistant"), (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor2(rule.kind)?.roles.length === 1)), sourceDescriptor2(rule.kind)?.depth !== false && (0, import_react7.createElement)("label", null, t("depth"), (0, import_react7.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", disabled: busy2 || nativeDraft, onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
         textInput ? (0, import_react7.createElement)(
           "div",
           { className: "dta-fields" },
@@ -23912,7 +23925,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           modules.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react7.createElement)("select", { id: "dta-add-source", value: modules.some((s) => s.id === addKind) ? addKind : modules[0].id, onChange: (e) => setAddKind(e.target.value) }, ...modules.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => addRule(modules.some((s) => s.id === addKind) ? addKind : modules[0].id))),
           parsers.length > 0 && (0, import_react7.createElement)("div", { className: "dta-toolbar" }, (0, import_react7.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react7.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react7.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
           (0, import_react7.createElement)("small", null, t("sourceHelp"))
-        ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : preview?.scope === "opening-draft" ? "draftPreviewScope" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code) && !(preview.scope === "opening-draft" && d2.code === "ASSEMBLY_SYSTEM_ONLY")).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), preview.diagnostics.some((d2) => d2.code === "NATIVE_PLACEMENT_ADJUSTED") && (0, import_react7.createElement)("div", { className: "dta-notice" }, t("nativeOrderChanged")), ...preview.diagnostics.filter((d2) => ["NATIVE_ROLE_ADJUSTED", "NATIVE_DELIVERY_ADJUSTED", "NATIVE_SLOTS_ABSENT", "NATIVE_DEPTH_APPROXIMATED"].includes(d2.code)).map((d2, i3) => (0, import_react7.createElement)("div", { key: `native-adjustment:${i3}`, className: "dta-notice" }, d2.code === "NATIVE_SLOTS_ABSENT" ? t("nativeSlotsAbsent") : d2.code === "NATIVE_DEPTH_APPROXIMATED" ? `${d2.name} \xB7 ${t("nativeDepthApproximated")} (${d2.depth})` : `${d2.name} \xB7 ${t(d2.code === "NATIVE_ROLE_ADJUSTED" ? "nativeRoleChanged" : "nativeDeliveryChanged")}: ${d2.from} \u2192 ${d2.to}`)), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t(preview.backend === "native" && !preview.actual ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+        ) : (0, import_react7.createElement)("div", null, (0, import_react7.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : preview?.scope === "opening-draft" ? "draftPreviewScope" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react7.createElement)("p", null, t("empty")) : (0, import_react7.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code) && !(preview.scope === "opening-draft" && d2.code === "ASSEMBLY_SYSTEM_ONLY")).map((d2) => (0, import_react7.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), preview.diagnostics.some((d2) => d2.code === "NATIVE_PLACEMENT_ADJUSTED") && (0, import_react7.createElement)("div", { className: "dta-notice" }, t("nativeOrderChanged")), ...preview.diagnostics.filter((d2) => ["NATIVE_ROLE_ADJUSTED", "NATIVE_DELIVERY_ADJUSTED", "NATIVE_SLOTS_ABSENT", "NATIVE_DEPTH_APPROXIMATED", "NATIVE_DEPTH_BOUNDARY", "WORLD_BOOK_SLOT_MISSING"].includes(d2.code)).map((d2, i3) => (0, import_react7.createElement)("div", { key: `native-adjustment:${i3}`, className: "dta-notice" }, d2.code === "NATIVE_SLOTS_ABSENT" ? t("nativeSlotsAbsent") : d2.code === "WORLD_BOOK_SLOT_MISSING" ? `${d2.name} \xB7 ${t("worldSlotMissing")}: ${d2.anchor}` : d2.code === "NATIVE_DEPTH_BOUNDARY" ? `${d2.name} \xB7 ${t("nativeDepthBoundary")}: ${d2.depth} \u2192 ${t(d2.placement)}` : d2.code === "NATIVE_DEPTH_APPROXIMATED" ? `${d2.name} \xB7 ${t("nativeDepthApproximated")} (${d2.depth})` : `${d2.name} \xB7 ${t(d2.code === "NATIVE_ROLE_ADJUSTED" ? "nativeRoleChanged" : "nativeDeliveryChanged")}: ${d2.from} \u2192 ${d2.to}`)), ...preview.nodes.map(nodeRow), (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, `${t(preview.backend === "native" && !preview.actual ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react7.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react7.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react7.createElement)("details", null, (0, import_react7.createElement)("summary", null, t("diagnostics")), (0, import_react7.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react7.createElement)("small", { style: { marginTop: 20 } }, t("tools")),
         (0, import_react7.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
         (0, import_react7.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, selection?.id?.startsWith("builtin-") && !items2.some((p) => p.id === selection.id) && (0, import_react7.createElement)("small", null, t("withdrawnPreset")), !capable && (0, import_react7.createElement)("small", null, t("unavailable"))),
@@ -23963,7 +23976,7 @@ function moveSlotRule(preset, preview, from, boundary) {
   if (!["independent", "mixed"].includes(control)) throw new Error("\u6B64\u6A21\u5757\u7684\u4F4D\u7F6E\u7531\u9884\u8BBE\u63A7\u5236\u6216\u5C1A\u672A\u89E3\u6790\u3002 / Module position is preset-controlled or unresolved.");
   const rules = reorderAtBoundary2(preset.rules, from, boundary);
   const at4 = rules.indexOf(rule), history = rules.findIndex((r) => r.kind === "history"), input = rules.findIndex((r) => r.kind === "input");
-  const nodes = preview.nodes.filter((n) => n.ruleId === rule.id && n.source?.module !== "preset" && n.placementSource !== "preset");
+  const nodes = preview.nodes.filter((n) => n.ruleId === rule.id && n.source?.module !== "preset" && n.placementSource !== "preset" && !n.nativeDepthAnchor);
   const roles = new Set(nodes.map((n) => n.source?.module === "native-system" ? "system" : n.role));
   if (roles.has("system") && at4 > history) throw new Error("\u72EC\u7ACB system \u5185\u5BB9\u53EA\u80FD\u653E\u5728\u539F\u751F\u5386\u53F2\u524D\uFF1B\u672B\u5C3E\u63D0\u9192\u8BF7\u660E\u786E\u9009\u62E9 user \u548C pre-step\u3002 / Independent system content must precede history; choose user and pre-step for a final reminder.");
   if (roles.has("user") && at4 < history) throw new Error("\u72EC\u7ACB user \u5185\u5BB9\u53EA\u80FD\u653E\u5728\u539F\u751F\u5386\u53F2\u540E\u3002 / Independent user content must follow history.");
@@ -25214,10 +25227,37 @@ function EntryDragButton({ busy: busy2, dragging, onPointerDown, onPointerMove, 
     onPointerCancel
   }, "\u283F");
 }
+var entryRole = (entry) => {
+  const value = entry.role ?? entry.extensions?.role ?? "system";
+  return typeof value === "number" ? ["system", "user", "assistant"][value] ?? "system" : value;
+};
+function EntryPlacementFields({ depth, role: role2, atDepth, onDepth, onRole }) {
+  return h11(
+    "div",
+    { className: "dwb-grid" },
+    atDepth ? h11(Field4, { label: uiMessage("world.entry.depth") }, h11("input", {
+      className: "dwb-input",
+      type: "number",
+      min: 0,
+      step: 1,
+      value: depth,
+      onChange: (event) => {
+        const value = Number(event.target.value);
+        if (event.target.value !== "" && Number.isSafeInteger(value) && value >= 0) onDepth(value);
+      }
+    })) : null,
+    h11(Field4, { label: uiMessage("world.entry.role") }, h11(
+      "select",
+      { className: "dwb-select", value: role2, onChange: (event) => onRole(event.target.value) },
+      ...["system", "user", "assistant"].map((value) => h11("option", { key: value, value }, rawText(value)))
+    ))
+  );
+}
 function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = (value) => update(index, value);
   const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : [];
   const position = embeddedPosition(entry);
+  const depth = entry.depth ?? entry.extensions?.depth ?? 4;
   return h11(
     "details",
     { className: "dwb-entry", "data-world-entry-kind": dragKind, "data-world-entry-index": index, "data-dragging": dragging || void 0 },
@@ -25227,6 +25267,7 @@ function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging,
       h11(EntryDragButton, { dragging, ...dragHandlers }),
       h11("input", { type: "checkbox", checked: entry.enabled === true, onClick: (event) => event.stopPropagation(), onChange: (event) => patch({ enabled: event.target.checked }) }),
       h11("span", { className: "dwb-entry-name" }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage("world.entry.fallback", { id: entry.id ?? index })),
+      position === 4 ? h11("span", { className: "dwb-source-badge" }, uiMessage("world.entry.depthBadge", { depth, role: entryRole(entry) })) : null,
       h11("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
     h11(
@@ -25258,7 +25299,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging,
         h11(Field4, { label: uiMessage("world.entry.order") }, h11("input", { className: "dwb-input", type: "number", value: entry.insertion_order ?? 100, onChange: (event) => patch({ insertion_order: Number(event.target.value) }) })),
         h11(Field4, { label: uiMessage("world.entry.probability") }, h11("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), extensions: { ...entry.extensions ?? {}, probability: Number(event.target.value), useProbability: true } }) }))
       ),
-      [0, 1, 4].includes(position) ? h11("p", { className: "dwb-note" }, uiMessage(position === 4 ? "world.depthHint" : "world.slotHint")) : null,
+      h11(EntryPlacementFields, { depth, role: entryRole(entry), atDepth: position === 4, onDepth: (value) => patch({ depth: value, extensions: { ...entry.extensions ?? {}, depth: value } }), onRole: (value) => patch({ role: value, extensions: { ...entry.extensions ?? {}, role: ["system", "user", "assistant"].indexOf(value) } }) }),
+      position !== 7 ? h11("p", { className: "dwb-note" }, uiMessage(position === 4 ? "world.depthHint" : "world.slotHint")) : null,
       h11(
         "div",
         { className: "dwb-checks" },
@@ -25383,6 +25425,7 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
       h11(EntryDragButton, { dragging, ...dragHandlers }),
       h11("input", { type: "checkbox", checked: entry.enabled === true, onClick: (event) => event.stopPropagation(), onChange: (event) => patch({ enabled: event.target.checked }) }),
       h11("span", { className: "dwb-entry-name" }, entry.comment ? rawText(entry.comment) : uiMessage("world.entry.fallback", { id: entry.uid ?? index })),
+      entry.position === "at_depth" ? h11("span", { className: "dwb-source-badge" }, uiMessage("world.entry.depthBadge", { depth: entry.depth ?? 4, role: entryRole(entry) })) : null,
       h11("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
     h11(
@@ -25404,10 +25447,11 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
         "div",
         { className: "dwb-grid" },
         h11(Field4, { label: uiMessage("world.entry.position") }, h11("select", { className: "dwb-select", value: entry.position, onChange: (event) => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, key2]) => h11("option", { key: value, value }, uiMessage(key2))))),
-        ["before_character_definition", "after_character_definition", "at_depth"].includes(entry.position) ? h11("p", { className: "dwb-note" }, uiMessage(entry.position === "at_depth" ? "world.depthHint" : "world.slotHint")) : null,
         h11(Field4, { label: uiMessage("world.entry.order") }, h11("input", { className: "dwb-input", type: "number", value: entry.insertionOrder ?? 100, onChange: (event) => patch({ insertionOrder: Number(event.target.value) }) })),
         h11(Field4, { label: uiMessage("world.entry.probability") }, h11("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), useProbability: true }) }))
       ),
+      h11(EntryPlacementFields, { depth: entry.depth ?? 4, role: entryRole(entry), atDepth: entry.position === "at_depth", onDepth: (depth) => patch({ depth }), onRole: (role2) => patch({ role: role2 }) }),
+      entry.position !== "outlet" ? h11("p", { className: "dwb-note" }, uiMessage(entry.position === "at_depth" ? "world.depthHint" : "world.slotHint")) : null,
       h11(
         "div",
         { className: "dwb-checks" },

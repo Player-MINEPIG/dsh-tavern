@@ -11,6 +11,7 @@ import { basename, extname, join, resolve } from 'node:path'
 import {
   WORLD_BOOK_FORMATS,
   WORLD_BOOK_POSITIONS,
+  WORLD_BOOK_ROLES,
   exportCharacterBook,
   exportSillyTavernWorldBook,
   parseCharacterBook,
@@ -29,7 +30,7 @@ const MAX_ARTIFACT_BYTES = 4 * 1024 * 1024
 const EDITABLE_ENTRY_FIELDS = [
   'keys', 'secondaryKeys', 'comment', 'content', 'enabled', 'constant',
   'selective', 'insertionOrder', 'position', 'selectiveLogic', 'probability',
-  'useProbability', 'caseSensitive', 'matchWholeWords',
+  'useProbability', 'caseSensitive', 'matchWholeWords', 'depth', 'role',
 ]
 
 function isRecord(value) {
@@ -201,6 +202,8 @@ function editableEntry(currentEntries, input, index, claimed, format) {
   for (const field of EDITABLE_ENTRY_FIELDS) {
     if (Object.hasOwn(input, field)) entry[field] = clone(input[field])
   }
+  if (!Number.isSafeInteger(entry.depth) || entry.depth < 0) throw new TypeError(`book.entries[${index}].depth is invalid`)
+  if (!WORLD_BOOK_ROLES.includes(entry.role)) throw new TypeError(`book.entries[${index}].role is invalid`)
   if (!WORLD_BOOK_POSITIONS.includes(entry.position)) throw new TypeError(`book.entries[${index}].position is invalid`)
   return entry
 }

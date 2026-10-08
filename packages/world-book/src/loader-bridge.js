@@ -155,6 +155,7 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
       resourceId,
       id: identity.id,
       uid: identity.uid,
+      comment: entry.comment ?? '',
       content: entry.content,
       position: projected.position,
       requestedPosition: entry.position,

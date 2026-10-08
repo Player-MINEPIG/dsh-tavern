@@ -129,6 +129,27 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
         }
       }
     }
+    // Exercise worldbook slot roles and depth boundaries through the real public Host.
+    const world = store.worldBookStore.import(JSON.stringify({ entries: Object.fromEntries([
+      ['CB',0,1,4], ['CA',1,0,4], ['EB',5,0,4], ['EA',6,0,4],
+      ['NB',2,0,4], ['NA',3,0,4], ['D0',4,0,0], ['D1',4,1,1],
+    ].map(([name,position,role,depth],uid)=>[name,{uid,comment:name,content:name,position,role,depth,key:[],constant:true,disable:false,order:100}])) }))
+    store.sessionSelections.set(agent.id,{worldBookIds:[world.id]})
+    const marker = identifier => ({identifier,marker:true,enabled:true,role:'system'})
+    store.update(resource.id,{prompts:[marker('worldInfoBefore'),marker('worldInfoAfter'),
+      {identifier:'prefix',enabled:true,role:'user',content:'{{history}}BETWEEN'},
+      marker('dialogueExamples'),{identifier:'authorsNote',enabled:true,role:'system',content:'NOTE'},
+      {identifier:'suffix',enabled:true,role:'user',content:'{{input}}CLOSE'}]})
+    face.store.apply(agent.id,'builtin-native-slots')
+    for (const input of ['WORLD SLOTS 1','WORLD SLOTS 2']) {
+      await turn(input)
+      const actual=await nativeReader.readActual(agent.id)
+      assert.deepEqual(actual.request.messages,requests.at(-1))
+      const nodes=actual.request.metadata.assembly.nodes
+      for(const name of ['CB','CA','D1']) assert.ok(nodes.some(n=>n.name===name&&n.role==='system'),name)
+      for(const name of ['EB','EA','NB','NA','D0']) assert.ok(nodes.some(n=>n.name===name&&n.role==='user'),name)
+      assert.deepEqual(requests.at(-1).slice(-9).map(textOf),['D0','BETWEEN','EB','EA','NB','NOTE','NA',input,'CLOSE'])
+    }
     await managerHandle.dispose(); await tavernHandle.dispose(); await turn('WITHOUT TAVERN')
     assert.ok(!face.registry.list().some(s => s.pluginId === 'pmp-dsh-tavern' || s.id === 'memory-manager.resources'))
     assert.ok(requests.at(-1).some(m => textOf(m).includes('REMEMBER')), 'prior user context remains historical')
