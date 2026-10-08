@@ -47,26 +47,15 @@ MVU 示例按 `sourceKind: model` 筛选助手正文，只匹配从行首开始�
 思考仅在经过验证的目标模型合同允许时排除，未验证则保留并提示。通用引擎不把 UI 隐藏当成模型不接收，
 也不承诺 DeepSeek 带 tools 请求可删除思考。
 
-## 根入口接入
+## 正式入口与操作
 
-主集成方需要完成这些接线，本目录不改现有根入口、布局模块或依赖锁：
+打开提示词装配策略，在当前会话应用区域展开「模型历史筛选」。选择保留来源，先查看匹配预览，再点「保存历史规则」。这份规则属于当前会话，与装配策略分别保存；切换装配策略不会丢弃历史规则。新会话默认关闭。
 
-1. 引入含历史能力的 assembler 版本，用同一 `HistoryPolicyStore` 创建 runtime/preview/API。
-   注册 `registerStandardHistoryPolicy` 并传入 Host 的 `createDeveloperMessage`、公共 inspect 事件读取和
-   实际 backend 判定 `active`；进阶核心存在时另注册 `registerHistoryPolicy`。标准 hook 的 active=false
-   在下一步恢复旧占位，保证切进阶版后可重新筛选；切 backend 时不要直接卸载标准 hook。
-2. 将 `createHistoryPolicyHandler` 放进现有 assembler 安全路由内，复用现有浏览器/桌面 token transport。
-   冷会话预览沿用 inspect + sessions.prepare，返回 nodes/messages/完整 events。
-   按实际会话 backend 路由到 mode:standard/advanced service，不能接受客户端自报能力。
-3. 两版均可 `await mountTavernHistoryPolicyPanel(container,{sessionId,request})`。组件按服务端 capabilities
-   区分可用控件；切换会话/backend 或卸载时 dispose，并重新挂载。MVU 示例在标准版禁用。
-4. 如果需要包级导入，增加 `./history-policy` 到 `./packages/history-policy/index.js` 的导出，
-   并按既有流程更新依赖锁和生成客户端 bundle。
-5. Trace/实际请求展示以 `request/assembly.data.messages` 为最终发送内容，
-   `metadata.historyPolicy` 为进阶规则证据。标准版依据当时原生 surface 和内置替换事件的 data.historyPolicy/sourceEventSeqs 追溯。旧 `metadata.assembly` 的布局节点是筛选前数据，不能冒充最终正文。
+assembler 主插件挂载标准版清理钩子，共用 `HistoryPolicyStore`；可选 core 插件挂载进阶筛选钩子。实际已应用的 backend 决定 API 能力和编辑器控件，编辑中的策略不会提前改变能力。切换到进阶版时，标准钩子先恢复仍有效的隐藏占位，再由进阶路径筛选请求副本。
 
-通用合同与完整 API 在 assembler `docs/HISTORY_POLICY.md`。Tavern 不复制引擎，也不新增第二套配置持久化。
-本适配与布局/身份策略独立；布局先装配，历史策略随后筛选。
+历史 API 与装配 API 共用已有安全路由及浏览器/桌面 transport。冷会话通过公共 inspect 和 sessions.prepare 预览，不创建 Agent。Tavern 只提供 MVU 示例和界面嵌入，不复制通用引擎或策略存储。包级 `./history-policy` 导出 Tavern 示例与挂载函数。
+
+实际请求以保存的最终 messages 为准；进阶卡片按 `metadata.historyPolicy` 对布局中的历史正文作显示修正，保留原始布局及事件审计。标准版通过内置替换事件的 `data.historyPolicy/sourceEventSeqs` 追溯。布局先装配，历史策略随后筛选。
 
 ## 验证边界
 
@@ -74,5 +63,4 @@ Tavern 的 `DSH_HISTORY_ASSEMBLER_ROOT=/path/to/assembler node --test test/histo
 通过真实通用引擎验证默认 opt-in、进阶 MVU wrapper 排除、标准版完整保留助手思考/MVU、真人同文保留与原始消息不变。未设置路径时明确跳过。
 通用筛选、HTTP/UI、真实 Host 模块的多轮/重试/工具事务/重启/fork/压缩边界和 stock 卸载后继续
 由 assembler 的 `test/history-*.test.mjs` 验证。独立浏览器页可以挂载同一组件验收。
-最终根入口接线、另一布局分支合并后的组合测试及真实目标 adapter 合同确认由主集成方完成；
-没有真实 profile 写入、付费模型调用或 token 节省测量。
+正式入口的 backend 切换与同一安全边界通过组合 Host 测试验证。真实目标 adapter 的远端合同、付费模型调用与 token 节省测量不属于离线检查的结论。

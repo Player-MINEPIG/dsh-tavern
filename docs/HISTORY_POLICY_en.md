@@ -52,24 +52,19 @@ adapter replay data are protected. Verified DeepSeek Messages v1 replay supports
 otherwise it remains with a warning. UI hiding is not treated as provider omission, and reasoning removal
 for DeepSeek requests carrying tools is not promised.
 
-## Root integration
+## Installed entry points and usage
 
-The integrator owns the following wiring; this directory leaves root entry points, layout modules and locks unchanged:
+Open prompt assembly settings and expand “Model history filtering” in the current-session application area. Select retained sources, inspect matching previews, then save history rules. These rules belong to the session and are saved independently from assembly strategies. Switching a strategy preserves history settings. New sessions start disabled.
 
-1. Share one HistoryPolicyStore across runtime, preview and API. Register `registerStandardHistoryPolicy` with the Host createDeveloperMessage factory, public inspect event reads and actual backend `active` selection. Also register `registerHistoryPolicy` when the advanced core is present. Keep the standard hook mounted on backend switches: active=false restores its placeholders before the next advanced request.
-2. Mount `createHistoryPolicyHandler` inside the existing secured assembler router and reuse browser/desktop token transport. Cold previews reuse inspect + sessions.prepare and return native nodes/messages/complete events. Route to mode:standard/advanced services based on actual session backend, never client assertions.
-3. Mount `await mountTavernHistoryPolicyPanel(container,{sessionId,request})` for either mode. Server capabilities control availability; dispose/remount on session/backend switch or unload. MVU examples are disabled in standard mode.
-4. If package-level access is needed, export `./history-policy` as `./packages/history-policy/index.js`, then update dependency locks and generated client bundle through the existing workflow.
-5. Trace/actual-request views must use `request/assembly.data.messages` for sent content and `metadata.historyPolicy` for policy evidence. Standard requests use the native surface at request time, with data.historyPolicy/sourceEventSeqs on built-in replacement events for provenance. Existing `metadata.assembly` layout nodes describe pre-filter content.
+The assembler plugin mounts standard cleanup using one shared `HistoryPolicyStore`; the optional core plugin mounts advanced request filtering. The actually applied backend determines API capabilities and editor controls. Editing a strategy does not change those capabilities early. When switching to advanced mode, the standard hook first restores still-live owned placeholders before filtering the request copy.
 
-The generic API/contract lives in assembler `docs/HISTORY_POLICY.md`. Tavern neither copies the engine nor
-creates another configuration store. Layout assembles first; the independent history policy filters afterward.
+History and assembly APIs share the existing security router and browser/desktop transport. Cold-session previews use public inspect and sessions.prepare without creating an Agent. Tavern supplies the MVU example and embedding, without copying the generic engine or settings store. The `./history-policy` package export provides the Tavern example and mounting function.
+
+Actual requests use the recorded final messages. Advanced result cards reconcile history text using `metadata.historyPolicy`, while original layout and event audit remain intact. Standard provenance uses built-in replacement events and `data.historyPolicy/sourceEventSeqs`. Layout assembly precedes history filtering.
 
 ## Verification boundary
 
 `DSH_HISTORY_ASSEMBLER_ROOT=/path/to/assembler node --test test/history-policy-mvu.test.mjs` uses the real generic engine to verify opt-in behavior, advanced MVU removal, complete standard assistant reasoning/MVU retention, identical human text retention and original-message preservation. It explicitly skips without that path.
 Assembler `test/history-*.test.mjs` covers filtering, HTTP/UI and real Host modules with multi-turn requests,
 retry, tools, restart, fork, compaction boundaries and stock continuation after uninstall. An isolated browser
-page mounts the same editor for acceptance. Root wiring, combined layout-branch checks and actual target
-adapter contracts remain integration responsibilities. No real profiles, paid model calls or token-saving
-measurements are used.
+page mounts the same editor for acceptance. Combined Host tests cover installed entry points, backend switching and the shared security boundary. Offline checks do not establish remote adapter acceptance or token savings; no paid model calls are required.

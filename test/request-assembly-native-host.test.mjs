@@ -5,6 +5,8 @@ import { pathToFileURL } from 'node:url'
 import { join, resolve } from 'node:path'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { installSessionInspection } from './helpers/assembler-host.mjs'
+import { DEFAULT_HISTORY_POLICY } from 'dsh-prompt-assembler/history-policy'
 import assembler from 'dsh-prompt-assembler/plugin'
 import { textOf } from 'dsh-prompt-assembler'
 import * as tavern from '../packages/tavern-loader/src/index.js'
@@ -32,6 +34,7 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
       }
     }
     ctx.llm.registerAdapter(['offline'], new Provider())
+    installSessionInspection(ctx)
     const assemblyHandle = ctx.plugin(assembler, { storageDir: join(directory, 'assembler') }); await assemblyHandle
     const face = ctx.get('dshPromptAssembler')
     const tavernHandle = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(scope) { store = tavern.apply(scope, { storageDir: join(directory, 'tavern') }) } }); await tavernHandle
@@ -104,6 +107,7 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
       { identifier: 'opening', name: 'Opening wrapper', enabled: true, role: 'user', content: 'OPEN{{history}}BETWEEN{{input}}CLOSE' },
       { identifier: 'system', name: 'System entry', enabled: true, role: 'system', content: 'SYSTEM ENTRY' },
     ] })
+    face.history.store.save(agent.id, { ...structuredClone(DEFAULT_HISTORY_POLICY), enabled: true }, 0)
     for (const mode of ['native-roles', 'native-slots']) {
       face.store.apply(agent.id, `builtin-${mode}`)
       await turn(mode)
@@ -152,7 +156,8 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     }
     await managerHandle.dispose(); await tavernHandle.dispose(); await turn('WITHOUT TAVERN')
     assert.ok(!face.registry.list().some(s => s.pluginId === 'pmp-dsh-tavern' || s.id === 'memory-manager.resources'))
-    assert.ok(requests.at(-1).some(m => textOf(m).includes('REMEMBER')), 'prior user context remains historical')
+    assert.ok(!requests.at(-1).some(m => textOf(m).includes('REMEMBER')), 'enabled cleanup excludes consumed context from the request')
+    assert.ok(agent.session.snapshotEvents().some(e => e.type === 'user/message' && textOf(e.data).includes('REMEMBER')), 'original context remains in the audit log')
     await assemblyHandle.dispose(); await turn('WITHOUT ASSEMBLER')
     assert.equal(textOf(requests.at(-1).filter(m => m.role === 'system').at(-1)), 'OFFICIAL')
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }

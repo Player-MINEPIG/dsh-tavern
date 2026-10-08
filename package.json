@@ -24,7 +24,8 @@
     "./memory-sources": "./packages/memory-sources/index.js",
     "./opening-worldbook": "./packages/opening-worldbook/index.js",
     "./opening-worldbook/manifest": "./packages/opening-worldbook/manifest.js",
-    "./scope-catalog": "./packages/scope-catalog/index.js"
+    "./scope-catalog": "./packages/scope-catalog/index.js",
+    "./history-policy": "./packages/history-policy/index.js"
   },
   "files": [
     "screenshots.json",
@@ -76,7 +77,11 @@
     "docs/ASSEMBLER_INTEGRATION.md",
     "docs/ASSEMBLER_INTEGRATION_en.md",
     "docs/API_SURFACES.md",
-    "docs/API_SURFACES_en.md"
+    "docs/API_SURFACES_en.md",
+    "docs/RESOURCE_LAYOUT.md",
+    "docs/RESOURCE_LAYOUT_en.md",
+    "docs/HISTORY_POLICY.md",
+    "docs/HISTORY_POLICY_en.md"
   ],
   "dsh": {
     "bundle": {
@@ -129,7 +134,7 @@
     "acorn": "8.15.0",
     "acorn-jsx": "5.3.2",
     "dompurify": "3.4.16",
-    "dsh-prompt-assembler": "git+https://github.com/Player-MINEPIG/dsh-prompt-assembler.git#bbfa6a6105ac071d986dd66c1a3e86013c8e8813",
+    "dsh-prompt-assembler": "git+https://github.com/Player-MINEPIG/dsh-prompt-assembler.git#babd6e7294e2f9a4885937903918b02afe906509",
     "json5": "2.2.3",
     "katex": "0.18.2",
     "linkedom": "0.18.12",

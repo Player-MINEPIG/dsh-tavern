@@ -133,8 +133,10 @@ test('real Host empty greeting binding writes state used by the first model requ
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'initial-test', model: 'test' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
-    new (await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine(ctx)
-    new (await load('@deepseek-ai/dsh-api-session-controller')).SessionController(ctx, { nativeOpen: false })
+    await ctx.plugin((await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine)
+    ctx.provide('attachments', { imageLimits: { maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } }); ctx.provide('fs', {})
+    if (!ctx.get('workspaceRegistry')) ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
     await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
       // This fixture selects a trailing MVU system source, which requires a capable route.
@@ -223,8 +225,10 @@ test('official persisted empty session resumes through resolveAgent, while resum
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'resume-test', model: 'test' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
-    new (await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine(ctx)
-    new (await load('@deepseek-ai/dsh-api-session-controller')).SessionController(ctx, { nativeOpen: false })
+    await ctx.plugin((await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine)
+    ctx.provide('attachments', { imageLimits: { maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } }); ctx.provide('fs', {})
+    if (!ctx.get('workspaceRegistry')) ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
     await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
       async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic resume' }] }
