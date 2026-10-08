@@ -113,6 +113,21 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
       assert.ok(nodes.some(n => n.name === 'Opening wrapper' && n.text === 'OPEN' && n.role === (mode === 'native-slots' ? 'system' : 'user')))
       assert.ok(nodes.some(n => n.name === 'System entry' && n.text === 'SYSTEM ENTRY' && n.role === (mode === 'native-slots' ? 'user' : 'system')))
       if (mode === 'native-slots') assert.deepEqual(requests.at(-1).filter(m => m.source?.kind !== 'runtime-context').slice(-4).map(textOf), ['BETWEEN', mode, 'CLOSE', 'SYSTEM ENTRY'])
+      if (mode === 'native-slots') {
+        const base = face.store.selection(agent.id)
+        for (const position of ['before-input', 'end']) {
+          const rules = structuredClone(base.rules)
+          rules.splice(position === 'end' ? rules.length : rules.findIndex(r => r.kind === 'input'), 0,
+            { id: 'format-reminder', kind: 'dsh.text', inputMode: 'text', enabled: true, role: 'user', delivery: 'pre-step', lifetime: 'request', depth: null, text: 'FORMAT REMINDER' })
+          face.store.applySnapshot(agent.id, { ...base, rules })
+          await turn(position)
+          const tail = requests.at(-1).filter(m => m.source?.kind !== 'runtime-context').slice(-5).map(textOf)
+          assert.deepEqual(tail, position === 'end'
+            ? ['BETWEEN', position, 'CLOSE', 'SYSTEM ENTRY', 'FORMAT REMINDER']
+            : ['BETWEEN', 'FORMAT REMINDER', position, 'CLOSE', 'SYSTEM ENTRY'])
+          assert.equal(face.store.selection(agent.id).placement, 'native-slots')
+        }
+      }
     }
     await managerHandle.dispose(); await tavernHandle.dispose(); await turn('WITHOUT TAVERN')
     assert.ok(!face.registry.list().some(s => s.pluginId === 'pmp-dsh-tavern' || s.id === 'memory-manager.resources'))

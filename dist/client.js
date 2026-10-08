@@ -23242,7 +23242,14 @@ var labels = {
   "native-roles": ["\u9884\u8BBE\u8EAB\u4EFD\u4F18\u5148", "Preset roles first"],
   "native-slots": ["\u9884\u8BBE\u63D2\u69FD\u4F18\u5148", "Preset slots first"],
   nativeRolesHint: ["\u6309\u9884\u8BBE\u6761\u76EE\u7684 system/user \u8EAB\u4EFD\u5206\u7EC4\uFF1Bsystem \u653E\u5728\u5386\u53F2\u524D\uFF0Cuser \u6309\u6295\u9012\u65B9\u5F0F\u653E\u5728\u5386\u53F2\u4E4B\u540E\u3002\u9884\u8BBE\u89D2\u8272\u4E0D\u53D7\u6574\u5757\u89D2\u8272\u8986\u76D6\u3002\u539F\u751F\u5386\u53F2\u4E0E\u8F93\u5165\u4FDD\u7559\u3002", "Group preset entries by authored system/user role. System content precedes history; user content follows history through the selected delivery. Module role overrides do not replace preset roles. Native history/input remain."],
-  nativeSlotsHint: ["\u68C0\u6D4B\u9884\u8BBE\u7684\u5386\u53F2/\u8F93\u5165\u63D2\u69FD\u4E0E\u5B8F\u3002\u5386\u53F2\u524D\u4F7F\u7528 system\uFF0C\u5386\u53F2\u540E\u4F7F\u7528 user\uFF1B\u4EC5\u6709\u8F93\u5165\u63D2\u69FD\u65F6\u4FDD\u7559\u524D\u90E8\u89D2\u8272\u3002user \u4F7F\u7528 pre-step\uFF0C\u6BCF\u6B65\u8FFD\u52A0\u5230\u5386\u53F2\u3002\u89D2\u8272\u8C03\u6574\u4F1A\u5728\u9884\u89C8\u6807\u51FA\uFF1B\u6CA1\u6709\u63D2\u69FD\u65F6\u9000\u56DE\u8EAB\u4EFD\u4F18\u5148\u3002", "Detect preset history/input slots and macros. Content before history uses system; content after history uses user. An input-only slot preserves prefix roles. User content uses pre-step and is appended each step. Preview marks role changes; absent slots fall back to roles first."],
+  nativeSlotsHint: ["\u9884\u8BBE\u6B63\u6587\u53CA\u5F15\u7528\u5185\u5BB9\u6309\u9884\u8BBE\u63D2\u69FD\u6392\u5217\uFF1B\u53EA\u6709\u8FD9\u4E9B\u5185\u5BB9\u4F1A\u9002\u914D system/user\u3002\u72EC\u7ACB\u5185\u5BB9\u4FDD\u7559\u81EA\u8EAB\u89D2\u8272\u548C\u6295\u9012\u65B9\u5F0F\u3002system \u53EA\u80FD\u5728\u5386\u53F2\u524D\uFF1B\u672B\u5C3E\u63D0\u9192\u8BF7\u660E\u786E\u8BBE\u4E3A user\u3001pre-step\u3002\u62D6\u52A8\u6DF7\u5408\u6A21\u5757\u53EA\u79FB\u52A8\u72EC\u7ACB\u90E8\u5206\uFF0C\u9884\u8BBE\u5185\u90E8\u987A\u5E8F\u4E0D\u53D8\u3002", "Preset text and references follow preset slots; only these adapt system/user roles. Independent content keeps its role and delivery. System stays before history; for a final reminder explicitly choose user and pre-step. Moving a mixed module moves only its independent part, preserving preset order."],
+  placementPending: ["\u6B63\u5728\u68C0\u67E5\u9884\u8BBE\u5F15\u7528\u2026", "Checking preset references\u2026"],
+  placementFailed: ["\u65E0\u6CD5\u68C0\u67E5\u5F15\u7528\uFF0C\u8BF7\u91CD\u8BD5\u9884\u89C8\uFF1A", "Could not check references; retry preview: "],
+  controlPreset: ["\u7531\u9884\u8BBE\u63A7\u5236 \xB7 \u4F4D\u7F6E\u9501\u5B9A", "Preset controlled \xB7 position locked"],
+  controlMixed: ["\u90E8\u5206\u7531\u9884\u8BBE\u63A7\u5236 \xB7 \u4EC5\u79FB\u52A8\u72EC\u7ACB\u90E8\u5206", "Partly preset controlled \xB7 move independent content only"],
+  controlIndependent: ["\u72EC\u7ACB\u5185\u5BB9 \xB7 \u6309\u89D2\u8272\u8FB9\u754C\u79FB\u52A8", "Independent content \xB7 move within role boundaries"],
+  controlNative: ["\u539F\u751F\u8FB9\u754C \xB7 \u7531\u9884\u8BBE\u63D2\u69FD\u51B3\u5B9A", "Native boundary \xB7 follows preset slots"],
+  controlEmpty: ["\u5F53\u524D\u65E0\u72EC\u7ACB\u5185\u5BB9", "No independent content currently"],
   nativeDepthApproximated: ["\u672A\u91C7\u7528\u5386\u53F2\u6DF1\u5EA6\uFF0C\u5DF2\u6309\u5F53\u524D\u6A21\u5F0F\u6392\u5217", "History depth not applied; placed by the selected mode"],
   nativeRoleChanged: ["\u89D2\u8272\u8C03\u6574", "Role adjusted"],
   nativeDeliveryChanged: ["\u6295\u9012\u8C03\u6574\u4E3A pre-step", "Delivery changed to pre-step"],
@@ -23483,6 +23490,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       changes.disconnect();
     };
   }, []);
+  const [slotAnalysis, setSlotAnalysis] = (0, import_react7.useState)(null);
   const [reload, setReload] = (0, import_react7.useState)(0), [dragFrom, setDragFrom] = (0, import_react7.useState)(null), [dropIndex, setDropIndex] = (0, import_react7.useState)(null);
   const api2 = async (...args) => {
     const result = selectionTarget && args[0] === "/preview" ? await selectionTarget.previewAssembly(args[2].preset) : selectionTarget && args[0] === "/selection" ? await selectionTarget.applyAssembly(args[2].id) : await request(fetcher, apiRoot, ...args);
@@ -23676,6 +23684,26 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   }, [dirty, busy2, registerBeforeLeave]);
   const nativeDraft = draft?.backend === "native";
   const adaptiveNative = nativeDraft && ["native-roles", "native-slots"].includes(draft.placement);
+  const slotMode = nativeDraft && draft.placement === "native-slots";
+  (0, import_react7.useEffect)(() => {
+    if (!slotMode) {
+      setSlotAnalysis(null);
+      return;
+    }
+    let active = true;
+    setSlotAnalysis(null);
+    api2("/preview", "POST", { sessionId, preset: editablePreset(draft) }).then((data3) => {
+      if (active) setSlotAnalysis({ draft, preview: data3.preview });
+    }).catch((error2) => {
+      if (active) setSlotAnalysis({ draft, error: error2.message });
+    });
+    return () => {
+      active = false;
+    };
+  }, [draft, sessionId, selectionTarget, sources, reload]);
+  const analysis = slotAnalysis?.draft === draft ? slotAnalysis : null;
+  const controlFor = (rule) => analysis?.preview?.placementControls?.find((c) => c.ruleId === rule.id)?.control;
+  const controlLabel = (control) => ({ preset: "controlPreset", mixed: "controlMixed", independent: "controlIndependent", native: "controlNative", empty: "controlEmpty" })[control];
   let nativeError = null;
   if (nativeDraft) {
     try {
@@ -23722,7 +23750,14 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         e.currentTarget.releasePointerCapture(e.pointerId);
         const at4 = boundary(e) ?? dropIndex ?? index + 1;
         reset2();
-        const rules = reorderAtBoundary2(draft.rules, index, at4);
+        let rules;
+        try {
+          rules = slotMode ? moveSlotRule(draft, analysis?.preview, index, at4) : reorderAtBoundary2(draft.rules, index, at4);
+        } catch (error2) {
+          setError(true);
+          setStatus(error2.message);
+          return;
+        }
         try {
           if (nativeDraft) validateNativePreset({ ...draft, rules });
           edit({ rules });
@@ -23750,22 +23785,22 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       (0, import_react7.createElement)(
         "div",
         { className: "dta-summary" },
-        dragHandle(rule, index, !nativeDraft || !["history", "input"].includes(rule.kind)),
+        dragHandle(rule, index, !nativeDraft || !["history", "input"].includes(rule.kind) && (!slotMode || ["independent", "mixed"].includes(controlFor(rule)))),
         (0, import_react7.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: busy2 || nativeDraft && ["history", "input"].includes(rule.kind), "aria-label": sourceName(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
         (0, import_react7.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, "aria-expanded": !!expanded[rule.id], onClick: () => toggle(rule.id), onKeyDown: (e) => {
           if (["Enter", " "].includes(e.key)) {
             e.preventDefault();
             toggle(rule.id);
           }
-        } }, rule.name || sourceName(rule.kind), (0, import_react7.createElement)("small", { className: "dta-origin" }, originName(sourcePlugin(rule.kind)))),
-        summaryMetadata(ruleStability(rule), ["native-system", "history", "input"].includes(rule.kind) ? "nativeRetention" : nativeDraft && rule.role === "user" ? rule.delivery ?? "context" : rule.lifetime, adaptiveNative && rule.kind === "preset" ? "nativePresetRole" : rule.role)
+        } }, rule.name || sourceName(rule.kind), (0, import_react7.createElement)("small", { className: "dta-origin" }, originName(sourcePlugin(rule.kind))), slotMode && (0, import_react7.createElement)("small", { "data-placement-control": controlFor(rule) ?? "pending" }, t(controlLabel(controlFor(rule)) ?? "placementPending"))),
+        summaryMetadata(ruleStability(rule), ["native-system", "history", "input"].includes(rule.kind) ? "nativeRetention" : nativeDraft && rule.role === "user" ? rule.delivery ?? "context" : rule.lifetime, adaptiveNative && (rule.kind === "preset" || slotMode && controlFor(rule) === "preset") ? "nativePresetRole" : rule.role)
       ),
       expanded[rule.id] && (0, import_react7.createElement)(
         "div",
         { className: "dta-detail" },
         (0, import_react7.createElement)("div", { className: "dta-properties" }, (0, import_react7.createElement)("div", null, t("source"), (0, import_react7.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react7.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react7.createElement)("div", null, t("stability"), (0, import_react7.createElement)("small", null, t(ruleStability(rule)))), (0, import_react7.createElement)("label", null, t("lifetime"), ["native-system", "history", "input"].includes(rule.kind) ? (0, import_react7.createElement)("small", null, t("nativeRetention")) : nativeDraft && rule.role === "user" ? (0, import_react7.createElement)("small", null, t(rule.delivery ?? "context")) : select(rule.lifetime, nativeDraft ? ["request"] : sourceDescriptor2(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor2(rule.kind)?.lifetimes.length === 1))),
         nativeDraft && (rule.role === "user" || adaptiveNative && rule.kind === "preset") && (0, import_react7.createElement)("label", null, t("delivery"), select(rule.delivery ?? "context", ["context", "pre-step"], (delivery) => editRule(rule.id, { delivery }))),
-        (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("role"), adaptiveNative && rule.kind === "preset" ? (0, import_react7.createElement)("small", null, t("nativePresetRole")) : select(rule.role, (sourceDescriptor2(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"]).filter((role2) => !nativeDraft || role2 !== "assistant"), (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor2(rule.kind)?.roles.length === 1)), sourceDescriptor2(rule.kind)?.depth !== false && (0, import_react7.createElement)("label", null, t("depth"), (0, import_react7.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", disabled: busy2 || nativeDraft, onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
+        (0, import_react7.createElement)("div", { className: "dta-grid" }, (0, import_react7.createElement)("label", null, t("role"), adaptiveNative && (rule.kind === "preset" || slotMode && controlFor(rule) === "preset") ? (0, import_react7.createElement)("small", null, t("nativePresetRole")) : select(rule.role, (sourceDescriptor2(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"]).filter((role2) => !nativeDraft || role2 !== "assistant"), (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor2(rule.kind)?.roles.length === 1)), sourceDescriptor2(rule.kind)?.depth !== false && (0, import_react7.createElement)("label", null, t("depth"), (0, import_react7.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", disabled: busy2 || nativeDraft, onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
         textInput ? (0, import_react7.createElement)(
           "div",
           { className: "dta-fields" },
@@ -23866,12 +23901,14 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           setDropIndex(null);
           const data3 = await api2("/preview", "POST", { sessionId, preset: editablePreset(draft) });
           setPreview(data3.preview);
+          if (slotMode) setSlotAnalysis({ draft, preview: data3.preview });
           setTab("expanded");
         }), Boolean(selectionTarget && (typeof selectionTarget.previewAssembly !== "function" || selectionTarget.editable === false)), void 0, tab === "expanded" && !preview?.actual), button("actual", () => run(actualRequest), !sessionId, void 0, tab === "expanded" && !!preview?.actual)),
         (0, import_react7.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react7.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
         tab === "rules" ? (0, import_react7.createElement)(
           "div",
           null,
+          slotMode && analysis?.error && (0, import_react7.createElement)("div", { role: "alert" }, t("placementFailed") + analysis.error),
           (0, import_react7.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, nativeDraft ? ["modules", "native-roles", "native-slots"] : ["modules", "st"], (placement) => edit({ placement }))),
           draft.placement === "st" && (0, import_react7.createElement)("small", null, t("stHelp")),
           ...draft.rules.flatMap((row, i3) => [placeholder(i3), ruleRow(row, i3)]),
@@ -23923,6 +23960,19 @@ function reorderAtBoundary2(items2, from, boundary) {
   const [item] = next.splice(from, 1);
   next.splice(boundary > from ? boundary - 1 : boundary, 0, item);
   return next;
+}
+function moveSlotRule(preset, preview, from, boundary) {
+  const rule = preset.rules[from];
+  const control = preview?.placementControls?.find((c) => c.ruleId === rule.id)?.control;
+  if (!["independent", "mixed"].includes(control)) throw new Error("\u6B64\u6A21\u5757\u7684\u4F4D\u7F6E\u7531\u9884\u8BBE\u63A7\u5236\u6216\u5C1A\u672A\u89E3\u6790\u3002 / Module position is preset-controlled or unresolved.");
+  const rules = reorderAtBoundary2(preset.rules, from, boundary);
+  const at4 = rules.indexOf(rule), history = rules.findIndex((r) => r.kind === "history"), input = rules.findIndex((r) => r.kind === "input");
+  const nodes = preview.nodes.filter((n) => n.ruleId === rule.id && n.source?.module !== "preset" && n.placementSource !== "preset");
+  const roles = new Set(nodes.map((n) => n.source?.module === "native-system" ? "system" : n.role));
+  if (roles.has("system") && at4 > history) throw new Error("\u72EC\u7ACB system \u5185\u5BB9\u53EA\u80FD\u653E\u5728\u539F\u751F\u5386\u53F2\u524D\uFF1B\u672B\u5C3E\u63D0\u9192\u8BF7\u660E\u786E\u9009\u62E9 user \u548C pre-step\u3002 / Independent system content must precede history; choose user and pre-step for a final reminder.");
+  if (roles.has("user") && at4 < history) throw new Error("\u72EC\u7ACB user \u5185\u5BB9\u53EA\u80FD\u653E\u5728\u539F\u751F\u5386\u53F2\u540E\u3002 / Independent user content must follow history.");
+  if (roles.has("user") && rule.delivery !== "pre-step" && at4 < input) throw new Error("context \u53EA\u80FD\u4F4D\u4E8E\u672C\u6B65\u8F93\u5165\u540E\uFF1B\u8F93\u5165\u524D\u8BF7\u9009\u62E9 pre-step\u3002 / Context follows input; select pre-step to place before input.");
+  return rules;
 }
 
 // node_modules/dsh-prompt-assembler/src/client-fetch.js
