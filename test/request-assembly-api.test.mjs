@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import { CoreRequestBackend } from 'dsh-prompt-assembler/core-backend'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -34,7 +35,7 @@ test('assembly API keeps edits distinct from apply, rejects running/unsupported 
     const unregister = runtime.registry.register({ id: 'example.memory', pluginId: 'example.memory', name: 'Memory', resolve: () => ({ blocks: [] }) })
     assert.ok((await call('')).sources.some(s => s.id === 'example.memory'))
     unregister()
-    const created = await call('', 'POST', BUILTINS[1]); assert.equal(created.status, 201)
+    const created = await call('', 'POST', MODULE_ORDER); assert.equal(created.status, 201)
     const id = created.preset.id
     assert.equal(store.selection('session'), null)
     assert.equal((await call('/selection', 'PUT', { sessionId: 'session', id })).status, 409)
@@ -49,7 +50,7 @@ test('assembly API keeps edits distinct from apply, rejects running/unsupported 
     const preview = await call('/preview', 'POST', { sessionId: 'session', presetId: id })
     assert.equal(preview.status, 200); assert.equal(prepared.options.eventState, 'detached')
     assert.equal(preview.preview.pendingInputsIncluded, false)
-    assert.equal((await call('', 'POST', { ...BUILTINS[1], rules: [] })).status, 201)
+    assert.equal((await call('', 'POST', { ...MODULE_ORDER, rules: [] })).status, 201)
     assert.equal((await call('/selection', 'PUT', { sessionId: '__proto__', id })).status, 400)
     assert.equal(store.selection('__proto__'), null)
     core = null

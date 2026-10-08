@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
@@ -28,7 +29,7 @@ test('extracted Tavern adapter preserves pre-split assembly and projection over 
   }
 })
 test('DSH custom source and parser mode are discoverable through the compatibility catalog', () => {
-  const p = { ...BUILTINS[1], rules: [...BUILTINS[1].rules, { id: 'dsh-text', kind: 'dsh.text', inputMode: 'text', text: 'Model {{model}}', role: 'user' }] }
+  const p = { ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'dsh-text', kind: 'dsh.text', inputMode: 'text', text: 'Model {{model}}', role: 'user' }] }
   const result = assembleRequest({ preset: p, assets: { nativeVariables: { model: 'test' } } })
   assert.deepEqual(result.messages.map(textOf), ['Model test'])
   assert.equal(result.nodes[0].source.plugin, 'DSH')

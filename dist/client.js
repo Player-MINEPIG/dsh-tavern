@@ -23827,7 +23827,8 @@ var labels = {
   retry: ["\u91CD\u8BD5", "Retry"],
   cancel: ["\u53D6\u6D88", "Cancel"],
   confirm: ["\u786E\u8BA4", "Confirm"],
-  withdrawnPreset: ["\u8BE5\u5185\u7F6E\u9884\u8BBE\u7684\u63D0\u4F9B\u65B9\u672A\u6CE8\u518C\u3002\u6B64\u4F1A\u8BDD\u5DF2\u5E94\u7528\u7684\u65E7\u914D\u7F6E\u4ECD\u4FDD\u7559\uFF1B\u66F4\u6539\u65F6\u8BF7\u9009\u62E9\u5F53\u524D\u53EF\u7528\u7B56\u7565\u3002", "The provider of this built-in preset is not registered. This session retains its applied configuration; choose an available strategy to change it."],
+  withdrawnPreset: ["\u8BE5\u5185\u7F6E\u7B56\u7565\u5DF2\u4E0D\u5728\u5F53\u524D\u76EE\u5F55\u4E2D\u3002\u6B64\u4F1A\u8BDD\u5DF2\u5E94\u7528\u7684\u65E7\u914D\u7F6E\u4ECD\u4FDD\u7559\uFF1B\u66F4\u6539\u65F6\u8BF7\u9009\u62E9\u5F53\u524D\u53EF\u7528\u7B56\u7565\u3002", "This built-in strategy is no longer in the current catalog. This session retains its applied configuration; choose an available strategy to change it."],
+  placementTip: ["\u5C0F\u8D34\u58EB\uFF1A\u5982\u679C\u6A21\u578B\u51FA\u73B0\u6389\u683C\u5F0F\u3001\u4E0D\u9075\u5FAA\u6307\u4EE4\u7B49\u95EE\u9898\uFF0C\u53EF\u4EE5\u5C1D\u8BD5\u5C06\u76F8\u5173\u7684\u683C\u5F0F\u8981\u6C42\u6216\u884C\u4E3A\u6307\u4EE4\u540E\u7F6E\uFF0C\u5E76\u901A\u8FC7\u88C5\u914D\u7ED3\u679C\u786E\u8BA4\u5B9E\u9645\u4F4D\u7F6E\u3002", "Tip: If the model drops formatting or misses instructions, try placing the relevant format requirements or behavior instructions later, then check their actual position in the assembly result."],
   librarySection: ["\u7B56\u7565\u5E93", "Strategy library"],
   applicationSection: ["\u4F1A\u8BDD\u5E94\u7528", "Session application"],
   rulesSection: ["\u88C5\u914D\u89C4\u5219\u4E0E\u9884\u89C8", "Assembly rules and preview"],
@@ -24424,6 +24425,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           setPreview(null);
         }), !draft.id || draft.builtin), dirty && (0, import_react10.createElement)("span", null, t("dirty"))),
         (0, import_react10.createElement)("h3", { className: "dta-section-title" }, t("rulesSection")),
+        (0, import_react10.createElement)("p", { className: "dta-notice", "data-assembly-placement-tip": true }, t("placementTip")),
         (0, import_react10.createElement)("label", { className: "dta-toolbar" }, t("backend"), (0, import_react10.createElement)("select", { "aria-label": t("backend"), value: draft.backend ?? "core", onChange: (e) => edit({ backend: e.target.value }) }, (0, import_react10.createElement)("option", { value: "native" }, t("backendNative")), (0, import_react10.createElement)("option", { value: "core" }, t("backendCore")))),
         (0, import_react10.createElement)("div", { className: "dta-notice" }, draft.layout ? locale === 0 ? "\u5148\u914D\u7F6E\u8D44\u6E90\u4F4D\u7F6E\uFF0C\u518D\u52A0\u8F7D\u5F53\u524D\u8D44\u6E90\u67E5\u770B\u88C5\u914D\u7ED3\u679C\u3002\u6392\u5E8F\u7B56\u7565\u6309\u5217\u8868\u4F9D\u6B21\u5904\u7406\u5C1A\u672A\u5B9A\u4F4D\u7684\u8D44\u6E90\uFF0C\u8FD0\u884C\u65F6\u7EA6\u675F\u59CB\u7EC8\u751F\u6548\u3002" : "Configure resource positions, then load current assets to see the assembled result. Sorting strategies process the remaining resources in list order, within runtime constraints." : t(adaptiveNative ? draft.placement === "native-slots" ? "nativeSlotsHint" : "nativeRolesHint" : nativeDraft ? "nativeHint" : "coreHint")),
         nativeError && (0, import_react10.createElement)("div", { className: "dta-notice", role: "alert" }, nativeError),

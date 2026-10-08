@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -69,7 +70,7 @@ test('official SessionController creates fresh state beside an initialized legac
     assert.notEqual(rootId, previous.sessionId)
     await assert.rejects(row(previous.sessionId), { code: 'MVU_MIGRATION_REQUIRED' })
     await service.update({ id: initial.id, scope: { sessionId: rootId }, expectedRevision: initial.revision, operationId: 'opening', content: { stat_data: { hp: 70 } } })
-    const preset = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-cache'), rules: [...store.assemblyPresets.get('builtin-cache').rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
+    const preset = store.assemblyPresets.save({ ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
     store.assemblyPresets.apply(rootId, preset.id)
     const turn = async id => {
       const done = new Promise((accept, reject) => { const stop = ctx.on('session/event', (session, event) => { if (session.id === id && event.type === 'turn/end') { stop(); clearTimeout(timer); accept(event) } }); const timer = setTimeout(() => { stop(); reject(Error('timeout')) }, 5000) })

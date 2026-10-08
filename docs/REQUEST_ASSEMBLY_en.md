@@ -18,12 +18,11 @@ Tavern supplies distinct reference configurations that can be saved as custom st
 | --- | --- |
 | Preset slots first (standard) `builtin-native-slots` | RP default. Place referenced content at preset slots, adapting identity to native history/input boundaries; fall back to roles when slots are absent. |
 | Roles first (standard) `builtin-native-roles` | Preserve preset and lore entry roles. Within legal delivery regions, use preset slots, entry order, then module order. |
-| Lore and PHI last (standard) `builtin-native-cache` | Prefix assets become system contributions; append lore as user context after input, then PHI as user pre-step. |
-| PHI last (standard) `builtin-native-phi` | Keep lore and other assets as system contributions before history; append only PHI as final user pre-step. |
 | Preset slots first (advanced) `builtin-st` | Preserve supported preset slots, authored roles and message-level depth. Requires the core addon and compatible model capabilities. |
-| Lore and PHI last (advanced) `builtin-cache` | Module-order reference: prefix assets → history → input → current lore → PHI, preserving source roles with request-only bodies. |
 
-Slot templates use explicit resource-position priority: preset slots → user positions → resource positions → fallback order. Tail templates retain fixed module rules; they deliberately override the relevant module positions and do not promise to follow every preset slot. Cache hits and reminder effectiveness depend on the model/provider. Cache friendly has been renamed to describe actual placement. Native ST style was withdrawn because forcing assets to system is not ST ordering. Append snapshots duplicated the tail ordering and was withdrawn; advanced retention remains configurable in source rules.
+Slot templates use explicit resource-position priority: preset slots → user positions → resource positions → fallback order. PHI-last, lore-and-PHI-last and append-snapshot references are no longer separate built-ins; placement and retention remain configurable. Native ST style was also withdrawn because forcing assets to system is not ST ordering.
+
+Tip: If the model drops formatting or misses instructions, try placing the relevant format requirements or behavior instructions later, then check their actual position in the assembly result.
 
 New RP sessions and Apply default strategy use standard slots even with the advanced addon installed. Existing built-in snapshots, custom strategies and explicit opt-outs remain unchanged; select and apply a template again to adopt its new definition. Standalone DSH sessions have no implicit RP strategy.
 

@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -216,7 +217,7 @@ test('extended core sends the assembled request, records it, restores native his
     }, { global: true, prepend: true })
     const resource = store.create({ name: 'Preset' }); store.update(resource.id, { prompts: [{ ...resource.prompts[0], content: 'BODY' }, { ...resource.prompts[0], identifier: 'jailbreak', content: 'TAIL' }] }); store.select(resource.id)
     const handle = await ctx.agents.create({ sessionId: 'assembly-test', agentOptions: { provider: 'test', model: 'test' } }), agent = handle.agent
-    store.assemblyPresets.apply(agent.id, 'builtin-cache')
+    store.assemblyPresets.apply(agent.id, store.assemblyPresets.save(MODULE_ORDER).id)
     async function turn(text) {
       agent.followup(llm.createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } }))
       await agent.whenIdle()
@@ -320,7 +321,7 @@ test('public sources run for tool continuations, steering, child requests and se
     const sourcePlugin = ctx.plugin({ name: 'example-memory', inject: ['tavernRequestSources'], apply(context) {
       context.effect(() => context.get('tavernRequestSources').register({ id: 'example.memory', pluginId: 'example.memory', name: 'Memory', async resolve(input) { calls.push([input.sessionId, input.turn, input.step, input.preview]); return { blocks: [{ id: 'memory', type: 'text', text: `MEMORY ${input.turn}/${input.step}` }] } } }))
     } }); await sourcePlugin
-    const preset = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-cache'), rules: [...store.assemblyPresets.get('builtin-cache').rules, { id: 'memory', kind: 'example.memory' }] })
+    const preset = store.assemblyPresets.save({ ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'memory', kind: 'example.memory' }] })
     const handle = await ctx.agents.create({ sessionId: 'source-parent', agentOptions: { provider: 'test', model: 'test' } }); agent = handle.agent
     store.assemblyPresets.apply(agent.id, preset.id)
     agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'START' }], source: { kind: 'user' } })); await agent.whenIdle()

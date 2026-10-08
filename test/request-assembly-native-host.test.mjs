@@ -1,3 +1,4 @@
+import { NATIVE_LORE_LAST, NATIVE_PHI_LAST } from './fixtures/assembly-references.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -47,12 +48,12 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
     const manager = ctx.get('dshMemoryManager'); manager.registerAdapter({ id: 'example', authority: 'example', list: async () => [], read: async () => ({ id: 'example:resource', type: 'text', content: 'REMEMBER', revision: 4 }) })
     const agent = (await ctx.agents.create({ sessionId: 'native-combination', agentOptions: { provider: 'offline', model: 'offline' } })).agent
     const turn = async text => { agent.followup(llm.createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })); await agent.whenIdle(); assert.deepEqual(errors, []) }
-    for (const id of ['builtin-native-slots', 'builtin-native-cache', 'builtin-native-phi']) {
-      const preset = face.store.get(id), rules = [...preset.rules]
+    for (const preset of [face.store.get('builtin-native-slots'), NATIVE_LORE_LAST, NATIVE_PHI_LAST]) {
+      const rules = [...preset.rules]
       const phi = rules.findIndex(r => r.kind === 'phi' && r.role === 'user')
       rules.splice(phi < 0 ? rules.findIndex(r => r.kind === 'history') : phi, 0, { id: 'memory', kind: 'memory-manager.resources', role: phi < 0 ? 'system' : 'user', delivery: 'context' })
       const strategy = face.store.save({ ...preset, rules }); face.runtime.requireAvailable(strategy); face.store.apply(agent.id, strategy.id)
-      await turn(id)
+      await turn(preset.name)
       assert.ok(requests.at(-1).some(m => textOf(m).includes('MAIN')))
       assert.ok(requests.at(-1).some(m => textOf(m).includes('REMEMBER')))
       if (phi >= 0) assert.equal(textOf(requests.at(-1).at(-1)), 'PHI')

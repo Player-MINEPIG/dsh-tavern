@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -79,7 +80,7 @@ test('real DSH AgentLoop final replies, fork seed, restart snapshots and native 
     const service = ctx.get('tavernMvu'), handle = await ctx.agents.create({ sessionId: 'mvu-host', agentOptions: { provider: 'mvu-test', model: 'test' } })
     const { agent } = handle
     service.observe(fact => facts.push(fact))
-    const preset = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-cache'), rules: [...store.assemblyPresets.get('builtin-cache').rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
+    const preset = store.assemblyPresets.save({ ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
     store.assemblyPresets.apply(agent.id, preset.id)
     async function turn() {
       let timer
@@ -187,7 +188,7 @@ test('real Host empty greeting binding writes state used by the first model requ
     assert.equal((await service.snapshot(scope)).variables.stat_data.hp, 10)
     const binding = await service.createCardBinding({ scope, sourceIdentity, grantId })
     await service.cardWrite({ capability: binding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'opening-config', cause: 'user-interaction' })
-    const preset = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-cache'), rules: [...store.assemblyPresets.get('builtin-cache').rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
+    const preset = store.assemblyPresets.save({ ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
     store.assemblyPresets.apply(agent.id, preset.id)
     let timer
     const completed = new Promise((resolve, reject) => {

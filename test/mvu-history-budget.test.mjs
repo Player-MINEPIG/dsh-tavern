@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -175,7 +176,7 @@ test('official AgentLoop eight-turn state history and large assembly bodies surv
   const plugin = ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir, mvu: { resources } }) } }); await plugin
   const service = ctx.get('tavernMvu'), handle = await ctx.agents.create({ sessionId: 'eight-turn-history', agentOptions: { provider: 'history-fixture', model: 'synthetic' } })
   const { agent } = handle
-  const preset = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-cache'), rules: [...store.assemblyPresets.get('builtin-cache').rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
+  const preset = store.assemblyPresets.save({ ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
   store.assemblyPresets.apply(agent.id, preset.id)
   for (let turn = 1; turn <= 8; turn++) {
     agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: `Synthetic turn ${turn}` }], source: { kind: 'user' } }))

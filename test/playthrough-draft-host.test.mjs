@@ -1,3 +1,4 @@
+import { NATIVE_PHI_LAST } from './fixtures/assembly-references.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
@@ -82,7 +83,7 @@ test('sessionless production opening survives remount, transfers resources once 
     let draft = (await store.playthroughDrafts.read(id)).draft
     assert.equal(draft.variables.stat_data.hp, 70); assert.equal(draft.selection.character.greetingIndex, 1)
     const beforePreview = readFileSync(store.playthroughDrafts.path, 'utf8')
-    const nativePreset = structuredClone(store.assemblyPresets.get('builtin-native-phi'))
+    const nativePreset = structuredClone(NATIVE_PHI_LAST)
     nativePreset.rules.find(rule => rule.kind === 'phi').text = 'DRAFT PHI'
     const preview = await store.playthroughDrafts.preview(id, { expectedRevision: draft.revision, preset: nativePreset })
     const previewText = preview.messages.flatMap(message => message.content).map(block => block.text ?? '').join('\n')

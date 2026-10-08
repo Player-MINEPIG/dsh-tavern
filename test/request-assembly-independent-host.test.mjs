@@ -35,7 +35,7 @@ test('independent assembler remains mounted after Tavern removal and keeps sessi
     assert.equal(new Set(sources.map(s => s.id)).size, sources.length)
     assert.deepEqual(sources.filter(s => s.acceptsText && !s.textParserAliasFor).map(s => s.id).sort(), ['dsh.text', 'tavern.text'])
     assert.ok(sources.filter(s => s.pluginId === 'pmp-dsh-tavern' && s.supportsModule).every(s => s.contentGuide))
-    for (const id of ['builtin-st', 'builtin-cache']) assert.ok(core.store.list().some(p => p.id === id))
+    for (const id of ['builtin-st']) assert.ok(core.store.list().some(p => p.id === id))
     const prompt = store.create({ name: 'Synthetic' }); store.update(prompt.id, { prompts: [{ identifier: 'main', name: 'Main Prompt', role: 'system', content: 'MAIN ONCE', enabled: true }] }); store.select(prompt.id)
     const strategy = core.store.save({ ...core.store.get('builtin-st'), name: 'Dual', rules: [...core.store.get('builtin-st').rules, { id: 'custom-dsh', kind: 'dsh.text', inputMode: 'text', text: 'DSH INDEPENDENT' }] })
     const agent = (await ctx.agents.create({ sessionId: 'dual', agentOptions: { provider: 'offline', model: 'offline' } })).agent
@@ -51,7 +51,7 @@ test('independent assembler remains mounted after Tavern removal and keeps sessi
     assert.deepEqual(core.store.selection(agent.id), edited, 'the last successful application from Tavern supersedes the sidebar snapshot')
     await handle.dispose()
     assert.equal(ctx.get('dshPromptAssembler'), core); assert.ok(!core.registry.list().some(s => s.pluginId === 'pmp-dsh-tavern')); assert.equal(core.store.selection(agent.id).id, strategy.id)
-    assert.ok(!core.store.list().some(p => ['builtin-st', 'builtin-cache'].includes(p.id)))
+    assert.ok(!core.store.list().some(p => ['builtin-st'].includes(p.id)))
     await turn('TWO')
     assert.ok(requests[1].some(m => JSON.stringify(m).includes('DSH INDEPENDENT')))
     assert.ok(requests[1].some(m => JSON.stringify(m).includes('DSH INDEPENDENT FROM TAVERN')))

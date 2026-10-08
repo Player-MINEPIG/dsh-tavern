@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -10,7 +11,7 @@ import { defaultAssemblyFailureInput } from './fixtures/default-assembly-failure
 const m = (id, role = 'user', text = id) => ({ id, role, source: { kind: role === 'user' ? 'user' : 'model' }, content: [{ type: 'text', text }] })
 const native = [m('s', 'system'), m('u1'), m('a1', 'assistant'), m('u2')]
 const assets = { character: { id: 'card', data: { description: 'CHAR', post_history_instructions: 'PHI' } }, preset: { id: 'preset', prompts: [{ identifier: 'main', enabled: true, role: 'system', content: 'MAIN' }] }, loreEntries: [{ id: 'w1', content: 'LORE', position: 'after', resourceId: 'book' }] }
-const snapshotPreset = { ...BUILTINS[1], name: 'Snapshot fixture', rules: BUILTINS[1].rules.map(r => r.kind === 'worldbook' ? { ...r, lifetime: 'snapshot' } : r) }
+const snapshotPreset = { ...MODULE_ORDER, name: 'Snapshot fixture', rules: MODULE_ORDER.rules.map(r => r.kind === 'worldbook' ? { ...r, lifetime: 'snapshot' } : r) }
 const texts = result => result.messages.map(textOf)
 
 test('first-turn greeting precedes marker-owned input and retains trailing depth lore', () => {
@@ -32,11 +33,11 @@ test('first-turn greeting precedes marker-owned input and retains trailing depth
 })
 
 test('cache layout wraps intact native history with current lore and PHI, without duplicating history', () => {
-  const result = assembleRequest({ preset: BUILTINS[1], nativeMessages: native, inputIds: ['u2'], assets })
+  const result = assembleRequest({ preset: MODULE_ORDER, nativeMessages: native, inputIds: ['u2'], assets })
   assert.deepEqual(texts(result), ['s', 'MAIN', 'CHAR', 'u1', 'a1', 'u2', 'LORE', 'PHI'])
   assert.equal(result.snapshots.length, 0)
   assert.deepEqual(native.map(textOf), ['s', 'u1', 'a1', 'u2'])
-  const next = assembleRequest({ preset: BUILTINS[1], nativeMessages: [...native, m('a2', 'assistant'), m('u3')], inputIds: ['u3'], assets: { ...assets, loreEntries: [] }, previous: result })
+  const next = assembleRequest({ preset: MODULE_ORDER, nativeMessages: [...native, m('a2', 'assistant'), m('u3')], inputIds: ['u3'], assets: { ...assets, loreEntries: [] }, previous: result })
   assert.ok(!texts(next).includes('LORE'))
   assert.equal(next.nodes.find(n => n.name === 'description').changed, false)
 })
@@ -52,7 +53,7 @@ test('ST history marker owns native blocks and authored role/depth is executed',
   assert.ok(result.nodes.some(n => n.module === 'history' && n.locked))
 })
 test('macro references consume fallback fields and expose locked source children', () => {
-  const result = assembleRequest({ preset: { ...BUILTINS[1], rules: BUILTINS[1].rules.filter(r => r.kind !== 'character') }, nativeMessages: native, assets: { ...assets, preset: { prompts: [{ enabled: true, identifier: 'main', content: 'Before {{description}} after {{lastusermessage}}' }] } } })
+  const result = assembleRequest({ preset: { ...MODULE_ORDER, rules: MODULE_ORDER.rules.filter(r => r.kind !== 'character') }, nativeMessages: native, assets: { ...assets, preset: { prompts: [{ enabled: true, identifier: 'main', content: 'Before {{description}} after {{lastusermessage}}' }] } } })
   assert.equal(texts(result).filter(t => t.includes('CHAR')).length, 1)
   const child = result.nodes.find(n => n.module === 'preset').children[0]
   assert.equal(child.locked, true); assert.equal(child.source.resourceId, 'card')
@@ -82,13 +83,13 @@ test('snapshot mode retains original placement before later replies and deduplic
 test('depth insertion cannot split native tool calls and their results', () => {
   const tool = { id: 'tc', role: 'assistant', content: [{ type: 'tool-call', id: 'call', name: 'lookup', arguments: '{}' }] }
   const result = { id: 'tr', role: 'tool', toolCallId: 'call', source: { kind: 'tool', callId: 'call' }, content: [{ type: 'text', text: 'RESULT' }] }
-  const preset = structuredClone(BUILTINS[1]); preset.rules.push({ id: 'extra', kind: 'custom', role: 'system', depth: 1, text: 'EXTRA' })
+  const preset = structuredClone(MODULE_ORDER); preset.rules.push({ id: 'extra', kind: 'custom', role: 'system', depth: 1, text: 'EXTRA' })
   const assembled = assembleRequest({ preset, nativeMessages: [m('s', 'system'), m('u'), tool, result] })
   assert.deepEqual(assembled.messages.map(m => m.id).slice(0, 4), ['s', 'u', 'tc', 'tr'])
   assert.equal(texts(assembled).at(-1), 'EXTRA')
 })
 test('separate custom snapshot rules retain independent anchors across turns', () => {
-  const preset = { ...BUILTINS[1], rules: [
+  const preset = { ...MODULE_ORDER, rules: [
     { id: 's', kind: 'native-system' }, { id: 'a', kind: 'custom', text: 'ALPHA', lifetime: 'snapshot' },
     { id: 'h', kind: 'history' }, { id: 'i', kind: 'input' }, { id: 'b', kind: 'custom', text: 'BETA', lifetime: 'snapshot' },
   ] }
@@ -99,7 +100,7 @@ test('separate custom snapshot rules retain independent anchors across turns', (
   assert.deepEqual(texts(second), ['s', 'ALPHA', 'u', 'BETA', 'a', 'u2'])
 })
 test('depth-based snapshot rules retain changes across turns without splitting a tool transaction', () => {
-  const preset = { ...BUILTINS[1], rules: [...BUILTINS[1].rules, { id: 'c', kind: 'custom', text: 'FIRST', lifetime: 'snapshot', depth: 0 }] }
+  const preset = { ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'c', kind: 'custom', text: 'FIRST', lifetime: 'snapshot', depth: 0 }] }
   const first = assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'] })
   assert.equal(first.snapshots.length, 1)
   preset.rules.at(-1).text = 'SECOND'
@@ -118,30 +119,30 @@ test('world-book entries at distinct depths retain their own positions and expir
   assert.ok(texts(second).some(t => t.includes('context is empty for entry worldbook:l1')))
 })
 test('native blocks can be reordered while complete output budgets and built-in protection are enforced', () => {
-  const preset = structuredClone(BUILTINS[1]); preset.rules = moveRule(preset.rules, 'input', 'history')
+  const preset = structuredClone(MODULE_ORDER); preset.rules = moveRule(preset.rules, 'input', 'history')
   const reordered = assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'], assets })
   assert.ok(texts(reordered).indexOf('u2') < texts(reordered).indexOf('u1'))
-  assert.throws(() => assembleRequest({ preset: BUILTINS[1], assets, maxBytes: 10 }), /exceeds/)
-  assert.deepEqual(normalizePreset({ ...BUILTINS[1], rules: [] }).rules, [])
+  assert.throws(() => assembleRequest({ preset: MODULE_ORDER, assets, maxBytes: 10 }), /exceeds/)
+  assert.deepEqual(normalizePreset({ ...MODULE_ORDER, rules: [] }).rules, [])
 })
 test('applied presets are immutable snapshots and survive resource edits and restart', () => {
   const root = mkdtempSync(join(tmpdir(), 'assembly-presets-'))
   try {
-    const store = new AssemblyPresetStore(root), created = store.save(BUILTINS[1])
+    const store = new AssemblyPresetStore(root), created = store.save(MODULE_ORDER)
     store.apply('session', created.id)
     store.save({ ...created, name: 'Changed' }, created.id)
     assert.equal(new AssemblyPresetStore(root).selection('session').name, created.name)
     assert.throws(() => store.remove(created.id), /applied/)
-    assert.throws(() => store.save(created, 'builtin-cache'), /Copy/)
+    assert.throws(() => store.save(created, 'builtin-native-roles'), /Copy/)
     store.apply('session', null); store.remove(created.id)
-    store.apply('parent', 'builtin-cache'); store.copySelection('parent', 'child')
-    assert.equal(store.selection('child').id, 'builtin-cache')
+    store.apply('parent', 'builtin-native-roles'); store.copySelection('parent', 'child')
+    assert.equal(store.selection('child').id, 'builtin-native-roles')
     store.apply('child', null)
     const restarted = new AssemblyPresetStore(root)
     restarted.apply('parent', 'builtin-st'); restarted.copySelection('parent', 'child')
     assert.equal(restarted.selection('child'), null)
     restarted.copySelection('no-layout-parent', 'default-child')
-    restarted.apply('no-layout-parent', 'builtin-cache'); restarted.copySelection('no-layout-parent', 'default-child')
+    restarted.apply('no-layout-parent', 'builtin-native-roles'); restarted.copySelection('no-layout-parent', 'default-child')
     assert.equal(restarted.selection('default-child'), null)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
@@ -170,11 +171,11 @@ test('mode defaults and explicit strategy overrides persist independently', () =
   try {
     const store = new AssemblyPresetStore(root, { mode: () => mode })
     assert.equal(store.selection('session').id, 'builtin-native-slots')
-    store.apply('session', 'builtin-cache'); mode = 'native'
+    store.apply('session', 'builtin-native-roles'); mode = 'native'
     assert.equal(store.selection('session'), null)
     const savedSnapshot = store.save(snapshotPreset)
     store.apply('session', savedSnapshot.id); mode = 'play'
-    assert.equal(store.selection('session').id, 'builtin-cache')
+    assert.equal(store.selection('session').id, 'builtin-native-roles')
     store.apply('session', null)
     assert.equal(new AssemblyPresetStore(root, { mode: () => mode }).selection('session'), null)
     store.copySelection('session', 'swipe-child')
@@ -203,7 +204,7 @@ test('custom-only requests use an explicit role without restoring disabled nativ
 })
 
 test('retained depth snapshots keep depth metadata in subsequent previews', () => {
-  const preset = { ...BUILTINS[1], rules: [...BUILTINS[1].rules, { id: 'depth-note', kind: 'custom', text: 'Note', lifetime: 'snapshot', role: 'user', depth: 1 }] }
+  const preset = { ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'depth-note', kind: 'custom', text: 'Note', lifetime: 'snapshot', role: 'user', depth: 1 }] }
   const first = assembleRequest({ preset, nativeMessages: native })
   const second = assembleRequest({ preset, nativeMessages: [...native, m('a2', 'assistant')], snapshots: first.snapshots })
   assert.equal(first.nodes.find(n => n.ruleId === 'depth-note').depth, 1)
@@ -227,7 +228,7 @@ test('explicit character depth remains authoritative and late greetings are diag
 
 // A list rule governs placement only when the source is explicitly listed.
 test('listed sources retain list position across slots, macros and disabled rules', () => {
-  const preset = structuredClone(BUILTINS[1])
+  const preset = structuredClone(MODULE_ORDER)
   const input = { preset, nativeMessages: native, inputIds: ['u2'], assets: { ...assets, preset: { prompts: [{ enabled: true, identifier: 'main', content: 'P{{description}}{{history}}{{input}}Q' }] } } }
   assert.deepEqual(texts(assembleRequest(input)), ['s', 'P', 'Q', 'CHAR', 'u1', 'a1', 'u2', 'LORE', 'PHI'])
   preset.rules.find(r => r.kind === 'character').enabled = false
@@ -236,7 +237,7 @@ test('listed sources retain list position across slots, macros and disabled rule
   assert.deepEqual(texts(assembleRequest(input)), ['s', 'PCHAR', 'u1', 'a1', 'u2', 'Q', 'LORE', 'PHI'])
 })
 test('custom Tavern text uses preset reference parsing for unlisted dependencies', () => {
-  const preset = { ...BUILTINS[1], rules: [{ id: 's', kind: 'native-system' }, { id: 'c', kind: 'custom', text: 'A{{history}}B{{input}}C', role: 'user' }] }
+  const preset = { ...MODULE_ORDER, rules: [{ id: 's', kind: 'native-system' }, { id: 'c', kind: 'custom', text: 'A{{history}}B{{input}}C', role: 'user' }] }
   const result = assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'] })
   assert.deepEqual(texts(result), ['s', 'A', 'u1', 'a1', 'B', 'u2', 'C'])
   assert.ok(result.nodes.filter(n => n.module === 'history' || n.module === 'input').every(n => n.locked))
@@ -245,5 +246,5 @@ test('authored depth order is ascending and list mode overrides authored depth',
   const prompt = (identifier, order) => ({ identifier, enabled: true, role: 'user', content: identifier, injectionPosition: 1, injectionDepth: 0, st: { injection_order: order } })
   const input = { nativeMessages: native, inputIds: ['u2'], assets: { preset: { prompts: [prompt('LOW', 10), prompt('HIGH', 200)] } } }
   assert.deepEqual(texts(assembleRequest({ ...input, preset: BUILTINS[0] })).slice(-2), ['LOW', 'HIGH'])
-  assert.deepEqual(texts(assembleRequest({ ...input, preset: BUILTINS[1] })).slice(0, 3), ['s', 'LOW', 'HIGH'])
+  assert.deepEqual(texts(assembleRequest({ ...input, preset: MODULE_ORDER })).slice(0, 3), ['s', 'LOW', 'HIGH'])
 })

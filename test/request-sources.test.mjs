@@ -1,17 +1,18 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import { CoreRequestBackend } from 'dsh-prompt-assembler/core-backend'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { RequestSourceRegistry, createDefaultRegistry, registerBuiltinSources, assembleRequestAsync, assembleRequest, BUILTINS, normalizePreset, textOf } from '../packages/request-assembler/index.js'
 import { RequestAssembler } from '../packages/request-assembler/runtime.js'
 const native = [{ id: 's', role: 'system', content: [{ type: 'text', text: 'CORE' }] }, { id: 'u', role: 'user', content: [{ type: 'text', text: 'INPUT' }], source: { kind: 'user' } }]
-const withRule = (kind, extra = {}) => ({ ...BUILTINS[1], rules: [...BUILTINS[1].rules, { id: 'plugin', kind, ...extra }] })
+const withRule = (kind, extra = {}) => ({ ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'plugin', kind, ...extra }] })
 const memory = resolve => ({ id: 'example.memory/recalled', pluginId: 'example.memory', name: 'Retrieved memory', resolve })
 const blocks = value => ({ blocks: [{ type: 'text', id: 'memory', text: value }] })
 
 test('all native and Tavern modules use the same public registry, with no implicit fallback', () => {
   const registry = new RequestSourceRegistry(), remove = registerBuiltinSources(registry)
   assert.equal(registry.list().length, 14)
-  const options = { registry, preset: BUILTINS[1], nativeMessages: native, assets: { character: { data: { description: 'CHARACTER' } } } }
+  const options = { registry, preset: MODULE_ORDER, nativeMessages: native, assets: { character: { data: { description: 'CHARACTER' } } } }
   assert.deepEqual(assembleRequest(options).messages.map(textOf), ['CORE', 'CHARACTER', 'INPUT'])
   remove()
   const missing = assembleRequest(options)
@@ -58,7 +59,7 @@ test('third-party macros and references consume their source and use the same lo
   const registry = createDefaultRegistry()
   registry.register(memory(() => ({ blocks: [{ type: 'text', id: 'memory', text: 'REMEMBER' }], macros: { recalled: 'memory' } })))
   registry.register({ id: 'example.template', pluginId: 'example.template', name: 'Template', dependencies: ['example.memory/recalled'], resolve: () => ({ blocks: [{ type: 'text', id: 'prompt', text: 'PREFIX {{recalled}}' }] }) })
-  const preset = { ...BUILTINS[1], rules: [...BUILTINS[1].rules, { id: 'template', kind: 'example.template' }] }
+  const preset = { ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'template', kind: 'example.template' }] }
   const result = await assembleRequestAsync({ registry, preset })
   assert.deepEqual(result.messages.map(textOf), ['PREFIX REMEMBER'])
   assert.equal(result.nodes[0].children[0].source.plugin, 'example.memory')

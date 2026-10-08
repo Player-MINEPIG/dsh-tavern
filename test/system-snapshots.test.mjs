@@ -1,3 +1,4 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { projectSystemSnapshots as project } from '../packages/request-assembler/system-snapshots.js'
@@ -95,7 +96,7 @@ test('source nodes retain original input IDs when sharing and repeating system c
   assert.ok(later.contributorIds.includes('MAIN') && !later.inputIds.includes('MAIN'))
 })
 test('retained source snapshots keep originals and tombstones without accumulating prior carriers', () => {
-  const preset = { ...BUILTINS[1], rules: BUILTINS[1].rules.map(r => r.kind === 'worldbook' ? { ...r, lifetime: 'snapshot' } : r) }
+  const preset = { ...MODULE_ORDER, rules: MODULE_ORDER.rules.map(r => r.kind === 'worldbook' ? { ...r, lifetime: 'snapshot' } : r) }
   const firstNative = [m('BASE'), m('ONE', 'user')]
   const assets = { loreEntries: [{ id: 'lore', content: 'LORE_OLD' }] }
   const first = assembleRequest({ preset, nativeMessages: firstNative, inputIds: ['ONE'], assets })
