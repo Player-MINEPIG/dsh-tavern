@@ -99,6 +99,21 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
       assert.equal(record.requestAssemblyRef, undefined, 'native traces use durable native refs')
       assert.ok(record.sections.some(s => s.sources?.some(source => source.sourceId === 'preset')))
     }
+    // New native policies retain exact source names/roles in actual-request reads.
+    store.update(resource.id, { prompts: [
+      { identifier: 'opening', name: 'Opening wrapper', enabled: true, role: 'user', content: 'OPEN{{history}}BETWEEN{{input}}CLOSE' },
+      { identifier: 'system', name: 'System entry', enabled: true, role: 'system', content: 'SYSTEM ENTRY' },
+    ] })
+    for (const mode of ['native-roles', 'native-slots']) {
+      face.store.apply(agent.id, `builtin-${mode}`)
+      await turn(mode)
+      const actual = await nativeReader.readActual(agent.id)
+      assert.deepEqual(actual.request.messages, requests.at(-1))
+      const nodes = actual.request.metadata.assembly.nodes
+      assert.ok(nodes.some(n => n.name === 'Opening wrapper' && n.text === 'OPEN' && n.role === (mode === 'native-slots' ? 'system' : 'user')))
+      assert.ok(nodes.some(n => n.name === 'System entry' && n.text === 'SYSTEM ENTRY' && n.role === (mode === 'native-slots' ? 'user' : 'system')))
+      if (mode === 'native-slots') assert.deepEqual(requests.at(-1).filter(m => m.source?.kind !== 'runtime-context').slice(-4).map(textOf), ['BETWEEN', mode, 'CLOSE', 'SYSTEM ENTRY'])
+    }
     await managerHandle.dispose(); await tavernHandle.dispose(); await turn('WITHOUT TAVERN')
     assert.ok(!face.registry.list().some(s => s.pluginId === 'pmp-dsh-tavern' || s.id === 'memory-manager.resources'))
     assert.ok(requests.at(-1).some(m => textOf(m).includes('REMEMBER')), 'prior user context remains historical')

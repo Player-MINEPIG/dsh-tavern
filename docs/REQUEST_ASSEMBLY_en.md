@@ -2,6 +2,8 @@
 
 [中文](REQUEST_ASSEMBLY.md)
 
+Standard adds Preset roles first and Preset slots first. Roles first preserves authored system/user roles and orders contributions within native delivery regions. Slots first detects history/input references, adapts content before history to system and after history to user, and uses pre-step delivery around history/current input. Preview identifies role adjustments; absent references fall back to roles first. User contributions enter history and native internal order is preserved. Applying remains explicit; existing sessions are not migrated automatically. See [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/main/docs/BACKENDS_en.md).
+
 The standard assembler uses public DSH sections/context/pre-step on stock rc.2. Tavern normally depends on it; optional Manager supplies management and observations. The optional core addon retains the validated protocol-1 advanced backend. Both share strategies/registry/UI; legacy strategies without backend remain core. Native/play views cannot change explicit session selections, including null. New standalone sessions have no implicit strategy; new Tavern openings use native ST style unless an explicitly installed addon supplies the advanced default.
 
 ## Standard strategies

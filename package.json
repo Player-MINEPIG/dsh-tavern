@@ -129,7 +129,7 @@
     "acorn": "8.15.0",
     "acorn-jsx": "5.3.2",
     "dompurify": "3.4.16",
-    "dsh-prompt-assembler": "git+https://github.com/Player-MINEPIG/dsh-prompt-assembler.git#5bc6a2b71192bb2f3cf6634ff941d2f4b09ecc3b",
+    "dsh-prompt-assembler": "git+https://github.com/Player-MINEPIG/dsh-prompt-assembler.git#566dbc13cbc5d3f3106129b99b1aad4027e89df4",
     "json5": "2.2.3",
     "katex": "0.18.2",
     "linkedom": "0.18.12",
