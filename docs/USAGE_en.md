@@ -251,7 +251,10 @@ rp-policy.json                 Optional rp:policy prompt
 chrome.json                    Lingzhu/Mowan frontend display mode and revision
 play-workspace.json            Current RP workspace binding
 import-context-bindings.json   Runtime claim state for imported records
+rendering-cache/               Shared downloads of external JS/HTML and fixed opening data
 ```
+
+External code downloads persist in this `rendering-cache/` directory. Include it when copying or backing up the environment. Changing browser, port or desktop client retains the same environment’s downloads; images remain temporary browser fetches. Legacy IndexedDB content imports on the first visit to the updated client from its original browser and origin, without overwriting existing environment records. Complete migration before copying the environment; copying only the plugin package excludes these data.
 
 If the plugin is configured with a custom `storageDir`, the same tree is stored there. Back up the whole Tavern directory; do not copy only `presets/`. `play-workspace.json` stores only the RP workspace pointer. The actual `catalog.json`, per-playthrough `timeline.json`, display regex, and imported records live in the chosen DSH workspace, while the session bodies and branch history referenced by the timeline remain in the corresponding `DSH_HOME` official session logs. A restorable complete backup must include the Tavern persistent directory, selected RP workspace, and corresponding DSH data, including session logs and inherited dependencies.
 

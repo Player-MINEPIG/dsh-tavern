@@ -59,6 +59,7 @@ All Tavern paths below are relative to `/pmp-dsh-tavern/api`. Identifiers and JS
 | POST | `/v1/mvu/card-binding` | `{scope,grantId,sourceIdentity,bindingId?}`; returns source-scoped execution binding |
 | POST | `/v1/mvu/card-write` | `{capability,operation,value,expectedRevision,operationId,cause}`; patch/replace with schema/CAS/idempotency |
 | POST | `/v1/mvu/card-binding/revoke` | `{capability}`; revoke both session/draft binding where applicable |
+| GET / POST / PUT / DELETE | `/v1/rendering-cache/{graphs,sources,opening}` | Inert environment cache; graph generations, shared sources and fixed opening data; exact methods and import in [API](API_en.md#rendering-cache-storage) |
 | POST / DELETE | `/v1/rendering-write-grants[/:grantId]` | Exact downloaded/enabled execution identity; create/revoke trusted renderer grant |
 | POST | `/v1/sessions/:id/opening-worldbook/prepare` | Fixed source identity and opening ID; read-only proposal |
 | POST | `/v1/sessions/:id/opening-worldbook/commit` | Reviewed proposal, revision, operationId and separate explicit write confirmation; session-local book receipt |

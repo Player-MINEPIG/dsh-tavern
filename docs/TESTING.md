@@ -162,3 +162,10 @@ Worker 框架验证使用 `node scripts/verify-card-worker-browser.mjs`，`TAVER
 脚本面板显示生命周期运行 `node --test test/card-first-visible.test.mjs test/card-worker-lifecycle.test.mjs` 和 `node scripts/verify-card-display-lifecycle-browser.mjs`；可用 `TAVERN_CHROME_PATH` 指定 Chromium。独立临时浏览器在桌面与 390px 宽度验证六个可见面板、离屏首次启动、滚动状态保留、隐藏或离开 RP 后 Worker/定时器/变量订阅释放、缓存返回读取闸门、周目与 swipe 范围重建及自动高度显示容器。使用中性自写面板与只读合成 Host，不发送模型、不打开用户会话；报告和像素默认写入 `.local/card-display-lifecycle-browser/`。此 fixture 不能替代目标 Host 实际会话切换与桌面应用验收。
 
 脚本故障后的原生折叠高度运行 `node --test test/card-execution-diagnostic.test.mjs test/card-diagnostics.test.mjs` 和 `node scripts/verify-card-collapse-browser.mjs`。中性 status details 面板在桌面及 390px 验证正常展开/收起、主动丢失一次 fixture 布局回复后的固定错误诊断、Worker 终止后的被动高度收敛、健康兄弟卡、待决尺寸回调时替换源码及卸载释放；报告与像素默认写入 `.local/card-collapse-browser/`。故意丢失回复证明故障路径，不证明真实页面丢失回复的原因；实际 Host 错误应按对应卡片的固定诊断继续定位，不据约 1000ms 墙钟推断 CPU 超时。
+
+
+## 环境渲染缓存
+
+`node --test test/rendering-host-cache.test.mjs test/rendering-shared-cache.test.mjs test/rendering-dependencies.test.mjs test/identity-opening-bridge.test.mjs` 检查临时目录复制、源码去重与版本保留、Host 全局预算、中断写入恢复、代次 CAS、浏览器导入重试与墓碑、HTTP 防护和固定开场完整性。设置 `DSH_TAVERN_COMPAT_ROOT` 为目标 runtime，另外验证真实 Cordis 上的生产路由、重新挂载恢复和路由释放。这组检查纳入 `verify:2.0`。
+
+浏览器验收应在真实旧 IndexedDB 中写入自编夹具源码，经 Host 客户端恢复且不发生外部下载；随后复制临时 Tavern 数据目录，在不同 origin 打开拷贝，验证另一 owner 复用源码但不继承装载记录。真实环境应先在原浏览器、原 origin 完成旧缓存迁移，再复制目录。图片继续使用临时浏览器缓存。浏览器夹具和 request-token 检查不代表官方桌面壳验收。

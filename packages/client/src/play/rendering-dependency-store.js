@@ -1,3 +1,4 @@
+import {hostDependencyStore} from './host-rendering-cache.js'
 import {externalUrl,MAX_RENDER_SOURCE} from './rendering-sources.js'
 import {RENDERING_CACHE_LIMITS,MAX_DEPENDENCY_IDENTITIES} from './rendering-limits.js'
 import {uniqueSourceBytes} from './rendering-shared-sources.js'
@@ -12,7 +13,7 @@ const legacy=graph=>items(graph).some(item=>typeof item.content==='string')
 // Persist source bytes once. Graphs contain only owner-local metadata and exact
 // content references. Every publication, reference release and tombstone uses
 // one transaction across both stores.
-export function dependencyStore(indexedDB=globalThis.indexedDB) {
+export function indexedDependencyStore(indexedDB=globalThis.indexedDB) {
   let database,initializing
   async function open(){
     if(!indexedDB)throw Error('Persistent dependency cache is unavailable')
@@ -154,4 +155,11 @@ export function dependencyStore(indexedDB=globalThis.indexedDB) {
       return source?{content:source.content,contentDigest:source.digest,downloadedAt:source.downloadedAt}:null
     },
   }
+}
+
+// Explicit IndexedDB injection retains the legacy adapter for migration and
+// synthetic browser fixtures. Product clients always use Host persistence.
+export function dependencyStore(indexedDB) {
+  if(arguments.length)return indexedDependencyStore(indexedDB)
+  return hostDependencyStore({legacy:globalThis.indexedDB?indexedDependencyStore():null})
 }

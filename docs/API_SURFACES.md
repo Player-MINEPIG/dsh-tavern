@@ -59,6 +59,7 @@ Factory handler 是可组合原语，需挂到文档规定的 Host admission/安
 | POST | `/v1/mvu/card-binding` | `{scope,grantId,sourceIdentity,bindingId?}`；建立受限执行绑定 |
 | POST | `/v1/mvu/card-write` | `{capability,operation,value,expectedRevision,operationId,cause}`；patch/replace 通过 schema/CAS/幂等 |
 | POST | `/v1/mvu/card-binding/revoke` | `{capability}`；撤销对应 session/draft 绑定 |
+| GET / POST / PUT / DELETE | `/v1/rendering-cache/{graphs,sources,opening}` | 环境惰性缓存；图代次、共享源码与固定开场数据；各路径方法及导入见 [API](API.md#渲染缓存存储) |
 | POST / DELETE | `/v1/rendering-write-grants[/:grantId]` | 完整已下载/开启 execution identity；建立/撤销可信渲染器 grant |
 | POST | `/v1/sessions/:id/opening-worldbook/prepare` | 固定来源身份与 opening ID；只读提案 |
 | POST | `/v1/sessions/:id/opening-worldbook/commit` | 已审核提案、revision、operationId 与独立写确认；会话专属回执 |

@@ -247,7 +247,10 @@ rp-policy.json                 可选的 rp:policy 提示词
 chrome.json                    灵珠/魔丸前端显示模式与 revision
 play-workspace.json            当前 RP 工作区绑定
 import-context-bindings.json   外部记录运行时 claim 状态
+rendering-cache/               外部 JS／HTML 与固定开场数据的共享下载缓存
 ```
+
+外部代码下载后保存到这个 `rendering-cache/` 目录，复制环境或备份时一并复制即可。更换浏览器、端口或桌面客户端不会丢失同一环境中的已下载内容；图片仍按显示需要由浏览器临时获取。旧版浏览器 IndexedDB 缓存在原浏览器、原访问地址首次打开新版时自动迁入，迁移不会覆盖环境已有记录。先完成迁移再复制环境；只复制插件软件包不包含这些数据。
 
 如插件配置指定自定义 `storageDir`，以上数据改存该目录。备份时复制整个 Tavern 目录，不要只复制 `presets/`。`play-workspace.json` 只保存 RP 工作区指针；真正的 `catalog.json`、各周目 `timeline.json`、显示正则和外部导入记录位于所选 DSH 工作区内，而 timeline 引用的会话正文与分支历史仍在对应 `DSH_HOME` 的官方 session 日志中。可恢复的完整备份必须同时覆盖 Tavern 持久目录、所选 RP 工作区和对应 DSH 数据（包括会话日志及继承依赖）。
 

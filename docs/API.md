@@ -675,3 +675,24 @@ Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 沿用本机 peer、Host、Origin／桌面 token、JSON 媒体类型与 DSH admission 检查。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent` 在 MVU 最终提交前复核。内存最多保留 64 个活动绑定，不保存源码正文；没有批准到期期限，卸载全部清除。脚本开关与运行时清理撤销旧绑定，刷新时从持久下载缓存自动建立当前新绑定。scope、来源 schema、CAS 与幂等仍保留。原生卡片变量发出事实供 manager 观察；manager 的模型/store/retrieve 策略保持独立。详见 [MVU](MVU.md)。
 
 标准版与可选 core 的能力、迁移及证据范围见[装配策略](REQUEST_ASSEMBLY.md)。对所选后端检查 capabilities() 与 requireAvailable(preset)。
+
+
+## 渲染缓存存储
+
+v1 前缀 `/pmp-dsh-tavern/api/v1/rendering-cache` 提供资源与执行 API 尚未覆盖的惰性缓存存储原语。接口不下载 URL、不执行源码、不授予执行或写权限。所有路由沿用本机 peer、Host、Origin／桌面 token、JSON 变更媒体类型与 DSH admission 检查。
+
+| 方法 | 路径 | 结果／输入 |
+| --- | --- | --- |
+| GET | `/graphs` | `{ok:true,value:{graphs,sources}}`；图元数据与去重源码，每份源码只返回一次 |
+| GET | `/graphs?metadata=1` | 仅已存图元数据 `{ok:true,value:{graphs}}`，不含源码字节 |
+| GET | `/graphs?owner=` | `{ok:true,value:{generation,pending?,graph?}}`；含原文的 owner 图；缺失时 generation 为 0 |
+| POST | `/graphs?owner=` | `{}`；递增代次、置 pending、保留旧引用；返回代次 |
+| PUT | `/graphs?owner=` | `{generation,graph}`；仅当前且 pending 的代次可发布；返回布尔值 |
+| DELETE | `/graphs?owner=` | 释放引用并保留更新的无源码代次墓碑；返回代次 |
+| POST | `/graphs/import?owner=` | 旧缓存 `{generation,pending?,graph?}`；仅 Host 没有该记录时导入；返回布尔值 |
+| GET | `/sources?url=` | 精确 URL 最新已引用版本：`{content,contentDigest,downloadedAt}` 或 null |
+| GET | `/opening` | 固定惰性文本 `{generation,content}`；缺失 content 为 null |
+| PUT | `/opening` | `{content,onlyMissing?}`；核对登记 URL／摘要／大小，可要求只导入缺失的旧记录；返回布尔值 |
+| DELETE | `/opening` | 释放固定文本并保留代次墓碑 |
+
+源码以 UTF-8 文件保存于 `<storageDir>/rendering-cache/sources/`，由精确 URL 与 SHA-256 标识；`index.json` 保存代次与引用。发布检查整个环境的 512 份源码／64 MiB 物理预算（包含固定开场数据）、每份 8 MiB、4096 个 owner 记录、每图 2 MiB 元数据和整个索引 16 MiB 元数据。先原子写入新源码，再发布索引，最后回收失去引用的旧文件；读取核对文件大小与摘要。同一 Host 的并发请求通过代次 CAS 防止陈旧发布；快照是读取结果，不是执行租约。浏览器下载仍使用 CORS、无凭据与禁重定向。旧浏览器缓存迁移保留原件，失败可重试，不覆盖 Host 记录或墓碑。卡片不能访问这些存储接口；执行绑定与脚本选择仍独立管理。

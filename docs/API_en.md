@@ -694,3 +694,24 @@ These internal routes bind available, enabled card execution to its exact source
 Existing local peer, Host, Origin/desktop-token, JSON media-type and DSH admission checks apply. `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` returns null or `{valid:true,write:true,scope}`; synchronous `isCurrent` is checked immediately before MVU commit. At most 64 live execution bindings are held in memory; no source body is stored. Bindings have no approval expiry and are cleared on unload. Script switches/runtime cleanup revoke them; persisted downloads recreate fresh current bindings on refresh. They do not bypass scope, source schema, CAS or idempotency. Native card variables emit facts for manager observation; manager model/store/retrieve policies remain separate. See [MVU](MVU_en.md).
 
 Standard versus optional core capabilities, migration and evidence are defined in [assembly strategies](REQUEST_ASSEMBLY_en.md). Check capabilities() and requireAvailable(preset) for the selected backend.
+
+
+## Rendering cache storage
+
+The v1 prefix `/pmp-dsh-tavern/api/v1/rendering-cache` provides inert cache storage primitives missing from the resource and execution APIs. It never downloads URLs, evaluates sources, or grants execution/write authority. All routes retain local peer/Host/Origin or desktop-token guards, JSON mutation media types and DSH admission.
+
+| Method | Path | Result / input |
+| --- | --- | --- |
+| GET | `/graphs` | `{ok:true,value:{graphs,sources}}`; metadata and unique source bytes, each source once |
+| GET | `/graphs?metadata=1` | only stored graph metadata `{ok:true,value:{graphs}}`, with no source bytes |
+| GET | `/graphs?owner=` | `{ok:true,value:{generation,pending?,graph?}}`; hydrated owner graph; missing generation is 0 |
+| POST | `/graphs?owner=` | `{}`; advances generation, sets pending and retains previous references; returns generation |
+| PUT | `/graphs?owner=` | `{generation,graph}`; publishes only if generation is current and pending; returns boolean |
+| DELETE | `/graphs?owner=` | releases references and retains a newer source-free generation tombstone; returns generation |
+| POST | `/graphs/import?owner=` | legacy `{generation,pending?,graph?}`; imports only if no Host record exists; returns boolean |
+| GET | `/sources?url=` | newest referenced exact URL version: `{content,contentDigest,downloadedAt}` or null |
+| GET | `/opening` | fixed inert snapshot `{generation,content}`; absent content is null |
+| PUT | `/opening` | `{content,onlyMissing?}`; exact registered URL/hash/size, optional create-only legacy import; returns boolean |
+| DELETE | `/opening` | releases fixed snapshot and retains its generation tombstone |
+
+Sources are UTF-8 files under `<storageDir>/rendering-cache/sources/`, keyed by exact URL and SHA-256; `index.json` stores generations and references. Publication checks the entire environment’s 512-source / 64 MiB physical budget (including fixed opening data), 8 MiB per source, 4096 owner records, 2 MiB graph metadata and 16 MiB total index metadata. New bytes are written atomically before the index; obsolete bytes are collected after publication. Reads verify source size and digest. Concurrent requests to one Host use generation CAS; a snapshot is a read result, not an execution lease. Browser downloads retain CORS, no credentials and no redirects. Browser migration preserves originals, retries failed imports and never overwrites Host records or tombstones. Cards cannot access these storage APIs. Execution bindings and script selection remain independent.

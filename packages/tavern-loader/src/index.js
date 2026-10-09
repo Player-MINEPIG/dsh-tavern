@@ -1,3 +1,5 @@
+import {createRenderingCache} from '../../rendering-cache/store.js'
+import {createRenderingCacheHandler,isRenderingCachePath} from '../../rendering-cache/http.js'
 import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
 import { createDraftPreviewContext } from './draft-preview-context.js'
 import { PlaythroughDrafts } from './playthrough-drafts.js'
@@ -456,6 +458,7 @@ export function apply(ctx, config = {}) {
   if (!sharedAssembler) ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
   ctx.provide('tavernRequestSources', requestAssembler.registry) // Protocol-1 compatibility alias.
   if (!sharedAssembler && typeof ctx.inject === 'function') connectMemoryManager(ctx, requestAssembler.registry)
+  const renderingCacheApi=createRenderingCacheHandler(createRenderingCache(storageDir),{getConnection:()=>ctx.get('connection')})
   const renderingAuthority=createRenderingAuthority()
   ctx.provide('tavernRenderingAuthority',renderingAuthority)
   ctx.effect(()=>()=>renderingAuthority.dispose(),'dsh-tavern: rendering write authority')
@@ -859,6 +862,8 @@ export function apply(ctx, config = {}) {
     const api = secureTavernApi(
       (req, res) => isOpeningWorldBookPath(req.url)
         ? openingWorldBookApi(req, res)
+        : isRenderingCachePath(req.url)
+        ? renderingCacheApi(req, res)
         : isRenderingAuthorityPath(req.url)
         ? renderingAuthorityApi(req, res)
         : isMvuApiPath(req.url)

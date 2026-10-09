@@ -3,18 +3,8 @@ import jsx from 'acorn-jsx'
 import {inspectHtmlLoader} from './html-loader-adapters.js'
 const SourceParser=Parser.extend(jsx())
 // Discovery is inert: it does not fetch, evaluate, or confer trust on source text.
-export const MAX_RENDER_SOURCE = 8 * 1024 * 1024
-export function externalUrl(value, base) {
-  try {
-    const url = new URL(value, base)
-    const host = url.hostname.toLowerCase().replace(/\.+$/, '')
-    url.hostname=host
-    if (url.protocol !== 'https:' || url.username || url.password || url.port || !host.includes('.') ||
-      /^[\d.]+$/.test(host) || host.includes(':') || /(?:^|\.)(?:localhost|local|internal|test|invalid)$/.test(host)) return null
-    url.hash = ''
-    return url.href
-  } catch { return null }
-}
+import {externalUrl,MAX_RENDER_SOURCE} from '../../../rendering-cache/contract.js'
+export {externalUrl,MAX_RENDER_SOURCE}
 export function discoverDependencies(source, base) {
   const found = []
   const add = (kind, raw) => {

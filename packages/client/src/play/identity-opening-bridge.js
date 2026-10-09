@@ -1,3 +1,4 @@
+import {hostOpeningDataStore} from './host-rendering-cache.js'
 import {API_V1} from '../../../identity.js'
 import {OPENING_IDENTITY_SHA256,OPENING_IDS,OPENING_SOURCES} from '../../../opening-worldbook/manifest.js'
 import {tavernFetch} from '../api-fetch.js'
@@ -17,7 +18,7 @@ export function openingSourceIdentity({sessionId,greeting}) {
 
 // Independent inert text store: one immutable public snapshot, never a module
 // record, never parsed as JavaScript and never an execution approval.
-export function openingDataStore(indexedDB=globalThis.indexedDB) {
+export function indexedOpeningDataStore(indexedDB=globalThis.indexedDB) {
   let database
   async function transact(write,value,remove=false) {
     if(!indexedDB)throw Error('Opening data cache is unavailable')
@@ -26,6 +27,10 @@ export function openingDataStore(indexedDB=globalThis.indexedDB) {
     return new Promise((resolve,reject)=>{const transaction=db.transaction('snapshots',write?'readwrite':'readonly'),store=transaction.objectStore('snapshots');let result;const request=remove?store.delete('fixed-opening-v1'):write?store.put(value,'fixed-opening-v1'):store.get('fixed-opening-v1');request.onsuccess=()=>{result=request.result};transaction.oncomplete=()=>resolve(result);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error??Error('Opening cache transaction aborted'))})
   }
   return {get:()=>transact(false),put:value=>transact(true,value),remove:()=>transact(true,undefined,true)}
+}
+export function openingDataStore(indexedDB) {
+  if(arguments.length)return indexedOpeningDataStore(indexedDB)
+  return hostOpeningDataStore({legacy:globalThis.indexedDB?indexedOpeningDataStore():null})
 }
 export function createOpeningSourceCache({store=openingDataStore(),budget=renderingCacheBudget,download=downloadRenderingSource}={}) {
   let content,initialError,initialization,reportedColdError=false,queue=Promise.resolve()
@@ -61,8 +66,8 @@ export function createOpeningSourceCache({store=openingDataStore(),budget=render
 }
 let sourceCache
 export const loadOpeningSource=options=>(sourceCache??=createOpeningSourceCache()).get(options)
-// No network at initialization; account the fixed persisted data cache now.
-if(typeof window!=='undefined'&&globalThis.indexedDB)sourceCache=createOpeningSourceCache()
+// Initialization reads local Host data only; external downloads stay explicit.
+if(typeof window!=='undefined')sourceCache=createOpeningSourceCache()
 export const openingInertCacheReady=sourceCache?.ready??Promise.resolve()
 
 export function createIdentityOpeningBridge({sourceIdentity,identitySource,onProposal,onProgress=()=>{},request=tavernFetch,loadSource=loadOpeningSource,uuid=()=>crypto.randomUUID(),signal}={}) {
