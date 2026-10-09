@@ -160,7 +160,7 @@ function ResourceVariables({ item, scope, turn, latest, running, refresh }) {
 
 export function MvuRoundSection({ sessionId, turn, latest, running, lastVisibleSeq }) {
   const [data, setData] = useState(null), [error, setError] = useState(''), [version, setVersion] = useState(0)
-  const [opened, setOpened] = useState(true)
+  const [opened, setOpened] = useState(false)
   const cache = useRef(new Map())
   const refresh = () => setVersion(value => value + 1)
   useEffect(() => {

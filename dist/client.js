@@ -27563,7 +27563,7 @@ function ResourceVariables({ item, scope, turn, latest, running, refresh }) {
 }
 function MvuRoundSection({ sessionId, turn, latest, running, lastVisibleSeq }) {
   const [data3, setData] = (0, import_react18.useState)(null), [error, setError] = (0, import_react18.useState)(""), [version3, setVersion] = (0, import_react18.useState)(0);
-  const [opened, setOpened] = (0, import_react18.useState)(true);
+  const [opened, setOpened] = (0, import_react18.useState)(false);
   const cache = (0, import_react18.useRef)(/* @__PURE__ */ new Map());
   const refresh = () => setVersion((value) => value + 1);
   (0, import_react18.useEffect)(() => {

@@ -43,6 +43,10 @@ async function fixture(t, { count = 45, latest = true, intercept } = {}) {
     }
   })
   await render()
+  const section = container.querySelector('details[data-mvu-turn]')
+  assert.equal(section.hasAttribute('open'), false)
+  assert.equal(calls.length, 0)
+  await act(() => { section.open = true; Simulate.toggle(section) })
   return {
     container, document, calls, render,
     rows: () => [...container.querySelectorAll('.dtmvu-variables tbody tr')],
