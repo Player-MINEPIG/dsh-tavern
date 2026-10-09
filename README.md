@@ -2,7 +2,7 @@
 
 独立提示词装配插件（默认标准版，进阶核心扩展可选）：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)。Tavern 的单向依赖与两插件启用方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
 
-[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) 是可选的查看与管理扩展。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
+[dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) 是可选的查看与管理扩展。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
 
 [当前源码：请求装配](docs/REQUEST_ASSEMBLY.md) · [MVU](docs/MVU.md) · [提示词模板](docs/PROMPT_TEMPLATE.md) · [完整接口索引](docs/API_SURFACES.md)。
 
@@ -57,6 +57,12 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 ```sh
 dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+```
+
+需要统一查看资源、配置存取规则与检查本轮活动时，可在同一 profile 另外安装 Memory Manager v1.0.0；能力与通用资源装配要求见[接入说明](docs/ASSEMBLER_INTEGRATION.md#可选-memory-manager)：
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 ```
 
 安装完成后重启 DSH Web。Tavern 默认把角色卡、预设、世界书、设置与绑定保存在 `<DSH_HOME>/pmp-dsh-tavern/`，普通 `dsh plugin remove` 不会删除该目录，但也不会创建卸载前快照；需要快照时请检出仓库并使用项目卸载脚本。从仍把数据放在插件包内的旧版本首次升级时，先停止目标 `dsh web` 并使用项目安装脚本，以便在 pnpm 替换旧包前保住数据；新 Host 首次启动会复制到外部目录并保留旧副本。其他 profile、独立 `DSH_HOME`、手动安装、备份与卸载方法见 [安装与卸载](docs/INSTALLATION.md)。

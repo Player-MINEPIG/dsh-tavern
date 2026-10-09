@@ -6,9 +6,15 @@ Tavern 单向依赖 `dsh-prompt-assembler` 的 `v1.1.0`（lockfile 锁定提交 
 
 ## 可选 Memory Manager
 
-[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) 是独立的可选扩展。Tavern 的包与服务依赖均不要求安装它。安装期间可查看资源、编辑存取规则和观察真实应用记录；卸载撤销管理租约，后续请求恢复来源默认规则，保留 DSH 会话、来源内容与 Manager 的配置文件。重新安装会重新应用保留的规则，不会把这些规则永久写进 Tavern 或 assembler。通用记忆资源来源由 assembler 的 `adapters/memory-manager` 注册；卸载后该来源撤销，原生 MVU 与世界书仍由 Tavern 提供。
+[dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) 是独立的可选扩展。Tavern 的包与服务依赖均不要求安装它。安装期间可查看资源、编辑存取规则和观察真实应用记录；卸载撤销管理租约，后续请求恢复来源默认规则，保留 DSH 会话、来源内容与 Manager 的配置文件。重新安装会重新应用保留的规则，不会把这些规则永久写进 Tavern 或 assembler。通用记忆资源来源由 assembler 的 `adapters/memory-manager` 注册；卸载后该来源撤销，原生 MVU 与世界书仍由 Tavern 提供。
 
-安装可选 Manager 前，按其安装说明选择经过验证的版本或提交；本指南不引用移动的 `main`。
+停止目标 Host 后，在同一 profile 安装已发布的 v1.0.0，再重启 DSH。在设置或已有会话的「记忆管理」页签中打开：
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
+```
+
+该版本适配 DSH `0.2.0-rc.2`。通过管理规则将通用资源提供给模型时，需在 Manager 中配置读取规则，并在 assembler 策略中选择 `memory-manager.resources`；这条路径要求支持 request-assembly 协议 1 的宿主。DSH 原生 Skill 调用和 Tavern 自行执行的世界书、MVU、模板贡献仍使用各自来源路径。详见 v1.0.0 的[安装指南](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/INSTALLATION.md)、[使用指南](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/USAGE.md)与[assembler 接入](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/ASSEMBLER.md)。
 
 ## 安装与开发
 

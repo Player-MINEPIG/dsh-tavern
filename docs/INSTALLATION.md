@@ -2,7 +2,7 @@
 
 [English](INSTALLATION_en.md)
 
-Tavern 3.0.0 需要显式启用 Tavern 与独立 assembler 两个 bundle，服务加载与可选 Manager 见[接入说明](ASSEMBLER_INTEGRATION.md)。旧完整说明保留在对应 Git tag。
+Tavern 3.0.0 需要显式启用 Tavern 与独立 assembler 两个 bundle，服务加载与可选 Memory Manager v1.0.0 见[接入说明](ASSEMBLER_INTEGRATION.md)。旧完整说明保留在对应 Git tag。
 
 装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
@@ -19,6 +19,12 @@ Tavern 3.0.0 需要显式启用 Tavern 与独立 assembler 两个 bundle，服�
 ```sh
 dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+```
+
+可选的资源查看与管理使用 [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0)。需要时在同一 profile 追加安装，再重启 Host；通用资源装配要求见[接入说明](ASSEMBLER_INTEGRATION.md#可选-memory-manager)：
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 ```
 
 <a id="source-candidate"></a>

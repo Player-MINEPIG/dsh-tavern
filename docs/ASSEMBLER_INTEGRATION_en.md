@@ -6,9 +6,15 @@ Tavern depends on `dsh-prompt-assembler` at `v1.1.0` (lockfile commit `48481b630
 
 ## Optional Memory Manager
 
-[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) is an independent optional extension. Neither Tavern package nor Host service dependencies require it. While installed it provides resource inspection, usage rules and observed application facts. Removal revokes management leases so subsequent requests use source defaults, preserving DSH sessions, source content and the Manager configuration file. Reinstallation reapplies retained rules; those rules are not permanently copied into Tavern or assembler. The assembler owns `adapters/memory-manager`; removal withdraws that generic source while Tavern continues providing native MVU and world books.
+[dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is an independent optional extension. Neither Tavern package nor Host service dependencies require it. While installed it provides resource inspection, usage rules and observed application facts. Removal revokes management leases so subsequent requests use source defaults, preserving DSH sessions, source content and the Manager configuration file. Reinstallation reapplies retained rules; those rules are not permanently copied into Tavern or assembler. The assembler owns `adapters/memory-manager`; removal withdraws that generic source while Tavern continues providing native MVU and world books.
 
-Before installing optional Manager, select a verified version or commit according to its installation guide; this guide does not pin a moving `main`.
+Install the released v1.0.0 in the same profile while the Host is stopped, then restart DSH. Open **Memory Manager** in Settings or an existing conversation tab:
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
+```
+
+It targets DSH `0.2.0-rc.2`. Configure generic resource retrieval in Manager and select `memory-manager.resources` in an assembler strategy to provide those resources to the model; this path requires a Host supporting request-assembly protocol 1. Native DSH Skill calls and Tavern’s source-owned world-book, MVU and template contributions use their own paths. See the v1.0.0 [installation guide](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/INSTALLATION_en.md), [usage guide](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/USAGE_en.md) and [assembler integration](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/ASSEMBLER_en.md).
 
 ## Installation and development
 

@@ -2,7 +2,7 @@
 
 [中文](INSTALLATION.md)
 
-Tavern 3.0.0 requires both Tavern and the independent assembler to be enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Manager. Older full documentation remains at its Git tag.
+Tavern 3.0.0 requires both Tavern and the independent assembler to be enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Memory Manager v1.0.0. Older full documentation remains at its Git tag.
 
 Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
@@ -19,6 +19,12 @@ Stop the target Host and enable Tavern 3.0.0 with standard Assembler v1.1.0. Sta
 ```sh
 dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+```
+
+Optional resource management is provided by [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0). To use it, additionally install it in the same profile, then restart the Host; generic resource assembly requirements are covered in [integration](ASSEMBLER_INTEGRATION_en.md#optional-memory-manager):
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 ```
 
 <a id="source-candidate"></a>
