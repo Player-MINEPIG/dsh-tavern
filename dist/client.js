@@ -53277,7 +53277,7 @@ async function loadClassificationTimeline(client, playthrough) {
   try {
     return await client.getTimeline(playthrough);
   } catch (error) {
-    if (error?.code === "PLAY_SESSION_NOT_FOUND") return null;
+    if (["PLAY_SESSION_NOT_FOUND", "SESSION_QUERY_CORRUPT_SESSION"].includes(error?.code)) return null;
     throw error;
   }
 }

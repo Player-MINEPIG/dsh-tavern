@@ -123,9 +123,9 @@ async function loadClassificationTimeline(client, playthrough) {
   try {
     return await client.getTimeline(playthrough)
   } catch (error) {
-    // An unrelated old playthrough can reference logs absent from this Host.
+    // An unrelated old playthrough can reference absent or corrupt logs.
     // Sidebar diagnostics report it; it must not hide a valid fork's RP view.
-    if (error?.code === 'PLAY_SESSION_NOT_FOUND') return null
+    if (['PLAY_SESSION_NOT_FOUND', 'SESSION_QUERY_CORRUPT_SESSION'].includes(error?.code)) return null
     throw error
   }
 }
