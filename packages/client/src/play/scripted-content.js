@@ -1,3 +1,4 @@
+import {applyCardUserAliases} from './display-name-macros.js'
 import {claimGreetingSelection,greetingReadView} from './bound-greeting.js'
 import {initialWriteViewScope} from './mvu-scope.js'
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
@@ -463,6 +464,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, disable
               nodes.set(id,node)
             }
             if(targetId!==undefined&&!nodes.has(targetId))throw Error('Layout target is not in this card')
+            applyCardUserAliases(template.content,context?.userName)
             projectCardControlState(view.controls,nodes,{preserve:controlsCurrent?undefined:acceptedView?.nodes})
             const style=doc.createElement('style');style.textContent=imageCss(view.styles)
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]

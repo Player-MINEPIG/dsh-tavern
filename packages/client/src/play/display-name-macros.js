@@ -75,3 +75,29 @@ export function applyDisplayNameMacros(text, { user = 'User', character = 'Assis
   parts.push(source.slice(copied))
   return parts.join('')
 }
+
+
+// Worker text arrives after message macros/regex. Project aliases only onto the
+// sanitized display copy, never the source HTML, executable DOM or MVU values.
+export function applyCardUserAliases(root, user = 'User') {
+  const name = typeof user === 'string' && user !== '' ? user : 'User'
+  // Entity decoding can leave adjacent text nodes; match the visible text run.
+  root.normalize()
+  const walker = root.ownerDocument.createTreeWalker(root, 4)
+  let node
+  while ((node = walker.nextNode())) {
+    if (node.parentElement?.closest('pre,code,script,style,textarea,input,select,template,[contenteditable]')) continue
+    const source = node.data
+    if (!/<user>/i.test(source)) continue
+    const offsets = userAliases(source)
+    if (!offsets.length) continue
+    const parts = []
+    let copied = 0
+    for (const offset of offsets) {
+      parts.push(source.slice(copied, offset), name)
+      copied = offset + 6
+    }
+    parts.push(source.slice(copied))
+    node.data = parts.join('')
+  }
+}

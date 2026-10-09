@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs'
 import {parseHTML} from 'linkedom'
 import * as React from 'react'
 import {createRoot} from 'react-dom/client'
+import {projectCardControlState} from '../packages/client/src/play/card-control-state.js'
+import {applyCardUserAliases} from '../packages/client/src/play/display-name-macros.js'
 import {initialWriteViewScope} from '../packages/client/src/play/mvu-scope.js'
 
 // Mount the real component with a neutral Worker boundary. Transport, VM and
@@ -25,7 +27,7 @@ test('MVU card retry, generation revocation and accepted close preserve the righ
   cardRootPresentation:()=>({html:{className:'',style:''},body:{className:'',style:''}}),imageCss:value=>value,usesCardViewport:()=>false,cardViewport:()=>({width:480,height:300}),
   getComputedStyle:()=>({color:'#000',colorScheme:'light'}),ResizeObserver:class{observe(){}disconnect(){}},requestAnimationFrame:()=>1,cancelAnimationFrame(){},observeImages:()=>({dispose(){},refresh(){}}),firstCardVisibility:async()=>true,
   cardComposerIdentity:async()=>({id:'neutral'}),createCardComposerBridge:options=>{close=options.onClose;return{initial:{},dispose(){}}},greetingReadView:value=>value,
-  confirmMvuSchemas(){},confirmMvuCommandHooks(){},initialWriteViewScope,
+  confirmMvuSchemas(){},confirmMvuCommandHooks(){},initialWriteViewScope,applyCardUserAliases,projectCardControlState,
   renderingWriteRequests:{register:options=>{let disposed=false;return{getGrant:()=>grantPending?new Promise(resolve=>{resolveGrant=resolve}):Promise.resolve({grantId:'grant'}),dispose(){if(disposed)return;disposed=true;revokes++;options.onRevoke()}}}},
   createVirtualCardRuntime:(_data,options)=>{handlers=options;return{dispose(){vmDisposals++},notifyVariables(){}}},
  }
@@ -42,6 +44,10 @@ test('MVU card retry, generation revocation and accepted close preserve the righ
  mode='available';await React.act(()=>root.render(render(false)))
  assert.notEqual(document.querySelector('iframe'),first,'a failed startup retries once generation ends')
  const frame=await load();assert.ok(handlers);assert.equal(document.querySelector('[role="alert"]'),null);assert.equal(document.querySelector('button')?.textContent,undefined)
+ const view={bodyId:1,html:'<p data-dtv-node="2">Invite &lt;user&gt;.</p>',styles:'',controls:[]}
+ await React.act(()=>handlers.onView(view))
+ assert.equal(frame.contentDocument.querySelector('p').textContent,'Invite User.')
+ assert.equal(view.html,'<p data-dtv-node="2">Invite &lt;user&gt;.</p>','the Worker payload remains unchanged')
  const pending=handlers.onWrite({operation:'patch',value:[],observedRevision:1,operationId:'op'}).catch(error=>error)
  await new Promise(resolve=>setImmediate(resolve));assert.equal(typeof resolveGrant,'function')
  await React.act(()=>root.render(render(true)))

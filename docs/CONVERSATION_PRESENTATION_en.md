@@ -8,11 +8,24 @@ The 2.5.1 contract targets DSH `0.2.0-rc.2`. Public UI services and slots embed 
 
 RP displays concrete DSH session/turn errors in place. An active-write-handle error can mean another web or desktop instance holds that session in the shared data directory; finish its work and close that instance before reopening the session. Static message stylesheets and inline styles both use Shadow DOM and an outer paint boundary, preventing fixed-position content from covering the Host UI.
 
+## Rendering order
+
+The RP display pipeline is separate from prompt assembly for the model:
+
+1. **Read the display source and names:** load DSH history, greetings or the current stream, and resolve the bound user and character names. A saved manual display override skips the source macro and regex steps below.
+2. **Expand name macros in the message source:** process `{{user}}` / `{{char}}` and eligible prose `<user>` aliases described below. Card scripts have not run, and strings from MVU variables have not yet been read into the status panel.
+3. **Apply display regex:** run global → selected preset → selected character rules, preserving each resource's rule order and filtering disabled rules and mismatched roles/depths. Each rule receives the previous result. Replacement output does not restart name expansion or the whole regex pipeline.
+4. **Split text and cards:** ordinary text follows Markdown → KaTeX → HTML sanitization and style isolation. Recognized interactive HTML cards parse their source, validate enabled dependencies and extract scripts, displaying an inert sanitized page.
+5. **Start the card and read variables:** after script enablement, message completion and history binding checks, read this message's MVU snapshot and start the restricted runtime. The Worker runs enabled Helpers before card scripts, in their respective order. Scripts read original variables and produce virtual DOM; variable updates can produce another view.
+6. **Project the Worker's dynamic view:** sanitize its HTML and check node limits and identities, then expand standalone `<user>` aliases in ordinary text nodes of the separate display copy before showing it in the scriptless iframe. Names are assigned as text, never HTML. Attributes, form values, editable areas, code, styles, template data and paired role-wrapper text are excluded. This step does not rerun display regex or change the Worker's DOM, script-visible variables or durable MVU values.
+
+For example, `Invite <user> to the meeting` stays unchanged in MVU and when read by scripts; with a user named Reader, the Worker status panel's display copy shows `Invite Reader to the meeting`. Source macros and the final text projection are distinct stages, not a variable rewrite. The simplified inline DOM bridge does not use Worker view projection. Static HTML exports do not execute scripts or export the dynamic MVU view either.
+
 ## Name placeholders
 
 Ordinary messages, greetings and streaming replies use the names of the currently bound user/character resources for `{{user}}` / `{{char}}`; a standalone `<user>` in prose is also a user-name alias. Reloading the same historical conversation uses the current name without storing per-message name snapshots. Manually saved display edits retain their existing frozen result and do not run name macros or display regex again.
 
-The new angle alias excludes fenced/indented/inline code, escaped text, HTML attributes/comments, `pre`/`code`/script/style content, complete HTML documents, and paired `<user>…</user>` structures. Use code or `\<user>` for literal text. Existing curly name-macro rules are unchanged. Static HTML exports use the same current-name expansion. This display compatibility does not change DSH source messages or prompt assembly; JSONL conversation bodies keep their source text, while greetings continue to expand names under the existing export contract.
+At the message-source stage, the angle alias excludes fenced/indented/inline code, escaped text, HTML attributes/comments, `pre`/`code`/script/style content, complete HTML documents, and paired `<user>…</user>` structures. Use code or `\<user>` for literal text. Existing curly name-macro rules are unchanged. Static HTML exports use the same current-name expansion. This display compatibility does not change DSH source messages or prompt assembly; JSONL conversation bodies keep their source text, while greetings continue to expand names under the existing export contract.
 
 ## Math
 
