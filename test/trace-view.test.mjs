@@ -39,7 +39,7 @@ const record = {
   contexts: [], systemMessages: ['ACTUAL SYSTEM'],
 }
 
-test('Trace leads with captured configuration and keeps lore and loader details collapsed', () => {
+test('Trace leads with captured configuration and keeps lore and assembler details collapsed', () => {
   const result = body(record)
   const visible = text(result, true)
   for (const value of ['本次配置', 'Historical preset', 'Historical card', 'Historical user', 'Historical lore', 'fixture / model', 'temperature: 0.7', '1024', '保存的开场序号：2']) assert.ok(visible.includes(value), value)
@@ -47,7 +47,7 @@ test('Trace leads with captured configuration and keeps lore and loader details 
   assert.ok(!visible.includes('ACTUAL SYSTEM'))
   assert.ok(!visible.includes('Castle'))
   const disclosures = result.children.filter(child => child.type === 'details')
-  assert.deepEqual(disclosures.map(d => text(d.children[0])), ['世界书触发情况', 'Loader 装配情况'])
+  assert.deepEqual(disclosures.map(d => text(d.children[0])), ['世界书触发情况', 'assembler 装配情况'])
   assert.ok(disclosures.every(d => !d.props.open))
   assert.ok(text(disclosures[0]).includes('Castle'))
   assert.ok(text(disclosures[0]).includes('主关键词命中'))
@@ -74,7 +74,7 @@ test('omitted records distinguish unrecorded resources from explicitly unused re
 
 test('configuration and collapsed detail labels also render in English', () => {
   const visible = text(body(record, 'en'), true)
-  for (const label of ['Configuration for this request', 'World-book activation', 'Loader assembly', 'Tavern sampling configuration']) assert.ok(visible.includes(label), label)
+  for (const label of ['Configuration for this request', 'World-book activation', 'Assembler assembly', 'Tavern sampling configuration']) assert.ok(visible.includes(label), label)
 })
 
 test('reference-backed records keep configuration visible and explain partial body availability', () => {
@@ -176,4 +176,49 @@ test('world-book request correlation refuses duplicate or truncated audit IDs an
  const dependency=make();dependency.requestAssembly.metadata.assembly.nodes=[{id:'template:block',source:{sourceId:'prompt-template',resourceId:'prompt-template:fixture'}}]
  dependency.requestAssembly.metadata.assembly.diagnostics.push({code:'TAVERN_MEMORY_DEPENDENCY_VERSION',adapterId:'tavern.world-books',resourceId:'world-book:w',sourceId:'prompt-template',consumerId:'prompt-template:fixture',blockId:'block'})
  const output=text(body(dependency));assert.ok(output.includes('已进入请求'));assert.ok(output.includes('策略跳过'))
+})
+
+test('Assembler trace displays frozen core messages and filters stale history provenance', () => {
+  const messages = [{ id: 'system', role: 'system', content: [{ type: 'text', text: 'FINAL SYSTEM' }] },
+    { id: 'history', role: 'user', content: [{ type: 'text', text: 'FILTERED HISTORY' }] },
+    { id: 'input', role: 'user', content: [{ type: 'text', text: 'ACTUAL INPUT' }] }]
+  const value = { ...record, turn: 2, step: 0, requestContentStatus: 'available', requestAssembly: { turn: 2, step: 0, messages,
+    metadata: { owner: 'dsh-prompt-assembler', assembly: { diagnostics: [{ code: 'RECORDED_DIAGNOSTIC' }], nodes: [
+      { id: 'preset:main', name: 'Readable saved preset title', role: 'system', text: 'FINAL SYSTEM', source: { field: 'main' } },
+      { id: 'history', name: 'user', role: 'user', messages: [{ ...messages[1], content: [{ type: 'text', text: 'STALE BEFORE FILTER' }] }], text: 'STALE BEFORE FILTER' },
+    ] }, historyPolicy: { decisions: [{ action: 'replace', messageId: 'history' }] } } } }
+  const output = text(body(value))
+  for (const part of ['FINAL SYSTEM', 'FILTERED HISTORY', 'ACTUAL INPUT', 'Readable saved preset title', '当次历史过滤结果', 'RECORDED_DIAGNOSTIC', '装配阶段的系统段落与上下文']) assert.ok(output.includes(part), part)
+  assert.ok(!output.includes('STALE BEFORE FILTER'))
+  assert.ok(!text(body(value), true).includes('ACTUAL INPUT'))
+  for (const change of [v => v.requestAssembly.turn++, v => v.requestAssembly.metadata.assembly.preview = true, v => v.requestContentStatus = 'reference-unavailable']) {
+    const unavailable = structuredClone(value); change(unavailable)
+    const result = text(body(unavailable)); assert.ok(result.includes('没有可核验的完整请求')); assert.ok(!result.includes('ACTUAL INPUT'))
+  }
+})
+
+test('native Trace uses per-record verified provenance and explicitly labels current or missing names', () => {
+  const value = { ...record, schemaVersion: 4, nativeRequest: { messages: [{ id: 'native', role: 'user', content: [{ type: 'text', text: 'NATIVE FINAL INPUT' }] }], metadata: { backend: 'native' } },
+    nativeProvenance: { nodes: [
+      { id: 'named', name: 'Saved custom item', sourceStatus: 'recorded', role: 'system', text: 'SAVED BODY', source: { resourceId: 'p', field: 'main' } },
+      { id: 'current', name: 'Current friendly name', sourceStatus: 'current-name', role: 'system', text: 'OLD BODY', source: { resourceId: 'p', field: 'extra' } },
+      { id: 'unknown', name: 'source-unrecorded', sourceStatus: 'unrecorded', role: 'system', text: 'UNKNOWN BODY' },
+      { id: 'unnamed', name: 'preset:opaque-id', sourceStatus: 'name-unrecorded', role: 'system', text: 'UNNAMED BODY', source: { field: 'opaque-id' } },
+    ], diagnostics: [] } }
+  const all = text(body(value))
+  for (const part of ['NATIVE FINAL INPUT', 'Saved custom item', 'Current friendly name', '名称来自当前预设；正文来自当时请求', '来源未记录', '当时的条目名称未记录', '来源条目 4']) assert.ok(all.includes(part), part)
+  assert.ok(!all.includes('preset:opaque-id'))
+  const sources = body(value).children.find(n => n.type === 'details' && text(n.children[0]).includes('assembler')).children.find(n => n.type === 'div').children.find(n => n.props?.['data-trace-request']).children.find(n => n.type === 'details' && text(n.children[0]).includes('当时的来源'))
+  assert.ok(text(sources.children[2], true).includes('名称来自当前预设'))
+  value.nativeProvenance.nodes[0].name = 'preset:My literal title'
+  assert.ok(text(body(value)).includes('preset:My literal title'))
+  const en = text(body(value, 'en')); assert.ok(en.includes('Source not recorded')); assert.ok(en.includes('Name from the current preset; body from the recorded request.'))
+})
+
+test('world-book evidence accepts current Assembler ownership without weakening legacy checks', () => {
+  const value = { ...record, status: 'request-observed', turn: 1, step: 0, requestAssembly: { turn: 1, step: 0,
+    metadata: { owner: 'dsh-prompt-assembler', assembly: { nodes: [], diagnostics: [{ code: 'WORLD_BOOK_POLICY_SKIPPED', resourceId: 'world-book:w', reason: 'disabled' }] } } } }
+  assert.ok(text(body(value)).includes('策略跳过'))
+  value.requestAssembly.metadata.owner = 'unrelated'
+  assert.ok(!text(body(value)).includes('策略跳过'))
 })

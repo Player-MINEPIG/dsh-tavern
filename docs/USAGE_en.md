@@ -195,15 +195,7 @@ This organizes Tavern playthroughs only. It does not archive native DSH sessions
 
 ## 8. Tavern Trace
 
-Tavern Trace is a sibling of Conversation and Trajectory. Each request record
-first shows its captured preset, character, user, world books, prompt mode, model,
-and Tavern sampling configuration. Expand **World-book activation** for matches,
-rejections and budgets; expand **Loader assembly** for official sections, source
-metadata, contexts, and observed system messages. Schema 4 detail performs a cold read of
-official DSH history. Section/context bodies appear only after verification; source
-bodies are neither stored nor reconstructed. Existing schema 3 bodies remain viewable
-and are labeled as legacy snapshots. Current v1 resources describe current
-configuration and are never presented as historical originals.
+Tavern Trace is a sibling of Conversation and Trajectory. Each request first shows its captured configuration. Expand **World-book activation** for activation candidates and verifiable final use; expand **Assembler assembly** for complete send-time message order, recorded sources, history filtering and diagnostics. The view uses verified v3 record-ID details, never current previews to fill history. Original system/context materials remain under “Assembly-stage system sections and contexts” and cannot replace the final request. Older records without a complete request are explicitly unavailable. Schema 4 bodies are verified against DSH history; schema 3 copies are labeled legacy snapshots. Current-name fallbacks say “Name from the current preset; body from the recorded request”; missing attribution says “Source not recorded.”
 
 Current captures combine schema 4 metadata and official-history references in bounded
 `tavern-trace-records.json`. It contains no section, context, system-message, or

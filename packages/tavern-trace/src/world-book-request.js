@@ -2,7 +2,7 @@
 // Activation decisions are candidates; current source configuration is irrelevant.
 export function worldBookRequestOutcome(record, book) {
   const id = book.resource?.id, request = record.requestAssembly, assembly = request?.metadata?.assembly
-  if (typeof id !== 'string' || !id || id.endsWith('…') || request?.metadata?.owner !== 'pmp-dsh-tavern' || !assembly || assembly.preview
+  if (typeof id !== 'string' || !id || id.endsWith('…') || !['pmp-dsh-tavern', 'dsh-prompt-assembler'].includes(request?.metadata?.owner) || !assembly || assembly.preview
     || request.turn !== record.turn || request.step !== record.step
     || (record.audit?.worldBooks ?? []).filter(row => row.resource?.id === id).length !== 1) return null
   const flatten = nodes => nodes.flatMap(node => [node, ...flatten(node.children ?? [])])

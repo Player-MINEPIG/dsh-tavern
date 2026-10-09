@@ -1,5 +1,6 @@
 import { MvuRoundSection, mvuStyles } from './mvu-view.js'
 import { worldBookRequestOutcome } from './world-book-request.js'
+import { recordedRequestResult } from './request-view.js'
 import {
   createElement,
   useCallback,
@@ -249,7 +250,48 @@ function segments(items, kind, legacySnapshot) {
   ))
 }
 
-// Only captured fields are displayed; never resolve old IDs against current resources.
+const nodeLabels = { 'source-unrecorded': 'trace.assembler.sourceUnrecorded',
+  'historical-system-update': 'trace.assembler.historicalSystem', 'native-context-framing': 'trace.assembler.contextFraming',
+  system: 'trace.assembler.system', user: 'trace.assembler.user', assistant: 'trace.assembler.assistant', tool: 'trace.assembler.tool' }
+const sourceStatusLabels = { 'name-unrecorded': 'trace.assembler.nameUnrecorded', 'current-name': 'trace.assembler.nameCurrent',
+  'section-only': 'trace.assembler.fieldsUnrecorded', unrecorded: 'trace.assembler.sourceUnrecorded' }
+const preStyle = { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 }
+function requestNodeTitle(node, index) {
+  const named = ['recorded', 'current-name'].includes(node.sourceStatus)
+  if (!named && nodeLabels[node.name]) return uiMessage(nodeLabels[node.name])
+  if (node.sourceStatus === 'name-unrecorded' || !named && /^(preset|worldbook):/.test(node.name ?? '')) {
+    return uiMessage('trace.assembler.unnamedItem', { index: index + 1 })
+  }
+  return rawText(node.name || translate('trace.assembler.sourceUnrecorded'))
+}
+function requestNodes(nodes) {
+  return (nodes ?? []).map((node, index) => h('details', { className: 'dttrace-book', key: `${node.id}:${index}` },
+    h('summary', null, requestNodeTitle(node, index),
+    rawText(` · ${node.role ?? '—'}`),
+    sourceStatusLabels[node.sourceStatus] ? h('span', { className: 'dttrace-note', style: { display: 'block' } }, uiMessage(sourceStatusLabels[node.sourceStatus])) : null),
+    h('div', { className: 'dttrace-meta' }, rawText(Object.entries(node.source ?? {}).map(([key, value]) => `${key}=${value}`).join(' · '))),
+    typeof node.text === 'string' ? h('pre', { style: preStyle }, rawText(node.text)) : null,
+    ...requestNodes(node.children),
+  ))
+}
+function RecordedRequest({ result }) {
+  return h('div', { className: 'dttrace-section', 'data-trace-request': result ? 'available' : 'unavailable' },
+    h('p', { className: 'dttrace-note' }, uiMessage(result ? 'trace.assembler.recorded' : 'trace.assembler.unavailable')),
+    result ? h('details', null, h('summary', null, uiMessage('trace.assembler.messages', { count: result.messages.length })),
+      ...result.messages.map((message, index) => h('div', { className: 'dttrace-book', key: index },
+        h('div', null, rawText(`${index + 1} · ${message.role}`)),
+        h('pre', { style: preStyle }, rawText((message.content ?? []).map(block => block.type === 'text' ? block.text : JSON.stringify(block)).join('\n'))),
+      ))) : null,
+    result ? h('details', null, h('summary', null, uiMessage('trace.assembler.sources')), ...requestNodes(result.nodes)) : null,
+    result?.historyPolicy ? h('details', null, h('summary', null, uiMessage('trace.assembler.historyPolicy')),
+      h('pre', { style: preStyle }, rawText(JSON.stringify(result.historyPolicy, null, 2)))) : null,
+    result && !result.historyPolicy ? h('p', { className: 'dttrace-note' }, uiMessage('trace.assembler.historyUnrecorded')) : null,
+    result?.diagnostics.length ? h('details', null, h('summary', null, uiMessage('trace.assembler.diagnostics')),
+      h('pre', { style: preStyle }, rawText(JSON.stringify(result.diagnostics, null, 2)))) : null,
+  )
+}
+
+// Configuration uses captured fields; provenance labels any current-name fallback.
 export function TraceRecordContent({ record, sessionId, turn, latest = false, running = false, lastVisibleSeq }) {
   const audit = record.audit ?? {}
   const resources = audit.resources ?? {}
@@ -312,19 +354,24 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
     h('details', { className: 'dttrace-disclosure' },
       h('summary', null, uiMessage('trace.v3.loaderDetails')),
       h('div', { className: 'dttrace-disclosure-body' },
-        h('p', { className: 'dttrace-note' }, uiMessage(record.delivery?.assemblyVerified ? 'trace.v3.verified' : 'trace.v3.unverified')),
-        record.sections ? h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.sections')) : null,
-        ...segments(record.sections, 'system', legacySnapshot),
-        record.contexts ? h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.contexts')) : null,
-        ...segments(record.contexts, 'context', legacySnapshot),
-        !record.sections ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v3.noAssembly')) : null,
-        record.systemMessages ? h('details', null,
-          h('summary', null, uiMessage('trace.v3.actual')),
-          legacySnapshot ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v4.legacySnapshot')) : null,
-          ...record.systemMessages.map((text, i) => h('pre', { key: i, style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, rawText(text))),
-        ) : null,
-        referenceBacked && !Array.isArray(record.systemMessages)
-          ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v4.systemMessagesUnavailable')) : null,
+        h(RecordedRequest, { result: recordedRequestResult(record) }),
+        h('details', { className: 'dttrace-book' },
+          h('summary', null, uiMessage('trace.assembler.materials')),
+          h('p', { className: 'dttrace-note' }, uiMessage('trace.assembler.materialsNote')),
+          h('p', { className: 'dttrace-note' }, uiMessage(record.delivery?.assemblyVerified ? 'trace.v3.verified' : 'trace.v3.unverified')),
+          record.sections ? h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.sections')) : null,
+          ...segments(record.sections, 'system', legacySnapshot),
+          record.contexts ? h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.contexts')) : null,
+          ...segments(record.contexts, 'context', legacySnapshot),
+          !record.sections ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v3.noAssembly')) : null,
+          record.systemMessages ? h('details', null,
+            h('summary', null, uiMessage('trace.v3.actual')),
+            legacySnapshot ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v4.legacySnapshot')) : null,
+            ...record.systemMessages.map((text, i) => h('pre', { key: i, style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, rawText(text))),
+          ) : null,
+          referenceBacked && !Array.isArray(record.systemMessages)
+            ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v4.systemMessagesUnavailable')) : null,
+        ),
         record.selection ? h('details', null, h('summary', null, uiMessage('trace.v3.bindings')),
           h('pre', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, rawText(JSON.stringify(record.selection, null, 2)))) : null,
         audit.diagnostics?.length ? h('details', null,

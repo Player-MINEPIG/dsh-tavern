@@ -286,11 +286,11 @@ DSH history. Protect the local data directory and API as DSH Session data.
 
 World-book `included` means an activation candidate, not confirmed final injection. Trace separately displays candidates and evidence from the same verified `requestAssembly`: observed requests with matching source nodes and version diagnostics can show inclusion; `WORLD_BOOK_POLICY_SKIPPED` shows the policy skip and its recorded reason. Older diagnostics without a reason remain explicitly unrecorded; ambiguous resource identities or missing request records do not establish final use. Reading does not rerun activation or write history or the manager journal.
 
-Tavern Trace first shows captured configuration/resource summaries, then lazily expands lore
-decisions and loader assembly. Verified section/context bodies are displayed when recoverable.
-Schema 4 sources show metadata, hashes, and counts without `source.text`; older schema 3 records may still include source bodies labeled as legacy snapshots. Explicit reasons are
-shown when recovery fails. Current v1 resources can help diagnose current configuration, but
-the UI does not label them as historical originals.
+Tavern Trace first shows captured configuration/resource summaries, then expands world-book decisions and **Assembler assembly**. Historical reads retain the same v3 assembly index and record-ID detail endpoints. Complete requests come from verified detail `requestAssembly` or `nativeRequest`, projected through Assembler’s public `actualAssemblyResult`; standard requests use detail `nativeProvenance` when assembly metadata is absent. The view shows send-time message order, source nodes, recorded history filtering and diagnostics. Standard records may lack separate history-filter decisions; the UI marks these unrecorded while still showing verified complete messages. It never fills another historical record with the latest-only `/actual` endpoint, or reruns current `/preview` or `/active`. Current previews belong to current drafts/resources; frozen records belong to that request; historical attribution comes from recorded evidence and verified references. Current-name fallbacks are explicitly labeled and never change historical bodies.
+
+“Assembly-stage system sections and contexts” retains original `sections`, `contexts` and observed system messages, identifying them as materials that later assembly or filtering may adjust. They cannot replace a complete request. Missing complete-request references remain explicitly unavailable; verified section/context bodies can still appear. Schema 4 sources show metadata/hash/counts without `source.text`; legacy schema 3 source bodies remain labeled historical snapshots. Unavailable bodies retain specific reasons.
+
+This display change preserves v1/v2 routes and response semantics (including `records[].worldBooks[].decisions[]`) and v3 capabilities, index, detail, section-source relationships and history references. It does not change `requestAssembly` or the storage schema. Current `dsh-prompt-assembler` and legacy `pmp-dsh-tavern` request owners are both recognized. Full section-name parsing remains outside the cross-version field-extraction contract.
 
 [HTTP reader](examples/trace-reader.mjs) imports no Tavern code.
 [Official observer](examples/official-prompt-observer.mjs) needs no v3 request. Index/detail

@@ -254,9 +254,11 @@ metadata 和官方引用，不保存新的 section/context/system-message/source
 
 世界书 `included` 仅表示通过激活判定的候选，不保证最终注入。Trace 分别展示激活候选与同次已核验 `requestAssembly` 中的结果：带匹配来源节点和版本诊断的已观察请求可显示已进入请求；`WORLD_BOOK_POLICY_SKIPPED` 显示策略跳过及当次原因。旧诊断缺原因时显示具体原因未记录，无法唯一关联资源或缺请求记录时不推断最终使用情况。读取不重跑激活、不改写历史或 manager journal。
 
-Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 loader 装配。段落/context
-正文可验证恢复时显示；schema 4 来源只显示 metadata/hash/counts，不显示 `source.text`，旧 schema 3 记录仍可能包含标为旧快照的来源正文。无法恢复时显示
-具体不可用原因。当前 v1 资源可辅助排查当前配置，但 UI 不把它标为历史原文。
+Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 **assembler 装配情况**。历史读取继续使用同一 v3 装配索引与记录 ID 详情接口。完整请求取自详情中已核验的 `requestAssembly` 或 `nativeRequest`，使用 Assembler 公开的 `actualAssemblyResult` 投影，标准版补入详情的 `nativeProvenance`；按发送时消息顺序显示正文、来源节点、已记录的当次历史过滤及诊断。标准版记录可能没有单独的历史过滤决策，界面明确标为未记录，仍显示核验后的完整消息。不会调用只返回最近请求的 `/actual` 来填充其他历史记录，也不会调用当前 `/preview` 或 `/active` 重算。当前预览属于当前草稿/资源，发送时冻结的记录属于该次请求，历史来源仅来自记录与可核验引用；当前名称回退会明确标注，不改变历史正文。
+
+“装配阶段的系统段落与上下文”保留原 `sections`、`contexts` 与观察到的系统消息，明确它们可能经过后续装配或过滤，不能替代完整请求。缺少完整请求引用时明确不可用；段落/context 正文可验证恢复时仍显示。schema 4 来源只显示 metadata/hash/counts，不显示 `source.text`，旧 schema 3 记录仍可能包含标为旧快照的来源正文。无法恢复时显示具体不可用原因。
+
+本次展示调整保留 v1/v2 路由与响应语义（含 `records[].worldBooks[].decisions[]`），以及 v3 capabilities、索引、详情、段落来源关系和历史引用；不改变 `requestAssembly` 或持久化 schema。当前与旧请求 owner 分别为 `dsh-prompt-assembler` / `pmp-dsh-tavern`，均可识别。完整段名格式仍不是跨版本字段提取合同。
 
 [HTTP 只读示例](examples/trace-reader.mjs) 不 import Tavern；
 [官方接口示例](examples/official-prompt-observer.mjs) 不依赖 v3。读取索引或详情不会触发装配。

@@ -18845,7 +18845,27 @@ var zh_CN_default = Object.freeze({
   "trace.v3.noSampling": "\u672A\u8986\u76D6\u6A21\u578B\u91C7\u6837\u914D\u7F6E",
   "trace.v3.contentUnavailable": "\u672C\u6761\u8BB0\u5F55\u7684\u8BE6\u7EC6\u5185\u5BB9\u4E0D\u5B8C\u6574\uFF1A",
   "trace.v3.worldBookDetails": "\u4E16\u754C\u4E66\u89E6\u53D1\u60C5\u51B5",
-  "trace.v3.loaderDetails": "Loader \u88C5\u914D\u60C5\u51B5",
+  "trace.assembler.recorded": "\u4EE5\u4E0B\u662F\u672C\u6761\u8BB0\u5F55\u53D1\u9001\u65F6\u51BB\u7ED3\u7684\u8BF7\u6C42\uFF0C\u4ECE DSH \u5386\u53F2\u6838\u9A8C\u8BFB\u53D6\uFF1B\u5F53\u524D\u9884\u89C8\u548C\u8D44\u6E90\u4FEE\u6539\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002\u8BF7\u6C42\u88AB\u89C2\u5BDF\u5230\u4E0D\u4EE3\u8868\u54CD\u5E94\u6210\u529F\u3002",
+  "trace.assembler.unavailable": "\u672C\u6761\u8BB0\u5F55\u6CA1\u6709\u53EF\u6838\u9A8C\u7684\u5B8C\u6574\u8BF7\u6C42\uFF1B\u4E0B\u65B9\u88C5\u914D\u9636\u6BB5\u6750\u6599\u4E0D\u80FD\u66FF\u4EE3\u53D1\u9001\u65F6\u7684\u8BF7\u6C42\uFF0C\u4E5F\u4E0D\u4F1A\u7528\u5F53\u524D\u9884\u89C8\u8865\u9F50\u3002",
+  "trace.assembler.messages": "\u53D1\u9001\u65F6\u7684\u5B8C\u6574\u6D88\u606F\u987A\u5E8F\uFF08{count}\uFF09",
+  "trace.assembler.sources": "\u5F53\u65F6\u7684\u6765\u6E90\u4E0E\u88C5\u914D\u5185\u5BB9",
+  "trace.assembler.historyUnrecorded": "\u5F53\u6B21\u5386\u53F2\u8FC7\u6EE4\u51B3\u7B56\u672A\u5355\u72EC\u8BB0\u5F55\uFF1B\u5B8C\u6574\u6D88\u606F\u4ECD\u4EE5\u6838\u9A8C\u540E\u7684\u8BF7\u6C42\u4E3A\u51C6\u3002",
+  "trace.assembler.historyPolicy": "\u5F53\u6B21\u5386\u53F2\u8FC7\u6EE4\u7ED3\u679C",
+  "trace.assembler.diagnostics": "\u5F53\u6B21 Assembler \u8BCA\u65AD",
+  "trace.assembler.materials": "\u88C5\u914D\u9636\u6BB5\u7684\u7CFB\u7EDF\u6BB5\u843D\u4E0E\u4E0A\u4E0B\u6587",
+  "trace.assembler.materialsNote": "\u8FD9\u4E9B\u6BB5\u843D\u6765\u81EA\u5F53\u65F6\u7684 system-prompt \u88C5\u914D\uFF0C\u53EF\u80FD\u5728\u8BF7\u6C42\u88C5\u914D\u3001\u5386\u53F2\u8FC7\u6EE4\u6216\u7B2C\u4E09\u65B9\u5904\u7406\u4E2D\u8C03\u6574\uFF1B\u4E0D\u4EE3\u8868\u5B8C\u6574\u7684\u6700\u7EC8\u8BF7\u6C42\u3002",
+  "trace.assembler.sourceUnrecorded": "\u6765\u6E90\u672A\u8BB0\u5F55",
+  "trace.assembler.historicalSystem": "\u5386\u53F2 system \u5FEB\u7167",
+  "trace.assembler.contextFraming": "\u539F\u751F\u4E0A\u4E0B\u6587\u5C01\u88C5",
+  "trace.assembler.system": "\u7CFB\u7EDF\u6D88\u606F",
+  "trace.assembler.user": "\u7528\u6237\u6D88\u606F",
+  "trace.assembler.assistant": "\u52A9\u624B\u6D88\u606F",
+  "trace.assembler.tool": "\u5DE5\u5177\u7ED3\u679C",
+  "trace.assembler.nameUnrecorded": "\u5F53\u65F6\u7684\u6761\u76EE\u540D\u79F0\u672A\u8BB0\u5F55\u3002",
+  "trace.assembler.nameCurrent": "\u540D\u79F0\u6765\u81EA\u5F53\u524D\u9884\u8BBE\uFF1B\u6B63\u6587\u6765\u81EA\u5F53\u65F6\u8BF7\u6C42\u3002",
+  "trace.assembler.fieldsUnrecorded": "\u6765\u6E90\u5B57\u6BB5\u672A\u8BB0\u5F55\uFF1B\u4EC5\u6709\u5F53\u65F6\u4FDD\u5B58\u7684\u6BB5\u843D\u540D\u79F0\u3002",
+  "trace.assembler.unnamedItem": "\u6765\u6E90\u6761\u76EE {index}",
+  "trace.v3.loaderDetails": "assembler \u88C5\u914D\u60C5\u51B5",
   "trace.v3.noAssembly": "\u672A\u4FDD\u5B58\u88C5\u914D\u6B63\u6587\uFF0C\u65E0\u6CD5\u8FD8\u539F\u5F53\u65F6\u7684\u6BB5\u843D\u3002",
   "trace.v3.terms": "\u8F6E\u6B21\u3001\u6B65\u9AA4\u548C\u8BF7\u6C42\u8BB0\u5F55\u662F\u4EC0\u4E48\u610F\u601D\uFF1F",
   "trace.v3.termsText": "\u8F6E\u6B21\u662F\u4E00\u6B21\u5BF9\u8BDD\u5904\u7406\uFF1B\u6B65\u9AA4\u662F DSH \u5728\u8BE5\u8F6E\u4E2D\u7684\u6A21\u578B\u8C03\u7528\u9636\u6BB5\uFF0C\u4F8B\u5982\u8C03\u7528\u5DE5\u5177\u540E\u7EE7\u7EED\u56DE\u7B54\u4F1A\u8FDB\u5165\u4E0B\u4E00\u6B65\u3002\u8BF7\u6C42\u8BB0\u5F55\u662F Tavern \u5728\u540C\u4E00\u8F6E\u3001\u540C\u4E00\u6B65\u9AA4\u4E2D\u76D1\u542C agent/request \u7684\u91C7\u96C6\u5E8F\u53F7\u3002DSH \u4E0A\u5C42\u91CD\u8BD5\u4F1A\u518D\u6B21\u89E6\u53D1\u6B64\u4E8B\u4EF6\uFF0C\u5E76\u53EF\u590D\u7528\u5DF2\u6709\u88C5\u914D\u7ED3\u679C\uFF1BTavern \u53EA\u4F1A\u9488\u5BF9\u660E\u786E\u7684\u9884\u8BBE\u53C2\u6570\u62D2\u7EDD\uFF0C\u5728\u8F93\u51FA\u524D\u8BF7\u6C42\u6709\u9650\u91CD\u8BD5\u3002\u4E0D\u7EDF\u8BA1\u6240\u6709\u5E95\u5C42\u7F51\u7EDC\u91CD\u8BD5\uFF0C\u4E5F\u4E0D\u4EE3\u8868\u54CD\u5E94\u6210\u529F\u3002",
@@ -18860,7 +18880,7 @@ var zh_CN_default = Object.freeze({
   "trace.v3.part": "{index}. {name} \xB7 {count} \u5B57",
   "trace.v3.sourceCount": "{count} \u5B57",
   "trace.v3.bindings": "\u88C5\u914D\u65F6\u7684\u7ED1\u5B9A",
-  "trace.v3.intro": "\u67E5\u770B\u6BCF\u6B21\u8BF7\u6C42\u5F53\u65F6\u7684\u914D\u7F6E\uFF0C\u5C55\u5F00\u67E5\u770B\u4E16\u754C\u4E66\u89E6\u53D1\u548C Loader \u88C5\u914D\u8BE6\u60C5\u3002",
+  "trace.v3.intro": "\u67E5\u770B\u6BCF\u6B21\u8BF7\u6C42\u5F53\u65F6\u7684\u914D\u7F6E\uFF0C\u5C55\u5F00\u67E5\u770B\u4E16\u754C\u4E66\u89E6\u53D1\u548C assembler \u88C5\u914D\u8BE6\u60C5\u3002",
   "trace.v3.verified": "\u8BE5\u88C5\u914D\u6587\u672C\u5DF2\u5728 LLM \u8BF7\u6C42\u4E2D\u5B8C\u6574\u6838\u5BF9\u3002",
   "trace.v3.unverified": "\u6B64\u5904\u4E3A\u88C5\u914D\u9636\u6BB5\u5FEB\u7167\uFF1B\u5C1A\u672A\u6838\u5BF9\u6216\u4E0E\u5B9E\u9645\u8BF7\u6C42\u4E0D\u540C\uFF0C\u8BF7\u5C55\u5F00\u5B9E\u9645\u8BF7\u6C42\u67E5\u770B\u3002",
   "trace.v3.sections": "\u7CFB\u7EDF\u63D0\u793A\u8BCD\u6BB5\u843D",
@@ -19951,7 +19971,27 @@ var en_default = Object.freeze({
   "trace.v3.noSampling": "No sampling overrides",
   "trace.v3.contentUnavailable": "Detailed content is incomplete:",
   "trace.v3.worldBookDetails": "World-book activation",
-  "trace.v3.loaderDetails": "Loader assembly",
+  "trace.assembler.recorded": "This request was frozen at send time and verified against DSH history. Current previews and resource edits do not change it. Request observation does not establish a successful response.",
+  "trace.assembler.unavailable": "No verifiable complete request is available for this record. Assembly-stage materials below cannot replace the sent request; current previews are never used to fill it.",
+  "trace.assembler.messages": "Complete message order at send time ({count})",
+  "trace.assembler.sources": "Recorded sources and assembled content",
+  "trace.assembler.historyUnrecorded": "History-filter decisions were not separately recorded; complete messages still come from the verified request.",
+  "trace.assembler.historyPolicy": "History filtering for this request",
+  "trace.assembler.diagnostics": "Recorded Assembler diagnostics",
+  "trace.assembler.materials": "Assembly-stage system sections and contexts",
+  "trace.assembler.materialsNote": "These sections come from the recorded system-prompt assembly. Request assembly, history filtering or third-party processing may adjust them; they do not represent the complete final request.",
+  "trace.assembler.sourceUnrecorded": "Source not recorded",
+  "trace.assembler.historicalSystem": "Historical system snapshot",
+  "trace.assembler.contextFraming": "Native context framing",
+  "trace.assembler.system": "System message",
+  "trace.assembler.user": "User message",
+  "trace.assembler.assistant": "Assistant message",
+  "trace.assembler.tool": "Tool result",
+  "trace.assembler.nameUnrecorded": "Original item name not recorded.",
+  "trace.assembler.nameCurrent": "Name from the current preset; body from the recorded request.",
+  "trace.assembler.fieldsUnrecorded": "Source fields not recorded; only the recorded section name is available.",
+  "trace.assembler.unnamedItem": "Source item {index}",
+  "trace.v3.loaderDetails": "Assembler assembly",
   "trace.v3.noAssembly": "No assembly body was retained; past sections cannot be reconstructed.",
   "trace.v3.terms": "What are turns, steps and request records?",
   "trace.v3.termsText": "A turn is one conversation cycle. A step is a DSH model-call stage within that turn; continuing after tools can start another step. Request record numbers count Tavern captures of agent/request for the same turn and step. DSH higher-level retries emit it again and can reuse the existing assembly; Tavern requests bounded retries only for explicit preset-parameter rejections before output. This does not count every network retry or prove a successful response.",
@@ -19966,7 +20006,7 @@ var en_default = Object.freeze({
   "trace.v3.part": "{index}. {name} \xB7 {count} characters",
   "trace.v3.sourceCount": "{count} characters",
   "trace.v3.bindings": "Bindings at assembly time",
-  "trace.v3.intro": "View the configuration captured for each request; expand world-book activation and Loader assembly for details.",
+  "trace.v3.intro": "View the configuration captured for each request; expand world-book activation and Assembler assembly for details.",
   "trace.v3.verified": "The complete assembly text was verified in the LLM request.",
   "trace.v3.unverified": "Assembly-stage snapshot: not yet verified or different from the request. Inspect the actual request below.",
   "trace.v3.sections": "System prompt sections",
@@ -27587,12 +27627,21 @@ var mvuStyles = `
 // packages/tavern-trace/src/world-book-request.js
 function worldBookRequestOutcome(record, book) {
   const id = book.resource?.id, request2 = record.requestAssembly, assembly = request2?.metadata?.assembly;
-  if (typeof id !== "string" || !id || id.endsWith("\u2026") || request2?.metadata?.owner !== "pmp-dsh-tavern" || !assembly || assembly.preview || request2.turn !== record.turn || request2.step !== record.step || (record.audit?.worldBooks ?? []).filter((row) => row.resource?.id === id).length !== 1) return null;
+  if (typeof id !== "string" || !id || id.endsWith("\u2026") || !["pmp-dsh-tavern", "dsh-prompt-assembler"].includes(request2?.metadata?.owner) || !assembly || assembly.preview || request2.turn !== record.turn || request2.step !== record.step || (record.audit?.worldBooks ?? []).filter((row) => row.resource?.id === id).length !== 1) return null;
   const flatten = (nodes2) => nodes2.flatMap((node) => [node, ...flatten(node.children ?? [])]);
   const nodes = flatten(assembly.nodes ?? []), diagnostics = assembly.diagnostics ?? [];
   const skips = diagnostics.filter((fact) => fact.code === "WORLD_BOOK_POLICY_SKIPPED" && fact.resourceId === `world-book:${id}`);
   const applied = record.status === "request-observed" && diagnostics.some((fact) => ["TAVERN_MEMORY_RESOURCE_VERSION", "TAVERN_MEMORY_DEPENDENCY_VERSION"].includes(fact.code) && fact.adapterId === "tavern.world-books" && fact.resourceId === `world-book:${id}` && nodes.some((node) => node.source?.sourceId === fact.sourceId && node.source?.resourceId === (fact.consumerId ?? fact.blockResourceId ?? fact.resourceId) && (node.id?.endsWith(`:${fact.blockId}`) || node.name === fact.blockId)));
   return { applied, skipped: skips.length > 0, reasons: [...new Set(skips.map((fact) => typeof fact.reason === "string" && fact.reason ? fact.reason : null))] };
+}
+
+// packages/tavern-trace/src/request-view.js
+function recordedRequestResult(record) {
+  const request2 = record.requestAssembly ?? record.nativeRequest;
+  if (!Array.isArray(request2?.messages) || record.requestContentStatus && record.requestContentStatus !== "available" || request2.metadata?.assembly?.preview || record.requestAssembly && (request2.turn !== record.turn || request2.step !== record.step)) return null;
+  const metadata = { ...request2.metadata };
+  if (!metadata.assembly && record.nativeProvenance) metadata.assembly = record.nativeProvenance;
+  return actualAssemblyResult({ ...request2, metadata });
 }
 
 // packages/tavern-trace/src/client.js
@@ -27816,6 +27865,78 @@ function segments(items2, kind, legacySnapshot) {
     ))
   ));
 }
+var nodeLabels = {
+  "source-unrecorded": "trace.assembler.sourceUnrecorded",
+  "historical-system-update": "trace.assembler.historicalSystem",
+  "native-context-framing": "trace.assembler.contextFraming",
+  system: "trace.assembler.system",
+  user: "trace.assembler.user",
+  assistant: "trace.assembler.assistant",
+  tool: "trace.assembler.tool"
+};
+var sourceStatusLabels = {
+  "name-unrecorded": "trace.assembler.nameUnrecorded",
+  "current-name": "trace.assembler.nameCurrent",
+  "section-only": "trace.assembler.fieldsUnrecorded",
+  unrecorded: "trace.assembler.sourceUnrecorded"
+};
+var preStyle = { whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: 0 };
+function requestNodeTitle(node, index) {
+  const named = ["recorded", "current-name"].includes(node.sourceStatus);
+  if (!named && nodeLabels[node.name]) return uiMessage(nodeLabels[node.name]);
+  if (node.sourceStatus === "name-unrecorded" || !named && /^(preset|worldbook):/.test(node.name ?? "")) {
+    return uiMessage("trace.assembler.unnamedItem", { index: index + 1 });
+  }
+  return rawText(node.name || translate("trace.assembler.sourceUnrecorded"));
+}
+function requestNodes(nodes) {
+  return (nodes ?? []).map((node, index) => h19(
+    "details",
+    { className: "dttrace-book", key: `${node.id}:${index}` },
+    h19(
+      "summary",
+      null,
+      requestNodeTitle(node, index),
+      rawText(` \xB7 ${node.role ?? "\u2014"}`),
+      sourceStatusLabels[node.sourceStatus] ? h19("span", { className: "dttrace-note", style: { display: "block" } }, uiMessage(sourceStatusLabels[node.sourceStatus])) : null
+    ),
+    h19("div", { className: "dttrace-meta" }, rawText(Object.entries(node.source ?? {}).map(([key2, value]) => `${key2}=${value}`).join(" \xB7 "))),
+    typeof node.text === "string" ? h19("pre", { style: preStyle }, rawText(node.text)) : null,
+    ...requestNodes(node.children)
+  ));
+}
+function RecordedRequest({ result }) {
+  return h19(
+    "div",
+    { className: "dttrace-section", "data-trace-request": result ? "available" : "unavailable" },
+    h19("p", { className: "dttrace-note" }, uiMessage(result ? "trace.assembler.recorded" : "trace.assembler.unavailable")),
+    result ? h19(
+      "details",
+      null,
+      h19("summary", null, uiMessage("trace.assembler.messages", { count: result.messages.length })),
+      ...result.messages.map((message, index) => h19(
+        "div",
+        { className: "dttrace-book", key: index },
+        h19("div", null, rawText(`${index + 1} \xB7 ${message.role}`)),
+        h19("pre", { style: preStyle }, rawText((message.content ?? []).map((block) => block.type === "text" ? block.text : JSON.stringify(block)).join("\n")))
+      ))
+    ) : null,
+    result ? h19("details", null, h19("summary", null, uiMessage("trace.assembler.sources")), ...requestNodes(result.nodes)) : null,
+    result?.historyPolicy ? h19(
+      "details",
+      null,
+      h19("summary", null, uiMessage("trace.assembler.historyPolicy")),
+      h19("pre", { style: preStyle }, rawText(JSON.stringify(result.historyPolicy, null, 2)))
+    ) : null,
+    result && !result.historyPolicy ? h19("p", { className: "dttrace-note" }, uiMessage("trace.assembler.historyUnrecorded")) : null,
+    result?.diagnostics.length ? h19(
+      "details",
+      null,
+      h19("summary", null, uiMessage("trace.assembler.diagnostics")),
+      h19("pre", { style: preStyle }, rawText(JSON.stringify(result.diagnostics, null, 2)))
+    ) : null
+  );
+}
 function TraceRecordContent({ record, sessionId, turn, latest = false, running = false, lastVisibleSeq }) {
   const audit = record.audit ?? {};
   const resources = audit.resources ?? {};
@@ -27898,20 +28019,27 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
       h19(
         "div",
         { className: "dttrace-disclosure-body" },
-        h19("p", { className: "dttrace-note" }, uiMessage(record.delivery?.assemblyVerified ? "trace.v3.verified" : "trace.v3.unverified")),
-        record.sections ? h19("div", { className: "dttrace-section-title" }, uiMessage("trace.v3.sections")) : null,
-        ...segments(record.sections, "system", legacySnapshot),
-        record.contexts ? h19("div", { className: "dttrace-section-title" }, uiMessage("trace.v3.contexts")) : null,
-        ...segments(record.contexts, "context", legacySnapshot),
-        !record.sections ? h19("p", { className: "dttrace-note" }, uiMessage("trace.v3.noAssembly")) : null,
-        record.systemMessages ? h19(
+        h19(RecordedRequest, { result: recordedRequestResult(record) }),
+        h19(
           "details",
-          null,
-          h19("summary", null, uiMessage("trace.v3.actual")),
-          legacySnapshot ? h19("p", { className: "dttrace-note" }, uiMessage("trace.v4.legacySnapshot")) : null,
-          ...record.systemMessages.map((text3, i3) => h19("pre", { key: i3, style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, rawText(text3)))
-        ) : null,
-        referenceBacked && !Array.isArray(record.systemMessages) ? h19("p", { className: "dttrace-note" }, uiMessage("trace.v4.systemMessagesUnavailable")) : null,
+          { className: "dttrace-book" },
+          h19("summary", null, uiMessage("trace.assembler.materials")),
+          h19("p", { className: "dttrace-note" }, uiMessage("trace.assembler.materialsNote")),
+          h19("p", { className: "dttrace-note" }, uiMessage(record.delivery?.assemblyVerified ? "trace.v3.verified" : "trace.v3.unverified")),
+          record.sections ? h19("div", { className: "dttrace-section-title" }, uiMessage("trace.v3.sections")) : null,
+          ...segments(record.sections, "system", legacySnapshot),
+          record.contexts ? h19("div", { className: "dttrace-section-title" }, uiMessage("trace.v3.contexts")) : null,
+          ...segments(record.contexts, "context", legacySnapshot),
+          !record.sections ? h19("p", { className: "dttrace-note" }, uiMessage("trace.v3.noAssembly")) : null,
+          record.systemMessages ? h19(
+            "details",
+            null,
+            h19("summary", null, uiMessage("trace.v3.actual")),
+            legacySnapshot ? h19("p", { className: "dttrace-note" }, uiMessage("trace.v4.legacySnapshot")) : null,
+            ...record.systemMessages.map((text3, i3) => h19("pre", { key: i3, style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, rawText(text3)))
+          ) : null,
+          referenceBacked && !Array.isArray(record.systemMessages) ? h19("p", { className: "dttrace-note" }, uiMessage("trace.v4.systemMessagesUnavailable")) : null
+        ),
         record.selection ? h19(
           "details",
           null,
