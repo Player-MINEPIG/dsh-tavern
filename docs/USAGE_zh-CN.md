@@ -200,7 +200,7 @@ footer 中央的导入按钮可从 SillyTavern JSON/JSONL 绑定外部记录；�
 
 ## 8. Tavern Trace
 
-Tavern Trace 位于 Conversation、Trajectory 同级视图。每次请求先显示当时的配置摘要。展开“世界书触发情况”查看激活候选与可核验的最终使用情况；展开“assembler 装配情况”直接查看发送时全部 system/user/assistant/tool 消息卡片，按实际顺序逐条展开正文，并查看当时来源、历史过滤结果与诊断。读取 v3 记录 ID 详情中已核验的请求，不用当前预览补历史。原系统段落/context 保留在“装配阶段的系统段落与上下文”中，不能替代最终请求；旧记录缺完整请求时明确不可用。schema 4 正文从 DSH 历史核验读取，旧 schema 3 正文标为旧快照。当前名称回退会标明“名称来自当前预设；正文来自当时请求”，来源缺失则显示“来源未记录”。
+Tavern Trace 位于 Conversation、Trajectory 同级视图。每次请求先显示当时的配置摘要。展开“世界书触发情况”查看激活候选与可核验的最终使用情况；展开“assembler 装配情况”直接查看发送时全部 system/user/assistant/tool 消息卡片，system 正文默认展开，其他消息按需逐条展开，并查看当时来源、历史过滤结果与诊断。读取 v3 记录 ID 详情中已核验的请求，不用当前预览补历史。原系统段落/context 保留在“装配阶段的系统段落与上下文”中，不能替代最终请求；旧记录缺完整请求时明确不可用。schema 4 正文从 DSH 历史核验读取，旧 schema 3 正文标为旧快照。当前名称回退会标明“名称来自当前预设；正文来自当时请求”，来源缺失则显示“来源未记录”。
 
 当前采集在本地有界 `tavern-trace-records.json` 中合并保存 schema 4 metadata 与官方历史引用，不保存 section/context/system-message/source 正文副本。同一目录所有会话默认共用 16 MiB / 256 条上限，单条 2 MiB；淘汰不删除 DSH 历史。官方历史缺失、截点被清理或身份/hash/range 验证失败时会明确 unavailable，不会按当前资源重算或使用另一份全文兜底。旧 `tavern-traces.json` 和 `tavern-assemblies.json` 只读保留；后者可能仍含升级前的敏感正文。观察到请求不等于模型响应成功，DSH durable history 仍是正文权威。详见 [v3 API 与边界](PROMPT_API_V3.md)。
 

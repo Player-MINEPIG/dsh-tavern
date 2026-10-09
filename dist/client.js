@@ -27919,7 +27919,7 @@ function RecordedRequest({ result }) {
         const sources = result.nodes.filter((node) => node.reference?.messageId === message.id && message.id !== void 0 || node.messageIndex === index || message.id !== void 0 && node.messages?.some((item) => item.id === message.id));
         return h19(
           "details",
-          { className: "dttrace-book dttrace-message", key: index, "data-role": message.role, "data-message-index": index },
+          { className: "dttrace-book dttrace-message", key: index, open: message.role === "system", "data-role": message.role, "data-message-index": index },
           h19(
             "summary",
             null,

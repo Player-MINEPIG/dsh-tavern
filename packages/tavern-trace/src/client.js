@@ -286,7 +286,7 @@ function RecordedRequest({ result }) {
         const sources = result.nodes.filter(node => node.reference?.messageId === message.id
           && message.id !== undefined || node.messageIndex === index
           || message.id !== undefined && node.messages?.some(item => item.id === message.id))
-        return h('details', { className: 'dttrace-book dttrace-message', key: index, 'data-role': message.role, 'data-message-index': index },
+        return h('details', { className: 'dttrace-book dttrace-message', key: index, open: message.role === 'system', 'data-role': message.role, 'data-message-index': index },
           h('summary', null, rawText(`${index + 1} · ${message.role}`),
             sources.length ? h('span', { className: 'dttrace-message-sources' },
               ...sources.map((node, i) => h('span', { key: i }, requestNodeTitle(node, result.nodes.indexOf(node)),

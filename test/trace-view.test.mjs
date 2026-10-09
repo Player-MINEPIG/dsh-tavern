@@ -240,6 +240,7 @@ test('expanding assembly exposes every message card in request order without a s
   const cards = find(result, node => node.props['data-message-index'] !== undefined)
   assert.equal(cards.length, 4)
   assert.deepEqual(cards.map(card => card.props['data-role']), ['system', 'user', 'assistant', 'tool'])
+  assert.deepEqual(cards.map(card => card.props.open), [true, false, false, false])
   assert.deepEqual(cards.map(card => text(card.children[0]).split(' ').slice(0,3).join(' ')), ['1 · system', '2 · user', '3 · assistant', '4 · tool'])
   assert.ok(text(cards[0], true).includes('Saved readable name'))
   assert.ok(!text(cards[1], true).includes('Unmapped source'), 'matching body text does not establish source coordinates')
@@ -248,6 +249,7 @@ test('expanding assembly exposes every message card in request order without a s
   const list = find(result, node => node.props.className === 'dttrace-messages')[0]
   const overview = text(list, true)
   for (const role of ['system','user','assistant','tool']) assert.ok(overview.includes(role), role)
+  assert.ok(overview.includes('SYSTEM'), 'system body is immediately visible when assembly expands')
   assert.ok(!overview.includes('TOOL RESULT'), 'individual bodies remain expandable')
   assert.ok(!find(result, node => node.type === 'details').some(node => text(node.children[0]).includes('发送时的完整消息顺序')))
 })
