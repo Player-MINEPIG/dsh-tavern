@@ -18848,6 +18848,8 @@ var zh_CN_default = Object.freeze({
   "trace.assembler.recorded": "\u4EE5\u4E0B\u662F\u672C\u6761\u8BB0\u5F55\u53D1\u9001\u65F6\u51BB\u7ED3\u7684\u8BF7\u6C42\uFF0C\u4ECE DSH \u5386\u53F2\u6838\u9A8C\u8BFB\u53D6\uFF1B\u5F53\u524D\u9884\u89C8\u548C\u8D44\u6E90\u4FEE\u6539\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002\u8BF7\u6C42\u88AB\u89C2\u5BDF\u5230\u4E0D\u4EE3\u8868\u54CD\u5E94\u6210\u529F\u3002",
   "trace.assembler.unavailable": "\u672C\u6761\u8BB0\u5F55\u6CA1\u6709\u53EF\u6838\u9A8C\u7684\u5B8C\u6574\u8BF7\u6C42\uFF1B\u4E0B\u65B9\u88C5\u914D\u9636\u6BB5\u6750\u6599\u4E0D\u80FD\u66FF\u4EE3\u53D1\u9001\u65F6\u7684\u8BF7\u6C42\uFF0C\u4E5F\u4E0D\u4F1A\u7528\u5F53\u524D\u9884\u89C8\u8865\u9F50\u3002",
   "trace.assembler.messages": "\u53D1\u9001\u65F6\u7684\u5B8C\u6574\u6D88\u606F\u987A\u5E8F\uFF08{count}\uFF09",
+  "trace.assembler.systemRaw": "\u5B8C\u6574 system \u6D88\u606F\u539F\u6587",
+  "trace.assembler.modulesUnrecorded": "\u672C\u6761\u6D88\u606F\u6CA1\u6709\u53EF\u6838\u9A8C\u7684\u6A21\u5757\u5212\u5206\uFF1B\u53EF\u5C55\u5F00\u67E5\u770B\u5B8C\u6574 system \u6D88\u606F\u539F\u6587\u3002",
   "trace.assembler.sources": "\u5F53\u65F6\u7684\u6765\u6E90\u4E0E\u88C5\u914D\u5185\u5BB9",
   "trace.assembler.historyUnrecorded": "\u5F53\u6B21\u5386\u53F2\u8FC7\u6EE4\u51B3\u7B56\u672A\u5355\u72EC\u8BB0\u5F55\uFF1B\u5B8C\u6574\u6D88\u606F\u4ECD\u4EE5\u6838\u9A8C\u540E\u7684\u8BF7\u6C42\u4E3A\u51C6\u3002",
   "trace.assembler.historyPolicy": "\u5F53\u6B21\u5386\u53F2\u8FC7\u6EE4\u7ED3\u679C",
@@ -19974,6 +19976,8 @@ var en_default = Object.freeze({
   "trace.assembler.recorded": "This request was frozen at send time and verified against DSH history. Current previews and resource edits do not change it. Request observation does not establish a successful response.",
   "trace.assembler.unavailable": "No verifiable complete request is available for this record. Assembly-stage materials below cannot replace the sent request; current previews are never used to fill it.",
   "trace.assembler.messages": "Complete message order at send time ({count})",
+  "trace.assembler.systemRaw": "Complete system message text",
+  "trace.assembler.modulesUnrecorded": "No verified module breakdown is available for this message; expand the complete system message text below.",
   "trace.assembler.sources": "Recorded sources and assembled content",
   "trace.assembler.historyUnrecorded": "History-filter decisions were not separately recorded; complete messages still come from the verified request.",
   "trace.assembler.historyPolicy": "History filtering for this request",
@@ -27643,6 +27647,15 @@ function recordedRequestResult(record) {
   if (!metadata.assembly && record.nativeProvenance) metadata.assembly = record.nativeProvenance;
   return actualAssemblyResult({ ...request2, metadata });
 }
+function recordedMessageNodes(result, message, index) {
+  const hasId = typeof message.id === "string";
+  const projection = result.systemProjection?.version === 1 && result.systemProjection.semantics === "complete-snapshots" ? result.systemProjection.messages?.find((item) => hasId && item.messageId === message.id && item.index === index) : null;
+  return result.nodes.filter((node) => hasId && node.reference?.messageId === message.id || node.messageIndex === index || hasId && node.requestMessageIds?.includes(message.id) || hasId && node.messages?.some((item) => item.id === message.id) || projection && node.inputMessageIds?.some((id) => projection.contributorIds?.includes(id)));
+}
+function recordedSystemModules(result, message, index) {
+  if (result.historyPolicy?.decisions?.some((item) => item.messageId === message.id && item.action !== "keep")) return [];
+  return recordedMessageNodes(result, message, index);
+}
 
 // packages/tavern-trace/src/client.js
 var import_react19 = require("react");
@@ -27658,6 +27671,7 @@ ${mvuStyles}
 .dttrace-section{display:flex;flex-direction:column;gap:6px}.dttrace-section-title{font-size:14px;font-weight:670}.dttrace-book>summary{overflow-wrap:anywhere}.dttrace-book{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dttrace-decision{display:grid;grid-template-columns:76px minmax(110px,.7fr) minmax(160px,1.5fr);gap:7px;padding:6px 0;border-top:1px solid var(--dsw-alias-border-l1);font-size:12px;line-height:1.45}.dttrace-decision:first-of-type{border-top:0}.dttrace-decision-state{font-weight:650}.dttrace-decision[data-included=true] .dttrace-decision-state{color:var(--dsw-alias-state-success,#2fa36b)}.dttrace-keywords{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}.dttrace-list{margin:0;padding-left:18px;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary)}
 .dttrace-disclosure{border-top:1px solid var(--dsw-alias-border-l1);padding-top:10px;margin-top:4px}.dttrace-disclosure>summary{cursor:pointer;font-size:14px;font-weight:650}.dttrace-disclosure-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.dttrace-card .dttrace-label{text-transform:none;letter-spacing:0}
 .dttrace-messages{display:flex;flex-direction:column;gap:8px}.dttrace-message{border-left:4px solid #8192ad}.dttrace-message[data-role=user]{border-left-color:#6495ed}.dttrace-message[data-role=assistant]{border-left-color:#9472c3}.dttrace-message[data-role=tool]{border-left-color:#3d9c80}.dttrace-message>summary{cursor:pointer;font-weight:620}.dttrace-message-sources{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:400;color:var(--dsw-alias-label-secondary);margin-top:4px}.dttrace-message[open]>summary{margin-bottom:8px}
+.dttrace-system-modules{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dttrace-system-group{display:flex;flex-direction:column;gap:6px}.dttrace-system-modules .dttrace-book>summary{cursor:pointer}
 @media(max-width:760px){.dttrace-grid{grid-template-columns:1fr}.dttrace-decision{grid-template-columns:70px 1fr}.dttrace-keywords{grid-column:1/-1}}
 `;
 var statusLabels = Object.freeze({
@@ -27906,6 +27920,25 @@ function requestNodes(nodes) {
     ...requestNodes(node.children)
   ));
 }
+function systemModuleCards(nodes) {
+  return nodes.map((node, index) => node.children?.length ? h19(
+    "div",
+    { className: "dttrace-system-group", key: `${node.id}:${index}` },
+    h19("div", { className: "dttrace-meta" }, requestNodeTitle(node, index)),
+    ...systemModuleCards(node.children)
+  ) : h19(
+    "details",
+    { className: "dttrace-book", key: `${node.id}:${index}`, "data-system-module": node.id },
+    h19(
+      "summary",
+      null,
+      requestNodeTitle(node, index),
+      sourceStatusLabels[node.sourceStatus] ? h19("span", { className: "dttrace-note" }, " \xB7 ", uiMessage(sourceStatusLabels[node.sourceStatus])) : null
+    ),
+    h19("div", { className: "dttrace-meta" }, rawText(Object.entries(node.source ?? {}).map(([key2, value]) => `${key2}=${value}`).join(" \xB7 "))),
+    typeof node.text === "string" ? h19("pre", { style: preStyle }, rawText(node.text)) : null
+  ));
+}
 function RecordedRequest({ result }) {
   return h19(
     "div",
@@ -27916,10 +27949,26 @@ function RecordedRequest({ result }) {
       { className: "dttrace-messages" },
       h19("div", { className: "dttrace-section-title" }, uiMessage("trace.assembler.messages", { count: result.messages.length })),
       ...result.messages.map((message, index) => {
-        const sources = result.nodes.filter((node) => node.reference?.messageId === message.id && message.id !== void 0 || node.messageIndex === index || message.id !== void 0 && node.messages?.some((item) => item.id === message.id));
+        const content = (message.content ?? []).map((block) => block.type === "text" ? block.text : JSON.stringify(block)).join("\n");
+        if (message.role === "system") {
+          const modules = recordedSystemModules(result, message, index);
+          return h19(
+            "div",
+            { className: "dttrace-book dttrace-message", key: index, "data-role": message.role, "data-message-index": index },
+            h19("div", { className: "dttrace-section-title" }, rawText(`${index + 1} \xB7 ${message.role}`)),
+            modules.length ? h19("div", { className: "dttrace-system-modules" }, ...systemModuleCards(modules)) : h19("p", { className: "dttrace-note" }, uiMessage("trace.assembler.modulesUnrecorded")),
+            h19(
+              "details",
+              { className: "dttrace-disclosure" },
+              h19("summary", null, uiMessage("trace.assembler.systemRaw")),
+              h19("pre", { style: preStyle }, rawText(content))
+            )
+          );
+        }
+        const sources = recordedMessageNodes(result, message, index);
         return h19(
           "details",
-          { className: "dttrace-book dttrace-message", key: index, open: message.role === "system", "data-role": message.role, "data-message-index": index },
+          { className: "dttrace-book dttrace-message", key: index, "data-role": message.role, "data-message-index": index },
           h19(
             "summary",
             null,
@@ -27935,7 +27984,7 @@ function RecordedRequest({ result }) {
               ))
             ) : null
           ),
-          h19("pre", { style: preStyle }, rawText((message.content ?? []).map((block) => block.type === "text" ? block.text : JSON.stringify(block)).join("\n")))
+          h19("pre", { style: preStyle }, rawText(content))
         );
       })
     ) : null,

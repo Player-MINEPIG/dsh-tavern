@@ -988,6 +988,8 @@ export default Object.freeze({
   "trace.assembler.recorded": "以下是本条记录发送时冻结的请求，从 DSH 历史核验读取；当前预览和资源修改不会改变它。请求被观察到不代表响应成功。",
   "trace.assembler.unavailable": "本条记录没有可核验的完整请求；下方装配阶段材料不能替代发送时的请求，也不会用当前预览补齐。",
   "trace.assembler.messages": "发送时的完整消息顺序（{count}）",
+  "trace.assembler.systemRaw": "完整 system 消息原文",
+  "trace.assembler.modulesUnrecorded": "本条消息没有可核验的模块划分；可展开查看完整 system 消息原文。",
   "trace.assembler.sources": "当时的来源与装配内容",
   "trace.assembler.historyUnrecorded": "当次历史过滤决策未单独记录；完整消息仍以核验后的请求为准。",
   "trace.assembler.historyPolicy": "当次历史过滤结果",

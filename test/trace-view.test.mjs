@@ -22,6 +22,11 @@ function body(record, locale = 'zh-CN') {
   setClientUiSettings({ locale, scale: 1 }, { announce: false })
   return tree(TraceRecordContent({ record }))
 }
+function find(node, predicate) {
+  if (Array.isArray(node)) return node.flatMap(child => find(child, predicate))
+  if (!node || typeof node !== 'object') return []
+  return [...(predicate(node) ? [node] : []), ...find(node.children, predicate)]
+}
 const record = {
   schemaVersion: 3, contentStatus: 'available', selection: { presetId: 'p', characterCardId: 'c', userId: 'u', character: { greetingIndex: 2 } },
   audit: {
@@ -234,13 +239,11 @@ test('expanding assembly exposes every message card in request order without a s
     { id: 'preset', name: 'Saved readable name', role: 'system', sourceStatus: 'recorded', reference: { messageId: 's' }, text: 'SYSTEM' },
     { id: 'unmapped', name: 'Unmapped source', role: 'user', text: 'USER' },
   ], diagnostics: [] } }
-  const find = (node, predicate) => Array.isArray(node) ? node.flatMap(n => find(n, predicate))
-    : !node || typeof node !== 'object' ? [] : [...predicate(node) ? [node] : [], ...find(node.children, predicate)]
   const result = body(value)
   const cards = find(result, node => node.props['data-message-index'] !== undefined)
   assert.equal(cards.length, 4)
   assert.deepEqual(cards.map(card => card.props['data-role']), ['system', 'user', 'assistant', 'tool'])
-  assert.deepEqual(cards.map(card => card.props.open), [true, false, false, false])
+  assert.equal(cards[0].type, 'div', 'system modules are visible without expanding a whole-message card')
   assert.deepEqual(cards.map(card => text(card.children[0]).split(' ').slice(0,3).join(' ')), ['1 · system', '2 · user', '3 · assistant', '4 · tool'])
   assert.ok(text(cards[0], true).includes('Saved readable name'))
   assert.ok(!text(cards[1], true).includes('Unmapped source'), 'matching body text does not establish source coordinates')
@@ -249,7 +252,42 @@ test('expanding assembly exposes every message card in request order without a s
   const list = find(result, node => node.props.className === 'dttrace-messages')[0]
   const overview = text(list, true)
   for (const role of ['system','user','assistant','tool']) assert.ok(overview.includes(role), role)
-  assert.ok(overview.includes('SYSTEM'), 'system body is immediately visible when assembly expands')
+  assert.ok(overview.includes('Saved readable name'), 'system module title is immediately visible')
+  assert.ok(!overview.includes('SYSTEM'), 'module bodies and whole system text expand separately')
   assert.ok(!overview.includes('TOOL RESULT'), 'individual bodies remain expandable')
   assert.ok(!find(result, node => node.type === 'details').some(node => text(node.children[0]).includes('发送时的完整消息顺序')))
+})
+
+test('system snapshots list recorded modules and nested sections, including earlier contributions in later snapshots', () => {
+  const messages = [
+    { id: 'first', role: 'system', content: [{ type: 'text', text: 'BASE\n\nMAIN' }] },
+    { id: 'input', role: 'user', content: [{ type: 'text', text: 'QUESTION' }] },
+    { id: 'later', role: 'system', content: [{ type: 'text', text: 'BASE\n\nMAIN\n\nTAIL' }] },
+  ]
+  const value = { turn: 1, step: 1, requestAssembly: { turn: 1, step: 1, messages, metadata: { assembly: {
+    nodes: [
+      { id: 'base', name: 'Native base', text: 'BASE', requestMessageIds: ['first'], inputMessageIds: ['base-input'], children: [
+        { id: 'identity', name: 'Official identity', text: 'BASE' },
+      ] },
+      { id: 'main', name: 'Main instructions', text: 'MAIN', requestMessageIds: ['first'], inputMessageIds: ['main-input'] },
+      { id: 'tail', name: 'Final instructions', text: 'TAIL', requestMessageIds: ['later'], inputMessageIds: ['tail-input'] },
+      { id: 'unmapped', name: 'Unmapped matching text', text: 'BASE' },
+    ], systemProjection: { version: 1, semantics: 'complete-snapshots', messages: [
+      { messageId: 'first', index: 0, contributorIds: ['base-input', 'main-input'] },
+      { messageId: 'later', index: 2, contributorIds: ['base-input', 'main-input', 'tail-input'] },
+    ] },
+  } } } }
+  const before = structuredClone(value)
+  const cards = find(body(value), node => node.props['data-message-index'] !== undefined)
+  const modules = card => find(card, node => node.props['data-system-module'] !== undefined)
+  assert.deepEqual(modules(cards[0]).map(node => node.props['data-system-module']), ['identity', 'main'])
+  assert.deepEqual(modules(cards[2]).map(node => node.props['data-system-module']), ['identity', 'main', 'tail'])
+  assert.ok(text(cards[2], true).includes('Final instructions'))
+  assert.ok(!text(cards[2], true).includes('BASE'), 'system full text is collapsed')
+  assert.ok(text(cards[2]).includes('BASE\n\nMAIN\n\nTAIL'), 'exact original message remains available')
+  assert.deepEqual(value, before, 'presentation does not rewrite request data')
+  value.requestAssembly.metadata.historyPolicy = { decisions: [{ messageId: 'later', action: 'replace' }] }
+  const filtered = find(body(value), node => node.props['data-message-index'] === 2)[0]
+  assert.equal(modules(filtered).length, 0, 'changed system text must not acquire stale module attribution')
+  assert.ok(text(filtered).includes('没有可核验的模块划分'))
 })

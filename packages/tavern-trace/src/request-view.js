@@ -12,3 +12,23 @@ export function recordedRequestResult(record) {
   if (!metadata.assembly && record.nativeProvenance) metadata.assembly = record.nativeProvenance
   return actualAssemblyResult({ ...request, metadata })
 }
+
+// Associate only recorded message coordinates or snapshot contributor IDs.
+// A later complete system snapshot includes earlier contributions as well.
+export function recordedMessageNodes(result, message, index) {
+  const hasId = typeof message.id === 'string'
+  const projection = result.systemProjection?.version === 1
+    && result.systemProjection.semantics === 'complete-snapshots'
+    ? result.systemProjection.messages?.find(item => hasId && item.messageId === message.id && item.index === index) : null
+  return result.nodes.filter(node => (hasId && node.reference?.messageId === message.id)
+    || node.messageIndex === index
+    || (hasId && node.requestMessageIds?.includes(message.id))
+    || (hasId && node.messages?.some(item => item.id === message.id))
+    || (projection && node.inputMessageIds?.some(id => projection.contributorIds?.includes(id))))
+}
+
+export function recordedSystemModules(result, message, index) {
+  // Filtering may change final system bytes without updating module bodies.
+  if (result.historyPolicy?.decisions?.some(item => item.messageId === message.id && item.action !== 'keep')) return []
+  return recordedMessageNodes(result, message, index)
+}

@@ -988,6 +988,8 @@ export default Object.freeze({
   "trace.assembler.recorded": "This request was frozen at send time and verified against DSH history. Current previews and resource edits do not change it. Request observation does not establish a successful response.",
   "trace.assembler.unavailable": "No verifiable complete request is available for this record. Assembly-stage materials below cannot replace the sent request; current previews are never used to fill it.",
   "trace.assembler.messages": "Complete message order at send time ({count})",
+  "trace.assembler.systemRaw": "Complete system message text",
+  "trace.assembler.modulesUnrecorded": "No verified module breakdown is available for this message; expand the complete system message text below.",
   "trace.assembler.sources": "Recorded sources and assembled content",
   "trace.assembler.historyUnrecorded": "History-filter decisions were not separately recorded; complete messages still come from the verified request.",
   "trace.assembler.historyPolicy": "History filtering for this request",
