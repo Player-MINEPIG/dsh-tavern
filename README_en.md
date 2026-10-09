@@ -1,8 +1,8 @@
 # pmp-dsh-tavern
 
-Independent prompt assembly plugin (standard by default; optional advanced core addon): [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) (public repository). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for Tavern’s dependency and activation of both plugins.
+Independent prompt assembly plugin (standard by default; optional advanced core addon): [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for Tavern’s dependency and activation of both plugins.
 
-[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) is an optional viewing and management extension (private repository). Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
+[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) is an optional viewing and management extension. Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
 
 [Current source: prompt assembly](docs/REQUEST_ASSEMBLY_en.md) · [MVU](docs/MVU_en.md) · [Prompt templates](docs/PROMPT_TEMPLATE_en.md) · [Complete API surface](docs/API_SURFACES_en.md).
 
@@ -52,10 +52,10 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install Tavern 3.0.0 and the verified standard assembler commit. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
+Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install Tavern 3.0.0 and standard Assembler v1.1.0. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#4be47ae20a2e475bf352c3e1abc84197d5c1dde5
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 ```
 
@@ -92,6 +92,9 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | Area | Main capabilities | Details |
 | --- | --- | --- |
 | Resources | ST presets, V1/V2/V3 JSON/PNG cards, standalone/embedded world books, user profiles, bindings, export | [Usage](docs/USAGE_en.md) |
+| Request assembly | Assembler v1.1.0 strategies, source modules, standard delivery, optional advanced placement, previews and recorded requests | [Request assembly](docs/REQUEST_ASSEMBLY_en.md) · [Integration](docs/ASSEMBLER_INTEGRATION_en.md) |
+| MVU variables | [initvar] initialization, restricted schemas, reply updates, branch-specific state, Trace inspection and scoped card reads/writes | [MVU](docs/MVU_en.md) |
+| Prompt templates | Restricted read-only EJS, source-variable dependencies and assembly modules | [Prompt templates](docs/PROMPT_TEMPLATE_en.md) |
 | RP frontend | Character/playthrough sidebar, greeting, Markdown/HTML/LaTeX rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |
 | Playthrough data | Authoritative DSH sessions, tree timeline, workspace catalog, first-turn read-only import injection, static HTML and ST JSONL export | [API](docs/API_en.md) · [Architecture](docs/ARCHITECTURE_en.md) |
 | Security | RP permission overlay, same-origin/loopback API, workspace path jail, CAS, DOMPurify, content-free operation log | [RP secure mode](docs/RP_SECURE_MODE_en.md) · [Security policy](SECURITY_en.md) |
@@ -117,11 +120,15 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - [Usage](docs/USAGE_en.md): all user features, steps, and compatibility boundaries
 - [Installation](docs/INSTALLATION_en.md): install options, refresh recovery, backup, uninstall
 - [HTTP API](docs/API_en.md): v1 resource contract and stable v2 RP surface
+- [Request assembly](docs/REQUEST_ASSEMBLY_en.md): strategies, source modules, standard/advanced backends, previews and actual requests
+- [Assembler integration](docs/ASSEMBLER_INTEGRATION_en.md): v1.1.0 installation, service ownership, optional Manager and removal
+- [MVU](docs/MVU_en.md): initialization, schemas, update commands, state instances, branches and card permissions
+- [Prompt templates](docs/PROMPT_TEMPLATE_en.md): restricted EJS and read-only variable dependencies
 - [Trace v3 API and design](docs/PROMPT_API_V3_en.md): historical assembly indexes, official references, and on-demand body reads
 - [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md): mode lifecycle, delivery, action composition
 - [Architecture](docs/ARCHITECTURE_en.md): minimal-change rule, module boundaries, public DSH seams
-- [Loader contract](docs/LOADER_CONTRACT_en.md): session selection, profile composition, runtime limits
-- [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md): native DSH flow and plugin insertion points
+- [Tavern Host and resource contract](docs/LOADER_CONTRACT_en.md): session selection, resource resolution, permissions and Assembler integration
+- [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md): DSH, Tavern and Assembler request flow and both backend insertion points
 - [Prompt pipeline](docs/PROMPT_PIPELINE_en.md): ST format, macros, character fields, world-book coverage
 - [RP secure mode](docs/RP_SECURE_MODE_en.md): what RP blocks and what it does not
 - [World-book design](docs/world-book/DESIGN_en.md): World Info format, matching, projection contract
@@ -157,7 +164,6 @@ Copyright © 2026 Zhu Bohan.
 The following are future work beyond the current implementation, and have no committed release date:
 
 - Prompt post-processing.
-- MVU compatibility.
 - Tavern preset script compatibility; the restricted card interpreter is not a preset script runtime.
 - Alternative prompt injection strategies, including the cache-friendly runtime lore tail-delivery direction discussed in [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14). Its behavior and cache benefits still require design and verification; this proposal remains a design direction, separate from the implemented request-placement primitives.
 

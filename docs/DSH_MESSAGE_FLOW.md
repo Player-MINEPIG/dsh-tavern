@@ -2,7 +2,7 @@
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
-必需的独立[请求装配器](REQUEST_ASSEMBLY.md)拥有装配策略与来源注册；标准策略使用公开 sections/context/pre-step，可选进阶 addon 提供协议 1 请求排列。未应用策略的会话继续使用下文的兼容 loader 路径。DSH 保留持久历史与 Provider 序列化的所有权。
+Tavern **3.0.0** 接入独立 Assembler **v1.1.0**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
 
 本文描述 Tavern 3.0.0 在 DSH `0.2.0-rc.2` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
@@ -18,7 +18,7 @@ Tavern Host adapter 显式调用 session/workspace/directory-picker controllers�
 
 ## 1. DSH 原生 flow
 
-未安装 DT 时，DSH `0.2.0-rc.2` 的普通 agent step 按以下顺序工作：
+在 stock rc.2 上，未接入 Tavern 或装配策略时，DSH `0.2.0-rc.2` 的普通 agent step 按以下顺序工作：
 
 ```text
 用户提交
@@ -99,176 +99,89 @@ DSH 的 Session 同时保留 append-only 事件日志和 model-visible message s
 
 - 后续 replacement 只能定位当前 surface 上仍可见的节点，不能执行 `unreplace` 让旧节点原位重新可见；
 - 一次 replacement 是“连续区间 → 一个新 message”，不能原子返回多条 user/assistant 交替消息；
-- `agent/request` 只改变 call config，当前也没有公开的 per-request history waterfall 可在不写 Session 的情况下返回任意 `messages[]`；
+- `agent/request` 只改变 call config，stock rc.2 也没有公开的 per-request history waterfall 可在不写 Session 的情况下返回任意 `messages[]`；
 - 用单个 user checkpoint 承载整段 RP 对话会丢失原生 role、tool-call/result 和逐消息 action 边界；把原文复制成多条新消息又会制造第二份 durable history，并需要额外的原子性和并发协议；
 - DSH 原生 compaction 也使用同一 surface replacement。DT 若再把它当分支树使用，会让两种不同语义争用同一个 model-visible surface。
 
 因此 DT 的 swipe、同周目回退和分支新周目采用 DSH 公开 session branch/fork 能力创建 continuation session，而不是改写原 session surface。每个分支都拥有 DSH 原生可解释的历史、工具配对、请求头和独立 compaction；原生“对话”视图、其他插件和卸载后的 Host 仍能按普通 DSH session 工作。Tavern timeline 只保存这些权威消息的指针、父 variant 与活动 head，用多个 session 组合出周目树，不伪造或复制历史正文。
 
-当前 DSH 没有 request-time arbitrary `messages[]` history projection，也没有原子的多 message surface replacement。因此 DT 的 system/context 注入不等同于历史替换，严格 ST role/depth 投影不属于当前能力。
+stock rc.2 不提供任意 request-time `messages[]` 投影或原子的多消息 surface replacement。标准策略因此受原生投递边界约束。可选 core addon 提供进阶 request-only 排列，但不会把它变成可逆的 durable-history 分支接口；周目分支仍使用公开 session fork。
 
 ## 2. DT 自己的 flow
 
-DT 将“资源管理”和“运行时装配”分开。前端及 API 属于控制面，不直接给模型发送消息；loader 才是运行时数据面。
-
 ### 2.1 控制面：导入、编辑与 session 绑定
 
-```text
-DT 悬浮球 / 资源侧栏
-  │
-  ▼
-/pmp-dsh-tavern/api/v1/*
-  │
-  ├─ PresetStore
-  ├─ CharacterStore
-  ├─ WorldBookStore
-  ├─ UserStore
-  ├─ SessionSelectionStore
-  │    └─ 当前 session 显式绑定的 preset / character / world books / user
-  └─ UserWorldBookBindingStore
-       └─ 每个用户绑定的零本或多本独立世界书
-```
+Tavern UI 与 `/pmp-dsh-tavern/api/v1/*` 管理资源和会话选择。ST 预设、角色卡与世界书先经各自 format adapter，再进入资源库。编辑资源与绑定会话是不同操作。有效世界书按 session/开场、用户、预设、角色关系稳定去重，再合入角色卡内嵌书。
 
-- 导入的 ST 预设、角色卡与世界书先经过各自 format adapter，归一化后进入插件资源库；未知兼容字段不参与 DSH session history。
-- 创建、编辑、删除和绑定只改变 DT 的资源或选择状态。未绑定资源不会进入 prompt。
-- 普通 fork 与 delegated subagent 都固化父会话当时的资源选择；委派任务是否收窄由主 agent 的 spawn 提示决定。
-- UI 的红/绿点表示“当前 session 是否绑定资源”，不表示世界书是否在本轮命中。
+Assembler 的设置入口与 Tavern 内嵌面板共享策略库和会话应用快照。编辑/保存策略不会自动应用；成功的显式应用决定后续装配。独立 DSH 会话没有隐式 RP 策略；新 Tavern 开场默认标准“预设插槽优先”。既有显式选择（包括退出装配）保持不变。
 
-### 2.2 数据面：把已绑定资源装配为运行时快照
+### 2.2 数据面：先解析资源，再装配请求
 
 ```text
-SessionSelectionStore
-  │
-  ├─ preset adapter ───────────────┐
-  ├─ character adapter ────────────┤
-  ├─ user adapter ─────────────────┼─ TavernProfileLoader.compile()
-  └─ world-book adapter ───────────┘          │
-       ├─ 独立世界书                           ├─ systemText
-       ├─ 角色卡内嵌 character_book            ├─ runtimeContexts
-       └─ matcher 扫描历史 + 本次 claimed 输入    ├─ supported callConfig
-                                                ├─ resources / diagnostics
-                                                └─ audit + fingerprint
+会话选择 + 公开历史/claimed input 投影
+  → TavernProfileLoader.compile()
+       preset / character / user / 激活 lore / 资源 audit
+       按权限租约读取来源拥有的 MVU 与模板
+  → 共享 Assembler registry + 已应用策略快照
+       来源解析与各来源自己的渲染
+       有序排列算法 / delivery / retention
+  → 原生官方贡献 或 进阶请求投影
+  → 冻结的 DSH 请求 + 已记录证据
 ```
 
-装配规则：
+应用策略后，loader 返回资源模型，不先渲染另一份 profile。Assembler 解析预设、角色、用户、世界书、模板、MVU 与 DSH 原生文本等注册来源。解析语法与访问规则由来源决定；选择模块不等于获准执行任意脚本或读取其他会话。
 
-1. loader 按 session 解析 preset、角色卡、用户资料、独立世界书与角色卡内嵌书；session 显式世界书优先，随后追加当前用户绑定的世界书并按 ID 稳定去重。
-2. world-book matcher 扫描公开的 `Session.deriveMessages()` 历史与 `PendingInputProjection` 提供的本步骤 claimed 输入，稳定去重后默认最多最近 64 KiB；执行普通主关键词、secondary key、概率、组与预算策略。原生 JavaScript regex 默认阻断，避免 ReDoS。
-3. 统一装配器按 preset marker 放置角色字段、用户名字/描述与命中 lore。`{{user}}` 使用当前用户名字；描述只消费一次 `personaDescription`/`{{persona}}`；`chatHistory` marker 不复制 DSH 历史；creator notes 不发送。
-4. 结果是一个不可混淆的运行时快照：`systemText`、受支持的 `callConfig`、资源摘要、诊断、世界书决策和审计指纹。
-5. 新 v1 审计与 v3 装配 metadata 共用 schema 4 record；llm/stream 核对结果只落 hash/引用，详情冷读官方历史并验证恢复段落/context 正文，`source.text` 不保存。旧 v1/schema 3 文件在普通 Host 使用中只读兼容；显式离线升级可在备份后更新已验证的 audit 坐标。
+标准“预设身份优先”在原生投递区域内保留受支持的原角色；“预设插槽优先”围绕原生历史/输入边界适配预设控制的内容，并在预览标出调整。system 贡献走官方 sections；user 贡献走 context 或接纳的 pre-step 投递，**会进入 durable history**。移除来源停止后续贡献，旧 user 正文仍属于历史。原生历史、输入和工具事务保持受保护的内部顺序。
 
-## 3. DT 对 DSH flow 做了什么改动
+进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS.md)。
 
-DT 不替换 agent loop，也不维护第二套会话历史。它通过 DSH 的公开扩展点进行以下加法：
+未应用策略时，兼容渲染器才把 Tavern profile 展开为 system parts。其 role/depth 近似只适用于该路径，不能用来描述当前标准或进阶策略。
 
-| DSH 扩展点 | DT 的动作 | 对最终请求的影响 |
+## 3. Tavern 与 Assembler 对 DSH flow 的改动
+
+| 公开边界 | 所有者与动作 | 对请求的影响 |
 | --- | --- | --- |
-| `agent/created` | 在等待完成的串行 listener 中初始化选择、重建 pending input，再初始化 RP 与只读沙箱 | 首次请求前完成；初始化失败使 Agent 注册失败 |
-| `systemPrompt.section` | 注册 `pmp-dsh-tavern:profile`（order 10）锚点与 `rp:policy`（order 45） | 让 waterfall 接收本次 Tavern 装配与可选 RP 锁说明 |
-| `system-prompt/assemble` | 把逻辑 profile 锚点展开为有序 `pmp-dsh-tavern:part:*` sections，并独立追加 import runtime contexts；高级 replace 只保留这些 parts 与 `rp:policy` | 决定本步骤写入官方 system/context messages 的内容，不改普通历史与工具执行权限 |
-| `agent/pre-step` | RP 边界提交待处理开关，并再次钉只读沙箱 | 不改 messages；保证聊天栏改权限无法在下一步前解开 RP |
-| `tools.guard` | RP 开启时拒绝高风险工具并 `agent.cancel` | 不进入执行；告警弹窗记在父会话（子 agent 违规时） |
-| `agent/request` | 合并 preset 参数，经公开 `llm.resolveCallConfig` 预检并开始 Trace | 不支持的 preset effort 省略后使用 adapter 默认；原 preset 和 messages 不变 |
-| `llm/stream` | 核对完整 system message 并建立官方 system/context event 引用 | 不复制正文；让 v3 详情可按需冷读并验证官方历史 |
-| `session/event` | 对齐旧格式 Trace 与请求事件；RP 开启时若看到 `sandbox/mode` 再次钉只读 | 只增加插件审计元数据；聊天栏改权限无法解开 RP |
-| `agent/request-error` | 记录明确的 preset 参数拒绝，在满足条件时请求有界 DSH 重试 | 仅在尚无输出时省略被拒绝的生效 preset 覆盖；取消或无关错误不重试 |
-| Web server / client slots | 提供受保护的资源 API、`DT` 悬浮球、侧栏与 Tavern Trace 视图 | 控制面与可视化；不直接进入 prompt |
+| `agent/created` | Tavern 初始化资源选择、pending input 与 RP；Assembler 继承父策略选择 | 请求前完成初始化，失败向外传播 |
+| `agent/inbox/spliced` / `agent/inbox/claimed` | Tavern 从公开 splice 投影激活输入；Assembler 捕获 claimed input 供原生投递 | 当前输入可在 system assembly 前参与本步骤世界书匹配 |
+| `systemPrompt.section` | Tavern 提供资源快照锚点、导入上下文与可选 `rp:policy` | 应用策略后不先渲染重复的 Tavern profile |
+| `system-prompt/assemble` | Assembler 取得完整官方装配并应用 native 策略；Tavern 保留未应用策略时的兼容展开 | 标准后端产生合法 sections/context 与 pre-step 计划 |
+| `agent/pre-step` | Assembler 接纳原生输入贡献；Tavern 接纳开场草稿并执行 RP 约束 | 原生 user 贡献写入 DSH 历史，不事后重扫冻结的 system assembly |
+| `agent/assemble-request` | 可选 core addon 执行协议 1；Tavern 复核来源权限 | 仅进阶请求投影；标准 bundle 不注册此执行器 |
+| `agent/request` / `agent/request-error` | Tavern 准入 preset 参数、开始 Trace，并在符合条件时申请有界原生重试 | 调整 call config，不改写历史 |
+| `llm/stream` / `session/event` | Tavern 核验实际请求证据、记录引用、观察更新并执行 RP 约束 | Trace 解释已记录请求；MVU 只从获接纳的 durable events 提交 |
+| `tools.guard` | Tavern 在 DSH 权限/沙箱之上叠加 RP 限制 | 拒绝高风险执行，改变提示词布局不会移除执行层约束 |
+| Web API / 公开 client slots | Tavern 与 Assembler 分别提供资源、策略控制与检查入口 | UI/预览不发起 Provider 调用 |
 
-preset 降级只改变本次请求覆盖。预检发现不支持的 preset reasoning effort 时省略该字段，交给 adapter 默认，不发明 effort 别名。尚无任何输出时，明确的 invalid/unsupported 参数拒绝可省略生效 preset 的 `temperature`、`maxTokens`、`reasoningEffort` 或 `stop`，每字段至多一次、运行期重试至多四次。取消、已输出内容以及无关的认证、额度、网络错误不会触发 Tavern 降级。DSH 执行重试；Trace 保留请求值、生效值和省略原因，原 preset 文档不变。
+preset 降级仅在尚无输出且未取消时，省略被明确拒绝的生效 preset 覆盖（`temperature`、`maxTokens`、`reasoningEffort` 或 `stop`）。每字段至多一次，原生重试至多四次。预检不支持的 effort 使用 adapter 默认，不猜别名。认证、额度和无关网络错误不触发此降级。原 preset 保持原文，Trace 记录请求值、生效值与省略原因。
 
-loader 通过 `session/event` 处理公开 `agent/inbox/spliced`，建立不持久化正文的 `PendingInputProjection`。该投影只影响世界书激活判断，不改变最终 DSH messages。
+外部记录仍是首次请求的 untrusted 只读上下文；greeting 是开场参考，不伪造 assistant 回复；creator notes 不发送。各来源渲染、RP 限制、受限 MVU 与模板语义仍归来源，布局不覆盖其权限。
 
-默认 append 模式下，DSH 原有 system sections 仍然存在，waterfall 将 DT 逻辑 profile 展开为按原顺序排列的 `pmp-dsh-tavern:part:*` sections；RP 开启且 `rp:policy` 非空时再插入 order 45 的锁说明。高级 replace 模式从模型可见的 system 文本中移除其他 section，只保留这些 DT parts 与 `rp:policy`。import runtime context 仍是独立 context contribution；tools、其他 runtime contexts、variables、沙箱、审批与执行层安全限制继续由 DSH 管理。RP 在此之上再拒绝一部分工具，不能用聊天栏权限芯片解开。
-
-DT 明确不做以下改动：
-
-- 不删除、重写或复制 DSH durable history；最终 `messages` 仍来自 `Session.deriveMessages()`。
-- 不把 preset 中标成 user/assistant 的静态块伪装成真实历史消息。
-- 不把 greeting 伪造成 assistant 历史；首轮只作为普通 system 正文，来源关系记录在 Tavern Trace metadata 中。
-- 不覆盖 DSH Agent 身份；用户资料只提供 Tavern 用户名字与描述。
-- 不发送 creator notes。
-- 不绕过 DSH 的工具权限、沙箱或审批。RP 额外拦住一部分高风险工具，清单见 `docs/RP_SECURE_MODE.md`。
-- 不向 Session 写入伪造的 Trace、未知事件或第二套对话记录。
-
-## 4. 安装 DT 后的完整 flow
-
-控制面保存资源与 session 选择；一次模型 step 只在 loader/Host seam 中读取这些状态：
+## 4. 安装 Tavern 与 Assembler 后的完整 flow
 
 ```text
-【请求前：DT 控制面】
-用户在 DT UI 导入/编辑资源
-  → /pmp-dsh-tavern/api/v1/*
-  → 插件资源库
-  → SessionSelectionStore 保存当前 session 绑定
-
-【一次模型 step】
-用户提交
-  │
-  ▼
-DSH Agent Inbox
-  │ claim 当前输入；公开删除 splice 让 DT 暂存该 batch
-  ▼
-DSH systemPrompt.assemble(agent scope)
-  │
-  ├─ 收集 DSH 原生 system sections / contexts / tools / variables
-  │
-  ├─ 调用 DT 的 pmp-dsh-tavern:profile contribution
-  │    ├─ 读取该 session 的资源选择
-  │    ├─ 解析 preset / character / user / world books
-  │    ├─ matcher 扫描 deriveMessages() + 去重后的本步骤 claimed batch
-  │    ├─ 按 marker 装配角色字段、用户描述与已命中 lore
-  │    └─ 展开为有序 pmp-dsh-tavern:part:* sections；保留 call config/audit metadata
-  │
-  └─ system-prompt/assemble waterfall
-       ├─ append：保留 DSH sections，并加入 DT sections/contexts
-       └─ replace：模型可见 system sections 只保留 DT parts 与 rp:policy；能力和执行层限制仍保留
-  │
-  ▼
-DSH agent/pre-step 接受/替换/拒绝 claimed 输入与待提交 context
-  │
-  ▼
-DSH step/start → agent/request
-  ├─ DSH/其他插件生成基础 call config
-  ├─ DT 合并 preset 覆盖并预检 adapter 支持
-  └─ Trace 以本次装配 metadata 开始共享 schema 4 record
-  │
-  ▼
-DSH prepareCall() 校验配置并绑定 adapter
-  │
-  ▼
-DSH 提交 system/message；首次尝试追加已接受的 user/context messages
-  │
-  ▼
-DSH 记录 request/header 与 request/context，再派生冻结的有效消息
-  │
-  ▼
-PreparedLlmCall.stream 到达 llm/stream，携带最终 messages / tools / config
-  └─ Trace 验证官方事件引用并记录实际生效参数
-  │
-  ▼
-assistant stream / tool calls
-  ├─ 实时 frames 结算为携带 stream 的 assistant/message 或 assistant/attempt 持久事件
-  ├─ tool result 仍由 DSH 管理
-  └─ 下一 step/turn 重新装配；DT 不缓存第二份聊天历史
+用户提交 → DSH Inbox claim
+  → 公开 claim/splice 观察
+  → DSH systemPrompt.assemble
+       原生 sections / contexts / tools / variables
+       Tavern 解析所选资源 + 世界书激活
+       Assembler 按已应用快照解析/渲染来源
+       native 返回 sections/context 与 pre-step 计划
+       未应用策略则走兼容 profile 渲染
+  → agent/pre-step
+       开场接纳 + RP 约束
+       接纳 native 策略的 user 贡献
+  → agent/request：call config + preset 准入 + Trace candidate
+  → DSH call preparation 与官方 system/user/context/header 事件
+  → DSH 构建有效原生请求
+       native：发送冻结的原生 messages
+       core：可选协议 1 执行器投影并记录 request/assembly
+  → llm/stream：核验实际 messages/tools/config，补齐 Trace
+  → assistant/tool events 仍归 DSH
+  → 获接纳的 durable assistant events 可提交 MVU 更新
+  → 下一 step 重新读取资源/策略快照
 ```
 
-当前模型请求可简化为：
-
-```text
-request.messages = DSH effective message surface
-  ├─ native + DT official system/message
-  ├─ official runtime-context user/message snapshots
-  └─ durable user / assistant / tool messages
-request.tools    = DSH assembly tools
-request.config   = DSH/adapter 配置 + DT 可映射的 preset 参数
-request/header  = config + tools 的持久审计事件
-```
-
-append/replace 只改变进入 effective messages 的 system sections；messages、tools 与 config 仍由
-DSH 的官方 surface 和 waterfall 拥有。Trace 新记录不保存 section/context/system-message/
-source 正文副本，只保存 metadata、hash 与官方逻辑事件引用；详情按需 cold inspect 并验证恢复
-section/context 正文。
+标准路径保留 DSH 消息投递与 context snapshot 复用，因此逻辑预览位置不是历史请求日志。进阶事件冻结其实际投影后的消息数组。两条路径都不把 durable history 复制进 Tavern 资源库或 Trace。Trace 保存 metadata、hash 与官方引用；详情 cold-read 并验证引用正文。见 [Trace 合同](PROMPT_API_V3.md)。
 
 ## 5. 当前 ActivationContext 边界
 
@@ -315,30 +228,24 @@ agent/inbox/spliced（插入消息）
 
 ## 6. 如何审阅一次真实请求
 
-按可信度从高到低：
+1. 在 Tavern Trace 选择确切的历史请求：标准读取完整的已记录原生请求引用；进阶读取对应 `request/assembly`，保留 system/user/assistant/tool 顺序。
+2. 用该请求的官方 `request/header` 核对 tools/生效参数，并用已验证的 system/context 事件核对单项贡献。只在今天的会话上读取 `deriveMessages()` 不能恢复旧请求。
+3. Trace metadata 解释来源、策略与世界书决策；MVU 查看按需展开，变量更新有自己的持久来源记录。
+4. `active?sessionId=...`、逻辑预览与 assembler 的 latest-only actual 端点各自描述当前/最近状态，不能补填缺失的历史正文。
+5. 资源/策略面板是控制面，不是实际发送证据。
 
-1. DSH 官方 `system/message` 与 context `user/message`：本次装配实际进入有效消息面的提示词正文；
-2. DSH 持久 `request/header`：最终 tools 与生效 call config；
-3. 请求对应的 `Session.deriveMessages()`：最终有效消息数组；
-4. Tavern Trace：解释该 turn/step 使用的 DT 资源、世界书决策和官方引用，并在详情读取时验证可恢复正文；
-5. loader `/pmp-dsh-tavern/api/v1/active?sessionId=...`：当前选择、资源、诊断和不含 claimed 当前输入的预览；
-6. DT 侧栏：资源编辑和绑定控制面，不是模型请求日志。
-
-Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view` 槽中。它是对实际 loader snapshot 的最小化解释层，不取代官方消息或 `request/header`，也不会进入模型上下文。
+Trace 位于原生 Conversation / Trajectory 同级的公开 `conversation.view` 槽，既不替代官方证据，也不进入模型上下文。
 
 ## 7. 干净会话与 UI 设置为何不进入消息流
 
-“维持当前 Tavern 设置新开对话”和配置模板属于显式控制面事务：
+配置模板复制有界资源选择意图，不包含消息、Trace、Inbox 或资源正文。干净会话入口使用公开 controllers，校验后再提交完整选择；具体事务与运行态边界见 [Host/资源合同](LOADER_CONTRACT.md)。
 
-```text
-预检当前选择或模板
-  → DSH 模式：uiWorkspace.connectWorkspace() 返回真实 blank session
-    魔丸模式：按预检中的角色复用共享周目控制器，创建或复用权威空周目
-  → loader 原子写入完整 Tavern selection
-  → 魔丸模式回读校验 session 角色与周目角色一致
-  → DSH uiWorkspace.openSession() 导航
-```
+角色侧栏的新建周目入口先持久保存独立开场草稿、资源/策略快照与初始 MVU，不创建 DSH 会话或调用 Provider。首次发送准备真实会话，获接纳后才关联周目。草稿预览既不包含原生历史，也不包含待发送输入；已有 root session 的周目保留原会话。
 
-模板只保存 preset、角色/greeting 开关、用户、独立世界书和 RP 叠加的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。魔丸模式要求该投影含角色卡，DSH 模式则允许无角色卡的普通会话。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
+语言、缩放与 RP 跟随偏好是 UI/控制状态，不成为提示词正文。可选 `rp:policy` 只在 RP 开启时贡献；来源拥有的初始 MVU 可被获准模块/卡片读取，但不伪造 assistant 消息。
 
-语言、缩放与「绑卡跟随 RP」同样是控制面状态，只写入全局 `ui-settings.json` 并作用于 Tavern 浏览器根节点。它们不进入 profile 装配、world-book matcher、`agent/request` 或 `request/header`。可选的 `rp:policy` 正文写入 `rp-policy.json`，只在 RP 开启时进入 system 段。
+## 8. MVU 在请求与更新周期中的位置
+
+MVU 拥有初始化、schema、状态实例和受限读写。世界书变量宏、受限提示词模板或 MVU 来源可按来源权限与 revision 租约读取所绑定的快照。未使用的模块与预览不会隐式初始化或提交状态；最终装配复核会拒绝已撤销的读取。
+
+获接纳的 durable assistant 回复后，受支持变量命令经来源策略、schema 与原子 CAS 校验才提交。fork/swipe 实例使用自己的 checkpoint，历史卡片读取不转向当前焦点会话的最新值。Trace 可检查这些来源事实，但不是状态库。完整合同与受支持 Helper 调用形状见 [MVU](MVU.md)和[提示词模板](PROMPT_TEMPLATE.md)。

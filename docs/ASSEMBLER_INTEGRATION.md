@@ -2,7 +2,7 @@
 
 [English](ASSEMBLER_INTEGRATION_en.md) · [装配行为](REQUEST_ASSEMBLY.md) · [独立插件仓库](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Tavern 单向依赖 `dsh-prompt-assembler`（精确提交 `4be47ae20a2e475bf352c3e1abc84197d5c1dde5`，包版本 0.2.0）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和设置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
+Tavern 单向依赖 `dsh-prompt-assembler` 的 `v1.1.0`（lockfile 锁定提交 `48481b630e9cfc3be9e55f6b3eb0074ae9a33ad2`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和设置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
 
 ## 可选 Memory Manager
 
@@ -12,10 +12,10 @@ Tavern 单向依赖 `dsh-prompt-assembler`（精确提交 `4be47ae20a2e475bf352c
 
 ## 安装与开发
 
-Tavern 正常依赖标准 `dsh-prompt-assembler`，生产依赖不包含可选 `dsh-prompt-assembler-core`。仓库为 public。npm 解析依赖，DSH 启用显式 bundle；目标 profile 需启用标准 assembler 和 Tavern：
+Tavern 正常依赖标准 `dsh-prompt-assembler`，生产依赖不包含可选 `dsh-prompt-assembler-core`。npm 解析依赖，DSH 启用显式 bundle；目标 profile 需启用标准 assembler 和 Tavern：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#4be47ae20a2e475bf352c3e1abc84197d5c1dde5
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 ```
 
@@ -23,7 +23,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 
 源码开发可单独 clone assembler 并运行其 `npm ci`、`npm run check`。Tavern 的 `npm ci` 使用锁定的远端提交。需要一起验证本地修改时，可在临时 checkout 使用 `npm install --no-save --package-lock=false /path/to/assembler`，不要提交临时路径。
 
-标准策略通过公开 sections/context/pre-step 在 stock rc.2 执行。进阶策略要求独立打包的 core addon 与准备后的协议 1 核心。旧策略缺 backend 仍是进阶，缺能力明确报错；见[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/4be47ae20a2e475bf352c3e1abc84197d5c1dde5/docs/BACKENDS.md)。
+标准策略通过公开 sections/context/pre-step 在 stock rc.2 执行。进阶策略要求独立打包的 core addon 与准备后的协议 1 核心。旧策略缺 backend 仍是进阶，缺能力明确报错；见[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS.md)。
 
 ## Tavern 的接入切面
 
@@ -43,10 +43,10 @@ Tavern 文本使用一个 `tavern.text` 入口，依次执行受限 EJS、内容
 
 ## GitHub 的依赖表示
 
-依赖图为 Tavern→标准 assembler，addon peer 同一 assembler，Manager 可选，不需要 submodule。仓库为 public，源码 manifest 与 lockfile 固定到经过审阅的标准提交。本地打包将暂存依赖改为标准精确版本，需要一起安装生成的包。Host 服务依赖仍需显式启用 bundle。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
+依赖图为 Tavern→标准 assembler，addon peer 同一 assembler，Manager 可选，不需要 submodule。源码 manifest 与 lockfile 固定到经过审阅的标准提交。本地打包将暂存依赖改为标准精确版本，需要一起安装生成的包。Host 服务依赖仍需显式启用 bundle。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
 
 [接口索引](API_SURFACES.md) · [Tavern 架构图](assets/architecture/tavern.zh-CN.html) · [组合架构图](assets/architecture/ecosystem.zh-CN.html)。
 
-用 npm run pack:with-assembler 打包标准 assembler 与 Tavern；只有显式追加 -- --with-core 才额外生成进阶 addon。默认 receipt 只含两个标准包，标准 assembler 不含核心准备工具。addon 在准备核心后另行安装，见其[README](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/4be47ae20a2e475bf352c3e1abc84197d5c1dde5/core-extension/README.md)。
+用 npm run pack:with-assembler 打包标准 assembler 与 Tavern；只有显式追加 -- --with-core 才额外生成进阶 addon。默认 receipt 只含两个标准包，标准 assembler 不含核心准备工具。addon 在准备核心后另行安装，见其[README](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/core-extension/README.md)。
 
 打包命令会先重建两个前端，并让 Tavern 内嵌面板使用本次打包的 assembler 源码（含 `--assembler` 指定的目录），避免安装包中前后端策略格式不一致。运行前需在两份源码目录安装构建依赖。

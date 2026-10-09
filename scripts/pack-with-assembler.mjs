@@ -15,7 +15,7 @@ for (let i = 0; i < args.length; i++) {
 }
 const npm = (cwd, options) => JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--cache', join(output, '.npm-cache'), ...options], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }))
 const manifest = JSON.parse(readFileSync(join(assembler, 'package.json')))
-if (manifest.name !== 'dsh-prompt-assembler' || manifest.version !== '0.2.0') throw new Error('Expected dsh-prompt-assembler@0.2.0')
+if (manifest.name !== 'dsh-prompt-assembler' || manifest.version !== '1.1.0') throw new Error('Expected dsh-prompt-assembler@1.1.0')
 // Build before copying package files; npm pack --ignore-scripts cannot refresh dist.
 execFileSync('npm', ['run', 'build'], { cwd: assembler, stdio: 'inherit' })
 execFileSync('npm', ['run', 'build'], { cwd: project, stdio: 'inherit', env: { ...process.env, DSH_ASSEMBLER_SOURCE: assembler } })

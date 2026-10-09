@@ -14,10 +14,10 @@ Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_e
 
 Updating current source requires the additional assembler bundle. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.0-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
 
-Stop the target Host and enable Tavern 3.0.0 with the standard assembler at the exact commit below. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
+Stop the target Host and enable Tavern 3.0.0 with standard Assembler v1.1.0. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#4be47ae20a2e475bf352c3e1abc84197d5c1dde5
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 ```
 

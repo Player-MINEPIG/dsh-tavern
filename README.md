@@ -1,8 +1,8 @@
 # pmp-dsh-tavern
 
-独立提示词装配插件（默认标准版，进阶核心扩展可选）：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)（public 仓库）。Tavern 的单向依赖与两插件启用方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
+独立提示词装配插件（默认标准版，进阶核心扩展可选）：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)。Tavern 的单向依赖与两插件启用方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
 
-[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) 是可选的查看与管理扩展（私有仓库）。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
+[dsh-memory-manager](https://github.com/Player-MINEPIG/dsh-memory-manager) 是可选的查看与管理扩展。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
 
 [当前源码：请求装配](docs/REQUEST_ASSEMBLY.md) · [MVU](docs/MVU.md) · [提示词模板](docs/PROMPT_TEMPLATE.md) · [完整接口索引](docs/API_SURFACES.md)。
 
@@ -52,10 +52,10 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。安装 Tavern 3.0.0 与经验证的标准 assembler 提交；标准版通过公开接口运行，可选进阶核心扩展见接入说明：
+请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。安装 Tavern 3.0.0 与标准 Assembler v1.1.0；标准版通过公开接口运行，可选进阶核心扩展见接入说明：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#4be47ae20a2e475bf352c3e1abc84197d5c1dde5
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 ```
 
@@ -106,6 +106,9 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 | 模块 | 主要能力 | 详细文档 |
 | --- | --- | --- |
 | 资源 | ST 预设、V1/V2/V3 JSON/PNG 角色卡、独立/内嵌世界书、用户资料、资源绑定与导出 | [中文使用指南](docs/USAGE_zh-CN.md) |
+| 请求装配 | Assembler v1.1.0 的策略、来源模块、标准投递与可选进阶排列；预览和已记录请求 | [请求装配](docs/REQUEST_ASSEMBLY.md) · [接入说明](docs/ASSEMBLER_INTEGRATION.md) |
+| MVU 变量 | [initvar] 初始化、受限 schema、回复变量更新、分支独立状态、Trace 查看与受限卡片读写 | [MVU](docs/MVU.md) |
+| 提示词模板 | 受限只读 EJS、来源变量依赖与装配模块接入 | [提示词模板](docs/PROMPT_TEMPLATE.md) |
 | RP 前端 | 角色卡/周目侧栏、greeting、Markdown/HTML/LaTeX 渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE_zh-CN.md) |
 | 周目数据 | DSH 权威 session、树状 timeline、工作区 catalog、外部记录首轮只读注入、静态 HTML 与 ST JSONL 导出 | [API](docs/API.md) · [架构](docs/ARCHITECTURE.md) |
 | 安全 | RP 权限叠加、同源/loopback API、工作区路径防护、CAS、DOMPurify、无正文 operation log | [RP 安全模式](docs/RP_SECURE_MODE.md) · [安全策略](SECURITY.md) |
@@ -135,11 +138,15 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 - [中文使用指南](docs/USAGE_zh-CN.md) · [Usage](docs/USAGE_en.md)：全部用户功能、操作步骤与兼容边界
 - [安装与卸载](docs/INSTALLATION.md) · [Installation](docs/INSTALLATION_en.md)：安装参数、更新恢复、备份与卸载
 - [HTTP API](docs/API.md) · [HTTP API](docs/API_en.md)：v1 资源合同与 v2 RP 前端稳定面
+- [请求装配](docs/REQUEST_ASSEMBLY.md) · [Request assembly](docs/REQUEST_ASSEMBLY_en.md)：策略、来源模块、标准与进阶后端、预览及实际请求
+- [Assembler 接入](docs/ASSEMBLER_INTEGRATION.md) · [Assembler integration](docs/ASSEMBLER_INTEGRATION_en.md)：v1.1.0 安装、服务分工、可选 Manager 与卸载
+- [MVU](docs/MVU.md) · [MVU](docs/MVU_en.md)：变量初始化、schema、更新命令、状态实例、分支与卡片权限
+- [提示词模板](docs/PROMPT_TEMPLATE.md) · [Prompt templates](docs/PROMPT_TEMPLATE_en.md)：受限 EJS 与只读变量依赖
 - [Trace v3 API 与设计](docs/PROMPT_API_V3.md) · [Trace v3 API and design](docs/PROMPT_API_V3_en.md)：历史装配索引、官方引用与按需正文读取
 - [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) · [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md)：模式生命周期、交付方式与动作组合
 - [架构说明](docs/ARCHITECTURE.md) · [Architecture](docs/ARCHITECTURE_en.md)：最小改动原则、模块边界与 DSH 公开 seam
-- [Loader contract](docs/LOADER_CONTRACT.md) · [Loader contract](docs/LOADER_CONTRACT_en.md)：session selection、profile 组合与运行时限制
-- [DSH 消息流](docs/DSH_MESSAGE_FLOW.md) · [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md)：DSH 原生流程以及插件介入点
+- [Tavern Host 与资源合同](docs/LOADER_CONTRACT.md) · [Tavern Host and resource contract](docs/LOADER_CONTRACT_en.md)：会话选择、资源解析、权限与 Assembler 接入
+- [DSH 消息流](docs/DSH_MESSAGE_FLOW.md) · [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md)：DSH、Tavern 与 Assembler 的请求流程及两类后端介入点
 - [Prompt pipeline](docs/PROMPT_PIPELINE.md) · [Prompt pipeline](docs/PROMPT_PIPELINE_en.md)：ST 格式、宏、角色字段与世界书兼容范围
 - [RP 安全模式](docs/RP_SECURE_MODE.md) · [RP secure mode](docs/RP_SECURE_MODE_en.md)：RP 模式拦截与不拦截的能力
 - [世界书设计](docs/world-book/DESIGN.md) · [World-book design](docs/world-book/DESIGN_en.md)：World Info 格式、匹配与投影契约

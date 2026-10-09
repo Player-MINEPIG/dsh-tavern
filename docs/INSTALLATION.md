@@ -14,10 +14,10 @@ Tavern 3.0.0 需要显式启用 Tavern 与独立 assembler 两个 bundle，服�
 
 更新当前源码需要额外启用 assembler bundle。原 Tavern 资源、设置、原生会话、timeline 与 Trace 保留；loader 启动时把旧策略存储中缺少的条目合并到 assembler，并保留旧文件。历史坐标升级另按迁移指南处理，DSH 目标仍为 `0.2.0-rc.2`。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
 
-停止目标 Host 后，启用 Tavern 3.0.0 与以下精确提交的标准 assembler。标准策略走 stock core；进阶策略还需可选 addon 与协议 1。插件安装不会修改核心：
+停止目标 Host 后，启用 Tavern 3.0.0 与标准 Assembler v1.1.0。标准策略走 stock core；进阶策略还需可选 addon 与协议 1。插件安装不会修改核心：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#4be47ae20a2e475bf352c3e1abc84197d5c1dde5
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 ```
 
