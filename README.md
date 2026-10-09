@@ -164,7 +164,8 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 - RP 视图或 DSH 客户端插件可使用 v2 API、`pmpDshTavernChrome` 模式生命周期和 DSH 公开 slots/store；
 - 调试与审计工具可读取 v3 历史装配；需要观察或调整当前装配时，应使用 DSH 官方 `system-prompt/assemble`，观察完整请求则使用官方 `llm/stream`；
 - 独立 Web 客户端可以只消费 HTTP v2；
-- 需要改变 loader、资源模型或内置魔丸本身时，再选择 fork。
+- 提示词来源、渲染与排列扩展应接入独立 [Assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)，或向其仓库提交改动；见[接入说明](docs/ASSEMBLER_INTEGRATION.md)；
+- 需要改变 Tavern 资源模型或内置魔丸本身时，再选择 fork。
 
 请让第三方 UI 使用独立 slot id，只清理自己注册的表面，并在离开 `play` 模式或卸载时完整 dispose。模式服务负责生命周期，不负责替多个插件仲裁同一个 slot。
 
@@ -175,15 +176,6 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 - [SillyTavern](https://github.com/SillyTavern/SillyTavern)
 - [NemoPresetExt](https://github.com/NemoVonNirgend/NemoPresetExt)
+- [MagVarUpdate (MVU)](https://github.com/MagicalAstrogy/MagVarUpdate)
 
 Copyright © 2026 Zhu Bohan.
-
-## 未来方向
-
-以下是当前实现之外的后续方向，也未承诺发布时间：
-
-- 后处理提示词。
-- 酒馆 preset 脚本适配；受限交互卡解释器不等同于预设脚本运行时。
-- 不同提示词注入方式，包括 [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14) 讨论的、面向前缀缓存的运行时世界书尾部注入方向。具体语义与缓存收益仍需设计和验证，该提案仍为设计方向，与已实现的请求排列原语分开。
-
-已有角色卡 post-history instructions 字段与显示正则保持当前合同，不代表已实现通用后处理或脚本兼容管线。

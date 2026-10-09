@@ -147,7 +147,8 @@ You do not need to fork the whole repo to build on this framework:
 - RP views or DSH client plugins can use v2, the `pmpDshTavernChrome` lifecycle, and public DSH slots/store.
 - Debugging and audit tools can read historical assemblies through v3. To observe or adjust the current assembly, use DSH's official `system-prompt/assemble`; use official `llm/stream` to observe the complete request.
 - A standalone web client can consume HTTP v2 only.
-- Fork when you need to change the loader, resource model, or bundled Mowan itself.
+- Extend prompt sources, rendering or placement through the independent [Assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler), or contribute changes to its repository; see [integration](docs/ASSEMBLER_INTEGRATION_en.md).
+- Fork Tavern when you need to change its resource model or bundled Mowan itself.
 
 Give third-party UI its own slot ids, clean up only its own surfaces, and dispose fully when leaving `play` or uninstalling. The mode service owns lifecycle. It does not arbitrate one slot among several plugins.
 
@@ -156,15 +157,6 @@ Give third-party UI its own slot ids, clean up only its own surfaces, and dispos
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 - [SillyTavern](https://github.com/SillyTavern/SillyTavern)
 - [NemoPresetExt](https://github.com/NemoVonNirgend/NemoPresetExt)
+- [MagVarUpdate (MVU)](https://github.com/MagicalAstrogy/MagVarUpdate)
 
 Copyright © 2026 Zhu Bohan.
-
-## Future directions
-
-The following are future work beyond the current implementation, and have no committed release date:
-
-- Prompt post-processing.
-- Tavern preset script compatibility; the restricted card interpreter is not a preset script runtime.
-- Alternative prompt injection strategies, including the cache-friendly runtime lore tail-delivery direction discussed in [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14). Its behavior and cache benefits still require design and verification; this proposal remains a design direction, separate from the implemented request-placement primitives.
-
-Existing character post-history-instructions fields and display regex support keep their current contracts. They do not imply a general post-processing or script compatibility pipeline.
