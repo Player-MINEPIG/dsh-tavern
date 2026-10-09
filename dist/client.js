@@ -6988,7 +6988,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
       for (const input of advanced.querySelectorAll("input, textarea, button")) input.disabled = true;
       el("p", "\u6B63\u6587\u3001\u56FE\u7247\u3001\u601D\u8003\u548C MVU \u7247\u6BB5\u7B5B\u9009\u4EC5\u5728\u8FDB\u9636\u7248\u751F\u6548\uFF1B\u6807\u51C6\u7248\u5B8C\u6574\u4FDD\u7559\u52A9\u624B\u56DE\u590D\u3002", advanced);
     }
-    if (embedded) explanation2.textContent = "\u5386\u53F2\u7B5B\u9009\u4E0E\u8D44\u6E90\u88C5\u914D\u4E00\u8D77\u4FDD\u5B58\u5728\u7B56\u7565\u9884\u8BBE\u4E2D\u3002\u4E0A\u65B9\u300C\u4FDD\u5B58\u89C4\u5219\u300D\u53EA\u4FDD\u5B58\u9884\u8BBE\uFF1B\u300C\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u300D\u540E\u4ECE\u4E0B\u4E00\u6B65\u751F\u6548\u3002\u539F\u59CB\u65E5\u5FD7\u4E0E\u5C55\u793A\u539F\u6587\u4FDD\u7559\u3002";
+    if (embedded) explanation2.textContent = "\u5386\u53F2\u7B5B\u9009\u4E0E\u8D44\u6E90\u88C5\u914D\u4E00\u8D77\u4FDD\u5B58\u5728\u7B56\u7565\u9884\u8BBE\u4E2D\u3002\u4E0A\u65B9\u300C\u4FDD\u5B58\u89C4\u5219\u300D\u53EA\u4FDD\u5B58\u9884\u8BBE\uFF1B\u300C\u4FDD\u5B58\u5E76\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u300D\u540E\u4ECE\u4E0B\u4E00\u6B65\u751F\u6548\u3002\u539F\u59CB\u65E5\u5FD7\u4E0E\u5C55\u793A\u539F\u6587\u4FDD\u7559\u3002";
     revision = result.revision;
     policy = normalizeHistoryPolicy(result.policy);
     enabled.checked = policy.enabled;
@@ -24075,7 +24075,7 @@ var labels = {
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
   addSource: ["\u6DFB\u52A0\u6A21\u5757\uFF08\u5F53\u524D\u6709\u72EC\u7ACB\u5185\u5BB9\uFF09", "Add a module (current independent content)"],
   chooseSource: ["\u9009\u62E9\u6765\u6E90\u2026", "Choose source\u2026"],
-  sourceHelp: ["\u6A21\u5757\u53EA\u5217\u51FA\u5F53\u524D\u63D0\u4F9B\u72EC\u7ACB\u5185\u5BB9\u7684\u6765\u6E90\u3002\u5206\u6563\u5185\u5BB9\u53EF\u901A\u8FC7\u6587\u672C\u89E3\u6790\u5668\u5F15\u7528\uFF1B\u586B\u5199\u6587\u672C\u540E\u4FDD\u5B58\u89C4\u5219\u5E76\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002", "Modules list sources with independent content. Reference dispersed content through a text parser, save the rules, then apply them to the current session."],
+  sourceHelp: ["\u6A21\u5757\u53EA\u5217\u51FA\u5F53\u524D\u63D0\u4F9B\u72EC\u7ACB\u5185\u5BB9\u7684\u6765\u6E90\u3002\u5206\u6563\u5185\u5BB9\u53EF\u901A\u8FC7\u6587\u672C\u89E3\u6790\u5668\u5F15\u7528\uFF1B\u586B\u5199\u6587\u672C\u540E\u4FDD\u5B58\u89C4\u5219\u5E76\u4FDD\u5B58\u5E76\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002", "Modules list sources with independent content. Reference dispersed content through a text parser, save the rules, then apply them to the current session."],
   missingSource: ["\u6765\u6E90\u63D2\u4EF6\u672A\u5B89\u88C5\u6216\u672A\u6CE8\u518C\uFF1B\u672C\u6B21\u8BF7\u6C42\u8DF3\u8FC7\u6B64\u6A21\u5757\u3002", "Source unavailable; this module is omitted from the request."],
   title: ["\u63D0\u793A\u8BCD\u88C5\u914D\u7B56\u7565", "Prompt assembly strategy"],
   intro: ["\u5B89\u6392\u5185\u5BB9\u5982\u4F55\u8FDB\u5165\u6BCF\u6B21\u6A21\u578B\u8BF7\u6C42\u3002\u9884\u89C8\u5F53\u524D\u8D44\u4EA7\u3001\u5B8F\u5F15\u7528\u548C\u5B9E\u9645\u987A\u5E8F\u3002", "Arrange each model request. Preview assets, macro references and message order."],
@@ -24087,7 +24087,7 @@ var labels = {
   remove: ["\u5220\u9664", "Delete"],
   select: ["\u9009\u62E9\u88C5\u914D\u7B56\u7565", "Assembly strategy"],
   name: ["\u540D\u79F0", "Name"],
-  apply: ["\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD", "Apply to this session"],
+  apply: ["\u4FDD\u5B58\u5E76\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD", "Save and apply to this session"],
   applied: ["\u5F53\u524D\u5E94\u7528", "Applied"],
   legacy: ["DSH \u9ED8\u8BA4\u7B56\u7565", "DSH default strategy"],
   reset: ["\u5E94\u7528\u9ED8\u8BA4\u88C5\u914D\u7B56\u7565", "Apply default strategy"],
@@ -24110,7 +24110,7 @@ var labels = {
   evaluation: ["\u6BCF\u6B21\u6C42\u503C\u53EF\u80FD\u53D8\u5316", "May change on evaluation"],
   assembly: ["\u7531\u5B98\u65B9\u88C5\u914D\u51B3\u5B9A", "Determined by core assembly"],
   saved: ["\u5DF2\u4FDD\u5B58\uFF1B\u5E94\u7528\u540E\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42", "Saved; apply to affect future requests"],
-  appliedStatus: ["\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD", "Applied to this session"],
+  appliedStatus: ["\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD", "Applied to this session"],
   unavailable: ["\u5BBF\u4E3B\u5C1A\u672A\u652F\u6301\u8BF7\u6C42\u88C5\u914D\u534F\u8BAE\u3002\u53EF\u4EE5\u7F16\u8F91\u548C\u9884\u89C8\uFF1B\u5E94\u7528\u524D\u9700\u5B89\u88C5\u6838\u5FC3\u6269\u5C55\u3002", "Editing and preview are available. Applying requires the request assembly core extension."],
   previewScope: ["\u9884\u89C8\u4F7F\u7528\u5F53\u524D\u8D44\u4EA7\u4E0E\u53EF\u8BFB\u53D6\u5386\u53F2\uFF0C\u4E0D\u542B\u5F85\u53D1\u9001\u8F93\u5165\uFF1B\u968F\u673A\u5B8F\u4F7F\u7528\u56FA\u5B9A\u6837\u4F8B\u3002\u5B9E\u9645\u8BF7\u6C42\u4EE5\u8F68\u8FF9\u4E2D\u7684\u51BB\u7ED3\u7ED3\u679C\u4E3A\u51C6\u3002", "Preview uses current assets and available history, without pending input. Random macros use a fixed sample. Recorded requests contain the frozen result."],
   deferredSelection: ["\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u914D\u7F6E\uFF1B\u9996\u6B21\u53D1\u9001\u65F6\u63A5\u5165\u4F1A\u8BDD\u3002\u53EF\u9884\u89C8\u5F53\u524D\u5F00\u573A\u8D44\u6E90\uFF0C\u5B9E\u9645\u8BF7\u6C42\u9700\u53D1\u9001\u540E\u67E5\u770B\u3002", "Apply to the current opening configuration; it transfers on first send. Preview opening resources now; actual requests are available after sending."],
@@ -53557,7 +53557,7 @@ ${mathStyles("[data-dtv-rich-text]")}
 .dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{width:100%;min-width:0;display:grid;gap:8px}.dtv-play-greeting-navigation{display:flex;align-items:center;gap:6px}
+.dtv-play-greeting{width:100%;min-width:0;display:grid;gap:8px}.dtv-play-greeting-navigation{display:flex;align-items:center;justify-content:center;width:100%;gap:6px}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}

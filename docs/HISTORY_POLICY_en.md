@@ -28,7 +28,7 @@ plugin injections. Human/model retention is locked; unknown sources stay with wa
 and MVU controls are disabled and labeled advanced-only. Existing advanced rules stay stored but are inactive;
 the standard API rejects changes to those fields.
 
-New sessions default to disabled. Saves apply on the next accepted pre-step; retries reuse the committed surface.
+New sessions default to disabled. Rules are captured at pre-step; agent/request commits cleanup after step/start, and retries reuse the committed surface.
 Current/unsent injections stay. Excluded runtime context is refreshed into this step before its old copy is removed. Old injections are replaced in place with
 empty developer messages. Changing source rules or disabling restores still-live owned placeholders next step,
 with original user IDs/content/order; compaction-shadowed placeholders never revive. Restart preserves settings.
@@ -54,7 +54,7 @@ for DeepSeek requests carrying tools is not promised.
 
 ## Installed entry points and usage
 
-Open “History filtering rules and preview” directly below “Assembly rules and preview”. Both sections share collapsible highlighted headings and rules/preview tabs. Select sources and inspect the preview, then use “Save rules” to save the complete preset. “Apply to this session” changes the active snapshot. Save as, import/export, opening drafts and applied snapshots carry the optional `historyPolicy` field. Saving a library preset does not change already-applied sessions.
+Open “History filtering rules and preview” directly below “Assembly rules and preview”. Both sections share collapsible highlighted headings and rules/preview tabs. Select sources and inspect the preview, then use “Save rules” to save the complete preset. “Save and apply to this session” changes the active snapshot. Save as, import/export, opening drafts and applied snapshots carry the optional `historyPolicy` field. Saving a library preset does not change already-applied sessions.
 
 Preview backgrounds are red for removed text, blue for retained text and green for additions (restoring messages previously hidden by this feature). Fragment edits mark retained and removed ranges in the original text. Green does not mean generated content. Preview does not mutate logs or sessions. Policies can be edited before a session exists; history previews become available after creation.
 
