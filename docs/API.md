@@ -6,7 +6,7 @@
 
 当前装配来源使用共享 `dshPromptSources` 协议 1；旧 `tavernRequestSources` 为同一 registry 的兼容别名。第三方入口、全部扩展路由与稳定边界见[完整接口索引](API_SURFACES.md)。
 
-装配规则的 CRUD、应用、预览、实际请求引用与所需核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
 合同范围：当前 Tavern 源码（package 版本见 package.json），仅支持 DSH `0.2.0-rc.2`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。

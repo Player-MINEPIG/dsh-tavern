@@ -5,9 +5,9 @@
 本文说明如何验证当前实现，不记录某次发布的验收结果。先按改动范围选择检查，再为受影响的 DSH 接口补充集成证据。
 
 <a id="backend-compatibility"></a>
-## 2.5.1 兼容范围
+## 3.0.0 兼容范围
 
-Tavern 2.5.1 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
+Tavern 3.0.0 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
 
 后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
 
@@ -35,7 +35,7 @@ Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.0-rc.2` 要求 Nod
 <a id="patch-release-documents"></a>
 ## 补丁发布的文档同步
 
-兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。每次 push 前均需获得覆盖本次改动的明确授权；创建 tag 和 Release 也需授权。
+兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。已完成本地验证的提交按 AGENTS.md 中既有授权推送；创建 tag 和 Release 仍需明确授权。
 
 | 文件或发布内容 | 何时更新 |
 | --- | --- |
@@ -107,11 +107,21 @@ node --test test/play-sessions.test.mjs
 - **周目归档：** 归档后确认默认列表隐藏该周目，其成员不会变成游离或普通会话；刷新及重启后状态应保持。从归档箱查看不会自动恢复，恢复后编号、名称、分支与绑定应保留。归档最新空周目后新建应使用下一个编号；与活跃周目共享的会话仍应可见。对照归档前后的时间线、选择记录和 DSH 日志，确认归档操作仅修改 catalog 中的归档标记。
 - **Trace：** 对照官方请求核查当次配置、世界书决策、Loader 段落顺序、正文及来源。重启后再读取旧记录；在测试副本中移除官方日志时，正文应明确不可用。失败记录的来源仍是官方事件，RP 不因此新增失败助手消息。接口合同见 [Prompt API v3](PROMPT_API_V3.md)。`node --test test/mvu-trace.test.mjs` 验证来源 HTTP 历史的新增/删除字段比较；`TAVERN_BROWSER_FIXTURE=./fixtures/tavern-trace-browser.js node scripts/verify-rich-text-browser.mjs` 用自写 provider 形状挂载完整 Trace，覆盖中英文缺失值/未知前值标签、真实文本包装对象、React 边界与原样数据。该检查不读取用户状态、不发模型，也不替代完整目标 Host 验收。
 - **流式交互：** 在有多条富文本历史消息的 RP 会话中，生成期间展开、关闭和拖动悬浮球；历史消息不应随每个片段重新解析或清洗，已展开的历史折叠块应保持状态。`node scripts/verify-rich-text-browser.mjs` 用真实 React 挂载验证连续更新仅清洗变化的消息、样式隔离和终态替换；合成检查不代表真实模型流式链路已验收。
-- **富文本与诊断：** 检查静态 HTML/CSS 的样式隔离、显示正则和脚本过滤；MVU 与 JavaScript 动态 HTML 不属于已实现能力。检查故障入口、摘要关闭、重新检查及问题恢复的状态一致性。Trace 正文应按文本展示。
+- **富文本与诊断：** 检查静态 HTML/CSS 的样式隔离、显示正则和脚本过滤；按当前合同验证受限 MVU 与可选交互卡片，不宣称完整酒馆助手兼容。检查故障入口、摘要关闭、重新检查及问题恢复的状态一致性。Trace 正文应按文本展示。
 
 涉及写入并发、卸载或坐标迁移时，在测试副本中验证冲突及恢复路径；参阅 [API](API.md) 和 [迁移指南](DSH_0.1.7_MIGRATION.md)。真实提供方的超时/重试、真实第三方联调及平台差异须分别验证，不能从合成故障或其他平台的结果推断。
 
 记录证据时注明源码版本、Node/DSH 版本、启用的检查、跳过项及可复现步骤，并区分自动测试、真实 Host、浏览器和外部联调覆盖。诊断报告与 Trace 元数据也可能包含私密标识和内容，公开问题报告前应检查并删去敏感信息。
+
+使用 `installIndependentAssembler` 的既有 Host 套件还会加载可选 core addon。将 `DSH_ASSEMBLER_CORE_EXTENSION_ROOT` 指向经验证 assembler 提交的 `core-extension` 目录，并让 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 使用配套准备后协议 1 运行时；迁移 root 可保持 stock。这些进阶夹具与下文 stock 标准后端验收分别记录；缺少 addon 或协议属于测试配置失败，不能据此推断标准策略需要准备核心。
+
+## 实际请求 Trace 与 RP 分类回归
+
+运行 `node --test test/trace-view.test.mjs test/trace-v3.test.mjs test/trace-references.test.mjs test/mvu-trace-view.test.mjs test/play-chat-model.test.mjs`。比较最新与较早 record-ID 详情，核对每条消息的原始请求顺序；验证原生坐标、requestMessageIds 与完整 system 的 contributor IDs。模块正文与完整 system 原文分别默认折叠；system 字节变化却未刷新模块证据时，不能套用旧来源。证据缺失保持明确，不用当前预览或仅返回最新请求的 `/actual` 填补历史。展开 MVU 前打开 Trace 不应读取该状态，收起或切换须释放轮询。
+
+标准后端将 `DSH_ASSEMBLER_STOCK_ROOT` 指向 stock 目标 DSH 依赖根，`DSH_ASSEMBLER_MANAGER_ROOT` 指向隔离 Manager 源码检出，再运行 `node --test test/request-assembly-native-host.test.mjs`。它以真实 Host 模块、合成 provider 和临时会话覆盖 head/in-history 更新、实际请求、冷 replay、世界书 slot 角色/顺序与卸载后继续使用。原生 runtime-context 清理消息独立存在；贡献消息顺序单独比较，完整记录仍须与 provider 请求一致。进阶协议 1 使用 `DSH_TAVERN_ASSEMBLY_CORE_ROOT` 与 `test/request-assembly-host.test.mjs`，stock 与准备后核心证据分别记录。
+
+在获授权的 Host/浏览器核对四种角色、较早请求、来源名称回退、模块/原文折叠和 MVU 按需读取。RP 分类以合成的无关缺失/损坏 timeline 与健康非根分支验证：健康 RP 视图正常加载，侧栏诊断保留；直接 owner 读取、权限和迁移错误仍应失败。不通过修复旧日志使分类测试通过。这些检查不代表原生 Windows、真实 provider 或实际第三方 memory-archive 接入验收。
 
 ## 持久操作日志回归
 

@@ -84,7 +84,7 @@ Request source `tavern.mvu/state` must be explicitly selected in an assembly pre
 
 ## Round tables in Tavern Trace
 
-Each Tavern Trace round shows **MVU variables and changes** directly below world-book triggers. The variable table shows JSON pointer, actual value, JSON type and last recorded update turn. Trigger rows show event/turn, source result, before/after values and failure or skip reason. Different attempts of the same reply remain separate; idempotent replay does not claim another variable commit. Inherited snapshots are labelled explicitly and do not claim a new child trigger.
+Each Tavern Trace round offers **MVU variables and changes** below world-book triggers, collapsed by default. MVU reads and polling start only when expanded; opening Trace alone does not read that state. The variable table shows JSON pointer, actual value, JSON type and last recorded update turn. Trigger rows show event/turn, source result, before/after values and failure or skip reason. Different attempts of the same reply remain separate; idempotent replay does not claim another variable commit. Inherited snapshots are labelled explicitly and do not claim a new child trigger.
 
 The variable table shows 20 rows per page; filtering paths or switching state returns to the first page. Historical turns default to **Last recorded state this turn (read-only)**: the final recorded version for that turn, not the pre-request checkpoint. **Assistant reply update** is the version saved after that reply was committed; skipped, failed, or no-op updates may leave values unchanged. Missing history or before-value evidence stays unknown, never replaced with current content.
 

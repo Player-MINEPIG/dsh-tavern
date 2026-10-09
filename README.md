@@ -10,11 +10,11 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-本文描述当前源码。不可变的 v2.5.1 tag 早于 assembler 拆分、MVU 和提示词模板；旧版安装与文档请查看该 tag。仅凭 package 版本不能区分这些源码 revision。当前组合安装见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
+本文描述 Tavern **3.0.0**。独立 assembler、受限 MVU 与提示词模板的组合安装见[接入说明](docs/ASSEMBLER_INTEGRATION.md)；旧版完整文档保留在对应 Git tag。
 
 > 当前 Tavern 源码适配 DSH **0.2.0-rc.2**，提供独立 assembler 接入、受限 MVU、只读提示词模板与 RP 渲染。[变更记录](CHANGELOG.md) · [MIT License](LICENSE)。
 >
-> 从 Tavern 2.5.0 升级到历史 v2.5.1 无需数据迁移；当前源码需要额外启用 assembler 并合并旧策略，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。DSH 目标版本不变；更新前保留备份并停止目标 Host。从旧 DSH 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
+> 从 Tavern 2.5.x 升级到 3.0.0 需要额外启用 assembler 并合并旧策略，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。DSH 目标版本不变；更新前保留备份并停止目标 Host。从旧 DSH 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
 >
 > Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md)。
 >
@@ -52,11 +52,11 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。下列固定提交为当前实现基线，assembler 仓库为 public；这些提交保留进阶实现基线，标准版与可选扩展的组合方式见接入说明：
+请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。安装 Tavern 3.0.0 与经验证的标准 assembler 提交；标准版通过公开接口运行，可选进阶核心扩展见接入说明：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#c2d5b1194beca7cfd561e3aaab17db17e7e26298
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#fa5a5f9bb4ae130ffc673fdf2372f5d0d26aad54
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#4be47ae20a2e475bf352c3e1abc84197d5c1dde5
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 ```
 
 安装完成后重启 DSH Web。Tavern 默认把角色卡、预设、世界书、设置与绑定保存在 `<DSH_HOME>/pmp-dsh-tavern/`，普通 `dsh plugin remove` 不会删除该目录，但也不会创建卸载前快照；需要快照时请检出仓库并使用项目卸载脚本。从仍把数据放在插件包内的旧版本首次升级时，先停止目标 `dsh web` 并使用项目安装脚本，以便在 pnpm 替换旧包前保住数据；新 Host 首次启动会复制到外部目录并保留旧副本。其他 profile、独立 `DSH_HOME`、手动安装、备份与卸载方法见 [安装与卸载](docs/INSTALLATION.md)。

@@ -4,7 +4,7 @@
 
 ## Support
 
-The maintained security line is `2.5.x`. DSH compatibility depends on the specific release; consult its README and installation guide. Fixes ship only as new patch versions. Development branches and older releases are not promised separate backports.
+The maintained security line is `3.0.x`. DSH compatibility depends on the specific release; consult its README and installation guide. Fixes ship only as new patch versions. Development branches and older releases are not promised separate backports.
 
 Report suspected vulnerabilities privately through the GitHub repository **Security / Report a vulnerability**. Do not first publish a reproducible exploit, user data, or a real local path. Include the affected version, a minimal reproduction, expected impact, and log fragments with secrets removed.
 

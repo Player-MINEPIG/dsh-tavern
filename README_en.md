@@ -10,11 +10,11 @@ Independent prompt assembly plugin (standard by default; optional advanced core 
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-This README describes the current source tree. The immutable v2.5.1 tag predates assembler extraction, MVU and prompt templates; use that tag for its installation and documentation. The package version alone does not distinguish these source revisions. Current combined installation is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md).
+This README describes Tavern **3.0.0**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
 
 > Current Tavern source targets DSH **0.2.0-rc.2**, with independent assembler integration, scoped MVU, read-only prompt templates and RP rendering. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
 >
-> Upgrading from Tavern 2.5.0 to historical v2.5.1 requires no data migration. Current source additionally enables assembler and merges legacy strategies; see [integration](docs/ASSEMBLER_INTEGRATION_en.md). The DSH target is unchanged. Retain backups and stop the target Host before updating. When upgrading an older DSH, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
+> Upgrading from Tavern 2.5.x to 3.0.0 additionally enables assembler and merges legacy strategies; see [integration](docs/ASSEMBLER_INTEGRATION_en.md). The DSH target is unchanged. Retain backups and stop the target Host before updating. When upgrading an older DSH, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
@@ -52,11 +52,11 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Enable both bundles using these audited implementation commits; assembler is public; these commits retain the advanced implementation baseline. See the integration guide for the standard/addon combination:
+Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install Tavern 3.0.0 and the verified standard assembler commit. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#c2d5b1194beca7cfd561e3aaab17db17e7e26298
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#fa5a5f9bb4ae130ffc673fdf2372f5d0d26aad54
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#4be47ae20a2e475bf352c3e1abc84197d5c1dde5
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
 ```
 
 Restart DSH Web after install. Tavern stores character cards, presets, world books, settings, and bindings under `<DSH_HOME>/pmp-dsh-tavern/` by default. Plain `dsh plugin remove` retains that directory but does not create a pre-removal snapshot; clone the repository and use its uninstaller when a snapshot is required. On the first upgrade from a version that still stores data inside the package, stop the target `dsh web` and use the project installer so pnpm cannot replace the old package before its data is preserved. The new Host copies that data to the external directory on first start and retains the old copy. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).

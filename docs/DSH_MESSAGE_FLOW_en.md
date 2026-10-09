@@ -2,9 +2,9 @@
 
 [中文](DSH_MESSAGE_FLOW.md)
 
-The optional [request assembler](REQUEST_ASSEMBLY_en.md) takes ownership of message placement when a layout is applied. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+The required independent [request assembler](REQUEST_ASSEMBLY_en.md) owns strategies and source registration. Standard strategies use public sections/context/pre-step; the optional advanced addon supplies protocol-1 request placement. Sessions without an applied strategy retain the compatibility loader path below. DSH retains durable history and provider serialization ownership.
 
-This page defines the current message contract for Tavern 2.5.1 on DSH
+This page defines the current message contract for Tavern 3.0.0 on DSH
 `0.2.0-rc.2`: native DSH flow, DT flow, DT interception points, and one complete model
 step. V4 system prompts enter the effective surface through `system/message`, while
 `request/header` retains config/tools. Trace schema 4 persists metadata and official

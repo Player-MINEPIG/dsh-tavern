@@ -153,7 +153,12 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
       const nodes=actual.request.metadata.assembly.nodes
       for(const name of ['CB','CA','D1']) assert.ok(nodes.some(n=>n.name===name&&n.role==='system'),name)
       for(const name of ['EB','EA','NB','NA','D0']) assert.ok(nodes.some(n=>n.name===name&&n.role==='user'),name)
-      assert.deepEqual(requests.at(-1).slice(-9).map(textOf),['D0','BETWEEN','EB','EA','NB','NOTE','NA',input,'CLOSE'])
+      // Native context cleanup is a separate recorded message after these contributions.
+      const request = requests.at(-1)
+      assert.equal(request.at(-1).source?.kind, 'runtime-context')
+      assert.equal(textOf(request.at(-1)), 'Current runtime context: none. Earlier runtime-context snapshots no longer apply.')
+      assert.deepEqual(request.filter(message => message.source?.kind !== 'runtime-context').slice(-9).map(textOf),
+        ['D0','BETWEEN','EB','EA','NB','NOTE','NA',input,'CLOSE'])
     }
     await managerHandle.dispose(); await tavernHandle.dispose(); await turn('WITHOUT TAVERN')
     assert.ok(!face.registry.list().some(s => s.pluginId === 'pmp-dsh-tavern' || s.id === 'memory-manager.resources'))

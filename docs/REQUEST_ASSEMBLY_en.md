@@ -2,7 +2,7 @@
 
 [中文](REQUEST_ASSEMBLY.md)
 
-Standard adds Preset roles first and Preset slots first. Roles first preserves authored system/user roles and orders contributions within native delivery regions. Slots first detects history/input references, adapts content before history to system and after history to user, and uses pre-step delivery around history/current input. Preview identifies role adjustments; absent references fall back to roles first. User contributions enter history and native internal order is preserved. Applying remains explicit; existing sessions are not migrated automatically. See [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/main/docs/BACKENDS_en.md).
+Standard adds Preset roles first and Preset slots first. Roles first preserves authored system/user roles and orders contributions within native delivery regions. Slots first detects history/input references, adapts content before history to system and after history to user, and uses pre-step delivery around history/current input. Preview identifies role adjustments; absent references fall back to roles first. User contributions enter history and native internal order is preserved. Applying remains explicit; existing sessions are not migrated automatically. See [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/4be47ae20a2e475bf352c3e1abc84197d5c1dde5/docs/BACKENDS_en.md).
 
 The standard assembler uses public DSH sections/context/pre-step on stock rc.2. Tavern normally depends on it; optional Manager supplies management and observations. The optional core addon retains the validated protocol-1 advanced backend. Both share strategies/registry/UI; legacy strategies without backend remain core. Native/play views cannot change explicit session selections, including null. New standalone sessions have no implicit strategy; new Tavern openings use standard preset slots first even with the advanced addon installed.
 
@@ -26,7 +26,7 @@ Tip: If the model drops formatting or misses instructions, try placing the relev
 
 New RP sessions and Apply default strategy use standard slots even with the advanced addon installed. Existing built-in snapshots, custom strategies and explicit opt-outs are not replaced. Legacy four-item lists lose the user-order item while retaining the relative order of automatic rules; existing manual positions adopt custom-override semantics; select and apply a template again to adopt its new definition. Standalone DSH sessions have no implicit RP strategy.
 
-A final user reminder retains user priority. Cache hits and model adherence depend on the model. Native Trace verifies durable system/context references without creating request/assembly or a second history. The complete frozen-request view is limited to advanced evidence; standard mode reports this scope explicitly.
+A final user reminder retains user priority. Cache hits and model adherence depend on the model. Native Trace verifies durable system/context and complete frozen-message references through detached Session replay without creating request/assembly or a second history. A complete request requires a recorded nativeRequestRef; older records without it remain explicitly unavailable. Advanced requests use their recorded request/assembly evidence.
 
 ## Advanced contract
 
@@ -98,7 +98,7 @@ Uninitialized MVU state or state requiring repair returns `MVU_PREVIEW_STATE_UNA
 
 Stock DSH `0.2.0-rc.2` does not expose this seam. `scripts/prepare-request-assembly.mjs` produces a separate build from the pinned rc.2 source (both source trees are verified against SHA-256 digests in the script). It never edits the source checkout or an installed runtime and rejects other revisions.
 
-Current source requires both bundles to be enabled as described in [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md). The historical v2.5.1 tag predates this integration. Protocol 1 is a separate Host capability requirement. The preparation tool generates reviewable output, never patches core during plugin installation; any actual runtime replacement requires separate authorization.
+Current source requires both bundles to be enabled as described in [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md). Standard strategies need no core preparation. Advanced strategies require the optional core addon and Host protocol 1. The preparation tool generates reviewable output, never patches core during plugin installation; any actual runtime replacement requires separate authorization.
 
 ```sh
 npm ci

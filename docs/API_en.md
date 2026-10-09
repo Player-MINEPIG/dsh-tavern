@@ -6,7 +6,7 @@
 
 Current assembly sources use shared `dshPromptSources` protocol 1; legacy `tavernRequestSources` aliases that registry. See the [complete API surface](API_SURFACES_en.md) for all extension routes, public imports and compatibility boundaries.
 
-Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
+Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
 Contract: current Tavern source (package version in package.json), supporting only DSH `0.2.0-rc.2`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.

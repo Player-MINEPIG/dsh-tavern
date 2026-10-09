@@ -2,9 +2,9 @@
 
 [中文](LOADER_CONTRACT.md)
 
-The optional [request assembler](REQUEST_ASSEMBLY_en.md) takes ownership of message placement when a layout is applied. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+The required independent [request assembler](REQUEST_ASSEMBLY_en.md) owns strategies and source registration. Standard strategies use public sections/context/pre-step; the optional advanced addon supplies protocol-1 request placement. Sessions without an applied strategy retain the compatibility loader path below. DSH retains durable history and provider serialization ownership.
 
-The current contract targets Tavern **2.5.1** and DSH `0.2.0-rc.2`. It covers
+The current contract targets Tavern **3.0.0** and DSH `0.2.0-rc.2`. It covers
 the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
 parent selection, named official sections, and schema 4 Trace references. DSH V4 uses
 `system/message` as the system-body authority while `request/header` retains config/tools;
@@ -12,7 +12,7 @@ see the [migration contract](DSH_0.1.7_MIGRATION_en.md).
 
 ## Goals and ownership
 
-The loader is the only layer allowed to decide how current resources enter a DSH request. Format modules only interpret files. Use-case modules only manage resources. They must not register `systemPrompt`, mutate the Agent, copy conversation history, or write the model request themselves.
+Tavern owns resource parsing and permissions. Its loader assembles sections on the compatibility path; the independent assembler arranges contributions when a strategy is applied. Format modules only interpret files. Use-case modules only manage resources. They must not register `systemPrompt`, mutate the Agent, copy conversation history, or write the model request themselves.
 
 ```text
 PresetModel ─────────────┐
