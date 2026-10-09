@@ -118,12 +118,16 @@ export class TavernProfileLoader {
     selections,
     userWorldBooks = null,
     resourceWorldBooks = null,
+    sessionWorldBooks = null,
     maxProfileBytes,
+    previewSelection,
   }) {
     this.presetStore = presetStore
     this.selections = selections
+    this.previewSelection = previewSelection
     this.userWorldBooks = userWorldBooks
     this.resourceWorldBooks = resourceWorldBooks
+    this.sessionWorldBooks = sessionWorldBooks
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
@@ -160,7 +164,7 @@ export class TavernProfileLoader {
 
   selection({ agent, sessionId } = {}) {
     return agent === undefined
-      ? this.selections.get(sessionId)
+      ? this.previewSelection?.({ sessionId }) ?? this.selections.get(sessionId)
       : this.selections.ensureAgent(agent)
   }
 
@@ -202,7 +206,7 @@ export class TavernProfileLoader {
       ? []
       : this.resourceWorldBooks.get('character', characterResult.character.id)
     const worldBookSelection = composeWorldBookSelection(
-      selection.worldBookIds,
+      [...selection.worldBookIds, ...(this.sessionWorldBooks?.selectedIds(shared.sessionId, selection) ?? [])],
       userBoundIds,
       presetBoundIds,
       characterBoundIds,
@@ -217,6 +221,7 @@ export class TavernProfileLoader {
         ...shared,
         selection: effectiveSelection,
         worldBookSelection,
+        requestAssembly: options.resolveOnly || Boolean(this.requestAssemblyEnabled?.(shared.sessionId)),
         character: characterResult.character,
         user: userResult.user,
       }),
@@ -229,7 +234,7 @@ export class TavernProfileLoader {
       user: userResult.user?.name ?? baseContext.user ?? 'User',
       character: characterMacroName(characterResult.character, baseContext.character),
     }
-    const compiled = compileTavernProfile({
+    const assemblyInput = {
       preset,
       character: characterResult.character,
       user: userResult.user,
@@ -237,10 +242,15 @@ export class TavernProfileLoader {
       includeGreetingReference: options.agent === undefined
         ? true
         : greetingReferenceAppliesToAgent(options.agent),
+      worldBookIds: [...worldBookSelection.effectiveIds],
+      worldBookRevisions: Object.fromEntries((worldBookResult.resources ?? []).filter(r => r.revision).map(r => [r.id, r.revision])),
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
       context: { ...baseContext, ...macroContext },
       maxProfileBytes: this.maxProfileBytes,
-    })
+    }
+    const compiled = options.resolveOnly || this.requestAssemblyEnabled?.(shared.sessionId)
+      ? { systemText: '', sections: [], runtimeContexts: [], activeLoreEntries: assemblyInput.loreEntries.map(e => e.id), diagnostics: [], callConfig: preset ? projectPresetCallConfig(preset) : {}, systemPromptMode: 'append' }
+      : compileTavernProfile(assemblyInput)
     diagnostics.push(...compiled.diagnostics)
 
     const resources = {
@@ -285,6 +295,7 @@ export class TavernProfileLoader {
 
     return {
       ...compiled,
+      assemblyInput,
       macroContext,
       diagnostics,
       resources,
@@ -296,9 +307,9 @@ export class TavernProfileLoader {
     if (!isRecord(context)) return this.compile()
     const cached = this.contextCache.get(context)
     if (cached !== undefined) return cached
-    const snapshot = this.compile({ agent: context.agent, context })
+    const snapshot = this.compile({ agent: context.agent, context, resolveOnly: context.tavernAssemblyPreview === true })
     this.contextCache.set(context, snapshot)
-    if (isRecord(context.agent)) this.assembledByAgent.set(context.agent, snapshot)
+    if (isRecord(context.agent) && !context.tavernAssemblyPreview) this.assembledByAgent.set(context.agent, snapshot)
     return snapshot
   }
 
@@ -569,7 +580,7 @@ function appendCharacterFallbacks(body, fields, consumed, context, diagnostics) 
 
 function loreText(entries, context) {
   return entries.map((entry) => {
-    const rendered = renderSillyTavernMacros(entry.content, context)
+    const rendered = renderSillyTavernMacros(entry.content, context, new Map(), { literalMacros: entry.literalMacros })
     return rendered === '' ? '' : rendered
   }).filter(Boolean).join('\n\n')
 }

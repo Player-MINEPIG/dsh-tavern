@@ -8,6 +8,10 @@ const groups = [
     files: ['test/presentation.test.mjs', 'test/play-math.test.mjs', 'test/play-rich-text.test.mjs', 'test/play-export.test.mjs', 'test/api-fetch.test.mjs', 'test/api-security.test.mjs', 'test/user-store.test.mjs'],
   },
   {
+    name: 'Environment rendering cache persistence, migration and Host boundaries',
+    files: ['test/rendering-host-cache.test.mjs', 'test/rendering-shared-cache.test.mjs', 'test/rendering-dependencies.test.mjs', 'test/identity-opening-bridge.test.mjs'],
+  },
+  {
     name: 'Trace v3 primitives and real Host acceptance',
     files: [
       'test/plugin-runtime-compatibility.test.mjs',

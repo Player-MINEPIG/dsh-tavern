@@ -74,9 +74,10 @@ export async function createConfiguredPlaythroughWorkflow({
       name: checked?.contents?.characterCard?.name || characterId,
     },
     selectionFromSessionId: source?.mode === 'current' ? source.sessionId : null,
+    configurationSource: source,
     configureSession: targetSessionId => applySelection(targetSessionId, source),
   })
-  openSession(result.sessionId)
+  openSession(result.sessionId, result.playthrough)
   refresh()
   return result.sessionId
 }

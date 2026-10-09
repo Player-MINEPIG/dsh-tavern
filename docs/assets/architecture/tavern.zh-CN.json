@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Tavern 架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1380,
+      760
+    ]
+  },
+  "components": [
+    {
+      "id": "tavern-ui",
+      "type": "frontend",
+      "label": "RP 与资源界面",
+      "sublabel": "DSH 公开 slots / stores",
+      "pos": [
+        40,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-loader",
+      "type": "backend",
+      "label": "Tavern loader",
+      "sublabel": "资源绑定 / RP 权限 / API",
+      "pos": [
+        390,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "source-adapters",
+      "type": "backend",
+      "label": "来源与变量",
+      "sublabel": "世界书 / EJS / MVU",
+      "pos": [
+        740,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "assembler",
+      "type": "external",
+      "label": "Prompt Assembler",
+      "sublabel": "共享来源与策略 / 标准默认",
+      "pos": [
+        1090,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-storage",
+      "type": "database",
+      "label": "Tavern 持久目录",
+      "sublabel": "资源 / 草稿 / 配置 / 状态",
+      "pos": [
+        390,
+        100
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "dsh-services",
+      "type": "external",
+      "label": "DSH 公开服务",
+      "sublabel": "Session / Workspace / Inbox",
+      "pos": [
+        390,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-trace",
+      "type": "backend",
+      "label": "Tavern Trace",
+      "sublabel": "metadata 与官方历史引用",
+      "pos": [
+        740,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "tavern-ui-tavern-loader",
+      "to": "tavern-loader",
+      "label": "v1 / v2 / v3 HTTP",
+      "variant": "emphasis",
+      "from": "tavern-ui"
+    },
+    {
+      "id": "tavern-loader-source-adapters",
+      "to": "source-adapters",
+      "label": "绑定与读取租约",
+      "variant": "default",
+      "from": "tavern-loader"
+    },
+    {
+      "id": "source-adapters-assembler",
+      "to": "assembler",
+      "label": "注册只读来源",
+      "variant": "default",
+      "from": "source-adapters",
+      "labelDy": 63
+    },
+    {
+      "id": "tavern-loader-tavern-storage",
+      "to": "tavern-storage",
+      "label": "原子写入 / CAS",
+      "variant": "default",
+      "from": "tavern-loader"
+    },
+    {
+      "id": "tavern-loader-dsh-services",
+      "to": "dsh-services",
+      "label": "公开会话操作",
+      "variant": "default",
+      "from": "tavern-loader",
+      "labelAt": [
+        505,
+        505
+      ]
+    },
+    {
+      "id": "dsh-services-tavern-trace",
+      "to": "tavern-trace",
+      "label": "验证历史引用",
+      "variant": "default",
+      "from": "dsh-services",
+      "labelDy": 63
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "单向依赖",
+      "items": [
+        "Tavern 依赖标准 assembler；core addon 与 Manager 可选。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "来源所有权",
+      "items": [
+        "正文、解析、授权和 MVU 提交留在 Tavern。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "稳定面",
+      "items": [
+        "保留 v1/v2/v3、包入口与原生 DSH 会话。"
+      ]
+    }
+  ]
+}

@@ -63,6 +63,7 @@ function host() {
       emit: () => {},
       get: () => undefined,
       inject: () => {},
+      provide(name, value) { this[name] = value },
       effect: () => {},
       logger: { info: () => {} },
     },

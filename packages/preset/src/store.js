@@ -7,6 +7,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { ScopeMetadataIndex } from '../../scope-catalog/metadata-index.js'
 import {
   createBlankPreset,
   exportSillyTavernPreset,
@@ -70,7 +71,11 @@ export class PresetStore {
     this.statePath = join(this.storageDir, 'state.json')
     mkdirSync(this.presetsDir, { recursive: true })
     this.state = readJson(this.statePath, { schemaVersion: 1, selectedId: null })
+    this.selectionEpoch = 0
+    this.scopeIndex = new ScopeMetadataIndex({ directory: this.presetsDir, path: join(this.storageDir, 'preset-scope-index.json'), readMetadata: path => summary(readJson(path)) })
   }
+
+  scopeMetadata() { return this.scopeIndex.snapshot() }
 
   presetPath(id) {
     return join(this.presetsDir, `${validateId(id)}.json`)
@@ -102,6 +107,7 @@ export class PresetStore {
   save(preset) {
     validateId(preset?.id)
     atomicJson(this.presetPath(preset.id), preset)
+    this.scopeIndex.changed(preset)
     return preset
   }
 
@@ -145,12 +151,14 @@ export class PresetStore {
       if (error?.code !== 'ENOENT') throw error
     }
     if (this.state.selectedId === id) this.select(null)
+    this.scopeIndex.changed(null, id)
   }
 
   select(id) {
     if (id !== null) this.get(validateId(id))
     this.state = { schemaVersion: 1, selectedId: id }
     atomicJson(this.statePath, this.state)
+    this.selectionEpoch++
     return this.selected()
   }
 

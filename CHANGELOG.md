@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.0 — Independent assembly, MVU and recorded request Trace
+
+- Require the independent standard `dsh-prompt-assembler` bundle. Use Assembler `v1.1.0`, locked to verified commit `48481b630e9cfc3be9e55f6b3eb0074ae9a33ad2`; the optional core addon supplies advanced protocol-1 strategies. Standard strategies run on stock DSH `0.2.0-rc.2` through public sections/context/pre-step. Plugin installation does not modify core.
+- Share the strategy library and session binding between the standalone assembler entry and Tavern panel. New RP openings use standard preset slots first; existing snapshots and explicit opt-outs remain. Add resource layouts, source parsers, position controls and preset-owned history filtering without rewriting durable history.
+- Provide bounded, source-owned MVU state, schema validation, durable updates, branch-aware instances and scoped card access; add restricted read-only prompt templates and rendering integrations. Full SillyTavern Helper and arbitrary script compatibility remain outside the supported contract. [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is optional; removing it restores source defaults while preserving resources and sessions.
+- Show every verified historical request message in original system/user/assistant/tool order. Display system contributions as separate recorded modules with independently collapsed bodies and complete system text. Resolve standard native request references and advanced request/assembly records from DSH history; never use the latest-only actual endpoint or current preview to fill an older request. MVU reads and polling begin only when its collapsed section is opened.
+- Keep healthy RP branches usable when unrelated old session logs are absent or corrupt. Preserve diagnostics and direct owner, permission and migration errors without repairing those logs. Improve opening drafts, greeting navigation and long swipe/card lifecycle behavior.
+- Preserve published v1/v2/v3 routes, package entry points and original DSH sessions. Upgrading from 2.5.x additionally enables the assembler; loader startup merges missing legacy strategy entries and retains the old file. Existing V4 coordinates need no conversion; legacy MVU ledgers remain read-only until explicitly handled.
+- Persist external JS/HTML downloads and fixed inert opening data in the Tavern environment directory. Import legacy browser IndexedDB caches without overwriting Host records, share exact source bytes across clients, and retain generation CAS, owner-local choices and shared cache limits. Environment backups and copies now carry downloaded resources.
+- Synchronize bilingual contracts, installation and verification guidance for Tavern 3.0.0. Native Windows, real-provider behavior and actual third-party memory-archive integration require separate acceptance.
+
 ## 2.5.1 — LaTeX math rendering
 
 - Render inline `$…$` / `\(…\)` and display `$$…$$` / `\[…\]` math in RP messages, greetings and static HTML exports. Fractions, roots, integrals, matrices and aligned equations use bundled KaTeX with native MathML; no external scripts, stylesheets or fonts are needed.

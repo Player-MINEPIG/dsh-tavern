@@ -1,3 +1,4 @@
+import { nativeRequestProvenance } from './native-provenance.js'
 import { digest } from '../../prompt-metadata.js'
 import { snapshotSessionEvents } from '../../session-events.js'
 import { readFailureReference } from './failure-references.js'
@@ -109,7 +110,7 @@ function readReference(reference, sessionRef, events, cache, expectedHash) {
 }
 
 /** One cold inspection per detail; never resumes an Agent or reassembles text. */
-export function createAssemblyBodyReader(sessionController) {
+export function createAssemblyBodyReader(sessionController, { deriveAtCut, resolveSourceName } = {}) {
   return async function readBodies(stored, signal = new AbortController().signal) {
     const record = structuredClone(stored)
     if (record.bodyStorage !== 'official-session') return record
@@ -135,6 +136,27 @@ export function createAssemblyBodyReader(sessionController) {
         || (inspection.events?.at(-1)?.seq ?? -1) < ref.logCutSeq) error = 'cut-unavailable'
     }
     const events = new Map((inspection?.events ?? []).map(event => [event.seq, event]))
+    if (record.requestAssemblyRef) {
+      const event = events.get(record.requestAssemblyRef.seq)
+      if (!error && event?.type === 'request/assembly' && digest(event.data) === record.requestAssemblyRef.hash) {
+        record.requestAssembly = structuredClone(event.data)
+        record.requestContentStatus = 'available'
+      } else record.requestContentStatus = 'reference-unavailable'
+    }
+    delete record.nativeRequest
+    delete record.nativeRequestError
+    if (record.nativeRequestRef) {
+      record.requestContentStatus = 'reference-unavailable'
+      if (!error && record.nativeRequestRef.version === 1 && deriveAtCut) {
+        try {
+          const messages = await deriveAtCut(inspection, ref.logCutSeq)
+          if (digest(messages) === record.nativeRequestRef.messagesHash) {
+            record.nativeRequest = { messages: structuredClone(messages), metadata: { backend: 'native' } }
+            record.requestContentStatus = 'available'
+          } else record.nativeRequestError = 'hash-mismatch'
+        } catch { record.nativeRequestError = 'derivation-unavailable' }
+      } else record.nativeRequestError = error ?? 'derivation-unavailable'
+    }
     const cache = new Map()
     let available = 0
     let missing = 0
@@ -148,12 +170,17 @@ export function createAssemblyBodyReader(sessionController) {
     if (record.systemMessageRefs?.length) {
       const systems = record.systemMessageRefs.map(reference => error ? { error } : readReference(reference, ref, events, cache))
       if (systems.every(result => !result.error)) record.systemMessages = systems.map(result => result.text)
-      else record.requestContentStatus = 'reference-unavailable'
+      else if (!record.requestAssembly && !record.nativeRequest) record.requestContentStatus = 'reference-unavailable'
     }
     if (error) record.referenceError = error
     if (record.contentStatus !== 'assembly-unavailable' && record.contentStatus !== 'omitted-size-limit') {
       record.contentStatus = available > 0 && missing === 0 ? 'available'
         : available > 0 ? 'partially-available' : 'reference-unavailable'
+    }
+    delete record.nativeProvenance
+    if (!error) {
+      const provenance = nativeRequestProvenance(record, record.requestAssembly ?? record.nativeRequest, { resolveSourceName })
+      if (provenance) record.nativeProvenance = provenance
     }
     return record
   }

@@ -5,6 +5,7 @@ import {
   mkdirSync,
   openSync,
   readdirSync,
+  realpathSync,
   readFileSync,
   renameSync,
   statSync,
@@ -132,6 +133,9 @@ export class PlayWorkspaceStore {
     this.host = host ?? {}
     this.now = now
     this.targetGuards = new Set()
+    this.bindingEpoch = Symbol()
+    this.mutationEpoch = Symbol()
+    this.fileEpochs = new Map()
     this.beforeRename = beforeRename
     mkdirSync(this.storageDir, { recursive: true })
     this.binding = readBinding(this.path)
@@ -143,8 +147,27 @@ export class PlayWorkspaceStore {
 
   persist(next) {
     atomicJson(this.path, next, MAX_BINDING_BYTES)
+    if (this.binding.rootPath !== next.rootPath || this.binding.workspaceId !== next.workspaceId) { this.bindingEpoch = Symbol(); this.mutationEpoch = Symbol() }
     this.binding = next
     return this.get()
+  }
+
+  /** Conservative context lease, including absent files/unbound workspaces and public write ABA. */
+  captureMutationLease() {
+    const epoch = this.mutationEpoch
+    return () => this.mutationEpoch === epoch
+  }
+
+  /** Process-local lease over public writes and workspace identity; hashes alone permit ABA. */
+  captureReadLease(relativePaths) {
+    if (!Array.isArray(relativePaths) || relativePaths.length === 0) throw new TypeError('File paths required')
+    const epoch = this.bindingEpoch
+    const root = requireRoot(this.binding)
+    const files = relativePaths.map(path => {
+      const key = realpathSync.native(resolvePlayPath(root, posixPlayPath(path), { mustExist: true }))
+      return [key, this.fileEpochs.get(key)]
+    })
+    return () => this.bindingEpoch === epoch && files.every(([path, token]) => this.fileEpochs.get(path) === token)
   }
 
   view() {
@@ -213,7 +236,7 @@ export class PlayWorkspaceStore {
         const childAbs = join(current, name)
         let stat = assertNoLink(childAbs, 'path segment "' + name + '"')
         if (stat === null) {
-          try { mkdirSync(childAbs) } catch (error) {
+          try { mkdirSync(childAbs); this.mutationEpoch = Symbol() } catch (error) {
             if (error?.code !== 'EEXIST') throw error
           }
           stat = assertNoLink(childAbs, 'path segment "' + name + '"')
@@ -294,7 +317,7 @@ export class PlayWorkspaceStore {
         const child = join(parent, name)
         let stat = assertNoLink(child, 'path segment "' + name + '"')
         if (stat === null) {
-          try { mkdirSync(child) } catch (error) {
+          try { mkdirSync(child); this.mutationEpoch = Symbol() } catch (error) {
             if (error?.code !== 'EEXIST') throw error
           }
           stat = assertNoLink(child, 'path segment "' + name + '"')
@@ -339,7 +362,13 @@ export class PlayWorkspaceStore {
             revisionConflict()
           }
         }
+        const previousLeaseKey = currentTarget === null ? null : realpathSync.native(absolute)
         renameSync(temporary, absolute)
+        this.mutationEpoch = Symbol()
+        const token = Symbol()
+        if (previousLeaseKey !== null) this.fileEpochs.set(previousLeaseKey, token)
+        // Atomic rename may change the stored casing on case-insensitive volumes.
+        this.fileEpochs.set(realpathSync.native(absolute), token)
       } catch (error) {
         if (descriptor !== null) { try { closeSync(descriptor) } catch {} }
         try { unlinkSync(temporary) } catch {}

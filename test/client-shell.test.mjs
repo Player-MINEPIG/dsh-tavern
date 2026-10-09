@@ -36,10 +36,10 @@ test('client manifest injects every DSH 0.1.2 contract owner it consumes', () =>
 
 test('one Tavern launcher exposes stable resource surfaces', () => {
   assert.deepEqual(TAVERN_MENU_ITEMS.map(item => item.id), [
+    'assembly',
     'preset',
     'character',
     'world-info',
-    'regex',
     'user',
     'session-template',
     'conversation-settings',
@@ -48,7 +48,7 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
   ])
   assert.equal(surfaceTitle('world-info'), 'nav.worldBook')
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, true)
-  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'regex').playOnly, true)
+  assert.equal(TAVERN_MENU_ITEMS.some(item => item.id === 'regex'), false)
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'conversation-settings').playOnly, true)
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'settings').showBinding, false)
 })
@@ -59,7 +59,7 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     side: 'left',
     vertical: 'up',
     left: 492,
-    top: 216,
+    top: 176,
     anchor: { x: 748, y: 548 },
   })
   assert.deepEqual(clampLauncherAnchor({ x: 748, y: 548 }, { width: 800, height: 600 }, 1.5), { x: 726, y: 526 })
@@ -67,7 +67,7 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     side: 'left',
     vertical: 'up',
     left: 342,
-    top: 28,
+    top: 8,
     anchor: { x: 726, y: 526 },
   })
 })
@@ -185,12 +185,13 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.match(root, /playClient,/)
   assert.match(root, /playClient\.getMessages\(targetSessionId\)/)
   assert.match(root, /CharacterPanel, \{[\s\S]*sessionId,[\s\S]*sessionBlank,[\s\S]*hasConversationHistory,[\s\S]*detachPlaythroughSession:/)
-  assert.match(root, /'data-active': surface === item\.id/)
+  assert.match(root, /'data-active': item\.id === 'assembly' \? assemblyOpen : surface === item\.id/)
   assert.match(root, /'data-bound': item\.binding === false \? undefined : status\.bound/)
   assert.match(root, /setActiveSnapshot\(null\)[\s\S]*refreshStatus\(\)/)
   assert.match(root, /event\.key !== 'Escape'/)
   assert.match(root, /'data-surface-open': surface !== null/)
-  assert.match(root, /requestSurface\(id\)[\s\S]*CLIENT_REFRESH_EVENT/)
+  const openPanel = root.slice(root.indexOf('  const open = id => {'), root.indexOf('  let panel = null'))
+  assert.doesNotMatch(openPanel, /CLIENT_REFRESH_EVENT|dispatchEvent/)
   assert.doesNotMatch(root, /surface === null \? h\('div', \{\s*className: 'dtv-launcher'/)
   assert.doesNotMatch(preset, /slots\.inject|dsh-tavern-preset-launcher/)
   assert.doesNotMatch(character, /slots\.inject|dsh-tavern-character-overlay/)

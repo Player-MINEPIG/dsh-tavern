@@ -1,3 +1,7 @@
+import {OPENING_CARD_VIEWPORT_CSS} from './card-viewport.js'
+import {createMvuCardBinding} from './mvu-bridge.js'
+import {openingSourceIdentity} from './identity-opening-bridge.js'
+import {initialCardScope,greetingCardScope} from './mvu-scope.js'
 import {
   createElement,
   useEffect,
@@ -19,13 +23,17 @@ import {
   loadCurrentPlaythrough,
 } from './chat-model.js'
 import { RichText } from './rich-text.js'
+import {MessageContent} from './scripted-content.js'
+import {useRestoredRenderingDisplay} from './rendering-display.js'
 import { shouldShowUnboundNotice } from './sidebar-model.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
+import {useCardComposer} from './card-composer-hook.js'
 
 const h = createLocalizedElement(createElement)
 
 const css = `
+${OPENING_CARD_VIEWPORT_CSS}
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;max-width:var(--dsh-composer-card-max-width,100%);align-self:center;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
 .dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
 .dtv-play-opening-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px}.dtv-play-opening-name{min-width:0;overflow:hidden;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.dtv-play-opening-index{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11px}
@@ -41,7 +49,7 @@ function installStyles() {
   document.head.append(style)
 }
 
-export function PlaySessionDock({ session, useSessions, useConversation, conversationPhase, playClient }) {
+export function PlaySessionDock({ session, useSessions, useConversation, useInput, inputActions, conversationPhase, playClient }) {
   useClientUiSettings()
   installStyles()
   installPlayChatStyles()
@@ -55,6 +63,8 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
   const [greetingBusy, setGreetingBusy] = useState(false)
   const [error, setError] = useState('')
   const displaySettings = useConversationDisplaySettings()
+  useRestoredRenderingDisplay(content?.sessionId===sessionId&&content?.kind==='opening'&&sessionBlank&&composerPhase==='blank'?content.display:null,displaySettings,setError)
+  const composer=useCardComposer({sessionId,useInput,inputActions,active:content?.kind==='opening'&&content.sessionId===sessionId,blocked:!sessionBlank||greetingBusy||composerPhase!=='blank',send:(text,{signal}={})=>playClient.postUserMessage(sessionId,text,{signal})})
 
   useEffect(() => {
     const refresh = () => setRevision(value => value + 1)
@@ -64,7 +74,8 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
 
   useEffect(() => {
     let active = true
-    setContent(current => current?.sessionId === sessionId && current.kind === 'opening' ? current : null)
+    if(composer?.pending&&content?.kind==='opening'&&content.sessionId===sessionId)return()=>{active=false}
+    setContent(null)
     setError('')
     if (sessionId === null || summary === null) return () => { active = false }
     Promise.all([
@@ -90,7 +101,10 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
           if (!active) return
           setContent({
             kind: 'opening',
+            greetingScope:greetingCardScope({playthrough:binding.playthrough,sessionId,characterId:state.display?.bindings?.characterId}),
+            initialScope:initialCardScope({playthrough:binding.playthrough,sessionId,characterId:state.display?.bindings?.characterId,timeline:binding.timeline,turns:state.turns}),
             greeting: state.greeting,
+            display: state.display,
             importBinding: state.importBinding,
             importMutable: state.importMutable,
             importTurns: state.turns
@@ -109,7 +123,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       if (active) setError(reason instanceof Error ? reason.message : String(reason))
     })
     return () => { active = false }
-  }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary])
+  }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary, composer?.pending])
 
   const changeGreeting = async direction => {
     if (content?.kind !== 'opening' || greetingBusy || sessionId === null) return
@@ -134,7 +148,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       role: 'note',
     }, uiMessage('play.notice.unbound'))
   }
-  if (content.kind !== 'opening' || !sessionBlank || composerPhase !== 'blank') return null
+  if (content.kind !== 'opening' || ((!sessionBlank || composerPhase !== 'blank')&&!composer?.pending)) return null
   const greeting = content.greeting
   const importTurns = content.importTurns ?? []
   const options = greeting?.options ?? []
@@ -170,7 +184,19 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
     )
     : greeting === null
       ? h('div', { className: 'dtv-play-opening-body dtv-play-opening-body-empty', 'aria-hidden': true })
-      : h(RichText, { className: 'dtv-play-opening-body', text: greeting.text }),
+      : h('div',{className:'dtv-play-opening-body','data-dtv-card-viewport-boundary':'opening'},h(MessageContent,{
+        text:greeting.text,
+        openingBinding:openingSourceIdentity({sessionId,greeting}),
+        composer,
+        writeScope:content.initialScope,
+        createBinding:content.greetingScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:writeGrant?content.initialScope:content.greetingScope,signal,writeGrant}):undefined,
+        enabled:displaySettings.interactiveCards!==false,
+        scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index,content.greetingScope,content.initialScope]),
+        owners:[content.display?.globalRenderingOwner,...Object.entries(content.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean),
+        helpers:(content.display?.renderingSources??[]).filter(item=>item.kind==='helper'),
+        context:{version:1,role:'assistant',userName:content.display?.macros?.user??'User',characterName:content.display?.macros?.character??'Assistant'},
+        onSend:async text=>{await playClient.postUserMessage(sessionId,text);setRevision(value=>value+1)},
+      })),
   error === '' ? null : h('p', { className: 'dtv-play-opening-error', role: 'alert' }, rawText(error)),
   h('footer', { className: 'dtv-play-opening-actions' },
     h('button', {

@@ -1,3 +1,4 @@
+import { captureNativeSourceReferences } from './native-provenance.js'
 import { randomUUID } from 'node:crypto'
 import { digest, counts } from '../../prompt-metadata.js'
 import { captureBodyReferences, messageText } from './body-references.js'
@@ -12,7 +13,7 @@ function render(text, variables) {
   })
 }
 function sectionSnapshot(section, variables, known, index) {
-  const text = render(section.text, variables)
+  const text = section.interpolate === false ? section.text : render(section.text, variables)
   const origin = known.find(p => p.name === section.name && p.text === section.text)
   return { name: section.name, index, text, ...counts(text), hash: digest(text),
     provenance: origin?.provenance ?? 'unknown', sources: (origin?.sources ?? []).map(({ text, ...source }) => ({
@@ -21,7 +22,10 @@ function sectionSnapshot(section, variables, known, index) {
 }
 
 export class AssemblyRecorder {
-  constructor(store) { this.store = store; this.pending = new Map(); this.active = new Map() }
+  constructor(store, { requiresRequestAssembly = () => false, requiresNativeRequest = () => false } = {}) {
+    this.store = store; this.requiresRequestAssembly = requiresRequestAssembly; this.requiresNativeRequest = requiresNativeRequest
+    this.pending = new Map(); this.active = new Map()
+  }
   track(record) {
     this.active.delete(record.sessionId)
     this.active.set(record.sessionId, { id: record.id, turn: record.turn, step: record.step })
@@ -70,9 +74,16 @@ export class AssemblyRecorder {
     record.parameters = structuredClone(parameters)
     this.store.put(record)
   }
-  request(options, session) {
+  request(options, session, observedNative) {
     const record = this.pending.get(options.sessionId)
     if (!record) return null
+    if (this.requiresNativeRequest(options.sessionId) && (!Object.isFrozen(options) || digest(options.messages) !== digest(session?.deriveMessages?.()))) return null
+    const requestEvent = session?.snapshotEvents?.().findLast(event => event.type === 'request/assembly')
+    // Title generation and other side calls may share the session id. They must
+    // not consume the pending AgentLoop capture or replace its frozen evidence.
+    const currentAssembly = requestEvent?.data.turn === record.turn && requestEvent.data.step === record.step
+    if (this.requiresRequestAssembly(options.sessionId) && !currentAssembly) return null
+    if (currentAssembly && digest(requestEvent.data.messages) !== digest(options.messages)) return null
     const systems = typeof options.system === 'string' ? [options.system]
       : (options.messages ?? []).filter(m => m.role === 'system').map(messageText)
     const indices = systems.flatMap((text, index) => digest(text) === record.assemblyHash ? [index] : [])
@@ -84,6 +95,13 @@ export class AssemblyRecorder {
       assemblyVerified: verified, systemMessageIndex: verified ? indices[0] : null,
       provider: options.provider, model: options.model, toolNames: (options.tools ?? []).map(t => t.name) }
     Object.assign(record, captureBodyReferences(session, options, record.sections, record.contexts, verified ? indices[0] : null))
+    if (requestEvent && digest(requestEvent.data.messages) === digest(options.messages)) {
+      record.requestAssemblyRef = { seq: requestEvent.seq, hash: digest(requestEvent.data), version: 1 }
+    }
+    if (this.requiresNativeRequest(options.sessionId) && record.sessionRef) {
+      record.nativeRequestRef = { version: 1, messagesHash: digest(options.messages) }
+      record.nativeSourceRefs = captureNativeSourceReferences(record, observedNative, options.messages)
+    }
     record.delivery.historyVerified = verified && Boolean(record.systemMessageRefs?.[indices[0]])
     record.status = 'request-observed'
     this.store.put(record)

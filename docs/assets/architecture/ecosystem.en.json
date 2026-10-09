@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Three-plugin architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1380,
+      760
+    ]
+  },
+  "components": [
+    {
+      "id": "ecosystem-ui",
+      "type": "frontend",
+      "label": "DSH browser / desktop",
+      "sublabel": "Public UI extensions",
+      "pos": [
+        40,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-plugin",
+      "type": "backend",
+      "label": "Tavern",
+      "sublabel": "RP / resources / MVU / Trace",
+      "pos": [
+        390,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "assembler-plugin",
+      "type": "backend",
+      "label": "Prompt Assembler",
+      "sublabel": "Shared registry / native default",
+      "pos": [
+        740,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "dsh-host",
+      "type": "external",
+      "label": "DSH Host",
+      "sublabel": "Execution / permissions / provider",
+      "pos": [
+        1090,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "memory-plugin",
+      "type": "backend",
+      "label": "Optional Memory Manager",
+      "sublabel": "Policy / delegation / observations",
+      "pos": [
+        740,
+        100
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "source-data",
+      "type": "database",
+      "label": "Source-owned data",
+      "sublabel": "Owned by Tavern / third parties",
+      "pos": [
+        390,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "history-authority",
+      "type": "database",
+      "label": "Authoritative DSH history",
+      "sublabel": "Native history / advanced records",
+      "pos": [
+        1090,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "optional-core-addon",
+      "type": "backend",
+      "label": "Optional core addon",
+      "sublabel": "Peer assembler / prepared core",
+      "pos": [
+        1090,
+        100
+      ],
+      "size": [
+        230,
+        78
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "ecosystem-ui-tavern-plugin",
+      "to": "tavern-plugin",
+      "label": "RP / resource APIs",
+      "variant": "emphasis",
+      "from": "ecosystem-ui"
+    },
+    {
+      "id": "tavern-plugin-assembler-plugin",
+      "to": "assembler-plugin",
+      "label": "Dependency / source registration",
+      "variant": "default",
+      "from": "tavern-plugin",
+      "labelDy": 56
+    },
+    {
+      "id": "assembler-plugin-dsh-host",
+      "to": "dsh-host",
+      "label": "Public native interfaces",
+      "variant": "default",
+      "from": "assembler-plugin",
+      "labelDy": 63
+    },
+    {
+      "id": "memory-plugin-assembler-plugin",
+      "to": "assembler-plugin",
+      "label": "Public read-only retrieval",
+      "variant": "dashed",
+      "from": "memory-plugin",
+      "labelAt": [
+        855,
+        254
+      ]
+    },
+    {
+      "id": "memory-plugin-tavern-plugin",
+      "to": "tavern-plugin",
+      "label": "Optional policy leases",
+      "variant": "dashed",
+      "from": "memory-plugin"
+    },
+    {
+      "id": "tavern-plugin-source-data",
+      "to": "source-data",
+      "label": "Resource / state CAS",
+      "variant": "default",
+      "from": "tavern-plugin",
+      "labelAt": [
+        505,
+        505
+      ]
+    },
+    {
+      "id": "dsh-host-history-authority",
+      "to": "history-authority",
+      "label": "Durable records",
+      "variant": "default",
+      "from": "dsh-host",
+      "labelAt": [
+        1205,
+        505
+      ]
+    },
+    {
+      "id": "optional-core-hook",
+      "from": "optional-core-addon",
+      "to": "dsh-host",
+      "label": "Protocol 1 hook",
+      "variant": "dashed",
+      "labelAt": [
+        1205,
+        254
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Installation",
+      "items": [
+        "Tavern → assembler; Manager can be installed or omitted."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Backend choice",
+      "items": [
+        "Standard works on stock rc.2; advanced explicitly requires addon + protocol 1."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Reversible composition",
+      "items": [
+        "Native user contributions persist; advanced request-only bodies remain log evidence."
+      ]
+    }
+  ]
+}

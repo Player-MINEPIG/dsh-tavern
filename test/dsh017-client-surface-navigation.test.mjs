@@ -65,7 +65,22 @@ test('late cleanup from the old panel cannot remove a newer guard', () => {
 test('shell routes Escape, launcher switches and diagnostic requests through guarded navigation', () => {
   const source = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
   assert.match(source, /else if \(surface !== null\) requestSurface\(null\)/)
-  assert.match(source, /const open = id => \{\s*if \(!requestSurface\(id\)\) return/)
+  assert.match(source, /const open = id => \{\s*if \(id === \'assembly\'\) \{[^\n]*return \}\s*if \(!requestSurface\(id\)\) return/)
   assert.match(source, /subscribeOpen\(playthroughId => \{\s*if \(!requestSurface\('diagnostics'\)\) return/)
   assert.match(source, /SessionTemplatePanel, \{[\s\S]*registerBeforeLeave,[\s\S]*close,/)
+})
+
+test('async unsaved confirmation commits only accepted, current navigation', async () => {
+  const committed = [], navigation = createSurfaceNavigation(next => committed.push(next))
+  let answer
+  const unregister = navigation.register(() => new Promise(resolve => { answer = resolve }))
+  assert.equal(navigation.request(null, 'assembly'), false)
+  answer(false); await Promise.resolve()
+  assert.deepEqual(committed, [])
+  navigation.request('preset', 'assembly')
+  answer(true); await Promise.resolve()
+  assert.deepEqual(committed, ['preset'])
+  navigation.request('character', 'assembly')
+  unregister(); answer(true); await Promise.resolve()
+  assert.deepEqual(committed, ['preset'])
 })

@@ -18,12 +18,13 @@ function errorMessage(data, status) {
 }
 
 function createRequester(fetchImpl, root) {
-  return async function request(method, path, body) {
+  return async function request(method, path, body, {signal} = {}) {
     const hasBody = body !== undefined
     const response = await fetchImpl(`${root}${path}`, {
       method,
       headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
       body: hasBody ? JSON.stringify(body) : undefined,
+      ...(signal ? {signal} : {}),
     })
     const data = await response.json().catch(() => null)
     if (!response.ok || data?.ok === false) {
@@ -285,23 +286,30 @@ export function createLivePlayClient({
       return v2('POST', `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId })
     },
 
-    postUserMessage(sessionId, text) {
-      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text })
+    postUserMessage(sessionId, text, options) {
+      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text, ...(options?.requestId ? { requestId: options.requestId } : {}) }, options)
     },
+    postDraft(body) { return v2('POST', '/drafts', body) },
+    getDraft(id, options) { return v2('GET', `/drafts/${encodeURIComponent(id)}`, undefined, options) },
+    putDraft(id, patch) { return v2('PUT', `/drafts/${encodeURIComponent(id)}`, patch) },
+    materializeDraft(id, body, options) { return v2('POST', `/drafts/${encodeURIComponent(id)}/materialize`, body, options) },
+    cancelDraft(id) { return v2('POST', `/drafts/${encodeURIComponent(id)}/cancel`, {}) },
 
-    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId)) {
+    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError('atEventId must be a non-negative integer')
       }
       return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId,
+        ...(stateSource === undefined ? {} : { stateSource }),
         ...(sessionFormatVersion === undefined ? {} : { sessionFormatVersion }),
       })
     },
 
-    postSession(selectionFromSessionId, importContextRef) {
+    postSession(selectionFromSessionId, importContextRef, stateSource) {
       const body = {
         ...(typeof selectionFromSessionId === 'string' && selectionFromSessionId !== '' ? { selectionFromSessionId } : {}),
         ...(importContextRef === undefined ? {} : { importContextRef }),
+        ...(stateSource === undefined ? {} : { stateSource }),
       }
       return v2('POST', '/sessions', body)
     },

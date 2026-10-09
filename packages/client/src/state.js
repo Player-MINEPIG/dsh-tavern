@@ -1,8 +1,8 @@
 export const TAVERN_MENU_ITEMS = Object.freeze([
+  { id: 'assembly', labelKey: 'nav.assembly', emptyTitleKey: 'nav.assembly.empty', available: true },
   { id: 'preset', labelKey: 'nav.preset', emptyTitleKey: 'nav.preset.empty', available: true },
   { id: 'character', labelKey: 'nav.character', emptyTitleKey: 'nav.character.empty', available: true },
   { id: 'world-info', labelKey: 'nav.worldBook', emptyTitleKey: 'nav.worldBook.empty', available: true },
-  { id: 'regex', labelKey: 'nav.regex', emptyTitleKey: 'nav.regex.empty', available: true, binding: false, showBinding: false, playOnly: true },
   { id: 'user', labelKey: 'nav.user', emptyTitleKey: 'nav.user.empty', available: true },
   { id: 'session-template', labelKey: 'nav.sessionTemplate', emptyTitleKey: 'nav.sessionTemplate.empty', available: true, binding: false, showBinding: false },
   { id: 'conversation-settings', labelKey: 'nav.conversationSettings', emptyTitleKey: 'nav.conversationSettings.empty', available: true, binding: false, showBinding: false, playOnly: true },
@@ -11,7 +11,7 @@ export const TAVERN_MENU_ITEMS = Object.freeze([
 ])
 
 export const TAVERN_LAUNCHER_SIZE = 44
-export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 376 })
+export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 416 })
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -170,7 +170,7 @@ export function launcherPlacement(anchor, viewport, expanded = false, scale = 1)
     side: opensLeft ? 'left' : 'right',
     vertical: opensUp ? 'up' : 'down',
     left: expanded && opensLeft ? point.x - panelWidth + launcherSize : point.x,
-    top: expanded && opensUp ? point.y - panelHeight + launcherSize : point.y,
+    top: expanded && opensUp ? Math.max(8, point.y - panelHeight + launcherSize) : point.y,
     anchor: point,
   }
 }

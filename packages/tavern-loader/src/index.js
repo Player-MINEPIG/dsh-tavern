@@ -1,8 +1,18 @@
+import {createRenderingCache} from '../../rendering-cache/store.js'
+import {createRenderingCacheHandler,isRenderingCachePath} from '../../rendering-cache/http.js'
+import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
+import { createDraftPreviewContext } from './draft-preview-context.js'
+import { PlaythroughDrafts } from './playthrough-drafts.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
+import { createCharacterDiscovery } from '../../mvu-adapter/src/discovery.js'
+import { installMvu } from '../../mvu-adapter/src/host.js'
+import { commandHookSourceFromCharacter } from '../../mvu-adapter/src/command-hook-declaration.js'
+import { createMvuApi, isMvuApiPath } from '../../mvu-adapter/src/http.js'
+import { mvuResourceFromCharacter } from '../../mvu-adapter/src/character.js'
 import { createContractOperation, recordDiagnosticFailure } from '../../play/src/operation-contract.js'
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
-import { createAssemblyBodyReader } from '../../tavern-trace/src/body-references.js'
+import { createNativeRequestReader } from '../../tavern-trace/src/native-request-reader.js'
 import { createPromptTraceApi } from './prompt-trace-api.js'
 import {
   PresetStore,
@@ -23,9 +33,9 @@ import {
 } from '../../user/src/index.js'
 import { PresetParameterFallback } from './preset-parameter-fallback.js'
 import { PresetRuntime } from './preset-runtime.js'
-import { TavernProfileLoader } from './profile-loader.js'
+import { TavernProfileLoader, compileTavernProfile } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
-import { UserWorldBookBindingStore } from './user-world-book-policy.js'
+import { UserWorldBookBindingStore, composeWorldBookSelection } from './user-world-book-policy.js'
 import { ResourceWorldBookBindingStore } from './resource-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
@@ -69,6 +79,17 @@ import {
   rpModeConstants,
 } from './rp-mode.js'
 import { prepareStorageDir } from './storage-location.js'
+import { AssemblyPresetStore } from '../../request-assembler/store.js'
+import { RequestAssembler } from '../../request-assembler/runtime.js'
+import { registerTavernSources, BUILTINS as ASSEMBLY_BUILTINS, NATIVE_BUILTINS as NATIVE_ASSEMBLY_BUILTINS, diagnoseTavernAssembly } from 'dsh-prompt-assembler/adapters/tavern'
+import { createDefaultRegistry } from '../../request-assembler/builtin-sources.js'
+import { createMemorySources, installMemorySources } from '../../memory-sources/index.js'
+import { OpeningWorldBookService, OPENING_WORLD_BOOK_SERVICE, createOpeningWorldBookHandler, isOpeningWorldBookPath } from '../../opening-worldbook/index.js'
+import { connectMemoryManager } from 'dsh-prompt-assembler/adapters/memory-manager'
+import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
+import { createScopeCatalog, installScopeCatalog } from '../../scope-catalog/index.js'
+import { createSessionReadContext } from '../../request-assembler/session-read-context.js'
+import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
 
 export const name = PLUGIN_ID
 export const inject = [
@@ -76,6 +97,7 @@ export const inject = [
   'sessionController',
   'workspaceController',
   'directoryPickerController',
+  'dshPromptAssembler',
 ]
 
 function migrateCharacterSelections(characterStore, selections) {
@@ -305,7 +327,32 @@ export function apply(ctx, config = {}) {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
+  const sessionReads = createSessionReadContext(id => ctx.get('sessions')?.get?.(id))
+  const withSessionRead = async ({ sessionId, signal } = {}, callback) => {
+    signal?.throwIfAborted()
+    if (!sessionId || sessionReads.getSession(sessionId)) return callback()
+    const sessions = ctx.get('sessions'), controller = ctx.get('sessionController')
+    if (!sessions || !controller) throw Object.assign(new Error('Session reader is not ready'), { code: 'SESSION_READER_NOT_READY' })
+    let record
+    try { record = await controller.inspect(sessionId) }
+    catch (error) {
+      if (error.code === 'session/not-found' || error.constructor?.name === 'ApiSessionNotFound') throw Object.assign(new Error('Session does not exist'), { code: 'SESSION_NOT_FOUND' })
+      throw error
+    }
+    signal?.throwIfAborted()
+    const session = sessions.get(sessionId) ?? sessions.prepare(sessionId, { seed: record.events, meta: record.meta, inheritedEventCount: record.inheritedEventCount, eventState: 'detached' })
+    return sessionReads.run(session, callback)
+  }
+  ctx.effect(() => () => sessionReads.dispose())
   migrateCharacterSelections(characterStore, selections)
+  const openingWorldBooks = new OpeningWorldBookService({ storageDir, characters: characterStore,
+    getSelection: id => selections.get(id), getSelectionRevision: id => selections.selectionRevision(id),
+    getSession: id => ctx.get('sessions')?.get?.(id), onChange: () => ctx.emit('system-prompt/change') })
+  ctx.provide(OPENING_WORLD_BOOK_SERVICE, openingWorldBooks)
+  ctx.effect(() => () => openingWorldBooks.dispose())
+  installScopeCatalog(ctx, createScopeCatalog({ sources: { characterId: characterStore, presetId: store, userId: userStore },
+    getSelection: id => selections.get(id), getSelectionRevision: id => `${selections.selectionRevision(id)}:${store.selectionEpoch}`,
+    getSession: sessionReads.getSession }))
   const rpMode = new RpModeController({
     selections,
     uiSettings: uiSettingsStore,
@@ -330,6 +377,16 @@ export function apply(ctx, config = {}) {
     }
   }
   let importContexts = null
+  let playthroughDrafts
+  const draftPreview = createDraftPreviewContext()
+  const draftMvu = { async resolvePromptDependency({ id, scope, event, signal } = {}) {
+    const record = draftPreview.current()
+    if (!record || id !== undefined || scope?.sessionId || event?.preview !== true || event?.usage !== 'world-book-variable') return null
+    signal?.throwIfAborted()
+    if (!record.variables) return null
+    return { id: `mvu:draft-${record.id}`, adapterId: 'tavern.mvu', content: structuredClone(record.variables), revision: record.variableRevision, configRevision: null,
+      checkCurrent: () => !signal?.aborted && draftPreview.current() === record && playthroughDrafts.record(record.id).revision === record.revision }
+  } }
   const playHost = createPlayHost({
     sessionController: ctx.get('sessionController'),
     workspaceController: ctx.get('workspaceController'),
@@ -339,7 +396,9 @@ export function apply(ctx, config = {}) {
     selections,
     characters: characterStore,
     importContexts: () => importContexts,
-    onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId),
+    stateSeeds: () => ctx.get('tavernMvu'),
+    drafts: () => playthroughDrafts,
+    onSelectionCopied: (sessionId, from) => { assemblyPresets.copySelection(from, sessionId); reconcileRpAfterSelection(sessionId) },
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
   const playMemberships = new PlayMembershipService(playWorkspaceStore)
@@ -349,7 +408,9 @@ export function apply(ctx, config = {}) {
     selections,
     userWorldBooks,
     resourceWorldBooks,
+    sessionWorldBooks: openingWorldBooks,
     maxProfileBytes: config.limits?.maxProfileBytes,
+    previewSelection: ({ sessionId }) => !sessionId ? draftPreview.current()?.selection : undefined,
   })
   const pendingInput = new PendingInputProjection({
     maxScanCharacters: config.worldBook?.maxScanCharacters,
@@ -357,17 +418,103 @@ export function apply(ctx, config = {}) {
     maxQueuedCharacters: config.pendingInput?.maxQueuedCharacters,
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
+  const sharedAssembler = ctx.get('dshPromptAssembler')
+  // Standalone plugin owns runtime/store; direct library callers retain the
+  // old embedding contract when no plugin service is supplied.
+  const assemblyPresets = sharedAssembler?.store ?? new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
+  sharedAssembler?.migrateLegacy(storageDir)
+  const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [], withSessionRead,
+    getSession: sessionReads.getSession, getMvu: () => draftPreview.current() ? draftMvu : ctx.get('tavernMvu'),
+    resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
+    getPreviewLease: () => {
+      const record = draftPreview.current()
+      return record ? { checkCurrent: () => draftPreview.current() === record
+        && playthroughDrafts.record(record.id).phase === 'draft'
+        && playthroughDrafts.record(record.id).revision === record.revision } : null
+    },
+    getSelection: sessionId => {
+      const selected = (!sessionId ? draftPreview.current()?.selection : undefined) ?? selections.get(sessionId)
+      const bound = composeWorldBookSelection([...selected.worldBookIds, ...openingWorldBooks.selectedIds(sessionId, selected)],
+        selected.userId ? userWorldBooks.get(selected.userId) : [],
+        selected.presetId ? resourceWorldBooks.get('preset', selected.presetId) : [],
+        selected.characterCardId ? resourceWorldBooks.get('character', selected.characterCardId) : [])
+      const worldBookBindings = Object.fromEntries(bound.effectiveIds.map(id => [id, [
+        ...(bound.explicitIds.includes(id) ? ['session'] : []), ...(bound.userBoundIds.includes(id) ? ['user'] : []),
+        ...(bound.presetBoundIds.includes(id) ? ['preset'] : []), ...(bound.characterBoundIds.includes(id) ? ['character'] : [])]]))
+      return { worldBookIds: bound.effectiveIds, worldBookBindings, characterId: selected.characterCardId, presetId: selected.presetId, userId: selected.userId,
+        selectionRevision: `${selections.selectionRevision(sessionId)}:${openingWorldBooks.revision()}` }
+    } })
+  const sourceOptions = { worldbookPolicy: (context, output) => memorySources.worldBooks.filter(context, output), worldbookValidateResolved: memorySources.worldBooks.validateResolved }
+  const registry = sharedAssembler?.registry ?? createDefaultRegistry(sourceOptions)
+  const requestAssembler = sharedAssembler?.runtime ?? new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry, sessionReads })
+  if (sharedAssembler) {
+    ctx.effect(() => registerTavernSources(registry, sourceOptions))
+    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly: diagnoseTavernAssembly,
+      validateResult: (result, agent) => { const nativeContext = runtime.assembledFor(agent)?.memoryContext; if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext); memorySources.validateAssembly(result.metadata?.assembly) } }))
+  }
+  installMemorySources(ctx, memorySources, registry)
+  store.assemblyPresets = assemblyPresets
+  store.requestAssembler = requestAssembler
+  if (!sharedAssembler) ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
+  ctx.provide('tavernRequestSources', requestAssembler.registry) // Protocol-1 compatibility alias.
+  if (!sharedAssembler && typeof ctx.inject === 'function') connectMemoryManager(ctx, requestAssembler.registry)
+  const renderingCacheApi=createRenderingCacheHandler(createRenderingCache(storageDir),{getConnection:()=>ctx.get('connection')})
+  const renderingAuthority=createRenderingAuthority()
+  ctx.provide('tavernRenderingAuthority',renderingAuthority)
+  ctx.effect(()=>()=>renderingAuthority.dispose(),'dsh-tavern: rendering write authority')
+  const renderingAuthorityApi=createRenderingAuthorityHandler(renderingAuthority,{getConnection:()=>ctx.get('connection')})
+  const mvuResources = (config.mvu?.resources ?? []).map(resource => resource.characterId && resource.initial === undefined
+    ? mvuResourceFromCharacter(characterStore.get(resource.characterId), resource) : resource)
+  let mvu
+  const refreshMvu = createCharacterDiscovery({ characters: characterStore, selections, service: () => mvu })
+  mvu = installMvu(ctx, { storageDir, resources: mvuResources,
+    getPreviewSession: sessionReads.getSession,
+    isPreviewRead: sessionReads.isActive,
+    resolveCommandHook: resource => {
+      if (!resource.characterId) return null
+      const metadata = characterStore.scopeMetadata()
+      const source = commandHookSourceFromCharacter(characterStore.get(resource.characterId))
+      if (metadata.checkCurrent() !== true) throw Object.assign(new Error('Command source changed'), { code: 'MVU_USAGE_CANCELLED' })
+      return { source, checkCurrent: metadata.checkCurrent }
+    }, sources: requestAssembler.registry, refresh: refreshMvu,
+    isActive: (resource, sessionId) => selections.get(sessionId).characterCardId === resource.characterId,
+    getSelection: sessionId => selections.get(sessionId), getSelectionToken: sessionId => selections.selectionRevision(sessionId),
+    memberships: playMemberships, onError: error => recordFailure('mvu.update', error) })
+  runtime.requestAssemblyEnabled = sessionId => {
+    const selected = requestAssembler.selected(sessionId)
+    if (selected) requestAssembler.requireAvailable(selected)
+    return Boolean(selected)
+  }
+  const requestContexts = new WeakMap()
+  ctx.on('agent/assemble-request', async (payload, next) => {
+    requestContexts.set(payload.agent, payload)
+    try {
+      const result = await (sharedAssembler ? next() : requestAssembler.execute(payload, next))
+      const nativeContext = runtime.assembledFor(payload.agent)?.memoryContext
+      if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext)
+      memorySources.validateAssembly(result.metadata?.assembly)
+      return result
+    } finally { requestContexts.delete(payload.agent) }
+  })
   runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
   const traceStore = new TavernTraceStore(storageDir, config.trace, assemblyStore)
   if (traceStore.resetOversizedFile) {
     recordFailure('trace.record', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
+  const nativeRequests = createNativeRequestReader({ assemblies: assemblyStore, sessionController: ctx.get('sessionController'), sessions: () => ctx.get('sessions'),
+    resolveSourceName(source) {
+      if (source.plugin !== 'pmp-dsh-tavern' || source.module !== 'preset' || !source.resourceId || !source.field) return null
+      const matches = store.get(source.resourceId).prompts.filter(prompt => prompt.identifier === source.field)
+      return matches.length === 1 ? matches[0].name : null
+    } })
   const traceRecorder = new TavernTraceRecorder(traceStore)
-  const assemblyRecorder = new AssemblyRecorder(assemblyStore)
+  const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: sessionId => requestAssembler.requestAssemblyAvailable(sessionId), requiresNativeRequest: sessionId => requestAssembler.selected(sessionId)?.backend === 'native' })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
-  runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
+  runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, { ...config.worldBook,
+    resolveDocument: (id, { sessionId }) => id.startsWith('session-opening-') ? openingWorldBooks.get(id, sessionId) : worldBookStore.get(id),
+    allowResource: (id, context) => memorySources.worldBooks.allowNative(id, context.requestAssembly) }))
   const notifyChange = () => ctx.emit('system-prompt/change')
   const traceSafely = (callback) => {
     try {
@@ -428,6 +575,23 @@ export function apply(ctx, config = {}) {
     users: userStore,
     worldBooks: worldBookStore,
   })
+  playthroughDrafts = new PlaythroughDrafts({ storageDir, workspace: playWorkspaceStore, characters: characterStore, configurations: sessionConfigurations, selections, assembly: assemblyPresets, mvu,
+    controller: ctx.get('sessionController'), workspaces: ctx.get('workspaceController'), agents: ctx.get('agents'), renderingAuthority, reconcileRp: reconcileRpAfterSelection,
+    releaseRp: sessionId => rpMode.setBySessionId(sessionId, false, { followSuppressed: true }),
+    previewAssembly: (record, preset) => draftPreview.run(record, () => {
+      const model = ctx.get('agentDefaultModel')?.currentSelection?.()
+      return requestAssembler.preview({ preset, nativeVariables: { cwd: record.rootPath, ...(model?.provider ? { provider: model.provider } : {}), ...(model?.model ? { model: model.model } : {}) } })
+    }),
+    onError: error => recordFailure('playthrough.draft', error) })
+  playthroughDrafts.importContexts = importContexts
+  ctx.on('session/event', (session, event) => playthroughDrafts.observe(session, event))
+  // The public archive gate runs at pre-step. Publish an admitted first turn
+  // before that gate evaluates; an unstarted preparation remains archived.
+  ctx.on('agent/pre-step', async (payload, next) => {
+    await playthroughDrafts.beforeStep(payload.agent)
+    return next()
+  }, { prepend: true })
+  ctx.effect(() => () => playthroughDrafts.dispose(), 'dsh-tavern: playthrough drafts')
 
   const selectionPolicy = {
     selectedPresetId: (sessionId) => runtime.selection({ sessionId }).presetId,
@@ -472,12 +636,15 @@ export function apply(ctx, config = {}) {
     name: rpModeConstants.sectionName,
     order: rpModeConstants.sectionOrder,
     text: (context) => {
+      if (context.tavernAssemblyPreview && draftPreview.current()) return rpMode.section
       if (context.agent === undefined) return ''
       return rpMode.isActive(context.agent) ? rpMode.section : ''
     },
   })
 
   ctx.on('agent/created', ({ agent }) => {
+    const parentId = agent?.session?.header?.parentSession
+    if (parentId) assemblyPresets.copySelection(parentId, agent.id)
     selections.ensureAgent(agent)
     pendingInput.ensureSession(agent?.session)
     // DSH awaits this serial lifecycle before exposing the Agent. A failed
@@ -494,7 +661,9 @@ export function apply(ctx, config = {}) {
     } catch (error) {
       recordFailure('rp.policy', error, { sessionId: payload.agent?.id })
     }
-    return decision
+    return !sharedAssembler && requestAssembler.available() && requestAssembler.startsSeries(payload.agent)
+      ? { ...decision, startsRequestSeries: true }
+      : decision
   })
 
   registerRpCommands(ctx, rpMode)
@@ -520,7 +689,7 @@ export function apply(ctx, config = {}) {
   ctx.on('llm/stream', async function* (options, next) {
     const agent = ctx.get('agents')?.get?.(options.sessionId)
     if (agent) traceSafely(() => assemblyRecorder.parameters(options.sessionId, parameterFallback.snapshot(agent, options)))
-    traceSafely(() => assemblyRecorder.request(options, ctx.get('agents')?.get?.(options.sessionId)?.session))
+    traceSafely(() => assemblyRecorder.request(options, agent?.session, requestAssembler.observeNativeRequest(options, agent?.session)))
     yield* next()
   })
   ctx.effect(() => () => traceSafely(() => assemblyRecorder.dispose()))
@@ -553,6 +722,20 @@ export function apply(ctx, config = {}) {
 
   ctx.on('system-prompt/assemble', async (assembly, context, next) => {
     const snapshot = runtime.forAssembleContext(context)
+    let contributions = snapshot.sections
+    if (!context.tavernAssemblyPreview && !runtime.requestAssemblyEnabled(snapshot.audit.sessionId) && assembly.sections.some(section => section.name === PROFILE_SECTION && section.text === snapshot.registeredProfileText)) {
+      const request = context.agent && requestContexts.get(context.agent)
+      const turn = context.agent?.session?.snapshotEvents?.().findLast(event => event.type === 'turn/start')?.data.turn
+      const sourceContext = { sessionId: snapshot.audit.sessionId, assets: snapshot.assemblyInput, preview: context.tavernAssemblyPreview === true,
+        turn: request?.turn ?? turn ?? null, step: request?.step ?? null, signal: request?.signal ?? context.signal }
+      const loreEntries = await memorySources.worldBooks.prepareNative(sourceContext)
+      const compiled = compileTavernProfile({ ...snapshot.assemblyInput, loreEntries })
+      const literalEntries = new Set(loreEntries.filter(entry => entry.literalMacros).map(entry => entry.id))
+      contributions = compiled.sections.map(section => ({ ...section,
+        ...(section.sources?.some(source => source.kind === 'worldbook' && literalEntries.has(source.qualifiedEntryId)) ? { interpolate: false } : {}) }))
+      snapshot.memoryContext = sourceContext
+      memorySources.worldBooks.validateResolved(sourceContext)
+    }
     const contexts = snapshot.runtimeContexts.length === 0
       ? assembly.contexts
       : [...assembly.contexts, ...snapshot.runtimeContexts]
@@ -562,7 +745,7 @@ export function apply(ctx, config = {}) {
       if (section.name !== PROFILE_SECTION) return [section]
       if (section.text !== snapshot.registeredProfileText) return [section]
       const imported = snapshot.importedContext
-      return [...snapshot.sections.map(({ name, text }) => ({ name, text })),
+      return [...contributions.map(({ name, text, interpolate }) => ({ name, text, ...(interpolate === false ? { interpolate } : {}) })),
         ...(imported ? [{ name: PROFILE_SECTION, text: imported }] : [])]
     })
     const selected = snapshot.systemPromptMode === 'replace'
@@ -573,14 +756,17 @@ export function apply(ctx, config = {}) {
     assembly.sections = selected
     assembly.contexts = contexts
     const result = await next()
+    if (snapshot.memoryContext) memorySources.worldBooks.validateResolved(snapshot.memoryContext)
     // Ancestor transforms and complete-section enforcement may still follow.
     snapshot.officialAssembly = structuredClone(result)
     return result
   })
 
   const registerHttpApi = webCtx => {
-    const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore,
-      readBodies: createAssemblyBodyReader(ctx.get('sessionController')) })
+    const mvuApi = createMvuApi(mvu, { drafts: playthroughDrafts })
+    const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), readActual: id => nativeRequests.readActual(id), notify: notifyChange })
+    const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore, requestAssembler,
+      readBodies: nativeRequests.readBodies })
     const presetApi = createPresetApiHandler(
       store,
       notifyChange,
@@ -652,6 +838,7 @@ export function apply(ctx, config = {}) {
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
     const playApi = createPlayApiHandler({
+      drafts: playthroughDrafts,
       chromeStore,
       workspaceStore: playWorkspaceStore,
       operationJournal,
@@ -671,8 +858,19 @@ export function apply(ctx, config = {}) {
         if (typeof sessionId !== 'string' || typeof active !== 'boolean') return
       },
     })
+    const openingWorldBookApi = createOpeningWorldBookHandler(openingWorldBooks, { getConnection: () => ctx.get('connection') })
     const api = secureTavernApi(
-      (req, res) => new URL(req.url, 'http://localhost').pathname.startsWith(`${API_V3}/`)
+      (req, res) => isOpeningWorldBookPath(req.url)
+        ? openingWorldBookApi(req, res)
+        : isRenderingCachePath(req.url)
+        ? renderingCacheApi(req, res)
+        : isRenderingAuthorityPath(req.url)
+        ? renderingAuthorityApi(req, res)
+        : isMvuApiPath(req.url)
+        ? mvuApi(req, res)
+        : isAssemblyApiPath(req.url)
+        ? assemblyApi(req, res)
+        : new URL(req.url, 'http://localhost').pathname.startsWith(`${API_V3}/`)
         ? promptTraceApi(req, res)
         : isPlayApiPath(req.url)
         ? playApi(req, res)
@@ -735,6 +933,7 @@ export function apply(ctx, config = {}) {
     conversationSettingsStore: { value: conversationSettingsStore, enumerable: false },
     chromeStore: { value: chromeStore, enumerable: false },
     playWorkspaceStore: { value: playWorkspaceStore, enumerable: false },
+    playthroughDrafts: { value: playthroughDrafts, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
     assemblyStore: { value: assemblyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },

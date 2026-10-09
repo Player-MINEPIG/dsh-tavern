@@ -186,6 +186,7 @@ export class SessionSelectionStore {
       now: this.now,
     })
     this.state = loaded.state
+    this.selectionEpochs = new Map()
     if (loaded.migrated) this.persist()
   }
 
@@ -205,11 +206,17 @@ export class SessionSelectionStore {
     return stored === undefined ? this.defaults() : clone(stored.selection)
   }
 
+  /** Process-local selection generation; unrelated sessions do not invalidate leases. */
+  selectionRevision(id) { return this.selectionEpochs.get(sessionId(id)) ?? 0 }
+
   commit(mutator) {
     const next = clone(this.state)
     mutator(next)
     const serialized = assertStateBounds(next, this.maxSessions, this.maxStateBytes)
     atomicJson(this.statePath, serialized)
+    for (const id of new Set([...Object.keys(this.state.sessions), ...Object.keys(next.sessions)])) {
+      if (JSON.stringify(this.state.sessions[id]?.selection) !== JSON.stringify(next.sessions[id]?.selection)) this.selectionEpochs.set(id, this.selectionRevision(id) + 1)
+    }
     this.state = next
   }
 

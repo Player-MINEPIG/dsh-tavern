@@ -189,6 +189,9 @@ export function normalizeSessionMessages(value, label = 'messages') {
   if (!isRecord(value)) fail(label, 'must be an object')
   if (!Array.isArray(value.messages)) fail(label, 'messages must be an array')
   if (typeof value.incompleteTurn !== 'boolean') fail(label, 'incompleteTurn must be a boolean')
+  const stopped=value.stoppedRequest
+  if(stopped!=null&&(!isRecord(stopped)||!['userEventId','turnStartEventId','turnEndEventId'].every(key=>Number.isSafeInteger(stopped[key])&&stopped[key]>=0)
+   ||stopped.turnStartEventId>=stopped.userEventId||stopped.userEventId>=stopped.turnEndEventId||value.incompleteTurn))fail(label,'invalid stopped request coordinates')
   const messages = value.messages.map((item, index) => {
     const itemLabel = `${label}.messages[${index}]`
     if (!isRecord(item)) fail(itemLabel, 'must be an object')
@@ -227,6 +230,7 @@ export function normalizeSessionMessages(value, label = 'messages') {
   })
   return { messages, incompleteTurn: value.incompleteTurn,
     ...(Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {}),
+    ...(stopped===undefined?{}:{stoppedRequest:stopped===null?null:{userEventId:stopped.userEventId,turnStartEventId:stopped.turnStartEventId,turnEndEventId:stopped.turnEndEventId}}),
   }
 }
 

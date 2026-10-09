@@ -15,6 +15,7 @@ test('selected preset enters system prompt and model call config seams', async (
     on: (name, listener) => listeners.set(name, listener),
     emit: (name) => emitted.push(name),
     get: () => undefined,
+    provide(name, value) { this[name] = value },
     effect: () => {},
     logger: { info: () => {} },
   }
@@ -54,6 +55,7 @@ test('replace mode removes other system sections but preserves request capabilit
     on: (name, listener) => listeners.set(name, listener),
     emit: () => {},
     get: () => undefined,
+    provide(name, value) { this[name] = value },
     effect: () => {},
     logger: { info: () => {} },
   }
@@ -98,6 +100,7 @@ test('Host resolves profile and call config from the requesting agent session', 
     on: (name, listener) => listeners.set(name, listener),
     emit: () => {},
     get: () => undefined,
+    provide(name, value) { this[name] = value },
     effect: () => {},
     logger: { info: () => {} },
   }
@@ -138,6 +141,7 @@ test('selected user keeps DSH agent identity and contributes ordered named Taver
     on: (name, listener) => listeners.set(name, listener),
     emit: () => {},
     get: () => undefined,
+    provide(name, value) { this[name] = value },
     effect: () => {},
     logger: { info: () => {} },
   }
@@ -170,6 +174,7 @@ test('Host traces the exact assembled snapshot even if selection changes before 
     on: (name, listener) => listeners.set(name, listener),
     emit: () => {},
     get: () => undefined,
+    provide(name, value) { this[name] = value },
     effect: () => {},
     logger: { info: () => {} },
   }

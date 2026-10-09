@@ -2,18 +2,29 @@
 
 [中文](INSTALLATION.md)
 
-Tavern **2.5.1** supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
+Tavern 3.0.0 requires both Tavern and the independent assembler to be enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Memory Manager v1.0.0. Older full documentation remains at its Git tag.
+
+Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
+
+Current Tavern source supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
 
 Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_en.md) for older external references. Already migrated V4 references need no further conversion; no rollback tool is provided. Put the target DSH on `PATH` and initialize the intended profile before installation.
 
-## Install 2.5.1
+## Install current source
 
-From Tavern 2.5.0, update the plugin and restart the Host while retaining DSH `0.2.0-rc.2`; sessions, timelines, Trace and settings need no migration. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
+Updating current source requires the additional assembler bundle. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.0-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
 
-Stop the target Host, then install the fixed version:
+Stop the target Host and enable Tavern 3.0.0 with standard Assembler v1.1.0. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+```
+
+Optional resource management is provided by [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0). To use it, additionally install it in the same profile, then restart the Host; generic resource assembly requirements are covered in [integration](ASSEMBLER_INTEGRATION_en.md#optional-memory-manager):
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 ```
 
 <a id="source-candidate"></a>
@@ -23,7 +34,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 Use an isolated test profile/home initialized with the target DSH:
 
 ```sh
-git clone --branch v2.5.1 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.0.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
@@ -121,6 +132,10 @@ These commands do not replace [target Host and browser verification](TESTING_en.
 
 ## Uninstall
 
+Use a separate workspace for ordinary conversations rather than DSH native **New Session** inside the RP workspace. DSH may reuse a same-workspace blank session that has not started a turn, even when it already has a Tavern character or title. Uninstalling Tavern does not clear session titles, per-session resource selections or workspace playthrough records, so reinstalling can restore old character bindings and grouping.
+
+If you still repurpose a session in the RP workspace for ordinary chat, first unbind its character in the character panel and confirm detaching it from the old playthrough, unbind its preset, user persona and explicitly selected world books, turn RP off, and check the independent assembler's applied sources and custom text before uninstalling. Unbinding affects future requests without deleting resources or existing messages. Rename an old title manually through the native DSH session menu. Tavern's panels are unavailable after removal; reinstall first if you need them for cleanup.
+
 ```text
 npm run plugin:uninstall
 ```
@@ -176,3 +191,5 @@ does not implicitly erase user content.
 All common options work for uninstall too: `--profile`, `--dsh-home`,
 `--store-dir`, `--storage-dir`, and `--dry-run`. Use `--help` for the complete
 command summary.
+
+For the standard and optional core packages, see [assembler integration](ASSEMBLER_INTEGRATION_en.md). Standard user context/pre-step persist in DSH history; they are not the advanced request-only transport.

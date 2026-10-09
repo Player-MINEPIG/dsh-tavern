@@ -2,7 +2,13 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Contract: Tavern 2.5.1, supporting only DSH `0.2.0-rc.2`.
+[MVU state source](MVU_en.md)
+
+Current assembly sources use shared `dshPromptSources` protocol 1; legacy `tavernRequestSources` aliases that registry. See the [complete API surface](API_SURFACES_en.md) for all extension routes, public imports and compatibility boundaries.
+
+Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
+
+Contract: current Tavern source (package version in package.json), supporting only DSH `0.2.0-rc.2`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -18,7 +24,7 @@ message coordinates, branch inputs, and unmigrated timeline references.
 <a id="impact-on-third-party-consumers-in-240"></a>
 ## Impact on third-party consumers in the current version
 
-Version 2.5.1 targets DSH `0.2.0-rc.2` and only adds math presentation to the bundled RP view and static HTML exports. Compared with 2.5.0, it adds no routes, fields, setting toggles or persistent formats. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their 2.5.0 contracts, together with the following contracts introduced in the 2.4 series.
+The current contract targets DSH `0.2.0-rc.2`, including the optional Host services and session opening world-book routes below. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their existing contracts.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
@@ -91,6 +97,34 @@ For public contracts and read timing, see [consumer read paths and compatibility
 An assembled section is not necessarily an original source field; current resources, historical sections,
 and runtime assembly are not interchangeable.
 
+## Current session bound resources
+
+Session resource views can call the optional Host method `tavernMemorySources.listBound({scope:{sessionId,authority:'local'},signal?})`, returning deeply immutable `{items,revision,checkCurrent}`. Items contain only `{id,adapterId,name,type,revision,managementMode,binding}` and optional `enabled/sourceError`, with no content or variables. Binding metadata identifies the real session, current character, preset/Persona origins or existing MVU instance identity. The directory covers the current character's embedded book, effectively selected standalone and session opening books, templates actually bound to the session, and existing current-character MVU state instances. Inline preset prompts are not represented as persistent resources.
+
+The lookup checks selected books without scanning other cards/global resources, activating entries, allocating MVU instances or granting write/prompt usage. Global `list/read` remain available for global resource management. Session views must filter configuration and historical traces through these actual IDs; unbound configuration or old traces must not recreate other-card rows. Cross-card binding UI is outside this interface. After the final await, consumers check the Host-only `checkCurrent()` lease, revoked by selection generations, source versions, session instance/identity changes and service unload. An absent MVU service contributes no items; an older service lacking metadata support explicitly rejects rather than guessing binding through content catalogs. World-book/template adapters and `tavernMvu` also expose this same `listBound` shape for direct manager forwarding. No HTTP route is added.
+
+## Session opening world books
+
+The optional Host service `tavernOpeningWorldBooks` exposes `prepare` and `commit`; types are exported by `pmp-dsh-tavern/opening-worldbook`. HTTP uses `POST /pmp-dsh-tavern/api/v1/sessions/:sessionId/opening-worldbook/prepare` and `/commit`, retaining local peer, Host, Origin/desktop token, JSON and official DSH admission checks.
+
+`prepare({sourceIdentity,openingId,identitySource,source?})` reads data and returns `{ok:true,proposalId,expectedRevision,entriesHash,entries,openingId,entryCount,expiresAt,sourceIdentity,resourceId}`. `sourceIdentity` is `{version:1,owner:'pmp-dsh-tavern',sessionId,characterId,greetingIndex,greetingSha256,identitySha256}`: the index is zero based, 0 is first_mes, and greetingSha256 covers the original before regex/macros. The Host verifies the official session, selected original card and selection generation. `identitySource` and `source:{url,sha256,content}` accept only the fixed public snapshots in `opening-worldbook/manifest`; their scripts are never executed. Either sibling contains both full families. default/alisa_party skip, while police_done/hospital_done/pool contain 7/8/15 entries. Bounded literals and fixed data mappings preserve full content; missing data, unsupported expressions or hash mismatches reject.
+
+After showing the proposal and obtaining separate world-book write confirmation, the trusted parent UI calls `commit({proposalId,expectedRevision,operationId,sourceIdentity,reviewed:true,write:true})`. This does not reuse MVU variable grants. The guest VM can request a controlled opening ID and await a receipt; it receives no confirmation primitive, source reading, fetch or arbitrary Host calls. At most 64 proposals remain valid for 10 minutes. Source, selection ABA, session instance or unload changes revoke them. CAS precedes atomic persistence. Repeating a resource operationId returns its original receipt; conflicting reuse rejects. Empty skips create no resource, and their receipts can be retried only within the current Host lifetime.
+
+Receipts are `{ok:true,inserted,existing,updated,targetWorldbook,method:'session-local',receiptId,resourceId,revision}`; empty choices also return `skipped:true` and `resourceId:null`. Only plugin-owned session storage changes. Original cards, global books and global bindings retain their values. Resource IDs are `world-book:session-opening-<digest>`, readable/listable under the world-book `tavernMemorySources` adapter only within their session scope. A matching current selection uses existing keyword, enabled, probability, budget and placement activation. Actual ownership follows the current trusted manager registration. While registered, source defaults and explicit retrieve overrides apply; missing decisions and denies suppress assembly. Removal restores source defaults. A commit receipt grants no prompt usage and establishes no model delivery or provider receipt.
+
+## Optional Host scope catalog
+
+The loader provides `tavernScopeCatalog` (`protocolVersion:1`, `authority:'local'`), exported through `pmp-dsh-tavern/scope-catalog`. Consumers use optional `ctx.inject`; a missing service or incompatible version is explicitly unavailable. A full resource listing is not a directory fallback. This service exposes current resource identities without prompt assembly, prompt-use permission or resource writes.
+
+`searchScopes({field,query?,cursor?,limit?,scope?:{sessionId?},signal?})` returns `{items:[{id,name}],nextCursor:string|null}`. Fields are `characterId`, `presetId` and `userId`; limit is 1–50 (default 50) and query is at most 200 characters, matched as a substring of ID/name. Global search omits sessionId. Results use stable ID order. Source-signed cursors bind field, normalized query, session boundary, catalog generation and visibility revision. Restart from the first page after changing the query or source. Every page rechecks source visibility and lifetime; bodies, avatars and filesystem paths are excluded.
+
+Each source maintains a metadata index containing only ID, name and file fingerprints. Initialization/restart rebuilds metadata for new or changed resources; source-owned create/update/delete keeps it current. Paging and scope resolution read the index and filesystem metadata, without resource `list/get` or body reads. Direct external file edits return `SCOPE_CATALOG_STALE`; reloading the source rebuilds its index. An unavailable index does not disable the native resource store.
+
+`resolveScopeContext({sessionId,signal?})` returns `{scope:{sessionId,characterId,presetId,userId},revision,checkCurrent}`. characterId maps `selection.characterCardId`; presetId denotes the ST prompt preset and userId denotes the Tavern RP persona. Missing/invisible resources resolve to null. The session must exist in the official `sessions` service. `checkCurrent` is a synchronous Host-only lease bound to the session instance, selection generation, catalogs and source visibility. Unload or any change revokes it. Rule consumers must recheck immediately before final use; browser-supplied identities cannot replace these facts.
+
+Authority retains trusted local Host access, existing loopback HTTP protection and source visibility. This adds no principal ACL and does not interpret manager lists or directory reads as prompt-use permission. An optional consumer's HTTP routes must retain its own loopback protection.
+
 ## Desktop request token
 
 `GET /pmp-dsh-tavern/api/request-token` requires `X-Tavern-Client: embedded` and returns `{ok:true,token}` with a process-local 64-character hex token and no-store caching. It uses the same TCP/Host checks, rejects foreign/null Origin and cross-site requests, and enables no CORS. The official `dsh-app://app` proxy strips Origin, so mutation requests from the embedded desktop client send `X-Tavern-Request-Token`. Only absent-Origin mutations may use this token; explicit foreign/null Origin remains forbidden. HTTP browser mutations keep same-origin validation. A Host restart invalidates tokens; the bundled client retries once after an origin rejection. This is CSRF protection, not authentication.
@@ -115,8 +149,8 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 | GET | `/workspace/files?path=` | Read a UTF-8 file under the root. `catalog.json` / `timeline.json` run the matching schema/path checks after read. Third-party `ext` is kept as-is. Managed documents add a SHA-256 `revision` of the exact UTF-8 bytes (64 lowercase hex) | Implemented |
 | PUT | `/workspace/files?path=` | Ordinary files still use `{ content }`. `catalog.json` / `timeline.json` must send `expectedRevision`: `null` creates a missing target only; a 64-hex lowercase SHA-256 replaces only when the current byte hash matches. Validation, CAS, temp write, and rename share one target guard | Implemented |
 | GET | `/workspace/files?list=` | List one prefix level | Implemented |
-| POST | `/sessions` | Open a play session. With a character card, title = character name + time. Without a card, DSH `session.create` default title is used; no 409. Tavern bindings are copied only when the body has `selectionFromSessionId`. Inserts into the play workspace. **Does not write timeline** | Implemented |
-| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`: log seq and its format version; migration checks below. After fork, clear the child’s queued/steering input through public `sessionController.resolveAgent()` / `agent.inbox.clear()`, then copy the public selection. If the source import claim already ended at an earlier terminal, copy body-free pending lineage. Does not write timeline or send on behalf of the user. Queue cleanup or verification failure returns 502 `PLAY_BRANCH_INPUT_RESET_FAILED` before context copying. Copy failure is explicit 502 `PLAY_BRANCH_COPY_FAILED`. Open turn → 409 | Implemented |
+| POST | `/sessions` | Open a play session. With a character card, title = character name + time. Without a card, DSH `session.create` default title is used; no 409. Tavern bindings are copied only when the body has `selectionFromSessionId`. A root reply swipe may additionally send `stateSource:{sessionId,beforeReplyEventId}` with the same source session. Host freezes the original pre-turn MVU state and installs a separate instance before its first request. Ordinary new playthroughs omit it. Inserts into the play workspace. **Does not write timeline**. A cancelled request with no assistant body uses `stateSource:{sessionId,beforeUserEventId}` instead; the two coordinate fields are mutually exclusive. The source checks the durable aborted turn and freezes its pre-request checkpoint. | Implemented |
+| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion?, stateSource?:{sessionId,beforeReplyEventId} }`: log seq and its format version; migration checks below. Explicit reply-swipe stateSource requires this source session and a later target reply; history still forks at atEventId, while MVU uses the target pre-turn checkpoint. After fork, clear the child’s queued/steering input through public `sessionController.resolveAgent()` / `agent.inbox.clear()`, then copy the public selection. If the source import claim already ended at an earlier terminal, copy body-free pending lineage. Does not write timeline or send on behalf of the user. Queue cleanup or verification failure returns 502 `PLAY_BRANCH_INPUT_RESET_FAILED` before context copying. Copy failure is explicit 502 `PLAY_BRANCH_COPY_FAILED`. Open turn → 409 The same mutually exclusive `beforeUserEventId` coordinate supports retries of cancelled requests after the preserved prefix. | Implemented |
 | POST | `/sessions/:id/user-message` | `{ text }` as the next user body, `session.prompt` `queue` | Implemented |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + per-message `origin`; optional top-level `sessionFormatVersion` / `migratedFromV2`. Reads until `hasMore: false`; no plugin page cap. Empty Host cursor page, illegal seq, or a cursor that does not advance → 502 `PLAY_HISTORY_CURSOR_STALLED` | Implemented |
 | GET | `/sessions/:id/coordinates` | Read current logical Session format and migration marker without message bodies. [Fields and examples](#session-coordinates) | Implemented |
@@ -129,6 +163,8 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 | GET | `/focus?path=` | Low-level compatibility route: derive `{ sessionId }` from an explicit timeline path. The bundled frontend uses the playthrough-id route | Compatibility surface |
 | GET | `/focus` (no path) | No default target; “most recently written timeline” is not user focus | 400 `PLAY_FOCUS_PATH_REQUIRED` |
 | POST | `/focus`, `/playthroughs/:id/focus` | Not provided | 405 |
+
+The session messages response includes `stoppedRequest:null` or `{userEventId,turnStartEventId,turnEndEventId}` for the last durable aborted human request without assistant body text. Running turns, completed replies and source context do not qualify. It is evidence for a retry, not a saved reply variant.
 
 Path exists but method is wrong → `405 PLAY_METHOD_NOT_ALLOWED` (for example `POST /chrome`, `POST /focus`, `GET /sessions`). On the stable focus path, a missing playthrough id is 404 `PLAY_PLAYTHROUGH_NOT_FOUND`; a missing catalog is 409 `PLAY_CATALOG_UNAVAILABLE`; a corrupt catalog stays 400 `PLAY_CATALOG_INVALID`; a missing or corrupt timeline is uniformly 409 `PLAY_FOCUS_UNAVAILABLE`. The stable entry does not accept a client path, does not read DSH history, and does not write files. Old `/focus?path=` remains migration compatibility only.
 
@@ -331,7 +367,7 @@ Prefix: `/pmp-dsh-tavern/api/v1`. `/dsh-tavern/api` is not part of the current c
 | PUT | `/characters/:id/world-books` | Replace the complete character ordered linked standalone world-book IDs | Implemented |
 | GET | `/characters` | Character catalog, sorting and missing-card summaries | Implemented |
 | POST | `/characters` | Create a character card | Implemented |
-| POST | `/characters/import` | Import a JSON/PNG character card | Implemented |
+| POST | `/characters/import` | Import a JSON/PNG character card; 32 MiB file limit, 16 MiB decoded limit per PNG card metadata chunk (also applies to export) | Implemented |
 | GET | `/characters/:id` | Complete current character card; returns character | Implemented |
 | PATCH | `/characters/:id` | Update character fields | Implemented |
 | DELETE | `/characters/:id` | Delete card and clear bindings, retaining a missing-card summary | Implemented |
@@ -533,11 +569,15 @@ Both relink paths refuse to overwrite a third card binding that is unrelated to 
 
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | Request: none; response: `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards? } }` | Implemented |
-| PUT | `/conversation-settings` | Request: `{ textScale, actionScale, bubbleStyle?, interactiveCards? }`; response: same as GET | Implemented |
+| GET | `/conversation-settings` | Request: none; response: `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement?, renderingAdapters? } }` | Implemented |
+| PUT | `/conversation-settings` | Request: `{ textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement?, renderingAdapters? }`; response: same as GET | Implemented |
 | DELETE | `/conversation-settings` | Request: none; response: restore both fields to `1` | Implemented |
 
-Optional `bubbleStyle` and boolean `interactiveCards` follow the [presentation protocol](CONVERSATION_PRESENTATION_en.md); body limit is 16 KiB. Omission or DELETE restores their defaults. User create/PATCH/import/export supports optional raster-data-URI `avatar` up to 128 KiB; null clears it, omission on PATCH preserves it. Timeline `ext.pmpDshTavern.appearance` follows the same document, rejects invalid metadata with `PLAY_APPEARANCE_INVALID`, and uses existing revision/CAS writes.
+`scriptEnablement` stores ordinary local choices as `{ schemaVersion: 1, entries: [{ owner, key, enabled }] }` (up to 128 entries). Owners are character/preset resource IDs or the SHA-256 identity of the canonical RP workspace for global dependencies. Helpers prefer a unique original ID; otherwise a source SHA-256 identifies unique content. Duplicate sources use a source-plus-name digest only when their names are unique; order never participates in identity. Changed unidentified source or disambiguating names inherit source defaults. Indistinguishable duplicates cannot save per-entry overrides and retain their individual source defaults until unique IDs are added to the source card. New resource IDs and source-card exports do not carry local choices. Omission or DELETE clears overrides; the appearance reset action preserves script choices and the master switch. These preferences persist script switches only. Source or choice changes require updating selected dependencies. Downloaded, enabled scripts can read and write current bound variables; internal execution bindings are not persisted.
+
+`renderingAdapters` stores ordinary compatibility-mode overrides as `{ schemaVersion: 1, entries: [{ owner, source, mode }] }` (up to 128 entries). `source` is an HTTPS source; `mode` is `builtin` or `original`. Omitting an entry automatically matches exact URL, bytes and supported invocation semantics. `builtin` explicitly requests compatibility and stops if unsupported; `original` selects the original code graph. These preferences contain no approval, digest, source code or write grant; compatibility is supplied only after downloading and verifying supported bytes. Owners are isolated, copies do not inherit choices, appearance reset preserves this preference, and omission or DELETE clears overrides.
+
+Optional `bubbleStyle` and boolean `interactiveCards` follow the [presentation protocol](CONVERSATION_PRESENTATION_en.md); body limit is 384 KiB. Omission or DELETE restores their defaults. User create/PATCH/import/export supports optional raster-data-URI `avatar` up to 128 KiB; null clears it, omission on PATCH preserves it. Timeline `ext.pmpDshTavern.appearance` follows the same document, rejects invalid metadata with `PLAY_APPEARANCE_INVALID`, and uses existing revision/CAS writes.
 
 Both scales are finite numbers from `0.75`–`1.5` in steps of `0.05`. PUT is a full replace and rejects unknown fields. `textScale` applies to Mowan user/assistant bodies and greeting (including the empty-playthrough opening dock). `actionScale` applies only to the copy, swipe, branch, rollback, and edit row at the end of a durable QA.
 
@@ -605,6 +645,12 @@ Production code uses the Tavern-owned event contract; low-level `createOperation
 
 `GET /pmp-dsh-tavern/api/v2/operation-logs` provides filters, pagination and single-page JSONL export. Query fields, record format, stable events, capacity and upgrade rules are maintained in the [operation log contract](OPERATION_LOGS_en.md).
 
+### Sessionless opening drafts
+
+Under the v2 Play base, `POST /drafts` saves `{ characterId, source?, selection?, assemblyPresetId? }` without a DSH Session. `GET /drafts/:id` returns `{ draft, playthrough }`. `PUT /drafts/:id` requires `expectedRevision` and accepts selection, assemblyPresetId, variables, importContextRef, or resetVariables. It never changes the character identity. `POST /drafts/:id/preview` accepts `{ expectedRevision, preset? }` and reads this opening draft's current resources, variables and caller-supplied assembly rules; omitted preset uses the draft snapshot. It returns `{ ok, preview }` with `scope:'opening-draft'`, `draftId`, `draftRevision` and `pendingInputsIncluded:false`. It creates no native Session, writes no history and calls no model. Configuration changes or first-send preparation return 409.
+
+`POST /drafts/:id/materialize` takes `{ expectedRevision, operationId, text }`, prepares one durably reserved Session and returns `{ sessionId, requestId, accepted }`; it does not send a model request. Call the existing `/sessions/:id/user-message` with the same text and requestId unless already accepted. `POST /drafts/:id/cancel` either releases a cleared unbound blank and restores the draft with `draft.lastInput` retained for reopening, or stops an already admitted real Session while preserving history. Draft scope for MVU is `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`, with no sessionId. Card write grants require the exact current selection token and downloaded source execution.
+
 ## v3 prompt assembly audit
 
 Prefix: `/pmp-dsh-tavern/api/v3`. Read-only prompt assembly records and provenance.
@@ -635,3 +681,37 @@ A required-dependency plugin may declare `inject: ['pmpDshTavernChrome']` and re
 Internal transport uses `GET /v2/chrome/events`. When EventSource is missing, the connection fails, or it drops, it falls back to the initial GET, window-focus read-back, and 1-second polling. Polling stops after SSE recovers. BroadcastChannel is not in the contract. Service unload stops transport and clears every `when` effect. Several third-party plugins register independently and each cleans only its own slots/UI.
 
 Full notes on third-party DSH plugins, standalone web clients, surface ownership, atomic action composition, and uninstall fallback: [FRONTEND_INTEGRATION_en.md](FRONTEND_INTEGRATION_en.md). There is no one-click config-file Mowan replacement, frontend provider registry, or dynamic bundle loader.
+
+## Rendering execution bindings
+
+These internal routes bind available, enabled card execution to its exact source and scope. They do not introduce a user-facing approval state.
+
+| Method | Path (under v1) | Input / result | Status |
+| --- | --- | --- | --- |
+| POST | `/rendering-write-grants` | Trusted renderer submits `{source,sourceIdentity,executionId,downloaded:true,enabled:true}`. Source is the full execution bundle JSON; identity is `{version:1,sha256,scope}`. Host recomputes SHA-256; returns `{ok:true,grantId,sourceIdentity}` | 200; invalid input/identity 400; oversized request 413 |
+| DELETE | `/rendering-write-grants/:grantId` | Stop an internal binding; repeated removal is idempotent | 200 |
+
+Existing local peer, Host, Origin/desktop-token, JSON media-type and DSH admission checks apply. `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` returns null or `{valid:true,write:true,scope}`; synchronous `isCurrent` is checked immediately before MVU commit. At most 64 live execution bindings are held in memory; no source body is stored. Bindings have no approval expiry and are cleared on unload. Script switches/runtime cleanup revoke them; persisted downloads recreate fresh current bindings on refresh. They do not bypass scope, source schema, CAS or idempotency. Native card variables emit facts for manager observation; manager model/store/retrieve policies remain separate. See [MVU](MVU_en.md).
+
+Standard versus optional core capabilities, migration and evidence are defined in [assembly strategies](REQUEST_ASSEMBLY_en.md). Check capabilities() and requireAvailable(preset) for the selected backend.
+
+
+## Rendering cache storage
+
+The v1 prefix `/pmp-dsh-tavern/api/v1/rendering-cache` provides inert cache storage primitives missing from the resource and execution APIs. It never downloads URLs, evaluates sources, or grants execution/write authority. All routes retain local peer/Host/Origin or desktop-token guards, JSON mutation media types and DSH admission.
+
+| Method | Path | Result / input |
+| --- | --- | --- |
+| GET | `/graphs` | `{ok:true,value:{graphs,sources}}`; metadata and unique source bytes, each source once |
+| GET | `/graphs?metadata=1` | only stored graph metadata `{ok:true,value:{graphs}}`, with no source bytes |
+| GET | `/graphs?owner=` | `{ok:true,value:{generation,pending?,graph?}}`; hydrated owner graph; missing generation is 0 |
+| POST | `/graphs?owner=` | `{}`; advances generation, sets pending and retains previous references; returns generation |
+| PUT | `/graphs?owner=` | `{generation,graph}`; publishes only if generation is current and pending; returns boolean |
+| DELETE | `/graphs?owner=` | releases references and retains a newer source-free generation tombstone; returns generation |
+| POST | `/graphs/import?owner=` | legacy `{generation,pending?,graph?}`; imports only if no Host record exists; returns boolean |
+| GET | `/sources?url=` | newest referenced exact URL version: `{content,contentDigest,downloadedAt}` or null |
+| GET | `/opening` | fixed inert snapshot `{generation,content}`; absent content is null |
+| PUT | `/opening` | `{content,onlyMissing?}`; exact registered URL/hash/size, optional create-only legacy import; returns boolean |
+| DELETE | `/opening` | releases fixed snapshot and retains its generation tombstone |
+
+Sources are UTF-8 files under `<storageDir>/rendering-cache/sources/`, keyed by exact URL and SHA-256; `index.json` stores generations and references. Publication checks the entire environment’s 512-source / 64 MiB physical budget (including fixed opening data), 8 MiB per source, 4096 owner records, 2 MiB graph metadata and 16 MiB total index metadata. New bytes are written atomically before the index; obsolete bytes are collected after publication. Reads verify source size and digest. Concurrent requests to one Host use generation CAS; a snapshot is a read result, not an execution lease. Browser downloads retain CORS, no credentials and no redirects. Browser migration preserves originals, retries failed imports and never overwrites Host records or tombstones. Cards cannot access these storage APIs. Execution bindings and script selection remain independent.

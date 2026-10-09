@@ -5,9 +5,9 @@
 本文说明如何验证当前实现，不记录某次发布的验收结果。先按改动范围选择检查，再为受影响的 DSH 接口补充集成证据。
 
 <a id="backend-compatibility"></a>
-## 2.5.1 兼容范围
+## 3.0.0 兼容范围
 
-Tavern 2.5.1 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
+Tavern 3.0.0 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
 
 后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
 
@@ -19,7 +19,7 @@ Tavern 2.5.1 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/dee
 
 Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.0-rc.2` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
-在仓库根目录安装依赖后运行以下命令，定义以 [package.json](../package.json) 为准。
+在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖显式包含 Assembler 测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.0-rc.2`；插件运行时由目标 DSH 提供该 peer。
 
 | 改动范围 | 检查 |
 | --- | --- |
@@ -35,7 +35,7 @@ Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.0-rc.2` 要求 Nod
 <a id="patch-release-documents"></a>
 ## 补丁发布的文档同步
 
-兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。每次 push 前均需获得覆盖本次改动的明确授权；创建 tag 和 Release 也需授权。
+兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。已完成本地验证的提交按 AGENTS.md 中既有授权推送；创建 tag 和 Release 仍需明确授权。
 
 | 文件或发布内容 | 何时更新 |
 | --- | --- |
@@ -105,13 +105,23 @@ node --test test/play-sessions.test.mjs
 - **Swipe 等待与中断：** 用合成慢流分别覆盖首轮和非首轮 swipe；创建新 session 后立刻检查 RP/原生“对话”指向同一会话，再次点击周目仍应回到该会话。验证此前上下文不重复、新回复逐段出现、原生停止按钮可用；分别在首个片段前和输出片段后中断，检查错误返回入口或真实持久变体收敛，原有变体不丢失。
 - **历史分叉与待处理输入：** 在临时 Host 中完成两轮，用公开 inbox 命令加入 queued/steering 输入而不唤醒 Agent。原生 fork 可作为对照；通过 Tavern branch API、同周目回退、新周目分支和非首轮 swipe 分别创建子会话。核对实际模型请求不含旧输入、swipe 不重复发送用户消息、子 inbox 为空、原会话队列与继承历史不变；重启后再次发送也不能恢复旧队列。队列清理失败必须返回明确错误，不能继续复制上下文或提交 timeline。
 - **周目归档：** 归档后确认默认列表隐藏该周目，其成员不会变成游离或普通会话；刷新及重启后状态应保持。从归档箱查看不会自动恢复，恢复后编号、名称、分支与绑定应保留。归档最新空周目后新建应使用下一个编号；与活跃周目共享的会话仍应可见。对照归档前后的时间线、选择记录和 DSH 日志，确认归档操作仅修改 catalog 中的归档标记。
-- **Trace：** 对照官方请求核查当次配置、世界书决策、Loader 段落顺序、正文及来源。重启后再读取旧记录；在测试副本中移除官方日志时，正文应明确不可用。失败记录的来源仍是官方事件，RP 不因此新增失败助手消息。接口合同见 [Prompt API v3](PROMPT_API_V3.md)。
+- **Trace：** 对照官方请求核查当次配置、世界书决策、Loader 段落顺序、正文及来源。重启后再读取旧记录；在测试副本中移除官方日志时，正文应明确不可用。失败记录的来源仍是官方事件，RP 不因此新增失败助手消息。接口合同见 [Prompt API v3](PROMPT_API_V3.md)。`node --test test/mvu-trace.test.mjs` 验证来源 HTTP 历史的新增/删除字段比较；`TAVERN_BROWSER_FIXTURE=./fixtures/tavern-trace-browser.js node scripts/verify-rich-text-browser.mjs` 用自写 provider 形状挂载完整 Trace，覆盖中英文缺失值/未知前值标签、真实文本包装对象、React 边界与原样数据。该检查不读取用户状态、不发模型，也不替代完整目标 Host 验收。
 - **流式交互：** 在有多条富文本历史消息的 RP 会话中，生成期间展开、关闭和拖动悬浮球；历史消息不应随每个片段重新解析或清洗，已展开的历史折叠块应保持状态。`node scripts/verify-rich-text-browser.mjs` 用真实 React 挂载验证连续更新仅清洗变化的消息、样式隔离和终态替换；合成检查不代表真实模型流式链路已验收。
-- **富文本与诊断：** 检查静态 HTML/CSS 的样式隔离、显示正则和脚本过滤；MVU 与 JavaScript 动态 HTML 不属于已实现能力。检查故障入口、摘要关闭、重新检查及问题恢复的状态一致性。Trace 正文应按文本展示。
+- **富文本与诊断：** 检查静态 HTML/CSS 的样式隔离、显示正则和脚本过滤；按当前合同验证受限 MVU 与可选交互卡片，不宣称完整酒馆助手兼容。检查故障入口、摘要关闭、重新检查及问题恢复的状态一致性。Trace 正文应按文本展示。
 
 涉及写入并发、卸载或坐标迁移时，在测试副本中验证冲突及恢复路径；参阅 [API](API.md) 和 [迁移指南](DSH_0.1.7_MIGRATION.md)。真实提供方的超时/重试、真实第三方联调及平台差异须分别验证，不能从合成故障或其他平台的结果推断。
 
 记录证据时注明源码版本、Node/DSH 版本、启用的检查、跳过项及可复现步骤，并区分自动测试、真实 Host、浏览器和外部联调覆盖。诊断报告与 Trace 元数据也可能包含私密标识和内容，公开问题报告前应检查并删去敏感信息。
+
+使用 `installIndependentAssembler` 的既有 Host 套件还会加载可选 core addon。将 `DSH_ASSEMBLER_CORE_EXTENSION_ROOT` 指向经验证 assembler 提交的 `core-extension` 目录，并让 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 使用配套准备后协议 1 运行时；迁移 root 可保持 stock。这些进阶夹具与下文 stock 标准后端验收分别记录；缺少 addon 或协议属于测试配置失败，不能据此推断标准策略需要准备核心。
+
+## 实际请求 Trace 与 RP 分类回归
+
+运行 `node --test test/trace-view.test.mjs test/trace-v3.test.mjs test/trace-references.test.mjs test/mvu-trace-view.test.mjs test/play-chat-model.test.mjs`。比较最新与较早 record-ID 详情，核对每条消息的原始请求顺序；验证原生坐标、requestMessageIds 与完整 system 的 contributor IDs。模块正文与完整 system 原文分别默认折叠；system 字节变化却未刷新模块证据时，不能套用旧来源。证据缺失保持明确，不用当前预览或仅返回最新请求的 `/actual` 填补历史。展开 MVU 前打开 Trace 不应读取该状态，收起或切换须释放轮询。
+
+标准后端将 `DSH_ASSEMBLER_STOCK_ROOT` 指向 stock 目标 DSH 依赖根，`DSH_ASSEMBLER_MANAGER_ROOT` 指向隔离 Manager 源码检出，再运行 `node --test test/request-assembly-native-host.test.mjs`。它以真实 Host 模块、合成 provider 和临时会话覆盖 head/in-history 更新、实际请求、冷 replay、世界书 slot 角色/顺序与卸载后继续使用。原生 runtime-context 清理消息独立存在；贡献消息顺序单独比较，完整记录仍须与 provider 请求一致。进阶协议 1 使用 `DSH_TAVERN_ASSEMBLY_CORE_ROOT` 与 `test/request-assembly-host.test.mjs`，stock 与准备后核心证据分别记录。
+
+在获授权的 Host/浏览器核对四种角色、较早请求、来源名称回退、模块/原文折叠和 MVU 按需读取。RP 分类以合成的无关缺失/损坏 timeline 与健康非根分支验证：健康 RP 视图正常加载，侧栏诊断保留；直接 owner 读取、权限和迁移错误仍应失败。不通过修复旧日志使分类测试通过。这些检查不代表原生 Windows、真实 provider 或实际第三方 memory-archive 接入验收。
 
 ## 持久操作日志回归
 
@@ -123,8 +133,39 @@ node --test test/play-sessions.test.mjs
 
 ## 显示功能回归
 
+开场白显示正则运行 `node --test test/play-greeting-render.test.mjs test/play-chat-regex.test.mjs test/play-export.test.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/greeting-browser.js node scripts/verify-rich-text-browser.mjs`。检查变量折叠、状态面板、全局／预设／角色规则顺序与过滤、深度、备选切换、空结果回退、原文不变，以及 HTML 显示与 JSONL 原文导出的区别。浏览器夹具覆盖 RP 消息组件及 opening dock 使用的富文本组件，完整 Host 中仍需核对原生／RP 切换与真实卡片。
+
 公式回归运行 `node --test test/play-math.test.mjs test/play-rich-text.test.mjs test/play-export.test.mjs`，以及 `TAVERN_BROWSER_FIXTURE=./fixtures/math-browser.js node scripts/verify-rich-text-browser.mjs`。检查四种分隔符、原生 MathML 分数/矩阵布局、金额与转义、强调/表格/折叠混用、HTML 属性和代码保留、样式隔离、宽公式滚动、流式闭合与历史 DOM 保留、错误回退、宏隔离、恶意 TeX/MathML 清洗和离线 HTML 导出。此夹具使用实际消息组件但不替代完整 DSH Host 验收；在目标 Web/桌面 Host 继续核对 RP 正文、开场白、显示编辑与原生切换，旧浏览器的 MathML 支持另行验证。
 
 执行 `node --test test/presentation.test.mjs test/api-fetch.test.mjs test/api-security.test.mjs` 与现有完整检查。有 Chrome 时分别执行 `node scripts/verify-rich-text-browser.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/presentation-browser.js node scripts/verify-rich-text-browser.mjs`。后者检查真实 DOM 更新、建议消息显式确认、未变化卡片状态、生命周期销毁、流式禁止执行、配额、父页面/网络接口拒绝、净化、头像和气泡。
 
 在隔离的目标 Host 上传并保存用户头像，确认根会话绑定的默认头像，修改单条及本周目全部头像，刷新并对照其他周目和源资源。预览/应用/导入/导出样式并拒绝非法版本。用[计数器示例](examples/interactive-counter.html)检查脚本开关，然后验证原生/RP 切换、流式、分支及桌面写入。官方桌面发行包需单独验收：使用其未改动转发模块的 Electron 验证壳只能建立协议行为证据，不能代表整款应用验收。使用合成资源与模型响应得到可复现结果，真实提供方和角色卡另行验收。运行记录放在被忽略的 `.local/`。
+
+受控输入桥运行 `node --test test/card-composer.test.mjs test/card-worker-lifecycle.test.mjs`、`node scripts/verify-card-composer-browser.mjs` 与 `TAVERN_COMPOSER_WIDTH=390 node scripts/verify-card-composer-browser.mjs`。自写 SUOT fixture 覆盖 window 就绪、template 解析、七个按钮、真实/合成点击、仅填入、直接请求、偏好恢复、错误、关闭和高度；此夹具使用合成发送 adapter，不代替隔离目标 Host 中公开 inputActions、持久 DSH 历史及桌面转发的实际验收。
+
+外部渲染与统一设置使用 `node --test test/rendering-sources.test.mjs` 和 `TAVERN_WORKER_FIXTURE=scripts/fixtures/rendering-browser.js node scripts/verify-card-worker-browser.mjs`。合成源码覆盖两种 Helper 格式、无语言 body 围栏、逐内容授权、相对模块、嵌套依赖阻断、撤销/禁用、重复渲染、切换中取消、只读变量作用域与统一设置草稿保护。没有下载或执行未知代码；实际第三方框架兼容性不由这些夹具建立。完整 Host 中继续核对来源绑定与原生/RP切换。
+
+Worker 框架验证使用 `node scripts/verify-card-worker-browser.mjs`，`TAVERN_FRAMEWORK_VENDOR_DIR` 指向本地固定官方库（文件名及必需 SHA-256 见验证器）；测试不下载依赖。隔离临时浏览器通过真实时间 CDP 等待，覆盖 React+JSX/Vue/jQuery 事件、状态、撤销、scope 重挂、传递依赖逐 owner 授权和预算。同一验证器设置 `TAVERN_WORKER_FIXTURE=scripts/fixtures/rendering-browser.js` 可跑统一设置回归。`node --test test/card-worker-lifecycle.test.mjs` 验证构造/传输/定时器失败清理。夹具不代表任意私有卡已兼容，也不建立进程峰值内存上限。
+
+变量写桥使用 `TAVERN_WORKER_FIXTURE=scripts/fixtures/card-write-browser.js node scripts/verify-card-worker-browser.mjs`。该夹具通过 CDP 实际鼠标输入验证 isTrusted cause，并以合成事务验证默认拒绝、完整代码审核/独立授权、patch/replace、CAS、事件、伪造 scope、撤销/卸载和 interval。`test/rendering-authority.test.mjs` 验证 Host 摘要/作用域/期限/撤销及安全路由；真实 MVU source+manager 持久提交链仍需在整合环境验收。
+
+脚本列表启用选择使用 `node --test test/script-enablement.test.mjs` 检查原卡默认、稳定身份、持久化、恢复默认、工作区隔离和惰性规范化。`node scripts/verify-script-list-browser.mjs` 在独立 Chrome 配置中只运行自写合成源码，验证启用与审核分离、禁用销毁、撤销、源码变化和作用域重挂。在隔离 Host 中另验完整源码有界滚动、窄屏布局、保存失败、刷新、外观重置保留脚本选择，以及 Host 提示的键盘/触屏行为。
+
+按需媒体运行 `node --test test/card-images.test.mjs test/card-images-observer.test.mjs` 和 `TAVERN_BROWSER_TOOLS_ROOT=<含 playwright 的工具目录> node scripts/verify-card-images-browser.mjs`。独立 Chrome 使用自写 6000 URL 与模拟栅格响应，验证 6000 隐藏伪元素零请求、伪元素绘制状态切换、导入/折叠零请求、实际滚动/移动视口、四并发、缓存复用、CSS 背景自定义变量、有界大 PNG 的六封面真实别名及刷新/隐藏回收、CSS 写入或级联失败不误报已显示、错误占位、代次取消、卸载、CSP 与惰性模板净化；像素截图和报告默认存于 `.local/card-images-browser/`。它不下载真实图库。完整隔离 Host 中继续检查实际 RP 开场白、媒体状态、原生切换及目标桌面应用；移动视口不是实体移动设备或官方桌面发行包验收。
+
+照片选择运行 `node --test test/card-photo.test.mjs test/card-worker-lifecycle.test.mjs` 与 `TAVERN_BROWSER_TOOLS_ROOT=<含 playwright 的工具目录> node scripts/verify-card-photo-browser.mjs`。Chrome 使用临时生成样图，按原生文件选择路径验证真实 change、单图重编码与自然尺寸、窄 VM 门面、原名/路径隔离、合成事件拒绝、错误提示与切换/卸载取消；报告位于 `.local/card-photo-browser/`。内存 payload 的 Playwright 文件设置会派发合成事件，应验证其被拒绝，不能据此声称用户选图失败。继续在隔离 Host 中检查实际按钮、照片像素和受限存储；不使用用户照片作为测试 fixture。
+
+卡片 source 生命周期运行 `TAVERN_BROWSER_TOOLS_ROOT=<含 playwright 的工具目录> node scripts/verify-card-source-recreate-browser.mjs`。自写的两个版本仅脚本不同，净化后静态 HTML 相同；桌面/移动视口分别验证直接 VM 和 Worker 路径：source 改变只重建所属 iframe/runtime、旧 Worker 释放、新脚本以新状态运行、返回旧 source 不复活旧状态、相同 source 的普通重渲染保留节点/输入值、不刷新整页、CSP/sandbox 不变、卸载释放。报告位于 `.local/card-source-after/`。在受影响旧版上可显式设置 `TAVERN_EXPECT_SOURCE_STALE=1` 记录清理后未重建的反例，输出至 `.local/card-source-before/`；这不是修复后的通过标准。此检查不打开原生照片选择器，也不能说明 macOS Open 按钮禁用的原因。
+
+需要确认选图期间 input 是否被视图替换时，先运行 `node --test test/card-photo-diagnostic.test.mjs` 与 `TAVERN_BROWSER_TOOLS_ROOT=<含 playwright 的工具目录> node scripts/verify-card-photo-diagnostic-browser.mjs`。正常 `npm run build` 关闭诊断；仅独立受审构建使用 `node build.mjs --photo-diagnostic`，不得将其作为默认生产包。可信父页的隐藏 `[data-dtv-photo-diagnostic]` 节点提供本实例 file input 的不透明对象 token、连接状态、快照复用/替换计数、长度/相等性摘要和可信 change/cancel 计数，最多保留 64 事件及每事件 16 个 input；不采集 HTML/CSS、URL、文件内容/元数据，不写存储或网络，不给 guest 调用入口。token 不能跨实例比较，卸载清除输出；隐藏节点无布局尺寸。报告位于 `.local/card-photo-diagnostic-browser/`。CDP 文件选择拦截可验证宿主回调与故意变化的快照，但无法验证 macOS Open 面板或其 Open 按钮；实际同实例观察及原生选择器验收需在获授权的隔离 Host 中另做。
+
+脚本面板显示生命周期运行 `node --test test/card-first-visible.test.mjs test/card-worker-lifecycle.test.mjs` 和 `node scripts/verify-card-display-lifecycle-browser.mjs`；可用 `TAVERN_CHROME_PATH` 指定 Chromium。独立临时浏览器在桌面与 390px 宽度验证六个可见面板、离屏首次启动、滚动状态保留、隐藏或离开 RP 后 Worker/定时器/变量订阅释放、缓存返回读取闸门、周目与 swipe 范围重建及自动高度显示容器。使用中性自写面板与只读合成 Host，不发送模型、不打开用户会话；报告和像素默认写入 `.local/card-display-lifecycle-browser/`。此 fixture 不能替代目标 Host 实际会话切换与桌面应用验收。
+
+脚本故障后的原生折叠高度运行 `node --test test/card-execution-diagnostic.test.mjs test/card-diagnostics.test.mjs` 和 `node scripts/verify-card-collapse-browser.mjs`。中性 status details 面板在桌面及 390px 验证正常展开/收起、主动丢失一次 fixture 布局回复后的固定错误诊断、Worker 终止后的被动高度收敛、健康兄弟卡、待决尺寸回调时替换源码及卸载释放；报告与像素默认写入 `.local/card-collapse-browser/`。故意丢失回复证明故障路径，不证明真实页面丢失回复的原因；实际 Host 错误应按对应卡片的固定诊断继续定位，不据约 1000ms 墙钟推断 CPU 超时。
+
+
+## 环境渲染缓存
+
+`node --test test/rendering-host-cache.test.mjs test/rendering-shared-cache.test.mjs test/rendering-dependencies.test.mjs test/identity-opening-bridge.test.mjs` 检查临时目录复制、源码去重与版本保留、Host 全局预算、中断写入恢复、代次 CAS、浏览器导入重试与墓碑、HTTP 防护和固定开场完整性。设置 `DSH_TAVERN_COMPAT_ROOT` 为目标 runtime，另外验证真实 Cordis 上的生产路由、重新挂载恢复和路由释放。这组检查纳入 `verify:2.0`。
+
+浏览器验收应在真实旧 IndexedDB 中写入自编夹具源码，经 Host 客户端恢复且不发生外部下载；随后复制临时 Tavern 数据目录，在不同 origin 打开拷贝，验证另一 owner 复用源码但不继承装载记录。真实环境应先在原浏览器、原 origin 完成旧缓存迁移，再复制目录。图片继续使用临时浏览器缓存。浏览器夹具和 request-token 检查不代表官方桌面壳验收。

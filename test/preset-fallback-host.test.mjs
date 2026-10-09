@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -42,6 +43,7 @@ test('official AgentLoop fallback preserves request evidence, defaults and retry
       }
       if (scenario === 'middleware') root.on('llm/stream', async function* (options) { yield* new Adapter().stream(options) })
       else root.llm.registerAdapter(['synthetic'], new Adapter())
+      await installIndependentAssembler(root, directory)
       await root.plugin({ name: tavern.name, inject: tavern.inject, apply(ctx) { store = tavern.apply(ctx, { storageDir: directory }) } })
       const preset = store.create({ name: 'Fallback' })
       store.update(preset.id, { sampling: { temperature: 0.4, reasoningEffort: 'xhigh' } })

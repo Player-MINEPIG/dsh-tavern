@@ -105,9 +105,10 @@ test('first-QA swipe creates one clean session, preserves import context and app
       return { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 4, text: '新回复' }] }
     },
     async getImportContextBinding() { return { path: 'character-a/pt-a/import-context.json' } },
-    async postSession(sourceSessionId, importContextRef) {
+    async postSession(sourceSessionId, importContextRef, stateSource) {
       sessions += 1
       assert.equal(sourceSessionId, 'session-a')
+      assert.deepEqual(stateSource, { sessionId: 'session-a', beforeReplyEventId: 3 })
       assert.deepEqual(importContextRef, { path: 'character-a/pt-a/import-context.json' })
       return { sessionId: 'session-new' }
     },

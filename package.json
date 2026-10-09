@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "2.5.1",
+  "version": "3.0.0",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -17,7 +17,15 @@
     "./session-template": "./packages/session-template/src/index.js",
     "./client": "./dist/client.js",
     "./identity": "./packages/identity.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./request-assembler": "./packages/request-assembler/index.js",
+    "./mvu": "./packages/mvu-adapter/src/index.js",
+    "./prompt-template": "./packages/prompt-template/index.js",
+    "./memory-sources": "./packages/memory-sources/index.js",
+    "./opening-worldbook": "./packages/opening-worldbook/index.js",
+    "./opening-worldbook/manifest": "./packages/opening-worldbook/manifest.js",
+    "./scope-catalog": "./packages/scope-catalog/index.js",
+    "./history-policy": "./packages/history-policy/index.js"
   },
   "files": [
     "screenshots.json",
@@ -59,7 +67,21 @@
     "docs/TESTING_en.md",
     "docs/examples",
     "docs/CONVERSATION_PRESENTATION.md",
-    "docs/CONVERSATION_PRESENTATION_en.md"
+    "docs/CONVERSATION_PRESENTATION_en.md",
+    "docs/REQUEST_ASSEMBLY.md",
+    "docs/REQUEST_ASSEMBLY_en.md",
+    "docs/MVU.md",
+    "docs/MVU_en.md",
+    "docs/PROMPT_TEMPLATE.md",
+    "docs/PROMPT_TEMPLATE_en.md",
+    "docs/ASSEMBLER_INTEGRATION.md",
+    "docs/ASSEMBLER_INTEGRATION_en.md",
+    "docs/API_SURFACES.md",
+    "docs/API_SURFACES_en.md",
+    "docs/RESOURCE_LAYOUT.md",
+    "docs/RESOURCE_LAYOUT_en.md",
+    "docs/HISTORY_POLICY.md",
+    "docs/HISTORY_POLICY_en.md"
   ],
   "dsh": {
     "bundle": {
@@ -87,13 +109,15 @@
     "verify:2.0": "node scripts/verify-2.0.mjs && npm run build && npm run pack:check",
     "pack:check": "npm pack --dry-run --cache .npm-cache",
     "plugin:install": "node scripts/install.mjs",
-    "plugin:uninstall": "node scripts/uninstall.mjs"
+    "plugin:uninstall": "node scripts/uninstall.mjs",
+    "pack:with-assembler": "node scripts/pack-with-assembler.mjs"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
     "@deepseek-ai/dsh-util-crypto": "0.2.0-rc.2",
     "esbuild": "^0.28.2",
     "react": "18.3.1",
@@ -105,10 +129,18 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@babel/standalone": "7.26.10",
+    "@jitl/quickjs-singlefile-browser-release-asyncify": "0.31.0",
     "@jitl/quickjs-singlefile-browser-release-sync": "0.31.0",
+    "acorn": "8.15.0",
+    "acorn-jsx": "5.3.2",
     "dompurify": "3.4.16",
+    "dsh-prompt-assembler": "github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0",
+    "json5": "2.2.3",
     "katex": "0.18.2",
+    "linkedom": "0.18.12",
     "marked": "18.0.10",
-    "quickjs-emscripten-core": "0.31.0"
+    "quickjs-emscripten-core": "0.31.0",
+    "yaml": "2.9.1"
   }
 }

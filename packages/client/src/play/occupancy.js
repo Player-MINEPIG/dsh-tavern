@@ -1,4 +1,4 @@
-import { createElement, useLayoutEffect, useSyncExternalStore } from 'react'
+import { createElement, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { mainSessionId, retainedSessions } from '../session-selection.js'
 import { CLIENT_REFRESH_EVENT, CLIENT_UI_SETTINGS_EVENT } from '../../../identity.js'
 import { getClientUiSettings, translate } from '../i18n.js'
@@ -8,6 +8,8 @@ import { PlayWorkspaceBrowser } from './sidebar.js'
 import { PlaySessionDock } from './notice.js'
 import { DefaultConversationViewAdapter } from './view-default.js'
 import { setSwipeTransitionSource } from './swipe-transition.js'
+import {OPENING_SESSION_SLOT,OpeningConversationRoot,OpeningConversationSession,openingLayoutSession} from './opening-layout.js'
+import { DraftOpening } from './draft-opening.js'
 
 export const PLAY_SLOT_PRIORITY = -100
 export const PLAY_VIEW_ID = 'rp'
@@ -37,6 +39,12 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   let chatGeneration = 0
   let disposeChatEntry = null
   let disposeDefaultViewEntry = null
+  let mainDeclared=false,disposeOpeningRoot=null,disposeOpeningBody=null,openingSessionId=null,openingRequest=null
+  const draftKey = 'pmp-dsh-tavern:active-opening-draft:v1'
+  let activeDraftId = null, disposeDraftRoot = null, renderedDraftId = null
+  try { const saved = window.sessionStorage.getItem(draftKey); if (saved && /^[A-Za-z0-9._-]{1,200}$/.test(saved)) activeDraftId = saved } catch {}
+  let draftMainSessionId = mainSessionId(ctx.sessions?.list?.getSnapshot?.())
+  let draftRosterReady = ctx.sessions?.list?.getSnapshot?.()?.phase === 'ready'
   let disposeSessionSubscription = null
   let refreshChatListener = null
   let refreshLocaleListener = null
@@ -44,7 +52,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   const pendingChats = new Map()
   const preferredPlaythroughs = new Map()
   const bindingListeners = new Set()
-  let preferredPlaythroughId = null
+  let preferredPlaythroughId = activeDraftId
   const playthroughSelectionListeners = new Set()
   const completedDefaultViewAttempts = new Set()
 
@@ -122,8 +130,8 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       name: 'conversation.input.dock',
       id: 'pmp-dsh-tavern-session-dock',
       order: 90,
-      inject: () => ({ playClient, conversationPhase }),
-    }, PlaySessionDock)
+      inject: () => ({ playClient, conversationPhase,getOpeningSessionId:()=>openingSessionId,subscribeBindings:listener=>{bindingListeners.add(listener);return()=>bindingListeners.delete(listener)} }),
+    }, ScopedPlaySessionDock)
   }
 
   const reconcileNotice = () => {
@@ -173,6 +181,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   })
 
   const dropChatEntry = () => {
+    dropOpeningEntries()
     dropDefaultViewEntry()
     dropConversationEntry()
     chatBindings.clear()
@@ -183,6 +192,15 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   const defaultViewKey = binding => `${binding.signature}\u0000${binding.playthrough.path}`
 
   const openPlaySession = (sessionId, playthrough = null) => {
+    if (!sessionId && playthrough?.ext?.pmpDshTavern?.draftId === playthrough?.id) {
+      activeDraftId = playthrough.id; draftMainSessionId = mainSessionId(ctx.sessions?.list?.getSnapshot?.())
+      draftRosterReady = ctx.sessions?.list?.getSnapshot?.()?.phase === 'ready'
+      try { window.sessionStorage.setItem(draftKey, activeDraftId) } catch {}
+      selectPlaythrough(playthrough.id); syncOpeningEntries(); notifyBindings(); return
+    }
+    activeDraftId = null
+    try { window.sessionStorage.removeItem(draftKey) } catch {}
+    syncOpeningEntries()
     if (playthrough?.id) preferredPlaythroughs.set(sessionId, playthrough.id)
     selectPlaythrough(playthrough?.id)
     const result = ctx.uiWorkspace.openSession(sessionId)
@@ -190,7 +208,45 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     return result
   }
 
+  const dropOpeningEntries=()=>{
+    openingRequest=null
+    openingSessionId=null
+    disposeOpeningBody?.();disposeOpeningBody=null
+    disposeOpeningRoot?.();disposeOpeningRoot=null
+    disposeDraftRoot?.();disposeDraftRoot=null;renderedDraftId=null
+  }
+  const syncOpeningEntries=()=>{
+    const draftId = mainDeclared && mode === 'play' ? activeDraftId : null
+    if (draftId) {
+      if (renderedDraftId === draftId) return
+      dropOpeningEntries()
+      disposeDraftRoot = ctx.slots.register({ name: 'main.conversation', priority: PLAY_SLOT_PRIORITY, inject: () => ({ draftId, playClient, switchToNative, openSession: (id, playthrough) => openPlaySession(id, playthrough) }) }, DraftOpening)
+      renderedDraftId = draftId; return
+    }
+    if (disposeDraftRoot) { disposeDraftRoot(); disposeDraftRoot = null; renderedDraftId = null }
+    const id=mainDeclared&&mode==='play'?openingLayoutSession(ctx.sessions?.list?.getSnapshot?.(),chatBindings,openingRequest?.sessionId):null
+    if(id===openingSessionId)return
+    dropOpeningEntries()
+    const store=findConversationStore(ctx.slots)
+    if(!id||!store||typeof conversationPhase!=='function')return
+    disposeOpeningRoot=ctx.slots.register({name:'main.conversation',priority:PLAY_SLOT_PRIORITY,children:{[OPENING_SESSION_SLOT]:{kind:'single',scope:'session'}}},OpeningConversationRoot)
+    disposeOpeningBody=ctx.slots.register({name:OPENING_SESSION_SLOT,store,inject:sessionId=>({
+      ...bindingProps(sessionId),playClient,conversationPhase,switchToNative,
+      getComposerPending:()=>openingRequest?.sessionId===sessionId,
+      onComposerPending:(owner,pending)=>{
+        if(pending&&sessionId===openingSessionId)openingRequest={sessionId,owner}
+        else if(!pending&&openingRequest?.sessionId===sessionId&&openingRequest.owner===owner)openingRequest=null
+        else return
+        queueMicrotask(()=>{syncOpeningEntries();notifyBindings()})
+      },
+      activateView:(id,view)=>ctx.get?.('uiConversation')?.binding(id).activate(view),
+      openSession:(id,playthrough=chatBindings.get(sessionId)?.playthrough)=>openPlaySession(id,playthrough),
+    })},OpeningConversationSession)
+    openingSessionId=id
+  }
+
   const syncChatEntries = () => {
+    syncOpeningEntries()
     if (!chatDeclared || mode !== 'play' || (chatBindings.size === 0 && pendingChats.size === 0)) {
       dropDefaultViewEntry()
       dropConversationEntry()
@@ -239,6 +295,11 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   }
 
   const reconcileChat = (force = false) => {
+    const roster = ctx.sessions?.list?.getSnapshot?.()
+    if (!draftRosterReady && roster?.phase === 'ready') { draftMainSessionId = mainSessionId(roster); draftRosterReady = true }
+    if (activeDraftId && draftRosterReady && roster?.phase === 'ready' && mainSessionId(roster) !== draftMainSessionId) {
+      activeDraftId = null; try { window.sessionStorage.removeItem(draftKey) } catch {}
+    }
     if (!chatDeclared || mode !== 'play') {
       chatGeneration += 1
       pendingChats.clear()
@@ -252,7 +313,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     for (const id of pendingChats.keys()) if (!retained.has(id)) pendingChats.delete(id)
     for (const id of preferredPlaythroughs.keys()) if (!retained.has(id)) preferredPlaythroughs.delete(id)
     const mainId = mainSessionId(snapshot)
-    selectPlaythrough(chatBindings.get(mainId)?.playthrough.id ?? preferredPlaythroughs.get(mainId) ?? null)
+    if (!activeDraftId) selectPlaythrough(chatBindings.get(mainId)?.playthrough.id ?? preferredPlaythroughs.get(mainId) ?? null)
     for (const session of sessions) {
       const signature = sessionSignature(session)
       if (force !== true && (chatBindings.get(session.id)?.signature === signature
@@ -261,12 +322,13 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       pendingChats.set(session.id, request)
       loadCurrentPlaythrough(playClient, session, {
         preferredPlaythroughId: preferredPlaythroughs.get(session.id) ?? chatBindings.get(session.id)?.playthrough.id ?? null,
-      }).then(match => {
+      }).then(async match => {
+        const selectedCharacter=match&&typeof playClient.getCharacterSelection==='function'?await playClient.getCharacterSelection(session.id):null
         if (pendingChats.get(session.id) !== request || request.generation !== chatGeneration) return
         pendingChats.delete(session.id)
         if (match === null) chatBindings.delete(session.id)
-        else chatBindings.set(session.id, { signature, sessionId: session.id, playthrough: match.playthrough })
-        if (mainSessionId(ctx.sessions?.list?.getSnapshot?.()) === session.id) selectPlaythrough(match?.playthrough.id)
+        else chatBindings.set(session.id, { signature, sessionId: session.id, playthrough: match.playthrough,characterId:typeof selectedCharacter?.character?.id==='string'&&selectedCharacter.character.id===selectedCharacter?.selection?.characterCardId?selectedCharacter.character.id:null })
+        if (!activeDraftId && mainSessionId(ctx.sessions?.list?.getSnapshot?.()) === session.id) selectPlaythrough(match?.playthrough.id)
         syncChatEntries()
         notifyBindings()
       }).catch(() => {
@@ -276,6 +338,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
         // Keep the matching binding so a transient error cannot persist Chat
         // as this Session's selected view. A successful null match still clears it.
         if (chatBindings.get(session.id)?.signature !== signature) chatBindings.delete(session.id)
+        else if (chatBindings.get(session.id)?.characterId != null) chatBindings.set(session.id, {...chatBindings.get(session.id),characterId:null})
         syncChatEntries()
         notifyBindings()
       })
@@ -356,11 +419,20 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     }
   })
 
+  ctx.slots.inject('main.conversation',()=>{
+    mainDeclared=true;syncOpeningEntries();notifyBindings()
+    return()=>{mainDeclared=false;dropOpeningEntries();notifyBindings()}
+  })
+
   return {
+    openPlaythrough: openPlaySession,
+    getActiveDraftId: () => mode === 'play' ? activeDraftId : null,
+    subscribeDraft: listener => { bindingListeners.add(listener); return () => bindingListeners.delete(listener) },
     setMode(next) {
       const normalized = next === 'play' ? 'play' : 'native'
       if (mode === normalized) return
       mode = normalized
+      notifyBindings()
       reconcile()
       reconcileNotice()
       reconcileChat(true)
@@ -368,18 +440,45 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   }
 }
 
+function ScopedPlaySessionDock({getOpeningSessionId,subscribeBindings,...props}){
+  const opening=useSyncExternalStore(subscribeBindings,getOpeningSessionId,getOpeningSessionId)
+  return props.session?.sessionId===opening?null:createElement(PlaySessionDock,props)
+}
+
 // Injected data belongs to this rendered Session, never to the main-view
 // selection. Subscribe because classification may finish after the slot mounts.
 export function ScopedPlayChatView({ getBinding, subscribeBindings, useStore, actions, ...props }) {
   const binding = useSyncExternalStore(subscribeBindings, getBinding, getBinding)
-  const selectedView = typeof useStore === 'function' ? useStore(state => state.view) : null
+  const selectedView = typeof useStore === 'function' ? useStore(state => state.view) : PLAY_VIEW_ID
+  const surface=useRef(null),[displayActive,setDisplayActive]=useState(false)
+  useLayoutEffect(()=>{
+    const node=surface.current
+    if(!node){setDisplayActive(false);return}
+    let live=true
+    // A retained Session is not necessarily displayed. Use this occurrence's
+    // actual layout, not mainView selection; visible secondary panes are valid.
+    // Scrolling a panel offscreen leaves the surface's layout/state intact.
+    const update=()=>{
+      if(!live)return
+      const rect=node.getBoundingClientRect(),visibility=getComputedStyle(node).visibility
+      setDisplayActive(node.isConnected&&rect.width>0&&rect.height>0&&visibility!=='hidden'&&visibility!=='collapse'&&(!node.checkVisibility||node.checkVisibility({visibilityProperty:true})))
+    }
+    const resize=new ResizeObserver(update),mutation=new MutationObserver(update)
+    resize.observe(node)
+    for(let ancestor=node;ancestor;ancestor=ancestor.parentElement)mutation.observe(ancestor,{attributes:true,attributeFilter:['style','class','hidden','aria-hidden']})
+    update()
+    return()=>{live=false;resize.disconnect();mutation.disconnect()}
+  },[binding==null,selectedView])
   useLayoutEffect(() => {
     // Some retained surfaces omit the input dock; the view itself must also
     // restore native Chat if this Session has no RP binding.
     if (binding === null && selectedView === PLAY_VIEW_ID) actions?.setView?.('chat')
   }, [actions, binding, selectedView])
-  return binding == null ? null : createElement(MowanChatView, {
+  return binding == null || selectedView !== PLAY_VIEW_ID ? null : createElement('div',{
+    ref:surface,style:{height:'100%',minHeight:1,minWidth:0},
+  },displayActive?createElement(MowanChatView, {
+    key: JSON.stringify([props.sessionId,binding.playthrough.id,binding.playthrough.path]),
     ...props,
     playthrough: binding.playthrough,
-  })
+  }):null)
 }

@@ -1,5 +1,10 @@
+import {carryGreetingSelection} from './bound-greeting.js'
+import {restoreRenderingDisplay,useRestoredRenderingDisplay} from './rendering-display.js'
+import { readRenderingWorkspace, identifyRenderingSources, renderingInventory } from './rendering-sources.js'
 import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
 import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
+import { recoverCompletedSwipe } from './swipe-completion.js'
+import { greetingCardScope } from './mvu-scope.js'
 import {
   createElement,
   useEffect,
@@ -28,10 +33,11 @@ import {
 } from './chat-model.js'
 import {
   applyDisplayRegex,
+  applyGreetingDisplayRegex,
   getRegexDocument,
   resourceRegexRules,
 } from './regex.js'
-import { PlayTurnActions } from './turn-actions.js'
+import { PlayTurnActions,StoppedRequestActions } from './turn-actions.js'
 import { MessageRow } from './message-layout.js'
 import { createTurnReconciler } from './turns.js'
 import {
@@ -46,6 +52,7 @@ import { conversationDisplayStyle, useConversationDisplaySettings } from './disp
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 import { latestTurnFailureDetail, sessionFailureDetail, submissionInProgress } from './chat-failure.js'
 import { mathStyles } from './math-styles.js'
+import {useCardComposer} from './card-composer-hook.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -62,12 +69,14 @@ ${mathStyles('[data-dtv-rich-text]')}
 .dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{width:100%;min-width:0;display:grid;gap:8px}.dtv-play-greeting-navigation{display:flex;align-items:center;gap:6px}
+.dtv-play-greeting{width:100%;min-width:0;display:grid;gap:8px}.dtv-play-greeting-navigation{display:flex;align-items:center;justify-content:center;width:100%;gap:6px}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-message-diagnostics{margin:8px 0;display:grid;gap:6px;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 .dtv-play-chat-failure{position:sticky;top:0;z-index:1;border:1px solid currentColor}
+.dtv-play-chat-failure-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.dtv-play-chat-failure-toggle{flex-shrink:0;border:0;border-radius:6px;padding:4px 8px;background:transparent;color:inherit;font:inherit;cursor:pointer}.dtv-play-chat-failure-toggle:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:calc(12px * var(--dtv-rp-text-scale,1));line-height:1.5}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `
@@ -112,15 +121,20 @@ function turnReconciler(client) {
 }
 
 export async function loadChatState(client, sessionId, playthrough) {
-  const pending = pendingSwipeForSession(client, sessionId)
+  let pending = pendingSwipeForSession(client, sessionId)
+  if (pending?.error) {
+    await recoverCompletedSwipe(client, pending)
+    pending = pendingSwipeForSession(client, sessionId)
+  }
+  const pendingTimeline = pending ? await client.getTimeline(playthrough) : null
   const reconciled = pending === null ? await turnReconciler(client)(sessionId, playthrough) : {
     timeline: {
       ...pending.timeline,
       // Keep the preview's branch, but read display edits from durable metadata.
-      nodes: await client.getTimeline(playthrough).then(current => pending.timeline.nodes.map(node => ({
+      nodes: pending.timeline.nodes.map(node => ({
         ...node,
-        displayOverride: current.nodes.find(item => item.id === node.id)?.displayOverride ?? null,
-      }))),
+        displayOverride: pendingTimeline.nodes.find(item => item.id === node.id)?.displayOverride ?? null,
+      })),
     },
   }
   const timeline = reconciled.timeline ?? await client.getTimeline(playthrough)
@@ -130,10 +144,10 @@ export async function loadChatState(client, sessionId, playthrough) {
   const characterResponse = typeof characterId === 'string' && characterId !== ''
     ? await client.getCharacter(characterId)
     : null
-  const [regexDocument, active] = await Promise.all([
+  const [{resource:regexDocument,owner:globalOwner}, active] = await Promise.all([
     typeof client.getFile === 'function'
-      ? getRegexDocument(client)
-      : { schemaVersion: 1, rules: [] },
+      ? readRenderingWorkspace(client,()=>getRegexDocument(client))
+      : { resource:{schemaVersion: 1, rules: []},owner:null },
     typeof client.getActive === 'function'
       ? client.getActive(sessionId)
       : null,
@@ -220,24 +234,33 @@ export async function loadChatState(client, sessionId, playthrough) {
     && rootMessages?.incompleteTurn !== true
     && !(rootMessages?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
     && importedContext.binding?.state !== 'consumed'
+  const displayGreeting = importedTurns.length > 0 || greeting === null ? null : {
+    ...greeting,
+    sourceText: applyDisplayNameMacros(greeting.text, macros),
+    messageCount: 1 + (rootMessages?.messages ?? []).filter(
+      message => message?.role === 'user' || message?.role === 'assistant',
+    ).length,
+    ...applyGreetingDisplayRegex(
+      applyDisplayNameMacros(greeting.text, macros), rules, bindings, { depth },
+    ),
+  }
+  regexDiagnostics.push(...(displayGreeting?.diagnostics ?? []))
+  const renderingSources=await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse,{kind:'character',resourceId:bindings.characterId}),...renderingInventory(presetResponse?.preset ?? presetResponse,{kind:'preset',resourceId:bindings.presetId})])
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
+    // Pending children are not durable playthrough members yet. Keep the
+    // opening on the source's verified, read-only checkpoint until adoption.
+    greetingVariableScope: greetingCardScope({playthrough,sessionId:pending?.sourceSessionId??sessionId,characterId:bindings.characterId,greetingIndex:greeting?.index,timeline:pendingTimeline??timeline}),
     pendingSwipeError: pending?.error ?? null,
+    stoppedRequest:rootMessages?.stoppedRequest??null,
     timeline,
     turns,
     importBinding: importedContext.binding,
     importContext: importedContext.document,
     importMutable,
-    greeting: importedTurns.length > 0 ? null : greeting === null ? null : {
-      ...greeting,
-      // A greeting is card metadata shown before the first durable turn, not an
-      // assistant message. Output-only display regex (for example "keep only
-      // <正文>") must not erase it merely because the card did not wrap its
-      // greeting in the model-output protocol.
-      text: applyDisplayNameMacros(greeting.text, macros),
-    },
+    greeting: displayGreeting,
     regexDiagnostics,
-    display: { rules, bindings, macros },
+    display: { rules, bindings, macros, globalRenderingOwner: globalOwner, renderingSources },
   }
 }
 
@@ -267,7 +290,7 @@ export function Greeting({ greeting, busy, change, locked = false, footer = null
       className: 'dtv-play-greeting',
       'data-locked': locked,
     },
-      h(MessageBubble, { messageKey: `greeting:${greeting.index ?? 0}`, text: greeting.text }),
+      h(MessageBubble, { greetingBinding: true, initialBinding: !locked, messageKey: `greeting:${greeting.index ?? 0}`, text: greeting.text }),
       locked ? null : h(MessageRow, null, h('div', { className: 'dtv-play-greeting-navigation' },
       h('button', {
         type: 'button',
@@ -313,7 +336,14 @@ export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, runnin
     || turns.some(turn => turn?.imported !== true)
 }
 
-function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
+export function messageVariableScope(turn) {
+  const variant = turn?.variant
+  if (turn?.imported || turn?.transient || turn?.running || !variant || typeof turn.id !== 'string' || typeof variant.id !== 'string' || typeof variant.sessionId !== 'string' || !Number.isSafeInteger(variant.endEventId)) return undefined
+  const version = variant.ext?.pmpDshTavern?.sessionFormatVersion
+  return {sessionId:variant.sessionId,nodeId:turn.id,variantId:variant.id,endEventId:variant.endEventId,...(Number.isSafeInteger(version)?{sessionFormatVersion:version}:{})}
+}
+
+function Turn({ turn, hideUser = false, swipePending = false, stoppedRequest, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null
   const durableQa = turnHasDurableQaActions(turn)
   const assistantTexts = swipePending ? [] : Array.isArray(turn.assistantTexts)
@@ -321,12 +351,14 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
     : turn.assistantText === '' ? [] : [turn.assistantText]
   return h('div', { className: 'dtv-play-chat-row' },
     turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,
-    hideUser || turn.userText === '' ? null : h(MessageBubble, { role: 'user', messageKey: messageAvatarKey(turn, 'user'), editable: durableQa || turn.imported === true, text: turn.userText }),
+    hideUser || turn.userText === '' ? null : h(MessageBubble, { role: 'user', variableScope: messageVariableScope(turn), messageKey: messageAvatarKey(turn, 'user'), editable: durableQa || turn.imported === true, text: turn.userText }),
     ...assistantTexts.map((text, index) => h(MessageBubble, {
       key: `assistant-${index}`,
+      variableScope: messageVariableScope(turn),
       messageKey: messageAvatarKey(turn, 'assistant', index),
       editable: durableQa || turn.imported === true,
-      streaming: turn.running === true || turn.transient === true,
+      streaming: turn.running === true,
+      bindingPending: turn.transient === true,
       className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich',
       text,
     })),
@@ -338,7 +370,7 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
       ...actionProps,
       running: actionProps.running === true || swipePending,
       pendingVariant: swipePending,
-    })) : null,
+    })) : stoppedRequest?h(MessageRow,null,h(StoppedRequestActions,{...actionProps,request:stoppedRequest,nodeId:turn.id})):null,
   )
 }
 
@@ -429,7 +461,9 @@ export function rememberChatSnapshot(client, playthrough, snapshot) {
 
 function ChatFrame({
   snapshot,
+  composer,
   currentSessionId,
+  confirmed = true,
   liveNodes,
   partial,
   running,
@@ -448,7 +482,7 @@ function ChatFrame({
 }) {
   const state = snapshot.value
   const current = snapshot.sessionId === currentSessionId
-  const interactive = current && phase !== 'outgoing'
+  const interactive = current && confirmed && phase !== 'outgoing'
   const liveSourceTurns = !current ? [] : projectLiveTurns({
     timeline: state.timeline,
     sessionId: currentSessionId,
@@ -483,7 +517,7 @@ function ChatFrame({
     running,
   })
 
-  return h(ConversationPresentation, { state, playthrough, playClient, sessionId: currentSessionId, disabled: !interactive, busy: running, changed }, h('div', {
+  return h(ConversationPresentation, { state, playthrough, playClient, sessionId: currentSessionId, disabled: !interactive, busy: running, changed, composer:interactive?composer:null }, h('div', {
     className: 'dtv-play-chat-frame',
     'data-phase': phase,
     'data-direction': direction,
@@ -510,7 +544,10 @@ function ChatFrame({
       swipePending: pendingSwipe?.nodeId === turn.id,
     })),
     state.importBinding === null ? null : importControls,
-    ...liveTurns.map(turn => h(Turn, { key: turn.id, turn })),
+    ...liveTurns.map(turn => h(Turn, { key: turn.id, turn,
+      stoppedRequest:turn.id===`live-${state.stoppedRequest?.userEventId}`?{...state.stoppedRequest,sessionId:currentSessionId}:null,
+      playthrough,playClient,openSession,running,readOnly:!interactive,onChanged:changed,onError,onSwipePending,
+    })),
     state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running
       ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))
       : null,
@@ -581,7 +618,7 @@ function TargetedSwipeTransition({
     })),
     h('div', { className: 'dtv-play-chat-target' },
       target.userText === '' ? null : h(MessageBubble, {
-        role: 'user', messageKey: messageAvatarKey(target, 'user'),
+        role: 'user', variableScope: messageVariableScope(target), messageKey: messageAvatarKey(target, 'user'),
         className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich',
         text: target.userText,
       }),
@@ -593,16 +630,26 @@ function TargetedSwipeTransition({
   ))
 }
 
-export function ChatFailureNotice({ detail }) {
+export function ChatFailureNotice({ detail, noticeKey = '' }) {
+  const [notice, setNotice] = useState(() => ({ detail, noticeKey, collapsed: false }))
+  const current = notice.detail === detail && notice.noticeKey === noticeKey
+  // Track the current occurrence, including a cleared error. An older closed
+  // notice must not collapse a later error with identical text.
+  if (!current) setNotice({ detail, noticeKey, collapsed: false })
+  const collapsed = current && notice.collapsed
   return detail !== null ? h('div', {
-      className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: 'alert',
-    }, h('strong', null, uiMessage('play.chat.failure')),
-    h('div', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, detail ? rawText(detail) : uiMessage('play.chat.failureUnknown')),
-    detail.includes('already owned by an active write handle')
+      className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: collapsed ? 'status' : 'alert',
+    }, h('div', { className: 'dtv-play-chat-failure-heading' },
+      h('strong', null, uiMessage('play.chat.failure')),
+      h('button', { type: 'button', className: 'dtv-play-chat-failure-toggle', 'aria-expanded': !collapsed,
+        onClick: () => setNotice({ detail, noticeKey, collapsed: !collapsed }),
+      }, uiMessage(collapsed ? 'play.chat.failureShow' : 'play.chat.failureDismiss'))),
+    collapsed ? null : h('div', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, detail ? rawText(detail) : uiMessage('play.chat.failureUnknown')),
+    !collapsed && detail.includes('already owned by an active write handle')
       ? h('p', null, uiMessage('play.chat.failureOwned')) : null) : null
 }
 
-export function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
+export function MowanChatView({ sessionId, useSession, useChat, useInput, inputActions, playClient, playthrough, openSession, chatScroll, onComposerPending }) {
   useClientUiSettings()
   installPlayChatStyles()
   const displaySettings = useConversationDisplaySettings()
@@ -615,16 +662,24 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
   const hostFailure = useSession(sessionFailureDetail)
+  const hostFailureOccurrence = useSession(state => state.promptError ?? state.openError ?? state.lastAgentError ?? null)
   const submitting = useSession(submissionInProgress)
   const turnFailure = useChat(latestTurnFailureDetail)
+  const failureTurn = useChat(state => state.timeline.turnOrder.at(-1) ?? null)
   const failureDetail = hostFailure ?? (submitting ? null : turnFailure)
   const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough, sessionId))
+  // Cached presentation can outlive a frontend mount while an Agent continues.
+  // Only this mount's authoritative read may reactivate its scripts/composer.
+  const [confirmedOwner,setConfirmedOwner] = useState(null)
+  const ownerIdentity=JSON.stringify([playthrough?.id,playthrough?.path,sessionId])
   const loadedStateRef = useRef(loadedState)
   const transitionIntent = useRef({ sessionId: null, intent: null })
   const [transition, setTransition] = useState(null)
   const state = loadedState?.value ?? null
-  const stateIsCurrent = loadedState?.sessionId === sessionId
+  const stateIsCurrent = loadedState?.sessionId === sessionId && confirmedOwner?.client===playClient && confirmedOwner.identity===ownerIdentity
+  const composer=useCardComposer({sessionId,useInput,inputActions,active:stateIsCurrent,blocked:running||submitting,onPending:onComposerPending,send:(text,{signal}={})=>playClient.postUserMessage(sessionId,text,{signal})})
   const [error, setError] = useState('')
+  useRestoredRenderingDisplay(stateIsCurrent?state?.display:null,displaySettings,setError)
   const [greetingBusy, setGreetingBusy] = useState(false)
   const [pendingSwipe, setPendingSwipe] = useState(null)
   const bottomAnchor = useRef(null)
@@ -682,10 +737,14 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
       setTransition(null)
     }
     setError('')
-    loadChatState(playClient, sessionId, playthrough).then(next => {
+    loadChatState(playClient, sessionId, playthrough).then(async next => {
+      if (!active) return
+      await restoreRenderingDisplay(next.display)
       if (!active) return
       const incoming = { sessionId, value: next }
       const previous = loadedStateRef.current
+      // Read-back of a different selection is the event, rather than mount.
+      carryGreetingSelection(chatSnapshots.get(playClient)?.get(playthroughCacheKey(playthrough,sessionId))?.value?.greeting,next.greeting)
       if (previous !== null && previous.sessionId !== sessionId) {
         const intent = transitionIntent.current.sessionId === sessionId
           ? transitionIntent.current.intent
@@ -701,6 +760,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
       rememberChatSnapshot(playClient, playthrough, incoming)
       setPendingSwipe(current => current?.sourceSessionId !== sessionId ? null : current)
       setLoadedState(incoming)
+      setConfirmedOwner({client:playClient,identity:ownerIdentity})
     }).catch(reason => {
       if (!active) return
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -740,6 +800,8 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const frame = (snapshot, phase) => h(ChatFrame, {
     key: `${phase}:${snapshot.sessionId}`,
     snapshot,
+    composer,
+    confirmed:stateIsCurrent,
     currentSessionId: sessionId,
     liveNodes,
     partial,
@@ -760,7 +822,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const transitionBoundary = swipeTransitionBoundary(transition)
 
   return h('div', { className: 'dtv-play-chat', style: conversationDisplayStyle(displaySettings) },
-    h(ChatFailureNotice, { detail: failureDetail }),
+    h(ChatFailureNotice, { key: sessionId, detail: failureDetail, noticeKey: hostFailure !== null ? hostFailureOccurrence : failureTurn }),
     error === '' && !state?.pendingSwipeError ? null : h('div', null,
       h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error || state.pendingSwipeError)),
       !state?.pendingSwipeError ? null : h('button', {

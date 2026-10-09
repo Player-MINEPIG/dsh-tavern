@@ -153,11 +153,17 @@ export async function createCharacterPlaythrough(client, {
   character,
   selectionFromSessionId = null,
   configureSession = null,
+  configurationSource = null,
+  reuseEmpty = true,
   now = () => new Date(),
   randomUUID = () => globalThis.crypto.randomUUID(),
 } = {}) {
   if (client == null) throw new TypeError('playClient.required')
+  if (typeof reuseEmpty !== 'boolean') throw new TypeError('reuseEmpty must be a boolean')
   const characterId = safeSegment(character?.id, 'character.id')
+  if (typeof client.postDraft === 'function') {
+    return { ...await client.postDraft({ characterId, ...(configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: 'current', sessionId: selectionFromSessionId } } : {}) }), reused: false }
+  }
   const createdAt = isoNow(now)
   const playthroughId = safeSegment(`playthrough-${randomUUID()}`, 'playthrough.id')
   const directory = `${characterId}/${playthroughId}`
@@ -167,7 +173,7 @@ export async function createCharacterPlaythrough(client, {
     : null
   const catalog = await catalogOrEmpty(client)
   let latest = latestCharacterPlaythrough(catalog, characterId)
-  let reusable = latest !== null && await playthroughIsReusable(client, latest)
+  let reusable = reuseEmpty && latest !== null && await playthroughIsReusable(client, latest)
   if (reusable) {
     // History/import reads can yield to another tab archiving the candidate.
     const fresh = (await client.getCatalog()).playthroughs.find(item => item.id === latest.id && item.path === latest.path)
@@ -271,16 +277,22 @@ export function createPlaythroughController(client, dependencies = {}) {
   return {
     create(args) {
       const characterId = safeSegment(args?.character?.id, 'character.id')
-      const existing = inFlight.get(characterId)
+      const reuseEmpty = args?.reuseEmpty === undefined
+        ? (dependencies.reuseEmpty === undefined ? true : dependencies.reuseEmpty)
+        : args.reuseEmpty
+      if (typeof reuseEmpty !== 'boolean') throw new TypeError('reuseEmpty must be a boolean')
+      const key = `${characterId}:${reuseEmpty}`
+      const existing = inFlight.get(key)
       if (existing !== undefined) return existing
       const task = tail.catch(() => {}).then(() => createCharacterPlaythrough(client, {
         ...dependencies,
         ...args,
+        reuseEmpty,
       }))
       tail = task
-      inFlight.set(characterId, task)
+      inFlight.set(key, task)
       task.finally(() => {
-        if (inFlight.get(characterId) === task) inFlight.delete(characterId)
+        if (inFlight.get(key) === task) inFlight.delete(key)
       }).catch(() => {})
       return task
     },

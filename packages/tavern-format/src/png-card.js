@@ -1,6 +1,6 @@
 const PNG_SIGNATURE = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])
 const DEFAULT_MAX_CHUNKS = 10_000
-const DEFAULT_MAX_METADATA_BYTES = 2 * 1024 * 1024
+const DEFAULT_MAX_METADATA_BYTES = 16 * 1024 * 1024
 const CARD_TEXT_KEYWORDS = new Set(['chara', 'ccv3'])
 
 const CRC_TABLE = (() => {
@@ -30,9 +30,12 @@ function uint32(input, offset) {
 }
 
 function ascii(input, start, end) {
-  let value = ''
-  for (let index = start; index < end; index += 1) value += String.fromCharCode(input[index])
-  return value
+  // Bound intermediate strings: card metadata can contain millions of bytes.
+  const parts = []
+  for (let index = start; index < end; index += 8192) {
+    parts.push(String.fromCharCode(...input.subarray(index, Math.min(index + 8192, end))))
+  }
+  return parts.join('')
 }
 
 function decodeBase64(value) {
@@ -75,20 +78,21 @@ function crc32(input) {
 }
 
 function encodeBase64(input) {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  let output = ''
+  const alphabet = new TextEncoder().encode('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')
+  const output = new Uint8Array(Math.ceil(input.length / 3) * 4)
+  let offset = 0
   for (let index = 0; index < input.length; index += 3) {
     const remaining = input.length - index
     const a = input[index]
     const b = remaining > 1 ? input[index + 1] : 0
     const c = remaining > 2 ? input[index + 2] : 0
     const triple = (a << 16) | (b << 8) | c
-    output += alphabet[(triple >>> 18) & 63]
-    output += alphabet[(triple >>> 12) & 63]
-    output += remaining > 1 ? alphabet[(triple >>> 6) & 63] : '='
-    output += remaining > 2 ? alphabet[triple & 63] : '='
+    output[offset++] = alphabet[(triple >>> 18) & 63]
+    output[offset++] = alphabet[(triple >>> 12) & 63]
+    output[offset++] = remaining > 1 ? alphabet[(triple >>> 6) & 63] : 61
+    output[offset++] = remaining > 2 ? alphabet[triple & 63] : 61
   }
-  return output
+  return new TextDecoder().decode(output)
 }
 
 function writeUint32(target, offset, value) {
@@ -216,11 +220,10 @@ export function extractCharacterCardPng(input, options = {}) {
       if (separator !== -1) {
         const keyword = ascii(value, dataStart, separator)
         if (keyword === 'chara' || keyword === 'ccv3') {
-          const encoded = ascii(value, separator + 1, dataEnd)
-          if (encoded.length > Math.ceil(maxMetadataBytes / 3) * 4 + 4) {
+          if (dataEnd - separator - 1 > Math.ceil(maxMetadataBytes / 3) * 4 + 4) {
             throw new TypeError(`Character-card PNG metadata exceeds the ${maxMetadataBytes} byte limit`)
           }
-          const decoded = decodeBase64(encoded)
+          const decoded = decodeBase64(ascii(value, separator + 1, dataEnd))
           if (decoded.length > maxMetadataBytes) {
             throw new TypeError(`Character-card PNG metadata exceeds the ${maxMetadataBytes} byte limit`)
           }

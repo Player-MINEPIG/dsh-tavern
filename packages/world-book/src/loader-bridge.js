@@ -155,8 +155,13 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
       resourceId,
       id: identity.id,
       uid: identity.uid,
+      comment: entry.comment ?? '',
       content: entry.content,
       position: projected.position,
+      requestedPosition: entry.position,
+      depth: entry.depth ?? entry.extensions?.depth ?? 0,
+      role: typeof entry.role === 'string' ? entry.role : ['system', 'user', 'assistant'][entry.role] ?? 'system',
+      constant: entry.constant === true,
     })
     decisions.push(auditDecision(candidate, resourceId, 'included', candidate.reason, projected))
   }

@@ -41,7 +41,7 @@ function errorMessage(data, status) {
   return `HTTP ${status}`
 }
 
-async function api(path, options = {}) {
+async function resourceApi(path, options = {}) {
   const method = String(options.method ?? 'GET').toUpperCase()
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
@@ -142,15 +142,32 @@ function EntryDragButton({ busy, dragging, onPointerDown, onPointerMove, onPoint
   }, '⠿')
 }
 
+const entryRole = entry => {
+  const value = entry.role ?? entry.extensions?.role ?? 'system'
+  return typeof value === 'number' ? ['system', 'user', 'assistant'][value] ?? 'system' : value
+}
+function EntryPlacementFields({ depth, role, atDepth, onDepth, onRole }) {
+  return h('div', { className: 'dwb-grid' },
+    atDepth ? h(Field, { label: uiMessage('world.entry.depth') }, h('input', {
+      className: 'dwb-input', type: 'number', min: 0, step: 1, value: depth,
+      onChange: event => { const value = Number(event.target.value); if (event.target.value !== '' && Number.isSafeInteger(value) && value >= 0) onDepth(value) },
+    })) : null,
+    h(Field, { label: uiMessage('world.entry.role') }, h('select', { className: 'dwb-select', value: role, onChange: event => onRole(event.target.value) },
+      ...['system', 'user', 'assistant'].map(value => h('option', { key: value, value }, rawText(value))))),
+  )
+}
+
 function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = value => update(index, value)
   const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : []
   const position = embeddedPosition(entry)
+  const depth = entry.depth ?? entry.extensions?.depth ?? 4
   return h('details', { className: 'dwb-entry', 'data-world-entry-kind': dragKind, 'data-world-entry-index': index, 'data-dragging': dragging || undefined },
     h('summary', null,
       h(EntryDragButton, { dragging, ...dragHandlers }),
       h('input', { type: 'checkbox', checked: entry.enabled === true, onClick: event => event.stopPropagation(), onChange: event => patch({ enabled: event.target.checked }) }),
       h('span', { className: 'dwb-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage('world.entry.fallback', { id: entry.id ?? index })),
+      position === 4 ? h('span', { className: 'dwb-source-badge' }, uiMessage('world.entry.depthBadge', { depth, role: entryRole(entry) })) : null,
       h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
     h('div', { className: 'dwb-entry-body' },
@@ -172,6 +189,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging,
         h(Field, { label: uiMessage('world.entry.order') }, h('input', { className: 'dwb-input', type: 'number', value: entry.insertion_order ?? 100, onChange: event => patch({ insertion_order: Number(event.target.value) }) })),
         h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), extensions: { ...(entry.extensions ?? {}), probability: Number(event.target.value), useProbability: true } }) })),
       ),
+      h(EntryPlacementFields, { depth, role: entryRole(entry), atDepth: position === 4, onDepth: value => patch({ depth: value, extensions: { ...(entry.extensions ?? {}), depth: value } }), onRole: value => patch({ role: value, extensions: { ...(entry.extensions ?? {}), role: ['system', 'user', 'assistant'].indexOf(value) } }) }),
+      position !== 7 ? h('p', { className: 'dwb-note' }, uiMessage(position === 4 ? 'world.depthHint' : 'world.slotHint')) : null,
       h('div', { className: 'dwb-checks' },
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), uiMessage('world.entry.caseSensitive')),
@@ -301,6 +320,7 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
       h(EntryDragButton, { dragging, ...dragHandlers }),
       h('input', { type: 'checkbox', checked: entry.enabled === true, onClick: event => event.stopPropagation(), onChange: event => patch({ enabled: event.target.checked }) }),
       h('span', { className: 'dwb-entry-name' }, entry.comment ? rawText(entry.comment) : uiMessage('world.entry.fallback', { id: entry.uid ?? index })),
+      entry.position === 'at_depth' ? h('span', { className: 'dwb-source-badge' }, uiMessage('world.entry.depthBadge', { depth: entry.depth ?? 4, role: entryRole(entry) })) : null,
       h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
     h('div', { className: 'dwb-entry-body' },
@@ -318,6 +338,8 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
         h(Field, { label: uiMessage('world.entry.order') }, h('input', { className: 'dwb-input', type: 'number', value: entry.insertionOrder ?? 100, onChange: event => patch({ insertionOrder: Number(event.target.value) }) })),
         h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), useProbability: true }) })),
       ),
+      h(EntryPlacementFields, { depth: entry.depth ?? 4, role: entryRole(entry), atDepth: entry.position === 'at_depth', onDepth: depth => patch({ depth }), onRole: role => patch({ role }) }),
+      entry.position !== 'outlet' ? h('p', { className: 'dwb-note' }, uiMessage(entry.position === 'at_depth' ? 'world.depthHint' : 'world.slotHint')) : null,
       h('div', { className: 'dwb-checks' },
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.caseSensitive === true, onChange: event => patch({ caseSensitive: event.target.checked }) }), uiMessage('world.entry.caseSensitive')),
@@ -328,7 +350,9 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
   )
 }
 
-export function WorldBookPanel({ sessionId, close }) {
+export function WorldBookPanel({ bindingTarget, sessionId, close }) {
+  const api = bindingTarget?.request ?? resourceApi
+  const canBind = bindingTarget ? bindingTarget.editable : Boolean(sessionId)
   const [catalog, setCatalog] = useState(null)
   const [document, setDocument] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -375,7 +399,7 @@ export function WorldBookPanel({ sessionId, close }) {
   const refresh = useCallback(async preferredId => {
     const currentGeneration = ++generation.current
     const list = await api('/world-books')
-    const selected = sessionId
+    const selected = bindingTarget || sessionId
       ? await api(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`)
       : { selection: { worldBookIds: [] } }
     const activeView = await api(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`)
@@ -424,7 +448,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDocument(detail.worldBook)
     setDraft(structuredClone(detail.worldBook.book))
     setDirty(false)
-  }, [document?.id, sessionId])
+  }, [document?.id, sessionId, bindingTarget])
 
   useEffect(() => {
     run(() => refresh(), 'world.status.loaded')
@@ -482,7 +506,7 @@ export function WorldBookPanel({ sessionId, close }) {
   }, 'world.status.saved')
 
   const saveSelection = () => run(async () => {
-    if (!sessionId) throw uiError('world.error.needSession')
+    if (!canBind) throw uiError('world.error.needSession')
     const data = await api('/world-book-selection', { method: 'POST', body: JSON.stringify({ sessionId, worldBookIds: selection }) })
     setSelection(data.selection.worldBookIds)
     setAppliedSelection(data.selection.worldBookIds)
@@ -648,11 +672,11 @@ export function WorldBookPanel({ sessionId, close }) {
         ))) : h('p', { className: 'dwb-note' }, uiMessage('world.libraryEmpty')),
         selectionDirty ? h('div', { className: 'dwb-status', 'data-warning': true }, uiMessage('world.bindingUnsaved')) : h('p', { className: 'dwb-note' }, uiMessage('world.bindingApplied')),
         h('div', { className: 'dwb-actions' },
-          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage('world.applyBinding') : uiMessage('world.bindingAppliedButton')),
-          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.clearPending')),
+          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !canBind || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage('world.applyBinding') : uiMessage('world.bindingAppliedButton')),
+          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !canBind || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.clearPending')),
         ),
       ),
-      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translate('common.none') })),
+      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: bindingTarget?.label || sessionId || translate('common.none') })),
       h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       draft === null ? null : h('div', { className: 'dwb-resource', ref: standaloneEditorRef },
         h(Field, { label: uiMessage('world.bookName') }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),

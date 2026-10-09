@@ -2,7 +2,9 @@
 
 [English](PROMPT_PIPELINE_en.md)
 
-本文说明 Tavern 2.5.1中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
+必需的独立[请求装配器](REQUEST_ASSEMBLY.md)拥有装配策略与来源注册；标准策略使用公开 sections/context/pre-step，可选进阶 addon 提供协议 1 请求排列。未应用策略的会话继续使用下文的兼容 loader 路径。DSH 保留持久历史与 Provider 序列化的所有权。
+
+本文说明 Tavern 3.0.0中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
 如何进入一次模型请求，并明确未实现的映射。DSH 自身的 turn/step、Inbox、Session、
 system assembly 和 request/header 顺序另见 `DSH_MESSAGE_FLOW.md`。
 
@@ -38,7 +40,7 @@ TauriTavern 的 Agent 路径则多了一层快照边界：
 
 ## 3. dsh-tavern 当前如何兼容
 
-dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插入接口。当前实现采用一个明确受限的适配：
+未扩展的 DSH 没有 ST 的 `PromptManager` 或任意历史深度插入接口。默认 loader 路径采用下列受限适配；新装配预设的规则、深度与保留方式以请求装配器合同为准：
 
 1. 导入时把 preset、角色卡和 World Info/Character Book 分别归一化，并保留未知字段。
 2. loader 根据当前 session 选择读取 preset、角色卡和一个用户资源；角色卡内嵌 `character_book` 自动成为世界信息来源。

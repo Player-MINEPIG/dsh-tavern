@@ -1,5 +1,6 @@
 import { pendingSwipeForSession } from './pending-swipe.js'
 import { characterGreetingOptions } from '../../../character/src/client-state.js'
+export { applyDisplayNameMacros } from './display-name-macros.js'
 import {
   activeTimelineEntries,
   activeVariantEnd,
@@ -122,9 +123,9 @@ async function loadClassificationTimeline(client, playthrough) {
   try {
     return await client.getTimeline(playthrough)
   } catch (error) {
-    // An unrelated old playthrough can reference logs absent from this Host.
+    // An unrelated old playthrough can reference absent or corrupt logs.
     // Sidebar diagnostics report it; it must not hide a valid fork's RP view.
-    if (error?.code === 'PLAY_SESSION_NOT_FOUND') return null
+    if (['PLAY_SESSION_NOT_FOUND', 'SESSION_QUERY_CORRUPT_SESSION'].includes(error?.code)) return null
     throw error
   }
 }
@@ -357,17 +358,6 @@ export function projectGreeting({
     text: selected.text,
     options,
   }
-}
-
-export function applyDisplayNameMacros(text, {
-  user = 'User',
-  character = 'Assistant',
-} = {}) {
-  const names = {
-    user: typeof user === 'string' && user !== '' ? user : 'User',
-    char: typeof character === 'string' && character !== '' ? character : 'Assistant',
-  }
-  return String(text ?? '').replace(/\{\{\s*(user|char)\s*\}\}/gi, (_match, name) => names[name.toLowerCase()])
 }
 
 export function adjacentGreetingIndex(greeting, direction) {

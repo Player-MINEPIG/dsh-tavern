@@ -1,26 +1,31 @@
-# Unified Tavern loader contract
+# Tavern Host 与资源合同
 
 [English](LOADER_CONTRACT_en.md)
 
-当前合同面向 Tavern **2.5.1** 与 DSH `0.2.0-rc.2`，覆盖 RP 会话叠加
-（`selection.rp` + `rp:policy`）、delegated subagent 的父选择快照、具名官方 sections 与
-schema 4 Trace 引用。DSH V4 以 `system/message` 作为系统正文权威，`request/header`
-保留 config/tools；坐标规则见 [迁移合同](DSH_0.1.7_MIGRATION.md)。
+当前合同面向 Tavern **3.0.0**、Assembler **v1.1.0** 与 DSH **0.2.0-rc.2**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
 
 ## 目标与所有权
 
-加载器是唯一允许决定“当前资源怎样进入一次 DSH 请求”的层。格式模块只解释文件，用例模块只管理资源；它们不得自行注册 `systemPrompt`、修改 Agent、复制会话历史或写模型请求。
+| 所有者 | 当前职责 |
+| --- | --- |
+| Tavern / `TavernProfileLoader` | 会话资源选择、归一化 preset/card/user/world-book 模型、激活与资源审计；来源拥有的 MVU、模板和权限校验 |
+| 独立 Assembler | 策略库与已应用快照、来源/排列算法注册、来源渲染、模块位置、标准投递与预览 |
+| 可选 core addon | 在准备后的 Host 注册协议 1 执行器；进阶请求投影与官方 `request/assembly` 证据 |
+| DSH | 持久会话与有效消息面、system/context 事件、工具执行、call preparation 与 Provider 序列化 |
 
 ```text
-PresetModel ─────────────┐
-CharacterCardModel ──────┼─> TavernProfileLoader ─> ordered Tavern sections
-UserModel ────────────────┤             │
-WorldBookModel + matches ┘             │
-                                       ├─> agent/request call config
-SessionSelectionStore ─────────────────┘
+资源库 + SessionSelectionStore + ActivationContext
+  → TavernProfileLoader：解析模型 / audit / 权限租约
+  → attachTavern + 已注册 Tavern 来源
+  → Assembler 策略快照
+       ├─ native：官方 sections/context + 接纳的 pre-step 消息
+       └─ core：可选协议 1 执行器 → request/assembly
+  → DSH prepared call → Provider
 ```
 
-根插件先以 order 10 注册逻辑 profile，再在同一位置展开成 `pmp-dsh-tavern:part:*` 段落；导入上下文保留 `pmp-dsh-tavern:profile` 名称，可选 `rp:policy` 仍为 order 45。preset 的 `replace` 保留这些 Tavern 贡献，包括角色、世界书与 RP policy。
+loader 通过 `attachTavern` 向共享 store/registry/runtime 提供只读资源；Tavern 兼容导出转发到独立包。格式模块与资源模块不得各自注册提示词段落、修改 Agent 或复制会话历史。来源服务继续拥有数据、解析语法与权限。
+
+已应用策略时，`TavernProfileLoader.compile()` 解析资源并返回 `assemblyInput`，不会先渲染另一份 Tavern profile；模块渲染与排列归 Assembler。loader 仍提供导入上下文、可选 `rp:policy`，并在最终装配处复核世界书/MVU 权限。未应用策略时，保留的兼容路径才把 order 10 的 `pmp-dsh-tavern:profile` 锚点展开为 `pmp-dsh-tavern:part:*` sections；`rp:policy` 仍为 order 45。下文单独说明此兼容渲染器。
 
 ## Session policy
 
@@ -84,7 +89,13 @@ SessionSelectionStore ─────────────────┘
 
 模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。RP 状态随 selection 投影一起复制。
 
+角色侧栏的新建周目入口则先创建独立开场草稿，首次发送获接纳后才关联真实 DSH 会话。草稿的资源/策略快照和初始 MVU 与 session selection 分开保存；预览没有原生历史或待发送输入，也不调用模型。已有 root session 的周目保留其原会话。见[开场草稿说明](USAGE_zh-CN.md)。
+
 ## Profile safety budget
+
+下述资源 parser/matcher 守卫对两条路径都生效。profile 正文裁减与 `TAVERN_PROFILE_*` 诊断属于兼容渲染器；已应用策略执行请求装配合同中的 Assembler 预算。
+
+请求装配沿用下述 `limits.maxProfileBytes` 限制逻辑新增正文；完整 system 快照展开使用独立的固定 2 MiB 物理上限。每条投影载体的新增序列化字节都计入物理开销，不能通过放宽 profile 限制提高该上限；未修改的原生历史不计入新增开销。实际发送和预览都执行两阶段检查，超限拒绝。详见[请求装配契约](REQUEST_ASSEMBLY.md#系统段落与-dsh-完整快照)。
 
 `TavernProfileLoader` 对自己生成的 Tavern profile 合计正文施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。合计预算按确定性的组合顺序先到先得：session 显式独立书、用户绑定独立书、预设绑定独立书、角色卡绑定独立书（ID 稳定去重），最后角色卡内嵌书；每个资源整体预留，不能完整放入时整本不扫描。因此前面的独立书占满 10,000 条时，内嵌书会被跳过并产生 `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`，这是有意的安全/确定性策略，不是随机遗漏。在这些前置守卫后，装配器最多考虑排名最前的 4,096 个 lore 候选，并在组合 section 正文前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
 
@@ -130,7 +141,7 @@ loader.registerWorldBookAdapter({
 
 - adapter 返回已经归一化的模型，不返回 ST 原始文件作为运行指令；
 - adapter 可以只读 `conversationText` 做匹配，不写 session；
-- adapter 不拼 DSH system prompt；最终位置、覆盖、去重和降级诊断由 `compileTavernProfile()` 决定；
+- adapter 不拼 DSH system prompt；应用策略后由 Assembler 渲染与排列；仅未应用策略的兼容路径调用 `compileTavernProfile()`；
 - 每类只能注册一个 adapter，重复注册直接失败，避免加载顺序决定行为；
 - disposer 只撤销自己注册的实例，支持 HMR。
 
@@ -152,13 +163,15 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ## Composition semantics
 
+已应用策略使用 Assembler v1.1.0 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
+
 ### Preset-only compatibility
 
 没有角色、用户和激活 lore 时，loader 直接调用 `compilePresetForDsh()`。它按原顺序输出启用的非 marker prompt 正文，并保持采样参数映射和宏行为。Tavern 不向模型可见文本添加 preset 名称、ID 或 XML 风格识别包装；作者正文中的同名标签保持原样。若选中资源没有正文，则不生成占位 header。官方 waterfall section 只有 `name` 与 `text`，prompt identifier、请求 role 和资源来源保存在 Tavern Trace metadata 中。
 
 ### Marker ownership
 
-选择角色或激活 lore 后，统一装配器消费以下 ST marker：
+兼容渲染器在选择角色或激活 lore 后消费以下 ST marker：
 
 | Marker / prompt | Loader source | Behavior |
 | --- | --- | --- |
@@ -192,59 +205,20 @@ preset 采样字段按作者设置保存。Host 在 `agent/request` 合并受支
 
 ## Audit boundary
 
-`TavernProfileLoader.compile()` 返回：
+`TavernProfileLoader.compile()` 返回解析后的 `assemblyInput`、宏上下文、资源摘要、诊断与资源选择 audit。应用策略或 `resolveOnly` 预览时，`systemText` 和 profile sections 为空：这是资源解析结果，不是最终请求缺失。未应用策略时，它们才包含兼容 profile。`callConfig` 提议受支持的 preset 采样字段；参数准入/降级可调整最终覆盖值。
 
-- `systemText`：loader 提议并展开为具名官方 system sections 的 Tavern profile；
-- `callConfig`：装配时提议的 preset 字段；最终请求可经参数准入/降级调整，以官方 header 和 Trace effective 值为准；
-- `resources`：本次解析到的 preset、character、user 与 world-book 摘要；
-- `diagnostics`：缺资源及位置降级；
-- `audit`：session selection、资源、激活 lore ID 和 SHA-256 fingerprint。
+Assembler 记录策略与来源/排列 metadata。Tavern Trace 将其与资源决策及已核验的官方历史引用组合，不另存来源正文或消息历史副本。标准实际请求按已记录的原生请求引用恢复；进阶请求引用 DSH 的 `request/assembly`。latest-only actual 端点与当前预览不能恢复旧请求。
 
-在 DSH V4 会话中，官方 `system/message` 与 context `user/message` 是提示词正文权威，`request/header` 只保存最终 tools 与 call config；V4 producer source 中，system message 使用 `system-prompt`，context 使用带 `form: "snapshot"` 的 `runtime-context`。历史读取器保留对旧引用和已发布 plugin source wrapper 的识别，这不代表支持旧 Host。显式离线升级对两代日志验证 V3 正文/错误引用；V3 之前的 `request-header-system` Trace 引用拒绝升级到 V4，详见迁移合同。loader audit 用于 UI/API 解释“为何得到这个输入”，不能替代这些 DSH 官方事件，也不新增私有 session event。
+V4 的 `system/message` 与 runtime-context `user/message` 拥有标准提示词正文；`request/header` 拥有最终 tools/config。进阶 `request/assembly` 冻结实际发送数组，不替换 durable history。坐标兼容与显式离线升级见[迁移合同](DSH_0.1.7_MIGRATION.md)，当前支持的 Host 仍为 rc.2。
 
 ## Adapter integration invariants
 
-角色卡 adapter 必须：
+1. 资源模块拥有归一化文档与选择意图；每类资源 adapter 只注册一次，返回只读模型。
+2. Tavern assembler adapters 通过共享 Assembler 来源注册表接入；渲染与排列遵循已应用策略，不为同一资源增加第二个 Host 装配器。
+3. 独立/内嵌世界书共用 parser/matcher 与激活投影，使用前再次复核来源权限与租约。
+4. MVU 拥有初始化、schema、状态实例、durable event 提交与卡片权限；来源解析和预览不得提交变量更新。见 [MVU](MVU.md)。
+5. 卸载 disposer 只撤销自己的注册、provider 与租约，保留资源和 DSH 会话；旧导出与服务别名转发到共享实现。
 
-1. store/API/UI 只维护角色文档与选择意图；
-2. 把 session 选择迁移或桥接到 `SessionSelectionStore.characterCardId/character`；
-3. 通过 `registerCharacterAdapter()` 提供模型；
-4. 不另建 Host system section/profile assembler；
-5. 用 marker、replace、双 session、fork、subagent 和 request header 测试验证。
+## 验证
 
-世界书 adapter 必须：
-
-1. 保持 parser/matcher 为纯逻辑；
-2. 通过 `registerWorldBookAdapter()` 返回激活 entries 和诊断；
-3. 角色卡内嵌 `characterBook` 与独立 WorldBookModel 进入同一 matcher，不重复实现；
-4. 不自行注册 system context/section；
-5. 对扫描窗口、regex、递归与预算给出确定性测试。
-
-用户资源 adapter 必须：
-
-1. store 文档严格只有 `id/name/description`，拒绝头像和未知字段；
-2. `SessionSelectionStore.userId` 是唯一会话绑定所有者；
-3. 通过 `registerUserAdapter()` 交给统一 loader，不注册 Host seam；
-4. marker、宏、fallback 和描述去重由 `compileTavernProfile()` 统一执行；
-5. 验证双 session、即时切换、重启、解绑、删除清理和最终 profile 正文不重复输出。
-
-## 当前验收
-
-- preset-only 输出和模型参数不回归；
-- 两个 session 可选不同 preset，也可显式选择“无 preset”；
-- 普通 fork 与 delegated subagent 都继承父选择快照（含 RP 状态），之后互不联动；
-- marker 填充、角色 override、`{{original}}`、lore before/after 与 chatHistory 不复制均有单测；
-- `replace` 只移除宿主 system sections，保留 tools、contexts、variables 和完整 Tavern profile；
-- API active view 暴露 selection/resources/diagnostics/audit，不暴露完整 `compiledPrompt`；
-- 角色卡 API 使用统一 session policy；旧 `character-state.json` binding 单向迁移后清除，避免解绑后重启复活；
-- V1/V2/V3 JSON 与 PNG 角色卡可由 adapter 进入 profile，creator notes 不发送；
-- 角色卡内嵌 `character_book` 使用共享世界书 parser/matcher，命中项进入同一 profile；
-- 独立世界书由 `world-book-library` 用例层提供 document store、CRUD/导出 API 与管理 UI；每 session 的零/一/多本绑定仍写入 loader-owned `SessionSelectionStore.worldBookIds`；
-- 选中的独立书与角色卡内嵌 `characterBook` 由同一个 world-book adapter 调用同一 parser、matcher、排序、概率与预算契约，再合并进入 profile；
-- 删除独立书通过 `clearResource("world-book", id)` 清理所有 session 的悬空 id，不读取、修改或解绑角色卡及其内嵌书；
-- 用户 CRUD/API/UI、per-session 单绑定、`{{user}}`/`{{persona}}`、`personaDescription` marker 和诊断 fallback 已接线；
-- 用户面板可为每个用户保存零本或多本独立世界书；loader 以“session 显式优先、用户关系随后”的稳定顺序去重组合，active view/launcher/Trace 公开实际有效集合；
-- 用户关系独立原子持久化并有用户数、每用户书数、状态字节和安全读取上限；删除用户或世界书清理对应关系而不误删其他用户或 session 显式选择；
-- 世界书面板可为当前 preset 和 character 保存零本或多本独立世界书；关系不污染 ST 原文，loader 以“session、user、preset、character、character embedded”的顺序稳定去重组合；
-- 没有 `character_book` 的已绑定角色卡可在世界书面板创建空内嵌书，再经既有角色卡内嵌书 API 保存；独立关系和内嵌书各自保留导出语义；
-- 未拷贝任何本机第三方 preset、角色卡或世界书 fixture。
+按[开发验证指南](TESTING.md)运行受影响的资源、loader、标准/进阶装配、MVU 与 Trace 测试及隔离 Host 检查。marker/system fallback 测试只建立兼容渲染器的行为；标准 role 投递与进阶请求投影须分别核对已记录请求证据。

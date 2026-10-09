@@ -1,8 +1,9 @@
+import { embeddedWorldBookDocument } from '../../memory-sources/embedded-document.js'
+import { createHash } from 'node:crypto'
 import {
   WORLD_BOOK_LIMITS,
   computeWorldBookCandidates,
   mergeWorldBookLoaderResults,
-  parseCharacterBook,
   projectWorldBookForLoader,
 } from '../../world-book/src/index.js'
 
@@ -65,8 +66,10 @@ function projectBook(document, context, options) {
     resource: {
       id: document.id,
       name: document.name,
-      kind: 'standalone-world-book',
+      kind: document.ownerSessionId ? 'session-opening-book' : 'standalone-world-book',
+      ...(document.ownerSessionId ? { ownerSessionId: document.ownerSessionId, ownerCharacterId: document.ownerCharacterId } : {}),
       updatedAt: document.updatedAt,
+      revision: createHash('sha256').update(JSON.stringify(document)).digest('hex'),
       bindingSources: Array.isArray(context.bindingSources) ? [...context.bindingSources] : ['session'],
     },
   })
@@ -100,7 +103,9 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
       character,
       conversationText = '',
       activationContext = null,
+      requestAssembly = false,
       agent,
+      sessionId = agent?.id ?? null,
     } = {}) {
       const results = []
       const diagnostics = []
@@ -139,7 +144,11 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
             break
           }
           try {
-            const document = store.get(id)
+            if (options.allowResource && !options.allowResource(id, { requestAssembly })) {
+              diagnostics.push({ code: 'WORLD_BOOK_MANAGED_REQUIRES_ASSEMBLY', severity: 'warning', resourceId: id, message: 'Managed world book requires request assembly and a current manager policy.' })
+              continue
+            }
+            const document = options.resolveDocument ? options.resolveDocument(id, { sessionId }) : store.get(id)
             if (!reserve(document.book, id)) continue
             const bindingSources = [
               ...(worldBookSelection?.explicitIds?.includes(id) ? ['session'] : []),
@@ -168,10 +177,13 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
       const embedded = character?.data?.characterBook
       if (embedded !== null && typeof embedded === 'object' && !Array.isArray(embedded)) {
         try {
-          const model = parseCharacterBook(embedded, {
-            name: character.name || character.data?.name || '角色卡世界书',
-          })
-          const resourceId = `character:${character.id}:embedded-world-book`
+          const document = embeddedWorldBookDocument(character), model = document.book
+          const resourceId = document.id
+          if (options.allowResource && !options.allowResource(resourceId, { requestAssembly })) {
+            diagnostics.push({ code: 'WORLD_BOOK_MANAGED_REQUIRES_ASSEMBLY', severity: 'warning', resourceId, message: 'Managed embedded world book requires request assembly and a current manager policy.' })
+            const merged = mergeWorldBookLoaderResults(results)
+            return { ...merged, diagnostics: [...diagnostics, ...merged.diagnostics] }
+          }
           if (!reserve(model, resourceId)) {
             const merged = mergeWorldBookLoaderResults(results)
             return { ...merged, diagnostics: [...diagnostics, ...merged.diagnostics] }
@@ -197,6 +209,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
               name: model.name,
               ownerCharacterId: character.id,
               kind: 'embedded-character-book',
+              revision: createHash('sha256').update(JSON.stringify(document)).digest('hex'),
             },
           })
           if (model.settings?.recursiveScanning === true) {

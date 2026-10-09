@@ -1,4 +1,5 @@
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
+import {stateSourceTarget} from '../../play/src/stopped-request.js'
 import { mapHostError } from '../../play/src/host.js'
 import { httpError } from '../../play/src/http.js'
 import { sessionCoordinates, requireCoordinates } from '../../play/src/session-coordinates.js'
@@ -39,6 +40,8 @@ export function createPlayHost({
   characters,
   importContexts,
   onSelectionCopied,
+  stateSeeds,
+  drafts,
 } = {}) {
   return {
     async coordinates(sessionId) {
@@ -57,12 +60,19 @@ export function createPlayHost({
       return callController('directoryPicker.createDirectory', directoryPickerController, 'createDirectory', path, name)
     },
 
-    async createSession({ workspaceId, cwd, title }, { operation } = {}) {
+    async createSession({ workspaceId, cwd, title, stateSource }, { operation } = {}) {
       const payload = workspaceId ? { workspaceId } : { cwd }
+      const source = stateSeeds?.()
+      // Public DSH create accepts an explicit id. Persist the target intent before creating it.
+      const targetId = stateSource ? `session-${randomUUID()}` : null
+      const ticket = stateSource ? await source?.captureSessionSeed({ ...stateSourceTarget(stateSource), sessionId: stateSource.sessionId, targetSessionId: targetId }) : null
+      if (targetId) payload.sessionId = targetId
       const value = await callSessionCreation(sessionController, 'create', payload, operation)
       const sessionId = value?.sessionId
       if (typeof sessionId !== 'string' || sessionId === '') throw missing('session.create')
       operation?.checkpoint('session.created', { sessionId })
+      if (targetId && sessionId !== targetId) throw httpError(502, 'Host creation returned a different state target', 'PLAY_STATE_TARGET_MISMATCH')
+      if (ticket) await source.installSessionSeed({ ticket, sessionId })
       if (typeof title === 'string' && title !== '' && typeof sessionController?.rename === 'function') {
         try {
           await sessionController.rename({ sessionId, title })
@@ -76,15 +86,19 @@ export function createPlayHost({
       return { sessionId }
     },
 
-    async forkSession({ sessionId, atSeq, sessionFormatVersion }, { operation } = {}) {
+    async forkSession({ sessionId, atSeq, sessionFormatVersion, stateSource }, { operation } = {}) {
       try {
         const coordinates = await this.coordinates(sessionId)
         requireCoordinates(sessionFormatVersion, coordinates)
         importContexts?.()?.ensureCoordinates?.(sessionId, coordinates)
+        const source = stateSeeds?.(), ticket = await source?.captureSessionSeed(stateSource
+          ? { ...stateSourceTarget(stateSource), sessionId, prefixEndEventId: atSeq }
+          : { kind: 'fork', sessionId, atEventId: atSeq })
         if (typeof sessionController?.resolveAgent !== 'function') throw missing('session.resolveAgent')
         const value = await callSessionCreation(sessionController, 'fork', { sessionId, atSeq }, operation)
         if (typeof value?.sessionId !== 'string' || value.sessionId === '') throw missing('session.fork')
         operation?.checkpoint('session.created', { sessionId: value.sessionId })
+        if (ticket) await source.installSessionSeed({ ticket, sessionId: value.sessionId })
         try {
           const resolved = await callController('session.resolveAgent', sessionController, 'resolveAgent', value.sessionId)
           if (resolved?.error !== undefined) throw resolved.error
@@ -119,13 +133,16 @@ export function createPlayHost({
       return runtime.copyLineageForBranch(fromSessionId, toSessionId, atSeq)
     },
 
-    async promptSession({ sessionId, text, mode = 'queue' }) {
-      await callController('session.prompt', sessionController, 'prompt', {
-        requestId: randomUUID(),
+    async promptSession({ sessionId, text, mode = 'queue', requestId = randomUUID() }) {
+      const draftService = drafts?.()
+      const admit = () => callController('session.prompt', sessionController, 'prompt', {
+        requestId,
         sessionId,
         mode,
         content: [{ type: 'text', text }],
       }, new AbortController().signal)
+      if (draftService) await draftService.admitPrompt({ sessionId, text, requestId }, admit)
+      else await admit()
       return { accepted: true }
     },
 
@@ -190,10 +207,10 @@ export function createPlayHost({
       }
     },
 
-    copySelection(fromSessionId, toSessionId) {
+    async copySelection(fromSessionId, toSessionId) {
       if (selections === undefined) return
       selections.set(toSessionId, selections.get(fromSessionId))
-      onSelectionCopied?.(toSessionId)
+      await onSelectionCopied?.(toSessionId, fromSessionId)
     },
   }
 }

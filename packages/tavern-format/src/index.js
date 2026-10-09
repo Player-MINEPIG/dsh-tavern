@@ -368,12 +368,33 @@ export function exportSillyTavernPreset(preset, options = {}) {
   return `${JSON.stringify(raw, null, space)}${space === undefined ? '' : '\n'}`
 }
 
-export function renderSillyTavernMacros(content, context = {}, variables = new Map()) {
-  let rendered = string(content)
+/** Protect source-provided literal values until all ordinary macro passes finish. */
+export function protectLiteralMacros(content, literals = {}) {
+  const values = Object.values(literals)
+  if (values.some(value => typeof value !== 'string')) throw new TypeError('Literal macro values must be strings')
+  let prefix = '\u0000TAVERN_LITERAL_'
+  while ([String(content), ...values].some(value => value.includes(prefix))) prefix += '_'
+  const replacements = []
+  const text = String(content).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (whole, key) => {
+    if (!Object.hasOwn(literals, key)) return whole
+    const token = `${prefix}${replacements.length}\u0000`
+    replacements.push([token, literals[key]])
+    return token
+  })
+  const restore = value => replacements.reduce((result, [token, literal]) => result.replaceAll(token, (_match, offset, input) => {
+    const line = input.slice(0, offset).split('\n').at(-1)
+    return literal.replaceAll('\n', `\n${' '.repeat(line.length)}`)
+  }), String(value))
+  return { text, restore }
+}
+
+export function renderSillyTavernMacros(content, context = {}, variables = new Map(), options = {}) {
+  const protectedText = protectLiteralMacros(string(content), options.literalMacros)
+  let rendered = protectedText.text
   for (let pass = 0; pass < 5 && /\{\{[\s\S]*?\}\}/.test(rendered); pass += 1) {
     rendered = rendered.replace(/\{\{\s*([\s\S]*?)\s*\}\}/g, (_match, body) => resolveMacro(body, variables, context))
   }
-  return rendered.replaceAll('{{', '{ {').replaceAll('}}', '} }').trim()
+  return protectedText.restore(rendered.replaceAll('{{', '{ {').replaceAll('}}', '} }').trim())
 }
 
 export const constants = Object.freeze({

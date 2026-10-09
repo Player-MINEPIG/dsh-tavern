@@ -1,7 +1,9 @@
 # 提示词装配 Trace 与 v3 元 API
 
-合同版本：Tavern **2.5.1**，目标 DSH **0.2.0-rc.2**。
+合同版本：Tavern **3.0.0**，目标 DSH **0.2.0-rc.2**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [开发验证](TESTING.md)
+
+装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
 ## 定位和兼容
 
@@ -243,13 +245,24 @@ metadata 和官方引用，不保存新的 section/context/system-message/source
 新 schema 4 文件本身不含提示词正文，但 reference metadata、资源 ID、模型名与工具名仍可能敏感；
 详情 API 还可能从 DSH 历史返回提示词正文。本地数据目录和 API 应按 DSH Session 数据保护。
 
+原生请求的 `nativeRequestRef` 保存 version 1 与整组冻结消息的 `messagesHash`，沿用 `sessionRef.logCutSeq`。详情读取以公共 Session detached replay 恢复该边界并核验哈希，成功后提供 `nativeRequest.messages` 和 `requestContentStatus:available`；失败返回 `nativeRequestError`，不回退到当前历史或预览。存储会移除 hydrated `nativeRequest` 正文。没有该引用的旧原生记录仍可读已有段落/context，不能冒充完整实际请求。
+
+实际请求视图按实际消息顺序展示当时记录的来源段落，不重新求值当前预设。新原生请求的 `nativeSourceRefs` 保存 version 1、条目名称、来源字段/资源标识及消息哈希和 UTF-16 范围；system、context、pre-step PHI 和可唯一核验的嵌套引用均可关联。正文只从 DSH 历史读取。旧记录可利用已核验段落引用恢复来源标识；缺少历史名称的预设条目按记录中的预设 ID 与条目 ID 查询当前名称，并标明“名称来自当前预设；正文来自当时请求”。当前名称不会覆盖已保存的历史名称，也不参与正文恢复；条目已删除时显示可读的序号标签，来源 ID 保留在详情中。无法核验的区间显示“来源未记录”，不将合并的 system 全文标为官方基础指令。 详情的 `nativeProvenance` 返回已核验的 nodes 与来源状态；Assembler actual 接口将其投影到 `request.metadata.assembly`，`request.messages` 与 v3 原始 `requestAssembly` 保持不变。存储移除 hydrated `nativeProvenance`、node text/messages；列表不返回 `nativeSourceRefs`。
+
+
 ## UI 与第三方边界
 
-Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 loader 装配。段落/context
-正文可验证恢复时显示；schema 4 来源只显示 metadata/hash/counts，不显示 `source.text`，旧 schema 3 记录仍可能包含标为旧快照的来源正文。无法恢复时显示
-具体不可用原因。当前 v1 资源可辅助排查当前配置，但 UI 不把它标为历史原文。
+世界书 `included` 仅表示通过激活判定的候选，不保证最终注入。Trace 分别展示激活候选与同次已核验 `requestAssembly` 中的结果：带匹配来源节点和版本诊断的已观察请求可显示已进入请求；`WORLD_BOOK_POLICY_SKIPPED` 显示策略跳过及当次原因。旧诊断缺原因时显示具体原因未记录，无法唯一关联资源或缺请求记录时不推断最终使用情况。读取不重跑激活、不改写历史或 manager journal。
+
+Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 **assembler 装配情况**。历史读取继续使用同一 v3 装配索引与记录 ID 详情接口。完整请求取自详情中已核验的 `requestAssembly` 或 `nativeRequest`，使用 Assembler 公开的 `actualAssemblyResult` 投影，标准版补入详情的 `nativeProvenance`；展开 assembler 装配情况后，直接按发送时顺序列出全部 system/user/assistant/tool 消息卡片；system 按记录中的来源模块列出独立卡片，嵌套来源显示为各自子模块；模块正文和完整 system 原文分别按需展开。关联使用记录中的消息坐标或 system 快照贡献标识，不按正文猜测来源；缺少可核验模块划分时保留完整原文并明确提示。其他消息可点击单条卡片查看正文，具备明确消息坐标的来源名称显示在对应卡片上。另可展开来源节点、已记录的当次历史过滤及诊断。标准版记录可能没有单独的历史过滤决策，界面明确标为未记录，仍显示核验后的完整消息。不会调用只返回最近请求的 `/actual` 来填充其他历史记录，也不会调用当前 `/preview` 或 `/active` 重算。当前预览属于当前草稿/资源，发送时冻结的记录属于该次请求，历史来源仅来自记录与可核验引用；当前名称回退会明确标注，不改变历史正文。
+
+“装配阶段的系统段落与上下文”保留原 `sections`、`contexts` 与观察到的系统消息，明确它们可能经过后续装配或过滤，不能替代完整请求。缺少完整请求引用时明确不可用；段落/context 正文可验证恢复时仍显示。schema 4 来源只显示 metadata/hash/counts，不显示 `source.text`，旧 schema 3 记录仍可能包含标为旧快照的来源正文。无法恢复时显示具体不可用原因。
+
+本次展示调整保留 v1/v2 路由与响应语义（含 `records[].worldBooks[].decisions[]`），以及 v3 capabilities、索引、详情、段落来源关系和历史引用；不改变 `requestAssembly` 或持久化 schema。当前与旧请求 owner 分别为 `dsh-prompt-assembler` / `pmp-dsh-tavern`，均可识别。完整段名格式仍不是跨版本字段提取合同。
 
 [HTTP 只读示例](examples/trace-reader.mjs) 不 import Tavern；
 [官方接口示例](examples/official-prompt-observer.mjs) 不依赖 v3。读取索引或详情不会触发装配。
 第三方可以在官方 waterfall 中重排/替换 Tavern `:part:` sections；导入 context 与 RP policy 是
 独立贡献。采样建议仍经 `agent/request`，本 API 不仲裁第三方组合顺序。
+
+实际请求中，若较早的原生 system 后存在可核验的当前 system 贡献，较早的未知段落标为“历史 system 快照”，说明它仍在该次冻结请求中生效，不将其解释为当前开启的官方基础指令。

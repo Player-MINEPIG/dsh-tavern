@@ -1,16 +1,24 @@
 # pmp-dsh-tavern
 
+Independent prompt assembly plugin (standard by default; optional advanced core addon): [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for Tavern’s dependency and activation of both plugins.
+
+[dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is an optional viewing and management extension. Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
+
+[Current source: prompt assembly](docs/REQUEST_ASSEMBLY_en.md) · [MVU](docs/MVU_en.md) · [Prompt templates](docs/PROMPT_TEMPLATE_en.md) · [Complete API surface](docs/API_SURFACES_en.md).
+
 [中文](README.md)
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> Tavern **2.5.1** targets DSH **0.2.0-rc.2** and adds LaTeX math rendering to RP messages, greetings and static HTML exports. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
+This README describes Tavern **3.0.0**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
+
+> Current Tavern source targets DSH **0.2.0-rc.2**, with independent assembler integration, scoped MVU, read-only prompt templates and RP rendering. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
 >
-> Upgrading from Tavern 2.5.0 requires no data migration and keeps the same DSH target. Retain backups and stop the target Host before updating. When upgrading an older DSH, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
+> Upgrading from Tavern 2.5.x to 3.0.0 additionally enables assembler and merges legacy strategies; see [integration](docs/ASSEMBLER_INTEGRATION_en.md). The DSH target is unchanged. Retain backups and stop the target Host before updating. When upgrading an older DSH, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
-> Math is enabled by default with `$…$`, `$$…$$`, `\(...\)` and `\[...\]`, using modern browsers' MathML without an extra toggle or remote fonts. Escape literal delimiters or use code; complete HTML templates and interactive-card interiors do not auto-parse math. RP also supports avatars, configurable bubbles and optional restricted interactive cards. Card scripts default off; MVU and full Tavern Helper compatibility are not provided. See [presentation capabilities](docs/CONVERSATION_PRESENTATION_en.md).
+> Math is enabled by default with `$…$`, `$$…$$`, `\(...\)` and `\[...\]`, using modern browsers' MathML without an extra toggle or remote fonts. Escape literal delimiters or use code; complete HTML templates and interactive-card interiors do not auto-parse math. RP also supports avatars, configurable bubbles and optional restricted interactive cards. Card scripts default off. Supported MVU state and scoped Helper compatibility are documented in [MVU](docs/MVU_en.md); full Tavern Helper compatibility is not provided. See [presentation capabilities](docs/CONVERSATION_PRESENTATION_en.md).
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -44,10 +52,17 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Use the fixed release tag:
+Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install Tavern 3.0.0 and standard Assembler v1.1.0. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+```
+
+Optional resource viewing and management is available through Memory Manager v1.0.0. Install it separately in the same profile; see [integration](docs/ASSEMBLER_INTEGRATION_en.md#optional-memory-manager) for its capabilities and generic resource assembly requirements:
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 ```
 
 Restart DSH Web after install. Tavern stores character cards, presets, world books, settings, and bindings under `<DSH_HOME>/pmp-dsh-tavern/` by default. Plain `dsh plugin remove` retains that directory but does not create a pre-removal snapshot; clone the repository and use its uninstaller when a snapshot is required. On the first upgrade from a version that still stores data inside the package, stop the target `dsh web` and use the project installer so pnpm cannot replace the old package before its data is preserved. The new Host copies that data to the external directory on first start and retains the old copy. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).
@@ -66,7 +81,7 @@ Right-click the `DT` orb, or choose **Switch to custom frontend mode** in the me
 
 ### 4. Create a playthrough
 
-In the RP sidebar, click `+` on the imported character card. The plugin creates or reuses that character's latest fully empty `Playthrough N`, and binds the root session to the card you actually clicked. Generated names follow the UI language; explicit renames remain unchanged.
+In the RP sidebar, click `+` on the imported character card. The plugin saves an independent opening draft and a new `Playthrough N` without creating a DSH Session. The first accepted input later associates the real Session. Generated names follow the UI language; explicit renames remain unchanged.
 
 ### 5. Choose a greeting
 
@@ -74,7 +89,7 @@ An empty playthrough's opening dock shows the card greeting. Alternate greetings
 
 ### 6. Start chatting
 
-Send the first user message from the native DSH composer. It appears immediately in the RP view. After that you can swipe, branch a new playthrough, roll back in the same playthrough, edit display text, and import/export.
+Send the first user message from the opening draft composer; after first-input preparation and acceptance, later inputs use the native DSH composer. It appears immediately in the RP view. After that you can swipe, branch a new playthrough, roll back in the same playthrough, edit display text, and import/export.
 
 Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 
@@ -83,6 +98,9 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | Area | Main capabilities | Details |
 | --- | --- | --- |
 | Resources | ST presets, V1/V2/V3 JSON/PNG cards, standalone/embedded world books, user profiles, bindings, export | [Usage](docs/USAGE_en.md) |
+| Request assembly | Assembler v1.1.0 strategies, source modules, standard delivery, optional advanced placement, previews and recorded requests | [Request assembly](docs/REQUEST_ASSEMBLY_en.md) · [Integration](docs/ASSEMBLER_INTEGRATION_en.md) |
+| MVU variables | [initvar] initialization, restricted schemas, reply updates, branch-specific state, Trace inspection and scoped card reads/writes | [MVU](docs/MVU_en.md) |
+| Prompt templates | Restricted read-only EJS, source-variable dependencies and assembly modules | [Prompt templates](docs/PROMPT_TEMPLATE_en.md) |
 | RP frontend | Character/playthrough sidebar, greeting, Markdown/HTML/LaTeX rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |
 | Playthrough data | Authoritative DSH sessions, tree timeline, workspace catalog, first-turn read-only import injection, static HTML and ST JSONL export | [API](docs/API_en.md) · [Architecture](docs/ARCHITECTURE_en.md) |
 | Security | RP permission overlay, same-origin/loopback API, workspace path jail, CAS, DOMPurify, content-free operation log | [RP secure mode](docs/RP_SECURE_MODE_en.md) · [Security policy](SECURITY_en.md) |
@@ -97,7 +115,7 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - “Preset” means SillyTavern-style sampling and prompt ordering, not a DSH agent preset.
 - Greeting does not enter the timeline and is not forged as DSH history. Imported records are injected only on the first real request as `untrusted` read-only context.
 - Display regex affects Mowan rendering only. It does not rewrite the model request, DSH original messages, or the authoritative text used for export.
-- MVU and full Tavern Helper APIs remain unsupported; optional interactive cards implement the [restricted interface](docs/CONVERSATION_PRESENTATION_en.md).
+- MVU uses source-owned state instances, schema, CAS and scoped card bindings; optional interactive cards implement the [restricted interface](docs/CONVERSATION_PRESENTATION_en.md). Arbitrary Tavern Helper APIs and browser libraries remain unsupported.
 - Mowan hides reasoning, tool context, and child-agent notices. Switch back to native DSH **Chat** for full runtime detail.
 - There is no dynamic frontend loader that replaces all of Mowan from one config file. Full replacement requires a separate DSH plugin, a standalone web client, or a fork.
 - The target DSH outer **New session** control has no public click-intercept seam for Tavern. Mowan does not overlay it with private DOM. Create playthroughs with the `+` on a character card.
@@ -108,11 +126,15 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - [Usage](docs/USAGE_en.md): all user features, steps, and compatibility boundaries
 - [Installation](docs/INSTALLATION_en.md): install options, refresh recovery, backup, uninstall
 - [HTTP API](docs/API_en.md): v1 resource contract and stable v2 RP surface
+- [Request assembly](docs/REQUEST_ASSEMBLY_en.md): strategies, source modules, standard/advanced backends, previews and actual requests
+- [Assembler integration](docs/ASSEMBLER_INTEGRATION_en.md): v1.1.0 installation, service ownership, optional Manager and removal
+- [MVU](docs/MVU_en.md): initialization, schemas, update commands, state instances, branches and card permissions
+- [Prompt templates](docs/PROMPT_TEMPLATE_en.md): restricted EJS and read-only variable dependencies
 - [Trace v3 API and design](docs/PROMPT_API_V3_en.md): historical assembly indexes, official references, and on-demand body reads
 - [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md): mode lifecycle, delivery, action composition
 - [Architecture](docs/ARCHITECTURE_en.md): minimal-change rule, module boundaries, public DSH seams
-- [Loader contract](docs/LOADER_CONTRACT_en.md): session selection, profile composition, runtime limits
-- [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md): native DSH flow and plugin insertion points
+- [Tavern Host and resource contract](docs/LOADER_CONTRACT_en.md): session selection, resource resolution, permissions and Assembler integration
+- [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md): DSH, Tavern and Assembler request flow and both backend insertion points
 - [Prompt pipeline](docs/PROMPT_PIPELINE_en.md): ST format, macros, character fields, world-book coverage
 - [RP secure mode](docs/RP_SECURE_MODE_en.md): what RP blocks and what it does not
 - [World-book design](docs/world-book/DESIGN_en.md): World Info format, matching, projection contract
@@ -131,7 +153,8 @@ You do not need to fork the whole repo to build on this framework:
 - RP views or DSH client plugins can use v2, the `pmpDshTavernChrome` lifecycle, and public DSH slots/store.
 - Debugging and audit tools can read historical assemblies through v3. To observe or adjust the current assembly, use DSH's official `system-prompt/assemble`; use official `llm/stream` to observe the complete request.
 - A standalone web client can consume HTTP v2 only.
-- Fork when you need to change the loader, resource model, or bundled Mowan itself.
+- Extend prompt sources, rendering or placement through the independent [Assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler), or contribute changes to its repository; see [integration](docs/ASSEMBLER_INTEGRATION_en.md).
+- Fork Tavern when you need to change its resource model or bundled Mowan itself.
 
 Give third-party UI its own slot ids, clean up only its own surfaces, and dispose fully when leaving `play` or uninstalling. The mode service owns lifecycle. It does not arbitrate one slot among several plugins.
 
@@ -140,16 +163,6 @@ Give third-party UI its own slot ids, clean up only its own surfaces, and dispos
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 - [SillyTavern](https://github.com/SillyTavern/SillyTavern)
 - [NemoPresetExt](https://github.com/NemoVonNirgend/NemoPresetExt)
+- [MagVarUpdate (MVU)](https://github.com/MagicalAstrogy/MagVarUpdate)
 
 Copyright © 2026 Zhu Bohan.
-
-## Future directions
-
-The following are future work, not capabilities delivered by 2.5.1, and have no committed release date:
-
-- Prompt post-processing.
-- MVU compatibility.
-- Tavern preset script compatibility; the restricted card interpreter is not a preset script runtime.
-- Alternative prompt injection strategies, including the cache-friendly runtime lore tail-delivery direction discussed in [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14). Its behavior and cache benefits still require design and verification; the proposal is not merged into 2.5.1.
-
-Existing character post-history-instructions fields and display regex support keep their current contracts. They do not imply a general post-processing or script compatibility pipeline.

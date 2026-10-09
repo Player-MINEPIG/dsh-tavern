@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "三个插件的组合架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1380,
+      760
+    ]
+  },
+  "components": [
+    {
+      "id": "ecosystem-ui",
+      "type": "frontend",
+      "label": "DSH 浏览器与桌面端",
+      "sublabel": "公开界面扩展",
+      "pos": [
+        40,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "tavern-plugin",
+      "type": "backend",
+      "label": "Tavern",
+      "sublabel": "RP / 资源 / MVU / Trace",
+      "pos": [
+        390,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "assembler-plugin",
+      "type": "backend",
+      "label": "Prompt Assembler",
+      "sublabel": "共享来源与策略 / 标准默认",
+      "pos": [
+        740,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "dsh-host",
+      "type": "external",
+      "label": "DSH Host",
+      "sublabel": "执行 / 权限 / Provider",
+      "pos": [
+        1090,
+        330
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "memory-plugin",
+      "type": "backend",
+      "label": "可选 Memory Manager",
+      "sublabel": "配置 / 管理租约 / 观察",
+      "pos": [
+        740,
+        100
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "source-data",
+      "type": "database",
+      "label": "来源持久数据",
+      "sublabel": "Tavern 与第三方各自拥有",
+      "pos": [
+        390,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "history-authority",
+      "type": "database",
+      "label": "DSH 权威历史",
+      "sublabel": "原生历史 / 进阶请求记录",
+      "pos": [
+        1090,
+        590
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "optional-core-addon",
+      "type": "backend",
+      "label": "可选 core 扩展",
+      "sublabel": "共享 assembler / 准备后核心",
+      "pos": [
+        1090,
+        100
+      ],
+      "size": [
+        230,
+        78
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "ecosystem-ui-tavern-plugin",
+      "to": "tavern-plugin",
+      "label": "RP / 资源 API",
+      "variant": "emphasis",
+      "from": "ecosystem-ui"
+    },
+    {
+      "id": "tavern-plugin-assembler-plugin",
+      "to": "assembler-plugin",
+      "label": "单向依赖与来源注册",
+      "variant": "default",
+      "from": "tavern-plugin",
+      "labelDy": 56
+    },
+    {
+      "id": "assembler-plugin-dsh-host",
+      "to": "dsh-host",
+      "label": "公开原生接口",
+      "variant": "default",
+      "from": "assembler-plugin",
+      "labelDy": 63
+    },
+    {
+      "id": "memory-plugin-assembler-plugin",
+      "to": "assembler-plugin",
+      "label": "公开只读检索",
+      "variant": "dashed",
+      "from": "memory-plugin",
+      "labelAt": [
+        855,
+        254
+      ]
+    },
+    {
+      "id": "memory-plugin-tavern-plugin",
+      "to": "tavern-plugin",
+      "label": "可选管理租约",
+      "variant": "dashed",
+      "from": "memory-plugin"
+    },
+    {
+      "id": "tavern-plugin-source-data",
+      "to": "source-data",
+      "label": "资源 / 状态 CAS",
+      "variant": "default",
+      "from": "tavern-plugin",
+      "labelAt": [
+        505,
+        505
+      ]
+    },
+    {
+      "id": "dsh-host-history-authority",
+      "to": "history-authority",
+      "label": "持久记录",
+      "variant": "default",
+      "from": "dsh-host",
+      "labelAt": [
+        1205,
+        505
+      ]
+    },
+    {
+      "id": "optional-core-hook",
+      "from": "optional-core-addon",
+      "to": "dsh-host",
+      "label": "协议 1 钩子",
+      "variant": "dashed",
+      "labelAt": [
+        1205,
+        254
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "安装关系",
+      "items": [
+        "Tavern → assembler；Manager 可单独安装或省略。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "后端选择",
+      "items": [
+        "标准使用 stock rc.2；进阶需显式 addon 与协议 1。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "可撤销组合",
+      "items": [
+        "标准 user 贡献留在原生历史；进阶 request-only 正文仅为日志证据。"
+      ]
+    }
+  ]
+}

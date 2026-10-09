@@ -407,7 +407,7 @@ function RegexScopeSection({
   )
 }
 
-export function RegexPanel({ client, activeSnapshot, close }) {
+export function RegexPanel({ client, activeSnapshot, close, embedded = false, onDirty }) {
   const [document, setDocument] = useState(EMPTY_DOCUMENT)
   const [savedDocument, setSavedDocument] = useState(EMPTY_DOCUMENT)
   const [resourceRules, setResourceRules] = useState({ preset: [], character: [] })
@@ -418,18 +418,28 @@ export function RegexPanel({ client, activeSnapshot, close }) {
   const [dropIndex, setDropIndex] = useState(null)
   const fileInput = useRef(null)
   const importScope = useRef('global')
-  const bindings = activeRegexBindings(activeSnapshot)
+  const activeBindings = activeRegexBindings(activeSnapshot)
+  const [bindings,setBindings] = useState(activeBindings)
+  const loadGeneration = useRef(0)
+  const activeKey = JSON.stringify(activeBindings)
+  const activeKeyRef = useRef(activeKey); activeKeyRef.current = activeKey
+  const bindingsChanged = JSON.stringify(bindings) !== activeKey
   const dirty = JSON.stringify(document) !== JSON.stringify(savedDocument)
     || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules)
 
-  const load = async () => {
+  useEffect(()=>{onDirty?.(dirty)},[dirty,onDirty])
+
+  const load = async (targetBindings = activeBindings) => {
+    const ticket=++loadGeneration.current
     setBusy(true)
     try {
       const [next, nextResourceRules] = await Promise.all([
         getRegexDocument(client),
-        activeResourceRegexRules(client, bindings),
+        activeResourceRegexRules(client, targetBindings),
       ])
-      const staged = stageLegacyScopedRegexRules(next, nextResourceRules, bindings)
+      if(ticket!==loadGeneration.current)return
+      setBindings(targetBindings)
+      const staged = stageLegacyScopedRegexRules(next, nextResourceRules, targetBindings)
       setDocument(staged.document)
       setSavedDocument(next)
       setResourceRules(staged.resourceRules)
@@ -442,15 +452,20 @@ export function RegexPanel({ client, activeSnapshot, close }) {
         error: false,
       })
     } catch (reason) {
-      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true })
+      if(ticket===loadGeneration.current)setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true })
     } finally {
-      setBusy(false)
+      if(ticket===loadGeneration.current)setBusy(false)
     }
   }
 
-  useEffect(() => { load() }, [client, bindings.presetId, bindings.characterId])
+  useEffect(() => {
+    if(dirty) { setBusy(false);setStatus({text:uiMessage('rendering.bindingChanged'),error:true}) }
+    else load(activeBindings)
+    return()=>{loadGeneration.current++}
+  }, [client, activeKey])
 
   const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
+    if(JSON.stringify(bindings)!==activeKeyRef.current){setStatus({text:uiMessage('rendering.bindingChanged'),error:true});if(rethrow)throw Error('Regex binding changed');return}
     setBusy(true)
     try {
       const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
@@ -578,8 +593,8 @@ export function RegexPanel({ client, activeSnapshot, close }) {
 
   const title = uiMessage('regex.title')
   const closeLabel = uiMessage('panel.close', { title: unwrapText(title) })
-  return h('div', { className: 'dtv-panel dtv-regex-panel' },
-    h('div', { className: 'dtv-header' },
+  return h('div', { className: embedded ? 'dtv-regex-panel' : 'dtv-panel dtv-regex-panel' },
+    embedded ? null : h('div', { className: 'dtv-header' },
       h('div', { className: 'dtv-title' }, title),
       h('button', { className: 'dtv-close', type: 'button', title: closeLabel, 'aria-label': closeLabel, onClick: guardedClose }, '✕'),
     ),
@@ -612,7 +627,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
       h('div', { className: 'dtv-status', 'data-error': status.error }, status.text),
       h('div', { className: 'dtv-regex-footer' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: guardedLoad }, uiMessage('common.reload')),
-        h('button', { className: 'dtv-button dtv-primary', type: 'button', disabled: busy || !dirty, onClick: () => persist(document) }, busy ? uiMessage('common.working') : uiMessage('common.saveChanges')),
+        h('button', { className: 'dtv-button dtv-primary', type: 'button', disabled: busy || !dirty || bindingsChanged, onClick: () => persist(document) }, busy ? uiMessage('common.working') : uiMessage('common.saveChanges')),
       ),
     ),
   )

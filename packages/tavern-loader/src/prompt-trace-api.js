@@ -6,7 +6,7 @@ function sessionId(id) {
   return id
 }
 
-export function createPromptTraceApi({ assemblies, legacyStore, readBodies = async record => record }) {
+export function createPromptTraceApi({ assemblies, legacyStore, requestAssembler, readBodies = async record => record }) {
   const legacy = id => (legacyStore?.list(id) ?? []).map(row => ({ schemaVersion: 3,
     id: `legacy:${row.id}`, sessionId: id, turn: row.turn, step: row.step, attempt: row.attempt,
     recordedAt: row.recordedAt, status: 'legacy-metadata-only', contentStatus: 'legacy-metadata-only', audit: row,
@@ -18,8 +18,9 @@ export function createPromptTraceApi({ assemblies, legacyStore, readBodies = asy
       if (req.method !== 'GET') return sendJson(res, 405, { ok: false, code: 'METHOD_NOT_ALLOWED', error: 'Read-only API' })
       if (url.pathname === `${API_V3}/capabilities`) return sendJson(res, 200, {
         ok: true, apiVersion: 3, contract: 'prompt-trace-primitives', sourceMapping: 'section-contributors',
-        historicalAssemblies: true, composerRegistry: false,
-        officialSections: true, arbitraryMessageDepth: false, storage: assemblies.storage(),
+        historicalAssemblies: true, composerRegistry: Boolean(requestAssembler),
+        sourceProtocolVersion: requestAssembler?.registry.version ?? null, requestAssembly: requestAssembler?.available() ?? false,
+        officialSections: true, arbitraryMessageDepth: requestAssembler?.available() ?? false, storage: assemblies.storage(),
       })
       const match = url.pathname.match(new RegExp(`^${API_V3}/sessions/([^/]+)/assemblies(?:/([^/]+))?$`))
       if (!match) return sendJson(res, 404, { ok: false, code: 'NOT_FOUND', error: 'Not found' })

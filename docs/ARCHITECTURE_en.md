@@ -2,6 +2,8 @@
 
 [中文](ARCHITECTURE.md)
 
+The required independent [assembler plugin](ASSEMBLER_INTEGRATION_en.md) owns registry, strategy storage and request assembly. Standard strategies use public DSH interfaces to order official system sections and contribute user context/pre-step messages. Advanced strategies enable complete request placement only after explicitly installing `dsh-prompt-assembler-core` and preparing its matching core. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+
 For DSH breaking-update reviews, see the [native dependency diagram and coupling matrix](assets/dsh-dependencies/README_en.md), with interactive HTML, repository-relative source links, and upgrade check entry points.
 
 The current contract targets this repository's source (version in [package.json](../package.json)) and DSH `0.2.0-rc.2`.
@@ -9,9 +11,7 @@ The install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`;
 resources use `/v1`, the play-surface contract uses `/v2`, and assembly audit uses `/v3`.
 This page records the current architecture and release-review gates.
 
-![Current architecture](assets/dsh-tavern-architecture.png)
-
-Editable source: [dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio). DSH session history is the only authoritative event history in the diagram; Tavern's external directory stores only resources, selections, settings, Trace, and playthrough projections.
+[Interactive Tavern architecture](assets/architecture/tavern.en.html) · [Three-plugin architecture](assets/architecture/ecosystem.en.html). Editable Archify JSON is stored alongside each HTML. DSH durable history remains authoritative; Tavern stores resources, state, drafts, configuration and bounded trace references.
 
 ## Operation diagnostics and compatibility
 
@@ -19,7 +19,7 @@ The operation journal is bounded Tavern-owned diagnostic storage, separate from 
 
 ## Target Host and durable-data boundary
 
-The 2.5.1 contract targets DSH 0.2.0-rc.2, Cordis 4.0.4, and `dsh-util-crypto` 0.2.0-rc.2. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
+The 3.0.0 contract targets DSH 0.2.0-rc.2, Cordis 4.0.4, and `dsh-util-crypto` 0.2.0-rc.2. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
 
 DSH V4 owns system/user/assistant/tool history and producer sources, including `runtime-context` snapshots and native tool-role results. Preparation order is assembly → pre-step → request/config preparation → accepted message commits → request header and frozen messages → stream. Trace captures official body/error references and effective parameters; it is not another history store. The [one-way coordinate upgrade](DSH_0.1.7_MIGRATION_en.md) follows verified official migration stages, retains all pre-upgrade plugin backups, and never rewrites DSH logs. Pre-V3 header-body Trace references explicitly refuse conversion; no rollback tool is provided.
 
@@ -41,13 +41,13 @@ This is a current-problem projection, not a history log or a new HTTP API. Bound
 
 ## Frontend product scope
 
-Version 2.5.1 continues to host the first-party RP frontend through public DSH Web/Desktop extensions; the project will not build an additional standalone Web UI. DSH owns navigation, composition input and session lifecycle. Tavern owns resource panels, RP presentation and diagnostics. Third parties can still build clients with the existing composable APIs. This decision changes neither authoritative history, native sessions nor uninstall behavior and requires no data migration.
+Version 3.0.0 continues to host the first-party RP frontend through public DSH Web/Desktop extensions; the project will not build an additional standalone Web UI. DSH owns navigation, composition input and session lifecycle. Tavern owns resource panels, RP presentation and diagnostics. Third parties can still build clients with the existing composable APIs. This decision changes neither authoritative history, native sessions nor uninstall behavior and requires no data migration.
 
 Math rendering lives in `packages/client/src/play/math.js` and uses Marked's public tokenizer/renderer extensions in the shared rich-text path. KaTeX emits only MathML, which is sanitized alongside HTML; formula layout styles stay within Tavern content and existing style-isolation boundaries. RP, greetings and static HTML exports reuse this path without adding a Host seam, network service, global renderer script, settings store or message copy. See the [presentation contract](CONVERSATION_PRESENTATION_en.md#math) for syntax and safety boundaries.
 
 ## Decisions
 
-`dsh-tavern` stays one installable DSH plugin, split into one-way internal layers inside the same repo and release package. Preset, character card, user, standalone world book, and Tavern Trace are composed by one loader/client. Users are not asked to install several matching DSH plugins.
+Tavern is an installable DSH plugin with internal resource layers and a one-way dependency on an independently enabled `dsh-prompt-assembler` Host bundle. Memory Manager is optional. Assembler adapters call public source services, never source-private files.
 
 ```text
 SillyTavern JSON
@@ -70,7 +70,7 @@ chrome / play-workspace files / timeline validation / focus derivation (pure log
        │
        ▼
 packages/tavern-loader ◄── DSH session/event (PendingInputProjection)
-DSH assembly policy, session/request policy, Host hooks, v1/v2/v3 HTTP
+Resource compilation, session/request policy, Host hooks and v1/v2/v3 HTTP; assembly delegates to the independent assembler
         │
         ├── packages/session-template (composed by the loader)
         │   clean-session configuration projection, atomic store/API (no history)
@@ -213,22 +213,9 @@ RP cached snapshots are bounded per client and keyed by playthrough path plus Se
 
 Tavern locale is independent of DSH locale. RP, sidebar, and opening dock subscribe to the full UI settings, not only scale. A locale change also refreshes Tavern's own RP tab registration because DSH snapshots its label in the view roster; the Conversation store and completed default-view choice stay intact. Generated playthrough names follow locale; custom titles and character bodies are not translated. Locale events do not replace DSH Session/Chat subscriptions.
 
-## Why this is not two DSH plugins
+## Installation units and pure libraries
 
-The format parser has independent value, but its right shape is a pure library, not a separately installable DSH plugin:
-
-- It can be reused by browser import preview, server import, migration CLI, snapshot tests, and future character-card/world-book tools.
-- Format compatibility can be verified in a test environment with no DSH, session, or filesystem.
-- “ST file parse error” can be diagnosed separately from “DSH load-policy error”.
-
-In theory `tavern-format` could grow its own package manifest and publish as an npm library. That is unnecessary now. It has no Host entry, bundle patch, or standalone user feature, and cannot send content to an agent by itself. Wrapping it as a second DSH plugin would:
-
-- Show “installed successfully” with no conversation effect — a half-install.
-- Force extra version negotiation between loader and parser.
-- Let both plugins contend for API, storage, or UI lifecycle.
-- Double install, uninstall, backup, and troubleshooting cost.
-
-Therefore the release and install unit stays the root package `pmp-dsh-tavern` (product name remains dsh-tavern). Internal package boundaries exist for reuse and test isolation. Browser and Host share `PLUGIN_ID`, `API_ROOT`, `API_V1`, `API_V2`, `API_V3` from `packages/identity.js`. The HTTP mount prefix is `/pmp-dsh-tavern/api`. Resources and configuration use `/v1`; play meta APIs use `/v2`; historical assembly Trace uses `/v3`. `packages/play` does not import DSH. The loader implements Tavern's Play Host port with explicitly injected `sessionController`, `workspaceController`, and `directoryPickerController`, then mounts it on the existing `secureTavernApi`. `package.json` exports `./format`, `./preset`, `./character`, `./user`, `./world-book`, `./world-book-library`, `./trace`, `./loader` are programmatic interfaces, not separately installable plugins.
+The installable units are Tavern and its required independent assembler; Manager is optional. Tavern's `tavern-format` and `world-book` layers remain pure libraries inside the Tavern package. Their exports are composable program interfaces, not separate Host bundles. The loader attaches source-owned reads to the shared assembler and preserves compatibility package entry points and HTTP routes. New integrations use [the API surface index](API_SURFACES_en.md).
 
 ## Development verification
 
@@ -258,3 +245,25 @@ Global blue/red frontend state is held by `packages/play`'s own `ChromeStore`. `
 The client composition root creates a transport-independent mode core and registers it on the stable plugin fiber with `ctx.provide('pmpDshTavernChrome', face)`. SSE/focus/polling commit server snapshots only through an internal adapter. TavernShell, the orb controller, and `playSlots.setMode()` are ordinary consumers of that service. They no longer each maintain GET, focus, or BroadcastChannel state machines.
 
 The service's `when(mode, setup)` expresses only mode lifecycle. It does not grant surface ownership. Several plugins may subscribe at once and register their own public DSH slots. Contention for the same slot stays under that public slot contract. On provider unload, transport stops and effects are cleaned first; then Cordis revokes the service and drives required-consumer unload. Native mode still does not modify the native DSH surface.
+
+## Sessionless opening lifecycle
+
+`PlaythroughDrafts` owns unsent playthrough configuration, assembly snapshot and initial MVU in plugin storage; catalog and empty timeline remain in the RP workspace. Draft IDs never enter DSH Session APIs. Preparation and message admission remain separate composable primitives. A unique Session/request identity is persisted before preparation; public Workspace archive APIs isolate the prepared real blank. Only a real `turn/start` and matching first-input identity add `rootSessionId` to the catalog. Public `agent/pre-step` middleware waits for temporary unarchive before the native gate proceeds. Cancellation coordinates with admission and never clears admitted history. Existing native playthrough IDs remain unchanged; no DSH core modification is required.
+
+```mermaid
+sequenceDiagram
+  participant UI as Tavern UI
+  participant Draft as PlaythroughDrafts
+  participant DSH as Public DSH APIs
+  UI->>Draft: Save playthrough, configuration and initial variables
+  Note over Draft: No DSH Session
+  UI->>Draft: Prepare unique first input
+  Draft->>DSH: Create and temporarily archive real Session
+  Draft->>Draft: Transfer configuration and initial variables
+  Draft-->>UI: sessionId + requestId
+  UI->>DSH: Existing message API
+  DSH-->>Draft: Real turn/start
+  Draft->>Draft: Link catalog
+  Draft->>DSH: Unarchive
+  DSH-->>UI: Native conversation and streaming reply
+```

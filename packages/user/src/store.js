@@ -1,4 +1,5 @@
 import { normalizeAvatar } from '../../presentation/avatar.js'
+import { ScopeMetadataIndex } from '../../scope-catalog/metadata-index.js'
 import { readResourceTransfer, resourceTransfer } from '../../tavern-format/src/resource-transfer.js'
 import { randomUUID } from 'node:crypto'
 import {
@@ -92,7 +93,10 @@ export class UserStore {
     this.storageDir = resolve(storageDir)
     this.usersDir = join(this.storageDir, 'users')
     mkdirSync(this.usersDir, { recursive: true })
+    this.scopeIndex = new ScopeMetadataIndex({ directory: this.usersDir, path: join(this.storageDir, 'user-scope-index.json'), readMetadata: path => normalizeDocument(readJson(path)) })
   }
+
+  scopeMetadata() { return this.scopeIndex.snapshot() }
 
   userPath(id) {
     return join(this.usersDir, `${validateId(id)}.json`)
@@ -135,6 +139,7 @@ export class UserStore {
       if (error?.code !== 'USER_NOT_FOUND') throw error
     }
     atomicJson(this.userPath(document.id), document)
+    this.scopeIndex.changed(document)
     return clone(document)
   }
 
@@ -159,12 +164,14 @@ export class UserStore {
       avatar: Object.hasOwn(patch, 'avatar') ? normalizeAvatar(patch.avatar) : current.avatar,
     })
     atomicJson(this.userPath(id), document)
+    this.scopeIndex.changed(document)
     return clone(document)
   }
 
   delete(id) {
     this.get(id)
     unlinkSync(this.userPath(id))
+    this.scopeIndex.changed(null, id)
   }
 }
 

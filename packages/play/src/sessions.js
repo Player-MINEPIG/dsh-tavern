@@ -1,5 +1,6 @@
 import { httpError, readBoundedJson, sendJson } from './http.js'
 import { deriveFocus, isSafeCatalogSegment, parseCatalogJson, parseTimelineJson } from './timeline.js'
+import {stateSourceTarget,stoppedRequestFromEvents} from './stopped-request.js'
 
 const MAX_BODY_BYTES = 64 * 1024
 const SESSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -181,6 +182,10 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
         ? null
         : requireSessionId(body.selectionFromSessionId)
+      const stateSource = body?.stateSource
+      if (stateSource !== undefined && (!stateSourceTarget(stateSource) || requireSessionId(stateSource.sessionId) !== sourceId)) {
+        throw httpError(400, 'stateSource requires the selected source session and exactly one reply or stopped-request coordinate', 'PLAY_STATE_SOURCE_INVALID')
+      }
       const preparedImport = body?.importContextRef === undefined
         ? null
         : await host.prepareImportContext(body.importContextRef)
@@ -194,6 +199,7 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         workspaceId: binding.workspaceId,
         cwd: binding.rootPath,
         title,
+        ...(stateSource === undefined ? {} : { stateSource }),
       }, { operation })
       const sessionId = requireSessionId(created?.sessionId)
       operation?.checkpoint('session.created', { sessionId })
@@ -215,7 +221,13 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       if (!Number.isSafeInteger(body?.atEventId) || body.atEventId < 0) {
         throw httpError(400, 'atEventId must be a non-negative event seq', 'PLAY_EVENT_INVALID')
       }
+      const stateSource = body?.stateSource
+      if (stateSource !== undefined && (!stateSourceTarget(stateSource)
+        || requireSessionId(stateSource.sessionId) !== sessionId || stateSourceTarget(stateSource).atEventId <= body.atEventId)) {
+        throw httpError(400, 'stateSource requires the branch source and exactly one later reply or stopped-request coordinate', 'PLAY_STATE_SOURCE_INVALID')
+      }
       const created = await host.forkSession({ sessionId, atSeq: body.atEventId,
+        ...(stateSource === undefined ? {} : { stateSource }),
         ...(body.sessionFormatVersion === undefined ? {} : { sessionFormatVersion: body.sessionFormatVersion }),
       }, { operation })
       const childSessionId = requireSessionId(created?.sessionId)
@@ -242,10 +254,12 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       requireSessionId(sessionId)
       operation?.identify({ sessionId })
       if (typeof body?.text !== 'string') throw httpError(400, 'text must be a string', 'PLAY_MESSAGE_INVALID')
+      if (body.requestId !== undefined && (typeof body.requestId !== 'string' || !SESSION_ID_PATTERN.test(body.requestId))) throw httpError(400, 'requestId must be a safe id', 'PLAY_MESSAGE_INVALID')
       await host.promptSession({
         sessionId,
         mode: 'queue',
         text: body.text,
+        ...(body.requestId === undefined ? {} : { requestId: body.requestId }),
       })
       return sendJson(res, 200, { ok: true, accepted: true })
     },
@@ -260,6 +274,7 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         ok: true,
         messages: projectMessages(derived ?? messagesFromEvents(events), events),
         incompleteTurn: hasOpenTurn(events),
+        stoppedRequest: stoppedRequestFromEvents(events),
         ...coordinates,
       })
     },

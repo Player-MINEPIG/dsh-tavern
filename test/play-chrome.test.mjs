@@ -89,6 +89,7 @@ test('chrome play and RP lock do not rewrite each other', () => {
     on: () => {},
     emit: () => {},
     get: () => undefined,
+    provide(name, value) { this[name] = value },
     effect: () => {},
     logger: { info: () => {} },
   }

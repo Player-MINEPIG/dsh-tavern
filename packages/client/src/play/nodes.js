@@ -1,4 +1,5 @@
 import { beginPendingSwipe, finishPendingSwipe, pendingSwipeTimeline } from './pending-swipe.js'
+import { completedSwipePair, commitSwipeReply } from './swipe-completion.js'
 import { updateTimeline } from './mutations.js'
 import {
   branchPlaythroughAtNode,
@@ -37,26 +38,14 @@ function messageOriginKind(message) {
   return message?.role === 'user' ? 'user' : message?.role
 }
 
-function completedPairAfter(messageState, eventId) {
-  if (messageState?.incompleteTurn === true) return null
-  const messages = (messageState?.messages ?? [])
-    .filter(message => Number.isSafeInteger(message.seq) && message.seq > eventId)
-    .sort((left, right) => left.seq - right.seq)
-  const user = messages.find(message => message.role === 'user'
-    && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering'))
-  if (user === undefined) return null
-  const assistant = [...messages].reverse().find(message => message.role === 'assistant' && message.seq > user.seq)
-  return assistant === undefined ? null : { user, assistant, sessionFormatVersion: messageState.sessionFormatVersion }
-}
-
-async function createRootSwipeSession(client, sourceSessionId) {
+async function createRootSwipeSession(client, sourceSessionId, coordinate) {
   const binding = typeof client.getImportContextBinding === 'function'
     ? await client.getImportContextBinding(sourceSessionId)
     : null
   const importContextRef = typeof binding?.path === 'string' && binding.path !== ''
     ? { path: binding.path }
     : undefined
-  return client.postSession(sourceSessionId, importContextRef)
+  return client.postSession(sourceSessionId, importContextRef, { sessionId: sourceSessionId,...coordinate })
 }
 
 export function createPlayNodeController(client, {
@@ -83,6 +72,21 @@ export function createPlayNodeController(client, {
   const schedule = (playthrough, operation) => enqueue(operations, playthrough, operation)
   const writeTimeline = (playthrough, transform) => enqueue(writes, playthrough,
     () => updateTimeline(client, playthrough, transform))
+  async function waitForReply(sessionId,boundary){
+    let sawOpenTurn=false
+    for(let idlePolls=0;idlePolls<maxPolls;){
+      const messages=await client.getMessages(sessionId),pair=completedSwipePair(messages,boundary)
+      if(pair)return pair
+      const accepted=messages.messages?.some(message=>message.seq>boundary&&message.role==='user'&&['user','steering'].includes(messageOriginKind(message)))
+      if((sawOpenTurn||accepted)&&messages.incompleteTurn===false)throw new Error('Swipe stopped without a saved assistant reply')
+      sawOpenTurn ||= messages.incompleteTurn===true
+      // The Host owns turn completion. A long reasoning/approval/tool turn is
+      // not a failed swipe just because it exceeded the initial acceptance wait.
+      idlePolls = messages.incompleteTurn === true ? 0 : idlePolls + 1
+      if(idlePolls<maxPolls)await delay(pollInterval)
+    }
+    throw new Error('Timed out waiting for the swipe reply')
+  }
 
   const update = (playthrough, nodeId, transform) => writeTimeline(playthrough, timeline => {
     const { index, node } = nodeById(timeline, nodeId)
@@ -157,8 +161,8 @@ export function createPlayNodeController(client, {
         const parent = sourceIndex > 0 ? entries[sourceIndex - 1] : null
         const forkEventId = parent?.variant.endEventId ?? -1
         const branch = parent === null
-          ? await createRootSwipeSession(client, adopted.sessionId)
-          : await client.postBranch(adopted.sessionId, forkEventId)
+          ? await createRootSwipeSession(client, adopted.sessionId, {beforeReplyEventId:adopted.endEventId})
+          : await client.postBranch(adopted.sessionId, forkEventId, undefined, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId })
         const newSessionId = branch?.sessionId
         if (typeof newSessionId !== 'string' || newSessionId === '') {
           throw new TypeError('Branch response has no sessionId')
@@ -166,61 +170,54 @@ export function createPlayNodeController(client, {
         const pending = beginPendingSwipe(client, {
           playthrough, sessionId: newSessionId, sourceSessionId: adopted.sessionId, nodeId: sourceNode.id,
           timeline: pendingSwipeTimeline(timeline, entries, sourceIndex, newSessionId),
+          sourceVariantId: adopted.id, expectedHead: timeline.head ?? null, boundary: forkEventId,
         })
         try {
           onStarted?.({ sessionId: newSessionId, nodeId: sourceNode.id })
           await client.postUserMessage(newSessionId, user.text)
 
-          let pair = null
-          let sawOpenTurn = false
-          for (let attempt = 0; attempt < maxPolls; attempt += 1) {
-            const messages = await client.getMessages(newSessionId)
-            pair = completedPairAfter(messages, forkEventId)
-            if (sawOpenTurn && messages.incompleteTurn === false && pair === null) {
-              throw new Error('Swipe stopped without a saved assistant reply')
-            }
-            sawOpenTurn ||= messages.incompleteTurn === true
-            if (pair !== null) break
-            if (attempt + 1 < maxPolls) await delay(pollInterval)
-          }
-          if (pair === null) throw new Error('Timed out waiting for the swipe reply')
+          const pair=await waitForReply(newSessionId,forkEventId)
 
-          const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId)
-          const variant = {
-            id: variantId,
-            sessionId: newSessionId,
-            startEventId: pair.user.seq,
-            endEventId: pair.assistant.seq,
-            ...(Number.isSafeInteger(pair.sessionFormatVersion) ? {
-              ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } },
-            } : {}),
-          }
-          const next = await writeTimeline(playthrough, timeline => {
-            const current = nodeById(timeline, sourceNode.id)
-            const existing = current.node.variants.find(item => item.id === variantId)
-            if (existing !== undefined) {
-              return timelineWithHead(
-                replaceNode(timeline, current.index, { ...current.node, adoptedVariantId: variantId }),
-                { sessionId: existing.sessionId, nodeId: current.node.id, variantId },
-              )
-            }
-            return timelineWithHead(
-              replaceNode(timeline, current.index, {
-                ...current.node,
-                adoptedVariantId: variantId,
-                variants: [...current.node.variants, variant],
-              }),
-              { sessionId: newSessionId, nodeId: current.node.id, variantId },
-            )
+          return await commitSwipeReply(client, pending, pair, {
+            variantId: idFactory(pair.user.seq, pair.assistant.seq, newSessionId),
+            writeTimeline: transform => writeTimeline(playthrough, transform),
           })
-          const focus = await client.getFocus(playthrough)
-          if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')
-          finishPendingSwipe(client, pending)
-          return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId }
         } catch (error) {
           finishPendingSwipe(client, pending, error)
           throw error
         }
+      })
+    },
+
+    retryStoppedRequest(playthrough,{sessionId,userEventId},{onStarted}={}){
+      return schedule(playthrough,async()=>{
+        const timeline=await client.getTimeline(playthrough),entries=activeTimelineEntries(timeline)
+        if((timeline.head?.sessionId??playthrough.ext?.pmpDshTavern?.rootSessionId)!==sessionId)throw Error('The stopped request is not on the active session')
+        const source=await client.getMessages(sessionId)
+        const user=source.messages.find(message=>message.seq===userEventId&&message.role==='user'&&['user','steering'].includes(messageOriginKind(message)))
+        if(source.incompleteTurn||source.stoppedRequest?.userEventId!==userEventId||!user?.text?.trim())throw Error('The stopped request is no longer retryable')
+        const parent=entries.at(-1),boundary=parent?.variant.endEventId??-1
+        if(boundary>=userEventId)throw Error('The stopped request is already represented by a reply')
+        const stateSource={sessionId,beforeUserEventId:userEventId}
+        const branch=parent?await client.postBranch(sessionId,boundary,source.sessionFormatVersion,stateSource):await createRootSwipeSession(client,sessionId,{beforeUserEventId:userEventId})
+        const newSessionId=branch?.sessionId
+        if(typeof newSessionId!=='string'||!newSessionId)throw Error('Retry created no session')
+        const pending=beginPendingSwipe(client,{kind:'request-retry',playthrough,sessionId:newSessionId,sourceSessionId:sessionId,nodeId:`live-${userEventId}`,timeline:pendingSwipeTimeline(timeline,entries,entries.length,newSessionId)})
+        try{
+          onStarted?.({sessionId:newSessionId})
+          await client.postUserMessage(newSessionId,user.text)
+          const pair=await waitForReply(newSessionId,boundary)
+          const variantId=idFactory(pair.user.seq,pair.assistant.seq,newSessionId),nodeId=`qa-${variantId}`.slice(0,200)
+          const variant={id:variantId,sessionId:newSessionId,startEventId:pair.user.seq,endEventId:pair.assistant.seq,...(Number.isSafeInteger(pair.sessionFormatVersion)?{ext:{pmpDshTavern:{sessionFormatVersion:pair.sessionFormatVersion}}}:{})}
+          const next=await writeTimeline(playthrough,current=>{
+            if(JSON.stringify(current.head)!==JSON.stringify(timeline.head))throw Error('Active reply changed during request retry')
+            return timelineWithHead({...current,nodes:[...current.nodes,{id:nodeId,kind:'qa',displayOverride:null,parentVariantId:parent?.variant.id??null,adoptedVariantId:variantId,variants:[variant]}]},{sessionId:newSessionId,nodeId,variantId})
+          })
+          const focus=await client.getFocus(playthrough)
+          if(focus.sessionId!==newSessionId)throw Error('Saved retry does not match derived focus')
+          finishPendingSwipe(client,pending)
+          return {timeline:next,sessionId:newSessionId,nodeId,variantId}
+        }catch(error){finishPendingSwipe(client,pending,error);throw error}
       })
     },
 

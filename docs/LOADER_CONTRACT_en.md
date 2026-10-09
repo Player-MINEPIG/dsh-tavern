@@ -1,27 +1,31 @@
-# Unified Tavern loader contract
+# Tavern Host and resource contract
 
 [中文](LOADER_CONTRACT.md)
 
-The current contract targets Tavern **2.5.1** and DSH `0.2.0-rc.2`. It covers
-the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
-parent selection, named official sections, and schema 4 Trace references. DSH V4 uses
-`system/message` as the system-body authority while `request/header` retains config/tools;
-see the [migration contract](DSH_0.1.7_MIGRATION_en.md).
+This contract covers Tavern **3.0.0**, Assembler **v1.1.0** and DSH **0.2.0-rc.2**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
 
 ## Goals and ownership
 
-The loader is the only layer allowed to decide how current resources enter a DSH request. Format modules only interpret files. Use-case modules only manage resources. They must not register `systemPrompt`, mutate the Agent, copy conversation history, or write the model request themselves.
+| Owner | Current responsibility |
+| --- | --- |
+| Tavern / `TavernProfileLoader` | Session resource selections, normalized preset/card/user/world-book models, activation and resource audit; source-owned MVU, templates and permission checks |
+| Independent Assembler | Strategy store and applied snapshots, source/placement-strategy registries, source rendering, module placement, standard delivery and preview |
+| Optional core addon | Registers the protocol-1 executor on a prepared Host; advanced request projection and official `request/assembly` evidence |
+| DSH | Durable sessions and effective message surface, system/context events, tool execution, call preparation and provider serialization |
 
 ```text
-PresetModel ─────────────┐
-CharacterCardModel ──────┼─> TavernProfileLoader ─> ordered Tavern sections
-UserModel ────────────────┤             │
-WorldBookModel + matches ┘             │
-                                       ├─> agent/request call config
-SessionSelectionStore ─────────────────┘
+Resource stores + SessionSelectionStore + ActivationContext
+  → TavernProfileLoader: resolved models / audit / permission leases
+  → attachTavern + registered Tavern sources
+  → Assembler strategy snapshot
+       ├─ native: official sections/context + accepted pre-step messages
+       └─ core: optional protocol-1 executor → request/assembly
+  → DSH prepared call → provider
 ```
 
-The root registers its logical profile at order 10, then expands it into `pmp-dsh-tavern:part:*` sections at the same array position. Import context retains `pmp-dsh-tavern:profile`; optional `rp:policy` remains at order 45. Preset `replace` keeps these Tavern contributions, including character/lore text and RP policy.
+The loader supplies read-only resources to the shared store/registry/runtime through `attachTavern`; Tavern's compatibility exports forward to the independent package. Format and resource modules do not independently register prompt sections, modify Agent state or copy session history. Source services retain their data and parsing/permission ownership.
+
+For an applied strategy, `TavernProfileLoader.compile()` resolves resources and returns `assemblyInput` rather than pre-rendering a second Tavern profile. Assembler owns module rendering and placement. The loader still provides imported context, optional `rp:policy` and final world-book/MVU permission checks. Without an applied strategy, the retained compatibility path expands the order-10 `pmp-dsh-tavern:profile` anchor into `pmp-dsh-tavern:part:*` sections; `rp:policy` remains order 45. This compatibility renderer is described separately below.
 
 ## Session policy
 
@@ -85,7 +89,13 @@ A completed system assembly is a frozen snapshot. Resource changes do not write 
 
 Templates are not rewritten silently when a resource is deleted. Dangling ids for preset, character/greeting, user, or standalone world book are returned as structured diagnostics from preview/apply and block create. A DSH create failure happens before the selection write. An atomic write failure does not publish in-memory state and does not navigate. Templates must not contain durable history, Trace, Inbox, turn/step, runtime state, or resource bodies. RP state is copied with the selection projection.
 
+The character-sidebar new-playthrough path instead creates an independent opening draft with no DSH session until its first accepted send. Draft resource/strategy snapshots and initial MVU are separate from session selections; preview has no native history or unsent input and makes no model call. Existing rooted playthroughs retain their sessions. See [opening drafts](USAGE_en.md).
+
 ## Profile safety budget
+
+The resource parser/matcher guards below apply to both paths. Profile-text truncation and `TAVERN_PROFILE_*` diagnostics belong to the compatibility renderer; applied strategies enforce the Assembler budgets in the request-assembly contract.
+
+Request assembly uses `limits.maxProfileBytes` below for logical additional content. Complete system snapshots use a separate fixed 2 MiB physical ceiling. Additional serialized bytes are charged for every projected carrier; loosening the profile limit cannot raise this ceiling, and unchanged native history is not additional overhead. Runtime and preview enforce both limits and reject excess. See the [request assembly contract](REQUEST_ASSEMBLY_en.md#system-contributions-and-complete-dsh-snapshots).
 
 `TavernProfileLoader` applies a default 512 KiB UTF-8 cap to the combined Tavern profile text it generates. `limits.maxProfileBytes` may tighten or loosen it, but the implementation hard cap is 2 MiB. The world-book parser/store share a streaming structure guard before normalize: at most 10,000 entries per resource, depth 32, 100,000 nodes, 1 MiB per string, 1,024 characters per object key. The adapter additionally applies a 10,000-entry hard cap to standalone plus embedded books for this request. A resource that cannot fit is skipped and diagnosed. The combined budget is first-come by a deterministic composition order: session-explicit standalone books, user-bound standalone books, preset-bound standalone books, character-bound standalone books (stable ID de-duplication), then the card's embedded book. Each resource is reserved as a whole; if it cannot fit completely it is not scanned. So when earlier standalone books fill 10,000 entries, the embedded book is skipped with `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`. That is an intentional safety/determinism policy, not a random omission. After those guards, the assembler considers at most the top-ranked 4,096 lore candidates and limits raw lore bodies to twice the profile budget before composing section text. A world book's own `tokenBudget` and `ignoreBudget` only decide ST-compatible candidates. They cannot change any Host hard cap.
 
@@ -131,7 +141,7 @@ Constraints:
 
 - Adapters return already-normalized models. They do not return raw ST files as runtime instructions.
 - Adapters may read `conversationText` for matching. They do not write the session.
-- Adapters do not assemble the DSH system prompt. Final placement, override, de-duplication, and degradation diagnostics are decided by `compileTavernProfile()`.
+- Adapters do not assemble the DSH system prompt. Applied strategies delegate rendering and placement to Assembler; only the no-strategy compatibility path calls `compileTavernProfile()`.
 - Only one adapter per kind. A duplicate registration fails immediately so load order cannot decide behavior.
 - A disposer revokes only its own instance and supports HMR.
 
@@ -153,13 +163,15 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 
 ## Composition semantics
 
+Applied strategies use Assembler v1.1.0 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
+
 ### Preset-only compatibility
 
 With no character, user, or activated lore, the loader calls `compilePresetForDsh()` directly. It emits enabled non-marker prompt bodies in their original order and preserves sampler mapping and macro behavior. Tavern adds no preset names, IDs, or XML-style identification wrappers to model-visible text; identical tags authored in resource bodies remain literal. A selected resource with no body produces no placeholder header. Official waterfall sections contain only `name` and `text`; prompt identifiers, requested roles, and resource provenance are kept in Tavern Trace metadata.
 
 ### Marker ownership
 
-After a character is selected or lore is activated, the unified assembler consumes these ST markers:
+In the compatibility renderer, a selected character or activated lore enables these ST markers:
 
 | Marker / prompt | Loader source | Behavior |
 | --- | --- | --- |
@@ -193,59 +205,20 @@ After an explicit invalid/unsupported parameter rejection, `agent/request-error`
 
 ## Audit boundary
 
-`TavernProfileLoader.compile()` returns:
+`TavernProfileLoader.compile()` returns resolved `assemblyInput`, macro context, resource summaries, diagnostics and resource-selection audit. With an applied strategy or `resolveOnly` preview, `systemText` and profile sections are empty: this is resource resolution, not a missing final request. Without a strategy, they contain the compatibility profile. `callConfig` proposes supported preset sampling fields; admission/fallback can change the effective overrides.
 
-- `systemText`: the Tavern profile proposed by the loader and expanded into named official system sections;
-- `callConfig`: preset fields proposed by assembly; admission/fallback may adjust the final request, whose authority is the official header and observed Trace effective values;
-- `resources`: summaries of preset, character, user, and world book resolved this run;
-- `diagnostics`: missing resources and placement degradation;
-- `audit`: session selection, resources, activated lore IDs, and SHA-256 fingerprint.
+Assembler records the chosen strategy and source/placement metadata. Tavern Trace combines that metadata with resource decisions and verified official-history references; it does not persist another source-body or message-history copy. Standard actual requests are reconstructed from the recorded native request references; advanced requests reference DSH's `request/assembly`. The latest-only actual endpoint and current preview cannot reconstruct an older request.
 
-For DSH V4 sessions, official `system/message` and context `user/message` are authoritative for prompt bodies, while `request/header` stores final tools and call config. V4 producer sources use `system-prompt` for system messages and `runtime-context` with `form: "snapshot"` for context messages. Retained historical readers understand older references and the released plugin source wrapper; that does not enable an older Host. The explicit offline upgrade verifies V3 body/error references against both generations. Pre-V3 `request-header-system` Trace references refuse V4 upgrade; see the migration contract. Loader audit helps UI/API explain why this input was produced. It replaces none of those official DSH events and adds no private session event.
+In V4, `system/message` and runtime-context `user/message` own standard prompt bodies; `request/header` owns final tools/config. Advanced `request/assembly` freezes the sent array without replacing durable history. Coordinate compatibility and explicit offline upgrades are covered by [migration](DSH_0.1.7_MIGRATION_en.md); supported current Host remains rc.2.
 
 ## Adapter integration invariants
 
-The character-card adapter must:
+1. Resource modules own normalized documents and selection intent; register each resource adapter once and return read-only models.
+2. Tavern assembler adapters register through the shared Assembler source registry. Rendering and placement follow the applied strategy; never add a second Host assembler for the same resource.
+3. World-book standalone/embedded content shares one parser/matcher and activation projection. Source permissions and leases are checked again before use.
+4. MVU owns initialization, schemas, state instances, durable-event commits and scoped card permissions. Source resolution and preview do not commit variable updates. See [MVU](MVU_en.md).
+5. Uninstall disposers revoke only their registrations/provider/leases, preserving resources and DSH sessions. Legacy exports and service aliases forward to the shared implementation.
 
-1. store/API/UI maintain only character documents and selection intent;
-2. migrate or bridge session selection onto `SessionSelectionStore.characterCardId/character`;
-3. provide the model through `registerCharacterAdapter()`;
-4. register no separate Host system section/profile assembler;
-5. verify with marker, replace, dual-session, fork, subagent, and request-header tests.
+## Verification
 
-The world-book adapter must:
-
-1. keep parser/matcher as pure logic;
-2. return activated entries and diagnostics through `registerWorldBookAdapter()`;
-3. card-embedded `characterBook` and standalone WorldBookModel enter the same matcher; do not reimplement;
-4. do not register a system context/section yourself;
-5. give deterministic tests for scan window, regex, recursion, and budget.
-
-The user-resource adapter must:
-
-1. store documents are strictly `id/name/description`; reject avatar and unknown fields;
-2. `SessionSelectionStore.userId` is the only session-binding owner;
-3. hand off through `registerUserAdapter()` to the unified loader; do not register a Host seam;
-4. marker, macros, fallback, and description de-duplication are executed only by `compileTavernProfile()`;
-5. verify dual session, live switch, restart, unbind, delete cleanup, and a single final profile output.
-
-## Current acceptance
-
-- Preset-only output and model parameters do not regress.
-- Two sessions may choose different presets, or explicitly choose “no preset”.
-- Ordinary forks and delegated subagents both inherit a snapshot of the parent selection (including RP state) and then stay unlinked.
-- Marker fill, character override, `{{original}}`, lore before/after, and chatHistory-not-copied all have unit tests.
-- `replace` removes only host system sections and keeps tools, contexts, variables, and the complete Tavern profile.
-- The API active view exposes selection/resources/diagnostics/audit and does not expose the full `compiledPrompt`.
-- Character-card APIs use unified session policy. Old `character-state.json` bindings migrate one way and are then cleared so unbind + restart cannot resurrect them.
-- V1/V2/V3 JSON and PNG cards can enter the profile through the adapter. Creator notes are not sent.
-- A card's embedded `character_book` uses the shared world-book parser/matcher. Hits enter the same profile.
-- Standalone world books are provided by the `world-book-library` use-case layer as a document store, CRUD/export API, and management UI. Per-session zero/one/many bindings still write loader-owned `SessionSelectionStore.worldBookIds`.
-- Selected standalone books and the card's embedded `characterBook` are run by the same world-book adapter through the same parser, matcher, rank, probability, and budget contract, then merged into the profile.
-- Deleting a standalone book clears dangling ids from every session through `clearResource("world-book", id)`. It does not read, modify, or unbind a character card or its embedded book.
-- User CRUD/API/UI, per-session single binding, `{{user}}`/`{{persona}}`, the `personaDescription` marker, and diagnostic fallback are wired.
-- The user panel can save zero or more standalone world books per user. The loader composes with stable order “session explicit first, user relation next”, de-duplicating. The active view/launcher/Trace publish the actually effective set.
-- User relations are independently atomically persisted, with caps on user count, books per user, state bytes, and safe reads. Deleting a user or world book clears the matching relation without deleting other users or session-explicit selections.
-- The world-book panel can save zero or more standalone world books for the current preset and character. Relations do not pollute ST originals. The loader composes with stable de-duplication in order “session, user, preset, character, character embedded”.
-- A bound card with no `character_book` can create an empty embedded book in the world-book panel and save it through the existing card embedded-book API. Standalone relations and the embedded book each keep their export semantics.
-- No local third-party preset, character-card, or world-book fixture has been copied.
+Use the affected resource, loader, native/advanced assembly, MVU and Trace tests plus isolated Host checks in [developer verification](TESTING_en.md). Marker/system fallback tests establish compatibility-renderer behavior; they do not establish standard role delivery or advanced request projection. Inspect recorded request evidence for those backends.

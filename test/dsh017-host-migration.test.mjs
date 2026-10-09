@@ -27,7 +27,7 @@ test('agent/created initializes inherited selections, pending input and RP guard
   const listeners = new Map()
   try {
     const store = apply({ systemPrompt: { section() {} }, on: (name, listener) => listeners.set(name, listener),
-      get() {}, emit() {}, effect() {}, logger: { info() {} } }, { storageDir: directory })
+      get() {}, emit() {}, effect() {}, provide(name, value) { this[name] = value }, logger: { info() {} } }, { storageDir: directory })
     store.characterStore.create({ id: 'c', name: 'Character' })
     store.sessionSelections.set('parent', { characterCardId: 'c' })
     const log = []

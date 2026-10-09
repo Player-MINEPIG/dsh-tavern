@@ -1,0 +1,28 @@
+import { createHash } from 'node:crypto'
+import { mvuResourceFromCharacter } from './character.js'
+
+export const characterMvuId = characterId => `mvu:character-${createHash('sha256').update(characterId).digest('hex').slice(0, 32)}`
+
+/** Host-only discovery. Native state is scoped to the selected card, never a wildcard grant. */
+export function createCharacterDiscovery({ characters, selections, service }) {
+  return async sessionId => {
+    const selected = sessionId ? selections.get(sessionId)?.characterCardId : null
+    for (const summary of characters.list()) {
+      const id = characterMvuId(summary.id)
+      const existing = service().templates.find(r => r.id === id)
+      // Initialization belongs to resource creation, never to each turn or selection.
+      if (existing && !existing.sourceError && (!existing.initial?.mvu_schema || existing.initial.mvu_schema.interpreterVersion === 2)) {
+        continue
+      }
+      const options = { id, name: summary.name, characterId: summary.id, sessionIds: [], managementMode: 'native' }
+      let definition
+      try { definition = mvuResourceFromCharacter(characters.get(summary.id), options) }
+      catch (error) {
+        if (error.code === 'MVU_INITIALIZATION_MISSING') continue
+        definition = { ...options, sourceError: error.code ?? 'MVU_INITIALIZATION_INVALID', initial: { stat_data: {} } }
+      }
+      await service().discover({ definition })
+    }
+    if (sessionId) await service().syncDiscoveredSelection(sessionId, selected ? characterMvuId(selected) : null)
+  }
+}

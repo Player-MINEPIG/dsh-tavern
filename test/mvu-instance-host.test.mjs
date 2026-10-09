@@ -1,0 +1,155 @@
+import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import * as tavern from '../packages/tavern-loader/src/index.js'
+import { createPlayHost } from '../packages/tavern-loader/src/play-host.js'
+import { MvuService, characterMvuId, stateInstanceId } from '../packages/mvu-adapter/src/index.js'
+import {stoppedRequestFromEvents} from '../packages/play/src/stopped-request.js'
+
+const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT ?? process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
+test('official SessionController creates fresh state beside an initialized legacy empty session, then isolates forks and swipes', { skip: !runtimeRoot, timeout: 30000 }, async () => {
+  const require = createRequire(join(resolve(runtimeRoot), 'package.json')), load = name => import(pathToFileURL(require.resolve(name)).href)
+  const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt'), llm = await load('@deepseek-ai/dsh-llm')
+  const ctx = new Context(), directory = mkdtempSync(join(tmpdir(), 'mvu-instance-host-')), requests = [], failures = []
+  let store, updateText = "_.add(\'hp\', -1);",cancelReady
+  try {
+    ctx.provide('directoryPickerController', {}); ctx.provide('workspaceController', {})
+    ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
+    await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
+    await ctx.plugin((await load('@deepseek-ai/dsh-session-persistence-jsonl')).default, { root: join(directory, 'sessions') })
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    ctx.provide('typert', { lookups: { configure: () => () => {} }, contexts: { configureHost: () => () => {} } })
+    ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'instance-test', model: 'test' }), saveSelection: async () => {} })
+    ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
+    ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
+    await ctx.plugin((await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine)
+    ctx.provide('attachments', { imageLimits: { maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } }); ctx.provide('fs', {})
+    if (!ctx.get('workspaceRegistry')) ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
+    await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
+    class Adapter extends llm.LlmAdapter {
+      async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic state instance' }] }
+      async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
+      async *stream(request) { requests.push(request);if(cancelReady){const ready=cancelReady;cancelReady=null;ready();await new Promise((_,reject)=>request.signal.addEventListener('abort',()=>reject(request.signal.reason),{once:true}));return} const text = updateText; yield { type: 'block-start', index: 0, blockType: 'text' }; yield { type: 'text-delta', index: 0, text }; yield { type: 'block-end', index: 0, block: { type: 'text', text } }; yield { type: 'finish', reason: { kind: 'stop' } } }
+    }
+    ctx.llm.registerAdapter(['instance-test'], new Adapter())
+    const previous = await ctx.sessionController.create({ cwd: directory })
+    const previousHeader = ctx.sessions.get(previous.sessionId).header
+    const legacyPath = join(directory, 'tavern', 'mvu-state.json')
+    const oldRecord = {
+      revision: 7, currentKey: 'old-opening', managementMode: 'managed',
+      definition: { id: 'mvu:template', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } },
+      versions: [{ key: 'old-opening', revision: 7, operationId: 'old-click',
+        source: { sessionId: previous.sessionId, sessionCreatedAt: previousHeader.createdAt, sessionFormatVersion: previousHeader.version, initial: true, manual: true, card: true, messageSeq: -1 },
+        variables: { stat_data: { hp: 40 } } }],
+    }
+    const cardTemplateId = characterMvuId('legacy-card')
+    const legacyBytes = JSON.stringify({ version: 1, resources: {
+      'mvu:template': oldRecord,
+      [cardTemplateId]: { ...oldRecord, definition: { id: cardTemplateId, characterId: 'legacy-card', discovered: true, sessionIds: [previous.sessionId], initial: { stat_data: { hp: 100 } } } },
+    } })
+    mkdirSync(join(directory, 'tavern'), { recursive: true }); writeFileSync(legacyPath, legacyBytes)
+    await installIndependentAssembler(ctx, directory)
+    await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: join(directory, 'tavern'), mvu: { resources: [{ id: 'mvu:template', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }] } }) } })
+    ctx.on('agent/error', e => failures.push(e.error))
+    const service = ctx.get('tavernMvu')
+    const host = createPlayHost({ sessionController: ctx.sessionController }, { selections: store.sessionSelections, stateSeeds: () => service, onSelectionCopied: (id, from) => store.assemblyPresets.copySelection(from, id) })
+    const root = await host.createSession({ cwd: directory }), rootId = root.sessionId
+    const row = async id => (await service.list({ scope: { sessionId: id } })).find(r => r.templateId === 'mvu:template')
+    await service.flush()
+    // Public creation/agent lifecycle allocates before any MVU read, edit or turn.
+    assert(service.resources.some(r => r.instance?.sessionId === rootId))
+    const initial = await row(rootId)
+    assert.equal(initial.content.stat_data.hp, 100)
+    assert.notEqual(rootId, previous.sessionId)
+    await assert.rejects(row(previous.sessionId), { code: 'MVU_MIGRATION_REQUIRED' })
+    await service.update({ id: initial.id, scope: { sessionId: rootId }, expectedRevision: initial.revision, operationId: 'opening', content: { stat_data: { hp: 70 } } })
+    const preset = store.assemblyPresets.save({ ...MODULE_ORDER, rules: [...MODULE_ORDER.rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
+    store.assemblyPresets.apply(rootId, preset.id)
+    const turn = async id => {
+      const done = new Promise((accept, reject) => { const stop = ctx.on('session/event', (session, event) => { if (session.id === id && event.type === 'turn/end') { stop(); clearTimeout(timer); accept(event) } }); const timer = setTimeout(() => { stop(); reject(Error('timeout')) }, 5000) })
+      ctx.agents.get(id).followup(llm.createUserMessage({ content: [{ type: 'text', text: 'Synthetic turn.' }], source: { kind: 'user' } }))
+      assert.equal((await done).data.reason.kind, 'completed', failures.map(e => e.stack ?? e.message).join('\n')); await service.flush()
+      return ctx.agents.get(id).session.snapshotEvents().findLast(e => e.type === 'assistant/message').seq
+    }
+    const reply = await turn(rootId); assert.equal((await row(rootId)).content.stat_data.hp, 69)
+    const rootRecord = ctx.sessions.get(rootId).snapshotEvents().findLast(e => e.type === 'request/assembly')
+    assert(rootRecord.data.metadata.assembly.nodes.some(n => n.source?.resourceId === initial.id))
+    const child = await host.forkSession({ sessionId: rootId, atSeq: reply, sessionFormatVersion: 4 })
+    await host.copySelection(rootId, child.sessionId); await service.flush()
+    assert.equal((await row(child.sessionId)).content.stat_data.hp, 69)
+    assert.notEqual((await row(child.sessionId)).id, initial.id)
+    await turn(child.sessionId); assert.equal((await row(child.sessionId)).content.stat_data.hp, 68); assert.equal((await row(rootId)).content.stat_data.hp, 69)
+    const swipe = await host.createSession({ cwd: directory, stateSource: { sessionId: rootId, beforeReplyEventId: reply } })
+    await host.copySelection(rootId, swipe.sessionId); await service.flush()
+    const swipeRow = await row(swipe.sessionId); assert.notEqual(swipeRow.id, initial.id); assert.equal(swipeRow.content.stat_data.hp, 70)
+    await turn(swipe.sessionId); assert.equal((await row(swipe.sessionId)).content.stat_data.hp, 69); assert.equal((await row(child.sessionId)).content.stat_data.hp, 68)
+    const priorReply = await service.read({ id: initial.id, scope: { sessionId: rootId, endEventId: reply } })
+    updateText = "_.add('hp', 'invalid');"
+    const failedReply = await turn(rootId); assert.equal((await row(rootId)).content.stat_data.hp, 69)
+    const afterFailure = await service.read({ id: initial.id, scope: { sessionId: rootId, endEventId: reply } })
+    assert.equal(afterFailure.revision, priorReply.revision); assert.deepEqual(afterFailure.content, priorReply.content)
+    const latestRoot = await row(rootId)
+    await service.update({ id: latestRoot.id, scope: { sessionId: rootId }, expectedRevision: latestRoot.revision, operationId: 'after-failure', content: { stat_data: { hp: 50 } } })
+    const ordinary = await host.forkSession({ sessionId: rootId, atSeq: reply, sessionFormatVersion: 4 })
+    assert.equal((await row(ordinary.sessionId)).content.stat_data.hp, 50)
+    const laterSwipe = await host.forkSession({ sessionId: rootId, atSeq: reply, sessionFormatVersion: 4, stateSource: { sessionId: rootId, beforeReplyEventId: failedReply } })
+    await host.copySelection(rootId, laterSwipe.sessionId); await service.flush()
+    assert.equal((await row(laterSwipe.sessionId)).content.stat_data.hp, 69)
+    updateText = "_.add('hp', -1);"; await turn(laterSwipe.sessionId)
+    assert.equal((await row(laterSwipe.sessionId)).content.stat_data.hp, 68); assert.equal((await row(rootId)).content.stat_data.hp, 50)
+    for(const later of [false,true]){
+      const fresh=await host.createSession({cwd:directory}),id=fresh.sessionId
+      const initialState=await row(id)
+      await service.update({id:initialState.id,scope:{sessionId:id},expectedRevision:initialState.revision,operationId:'before-cancel',content:{stat_data:{hp:80}}})
+      const prefix=later?await turn(id):null,baseline=later?79:80
+      const entered=new Promise(resolve=>{cancelReady=resolve})
+      const agent=ctx.agents.get(id)
+      agent.followup(llm.createUserMessage({content:[{type:'text',text:'Neutral cancelled request.'}],source:{kind:'user'}}))
+      await entered;agent.cancel({kind:'user'});await agent.whenIdle();await service.flush()
+      const stopped=stoppedRequestFromEvents(agent.session.snapshotEvents());assert(stopped)
+      assert.equal((await row(id)).content.stat_data.hp,baseline)
+      const current=await row(id)
+      await service.update({id:current.id,scope:{sessionId:id},expectedRevision:current.revision,operationId:'after-cancel',content:{stat_data:{hp:40}}})
+      const stateSource={sessionId:id,beforeUserEventId:stopped.userEventId}
+      const retried=later?await host.forkSession({sessionId:id,atSeq:prefix,sessionFormatVersion:4,stateSource}):await host.createSession({cwd:directory,stateSource})
+      await host.copySelection(id,retried.sessionId);await service.flush()
+      assert.equal((await row(retried.sessionId)).content.stat_data.hp,baseline)
+      await turn(retried.sessionId);assert.equal((await row(retried.sessionId)).content.stat_data.hp,baseline-1)
+      assert.equal((await row(id)).content.stat_data.hp,40)
+    }
+    for (const id of [rootId, child.sessionId, swipe.sessionId, laterSwipe.sessionId]) {
+      const current = await row(id), assembly = ctx.sessions.get(id).snapshotEvents().findLast(e => e.type === 'request/assembly').data.metadata.assembly
+      assert(assembly.nodes.some(n => n.source?.resourceId === current.id))
+      await ctx.sessions.flush(ctx.sessions.get(id))
+    }
+    // The actual discovery path: public new-session creation, copied character
+    // selection, then the first turn without a prior MVU read/initialization call.
+    store.characterStore.import(JSON.stringify({ spec: 'chara_card_v2', spec_version: '2.0', data: {
+      name: 'Anonymous legacy opening', first_mes: 'Opening', extensions: {},
+      character_book: { entries: [{ comment: '[initvar]', content: 'hp: 100' }] },
+    } }), { id: 'legacy-card' })
+    store.sessionSelections.set(previous.sessionId, { characterCardId: 'legacy-card' })
+    const cardRun = await host.createSession({ cwd: directory })
+    await host.copySelection(previous.sessionId, cardRun.sessionId)
+    assert.equal(store.sessionSelections.get(cardRun.sessionId).characterCardId, 'legacy-card')
+    const cardIdentity = { sessionId: cardRun.sessionId, createdAt: ctx.sessions.get(cardRun.sessionId).header.createdAt }
+    const cardId = stateInstanceId(cardTemplateId, cardIdentity)
+    await turn(cardRun.sessionId)
+    const cardState = await service.read({ id: cardId, scope: { sessionId: cardRun.sessionId } })
+    assert.equal(cardState.content.stat_data.hp, 99)
+    assert.equal(cardState.managementMode, 'native')
+    assert.notEqual(cardState.id, cardTemplateId)
+    const restored = new MvuService({ storageDir: join(directory, 'tavern'), inspect: id => ctx.sessionController.inspect(id) })
+    assert.equal((await restored.read({ id: (await row(child.sessionId)).id, scope: { sessionId: child.sessionId } })).content.stat_data.hp, 68)
+    restored.dispose()
+    assert.equal(readFileSync(legacyPath, 'utf8'), legacyBytes)
+    assert.equal(requests.length, 11); assert.deepEqual(failures, [])
+  } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
+})

@@ -1,11 +1,14 @@
-import { createElement, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { createElement, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { createLocalizedElement, rawText, uiMessage } from '../i18n.js'
 import { playthroughDisplayTitle } from './title.js'
 import { workspaceDiagnosticReport } from './diagnostics-state.js'
+import { operationLabel, operationResult, operationObjects, operationPageJsonl, operationLocator } from './operation-log-view.js'
 
 const h = createLocalizedElement(createElement)
 
+// The Host overlay can scroll with its frame; keep diagnostics within the viewport at every UI scale.
 export const diagnosticsCss = `
+.dtv-panel.dtv-diagnostics{position:fixed;z-index:3;box-sizing:border-box;width:min(440px,calc((100vw - 56px)/var(--dtv-ui-scale,1)))}
 .dtv-diagnostic-summary{display:flex;align-items:center;gap:4px;margin:4px 8px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;font-size:11px}
 .dtv-diagnostic-summary button,.dtv-diagnostic-warning{border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;padding:5px}
 .dtv-diagnostic-summary button:hover,.dtv-diagnostic-warning:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -14,6 +17,16 @@ export const diagnosticsCss = `
 .dtv-diagnostic-card{border:1px solid var(--dsw-alias-border-l2);border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:10px;overflow-wrap:anywhere}
 .dtv-diagnostic-card h3{font-size:13px;margin:0}.dtv-diagnostic-card p{margin:0;font-size:12px;line-height:1.6}
 .dtv-diagnostic-card details{font-size:11px}.dtv-diagnostic-card summary{cursor:pointer;padding:5px 0}.dtv-diagnostic-card pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;margin:8px 0;user-select:text}
+.dtv-operation-log{min-width:0}.dtv-operation-log>.dtv-actions{flex-wrap:wrap;margin:10px 0}
+.dtv-operation-advanced{margin:10px 0}.dtv-operation-advanced label{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.dtv-operation-advanced input{box-sizing:border-box;width:100%;min-width:0;padding:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-background-primary,transparent);color:inherit;font:inherit}
+.dtv-operation-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.dtv-operation-row{min-width:0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px}
+.dtv-operation-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px}.dtv-operation-heading time{font-size:11px;color:var(--dsw-alias-label-secondary)}
+.dtv-operation-result{display:block;margin:5px 0;font-size:12px}.dtv-operation-result[data-tone=warning]{font-weight:600}
+.dtv-operation-object{display:flex;gap:6px;min-width:0;font-size:11px;color:var(--dsw-alias-label-secondary)}.dtv-operation-object span{flex:none}.dtv-operation-object code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;user-select:text}
+.dtv-operation-log .dtv-operation-raw{white-space:pre;overflow:auto;overflow-wrap:normal;max-height:240px;padding:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px}
+.dtv-operation-id{display:block;overflow:auto;white-space:nowrap;max-width:100%;padding:6px 0;user-select:text}.dtv-operation-row .dtv-actions{flex-wrap:wrap}
 `
 
 export function WorkspaceDiagnosticSummary({ snapshot, controller }) {
@@ -86,15 +99,17 @@ export function WorkspaceDiagnosticsPanel({ client, controller, playthroughId = 
   )
 }
 
-// Explicit reads only: no browser telemetry, background polling, or local log copy.
+// User-triggered reads only: opening the panel reads once; no background polling.
 export function OperationLogsPanel({ client }) {
   const [operationId, setOperationId] = useState('')
   const [page, setPage] = useState(null)
   const [status, setStatus] = useState(null)
+  const [copyStatus, setCopyStatus] = useState(null)
   const [busy, setBusy] = useState(false)
   const generation = useRef(0)
+  const filterHelpId = useId()
   useEffect(() => {
-    setPage(null); setStatus(null); setBusy(false)
+    setPage(null); setStatus(null); setBusy(false); setCopyStatus(null)
     return () => { generation.current++ }
   }, [client])
   const load = async before => {
@@ -103,7 +118,7 @@ export function OperationLogsPanel({ client }) {
     setStatus(null)
     try {
       if (!client?.getOperationLogs) { setStatus('diagnostics.logsUnavailable'); return }
-      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 100 })
+      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 5 })
       if (current === generation.current) setPage(value)
     } catch (error) {
       if (current === generation.current) {
@@ -114,29 +129,84 @@ export function OperationLogsPanel({ client }) {
   }
   const download = () => {
     if (!page) return
-    const { records, ...metadata } = page
-    const content = [JSON.stringify({ type: 'metadata', ...metadata }), ...records.map(row => JSON.stringify(row))].join('\n') + '\n'
-    const url = URL.createObjectURL(new Blob([content], { type: 'application/x-ndjson' }))
+    const url = URL.createObjectURL(new Blob([operationPageJsonl(page)], { type: 'application/x-ndjson' }))
     const anchor = document.createElement('a')
     anchor.href = url
     anchor.download = 'tavern-operation-logs.jsonl'
     anchor.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
-  return h('details', { className: 'dtv-diagnostic-card' },
+  const copyLocator = async row => {
+    try { await navigator.clipboard.writeText(operationLocator(row)); setCopyStatus('diagnostics.logsLocatorCopied') }
+    catch { setCopyStatus('diagnostics.copyFailed') }
+  }
+  const copyId = async id => {
+    try { await navigator.clipboard.writeText(id); setCopyStatus('diagnostics.logsIdCopied') }
+    catch { setCopyStatus('diagnostics.copyFailed') }
+  }
+  return h('details', {
+    className: 'dtv-diagnostic-card dtv-operation-log',
+    onToggle: event => {
+      if (event.target !== event.currentTarget) return
+      if (event.currentTarget.open) { if (!page && !busy) void load() }
+      else { generation.current++; setBusy(false) }
+    },
+  },
     h('summary', null, uiMessage('diagnostics.logsTitle')),
     h('p', null, uiMessage('diagnostics.logsScope')),
-    h('label', null, uiMessage('diagnostics.logsFilter'), h('input', {
-      value: operationId, maxLength: 128, placeholder: 'operationId',
-      onChange: event => { generation.current++; setBusy(false); setPage(null); setStatus(null); setOperationId(event.target.value) },
-    })),
+    h('details', { className: 'dtv-operation-guide' },
+      h('summary', null, uiMessage('diagnostics.logsTroubleshoot')),
+      h('p', null, uiMessage('diagnostics.logsBoundary')),
+      h('p', null, uiMessage('diagnostics.logsTraceGuide')),
+    ),
+    h('details', { className: 'dtv-operation-advanced' },
+      h('summary', null, uiMessage('diagnostics.logsAdvanced')),
+      h('p', { id: filterHelpId, className: 'dtv-note' }, uiMessage('diagnostics.logsIdHelp')),
+      h('label', null, uiMessage('diagnostics.logsFilter'), h('input', {
+        value: operationId, maxLength: 128, placeholder: 'operationId', 'aria-describedby': filterHelpId,
+        onChange: event => { generation.current++; setBusy(false); setPage(null); setStatus(null); setCopyStatus(null); setOperationId(event.target.value) },
+        onKeyDown: event => { if (event.key === 'Enter' && !busy) { event.preventDefault(); void load() } },
+      })),
+    ),
+    operationId.trim() ? h('p', { className: 'dtv-note' }, uiMessage('diagnostics.logsFiltered', { id: operationId.trim() })) : null,
     h('div', { className: 'dtv-actions' },
       h('button', { type: 'button', className: 'dtv-button', disabled: busy, onClick: () => load() }, uiMessage('diagnostics.logsLoad')),
       h('button', { type: 'button', className: 'dtv-button', disabled: busy || !page?.nextCursor, onClick: () => load(page.nextCursor) }, uiMessage('diagnostics.logsOlder')),
       h('button', { type: 'button', className: 'dtv-button', disabled: busy || !page, onClick: download }, uiMessage('diagnostics.logsExport')),
     ),
+    h('p', { className: 'dtv-note' }, uiMessage('diagnostics.logsPrivacy')),
+    busy ? h('p', { role: 'status' }, uiMessage('diagnostics.logsLoading')) : null,
     status ? h('p', { role: 'status' }, uiMessage(status)) : null,
-    page ? h('p', { role: 'status' }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? 'diagnostics.logsReady' : 'diagnostics.logsDegraded', { count: page.records.length })) : null,
-    page ? h('pre', null, rawText(JSON.stringify(page, null, 2))) : null,
+    copyStatus ? h('p', { role: 'status' }, uiMessage(copyStatus)) : null,
+    page ? h('div', { 'aria-busy': busy },
+      h('p', { role: 'status' }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? 'diagnostics.logsReady' : 'diagnostics.logsDegraded', { count: page.records.length })),
+      page.records.length === 0 ? h('p', { className: 'dtv-note' }, uiMessage(operationId.trim() ? 'diagnostics.logsNoMatch' : 'diagnostics.logsEmpty')) : null,
+      h('ol', { className: 'dtv-operation-list', 'aria-label': uiMessage('diagnostics.logsRecords') }, ...page.records.map((row, index) => {
+        const result = operationResult(row)
+        return h('li', { className: 'dtv-operation-row', key: row.id ?? index },
+          h('div', { className: 'dtv-operation-heading' },
+            h('strong', null, operationLabel(row)),
+            row.timestamp ? h('time', { dateTime: row.timestamp }, rawText(new Date(row.timestamp).toLocaleString())) : null,
+          ),
+          h('span', { className: 'dtv-operation-result', 'data-tone': result.tone }, result.label),
+          ...operationObjects(row).map(object => h('div', { className: 'dtv-operation-object', key: object.key }, h('span', null, object.label), object.key === 'scope' ? h('span', null, object.value) : h('code', { title: rawText(object.value) }, rawText(object.value)))),
+          h('details', null,
+            h('summary', null, uiMessage('diagnostics.logsDetails')),
+            row.operationId ? h('div', null,
+              h('p', null, uiMessage('diagnostics.logsIdShort')),
+              h('code', { className: 'dtv-operation-id' }, rawText(row.operationId)),
+              h('button', { type: 'button', className: 'dtv-button', onClick: () => copyId(row.operationId), 'aria-label': uiMessage('diagnostics.logsCopyIdFor', { id: row.operationId }) }, uiMessage('diagnostics.logsCopyId')),
+            ) : null,
+            h('button', { type: 'button', className: 'dtv-button', onClick: () => copyLocator(row) }, uiMessage('diagnostics.logsCopyLocator')),
+            h('p', { className: 'dtv-note' }, uiMessage(row.sessionId ? 'diagnostics.logsLocatorHelp' : 'diagnostics.logsLocatorNoSession')),
+            h('pre', { className: 'dtv-operation-raw', tabIndex: 0, 'aria-label': uiMessage('diagnostics.logsRawRecord') }, rawText(JSON.stringify(row, null, 2))),
+          ),
+        )
+      })),
+      h('details', null,
+        h('summary', null, uiMessage('diagnostics.logsMetadata')),
+        h('pre', { className: 'dtv-operation-raw', tabIndex: 0, 'aria-label': uiMessage('diagnostics.logsMetadata') }, rawText(JSON.stringify(Object.fromEntries(Object.entries(page).filter(([key]) => key !== 'records')), null, 2))),
+      ),
+    ) : null,
   )
 }

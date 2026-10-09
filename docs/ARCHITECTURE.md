@@ -2,15 +2,15 @@
 
 [English](ARCHITECTURE_en.md)
 
+必需的独立 [assembler 插件](ASSEMBLER_INTEGRATION.md)拥有 registry、策略存储与请求装配；标准版通过 DSH 公开接口排列官方 system 段落并贡献 user context/pre-step；只有显式安装可选 `dsh-prompt-assembler-core` 并准备配套核心时，进阶策略才启用完整请求排列。下文原有 loader 路径继续用于未应用装配预设的会话；两条路径都保留 DSH 对持久历史和 Provider 序列化的所有权。
+
 DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-dependencies/README.md)（含交互 HTML、仓库相对源码链接和升级检查入口）。
 
 当前合同面向本仓库源码（版本见 [package.json](../package.json)）与 DSH `0.2.0-rc.2`；安装标识为
 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走
 `/v2`，装配审计走 `/v3`。本文记录当前架构决策与发布审查门槛。
 
-![当前架构](assets/dsh-tavern-architecture.png)
-
-可编辑源文件：[dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio)。图中 DSH session history 是唯一权威事件历史；Tavern 的外部目录只保存资源、选择、设置、Trace 与周目投影。
+[Tavern 交互架构图](assets/architecture/tavern.zh-CN.html) · [三插件组合架构图](assets/architecture/ecosystem.zh-CN.html)。同目录 JSON 是可编辑的 Archify 规格。DSH durable history 为权威历史；Tavern 保存资源、状态、草稿、配置与有界 Trace 引用。
 
 ## 操作诊断与兼容边界
 
@@ -18,7 +18,7 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 
 ## 目标 Host 与持久数据边界
 
-2.5.1 合同面向 DSH 0.2.0-rc.2、Cordis 4.0.4 与 `dsh-util-crypto` 0.2.0-rc.2，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
+3.0.0 合同面向 DSH 0.2.0-rc.2、Cordis 4.0.4 与 `dsh-util-crypto` 0.2.0-rc.2，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
 
 DSH V4 拥有 system/user/assistant/tool 历史与 producer source，包括 `runtime-context` snapshot 和原生 tool-role result。准备顺序为装配 → pre-step → request/config 准备 → 接纳消息写入 → request header 与冻结消息 → stream。Trace 捕获官方正文/错误引用及生效参数，不建立第二份历史。[单向坐标升级](DSH_0.1.7_MIGRATION.md) 使用已验证的官方迁移阶段，保留全部升级前插件备份，不改写 DSH 日志。V3 之前的 header-body Trace 引用明确拒绝转换，不提供回滚工具。
 
@@ -40,13 +40,13 @@ Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过
 
 ## 前端产品范围
 
-2.5.1 继续使用 DSH Web/Desktop 的公开扩展承载第一方 RP 前端，不另做独立 Web UI。导航、输入框和会话生命周期仍由 DSH 管理；Tavern 维护资源面板、RP 展示和诊断。第三方仍可通过现有可组合 API 开发自己的客户端。此决策不改变权威历史、原生会话或卸载行为，无需数据迁移。
+3.0.0 继续使用 DSH Web/Desktop 的公开扩展承载第一方 RP 前端，不另做独立 Web UI。导航、输入框和会话生命周期仍由 DSH 管理；Tavern 维护资源面板、RP 展示和诊断。第三方仍可通过现有可组合 API 开发自己的客户端。此决策不改变权威历史、原生会话或卸载行为，无需数据迁移。
 
 公式渲染位于 `packages/client/src/play/math.js`，通过 Marked 公开 tokenizer/renderer 扩展接入共用富文本路径。KaTeX 只生成 MathML，随后与 HTML 一并净化；公式布局样式限定在 Tavern 内容与既有样式隔离边界内。RP、开场白和静态 HTML 导出复用此路径，不增加 Host seam、网络服务、全局渲染脚本、设置存储或消息副本。语法和安全界限见[显示合同](CONVERSATION_PRESENTATION.md#数学公式)。
 
 ## 决策结论
 
-`dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成单向依赖的内部层。preset、角色卡、用户、独立世界书和 Tavern Trace 均由统一 loader/client 组合；不要求用户安装多个互相配套的 DSH 插件。
+Tavern 是包含内部资源层的独立 DSH 插件，单向依赖另行启用的 `dsh-prompt-assembler` Host bundle。Memory Manager 为可选扩展。assembler 中的 adapter 读取来源公开服务，不读取来源私有文件。
 
 ```text
 SillyTavern JSON
@@ -69,7 +69,7 @@ chrome / 扮演工作区 files / timeline 校验 / focus 派生（纯逻辑+HTTP
        │
        ▼
 packages/tavern-loader ◄── DSH session/event（PendingInputProjection）
-DSH 装配策略、session/request 策略、Host hooks、v1/v2/v3 HTTP
+资源编译、session/request 策略、Host hooks、v1/v2/v3 HTTP；装配委托独立 assembler
         │
         ├── packages/session-template（由 loader 组合）
         │   干净会话配置投影、原子存储/API（不含历史）
@@ -212,22 +212,9 @@ RP snapshot cache 按 client 有界保存，key 包含周目路径与 Session ID
 
 Tavern 语言与 DSH 语言独立。RP、侧栏和开场 dock 订阅完整 UI 设置，而不是只订阅缩放值。语言变化还会刷新 Tavern 自己的 RP 页签注册项，因为 DSH 将 label 缓存在视图列表中；Conversation store 与已完成的默认视图选择保持不变。生成周目名随 locale 显示，用户自定标题及角色正文不翻译；不以 locale 事件替代 DSH 的 Session/Chat 订阅。
 
-## 为什么不是两个 DSH 插件
+## 安装单位与纯库
 
-格式解析器有独立价值，但其合适形态是纯库，不是一个可单独安装的 DSH 插件：
-
-- 可被浏览器导入预览、服务端导入、迁移 CLI、快照测试和未来角色卡/世界书工具复用；
-- 可在没有 DSH、session、文件系统的测试环境中验证格式兼容；
-- 能把“ST 文件解析错误”和“DSH 加载策略错误”分开定位。
-
-理论上可以给 `tavern-format` 增加自己的 package manifest 并单独发布为 npm library，但当前没有必要。它没有 Host entry、bundle patch 或独立用户功能，不能单独把内容发送给 agent。把它包装成第二个 DSH 插件会产生以下问题：
-
-- 用户看到“安装成功”却没有对话效果，形成半安装状态；
-- loader 与 parser 版本必须额外协商；
-- 两个插件都可能争用 API、存储或 UI 生命周期；
-- 安装、卸载、备份和故障排查成本翻倍。
-
-因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`、`API_V3`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；资源与配置走 `/v1`，扮演元 API 走 `/v2`，历史装配 Trace 走 `/v3`。`packages/play` 不导入 DSH；loader 以显式注入的 `sessionController`、`workspaceController` 与 `directoryPickerController` 实现 Tavern Play Host port，并挂到现有 `secureTavernApi`。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
+安装单位是 Tavern 与必需的独立 assembler；Manager 可选。Tavern 内部 `tavern-format` 与 `world-book` 仍是根包内的纯库，公开 exports 是可组合程序接口，不是可单独启用的 Host bundle。loader 把来源拥有的只读编译接到共享 assembler；兼容包入口与 HTTP 路径保留。新接入见[完整接口索引](API_SURFACES.md)。
 
 ## 开发验证
 
@@ -256,3 +243,25 @@ Tavern 语言与 DSH 语言独立。RP、侧栏和开场 dock 订阅完整 UI �
 client组合根创建 transport-independent mode core，以 `ctx.provide('pmpDshTavernChrome', face)` 注册在稳定插件fiber；SSE/focus/轮询只通过内部adapter提交服务端快照。TavernShell、悬浮球controller和 `playSlots.setMode()` 都是该服务的普通消费者，不再各自维护GET、focus或BroadcastChannel状态机。
 
 该服务的 `when(mode, setup)` 只表达模式生命周期，不授予surface所有权。多个插件可以同时订阅并注册各自的DSH公开slot；同一slot的占用冲突仍由对应公开slot合同处理。provider卸载时先停止transport、清理effect，再由Cordis撤销服务并驱动required consumer卸载。native模式仍不修改DSH原生表面。
+
+## 无会话开场生命周期
+
+`PlaythroughDrafts` 拥有未发送周目的配置、装配快照和初始 MVU，保存于插件存储；catalog 与空 timeline 仍在 RP 工作区。草稿 ID 从不传给 DSH Session API。首次发送的准备与消息提交保持为两个可组合原语，唯一会话/请求身份先持久化，准备中的真实空会话由公开 Workspace 归档接口隔离。真实 `turn/start` 和首条输入身份共同证明受理后，catalog 才获得 `rootSessionId`；公开 `agent/pre-step` 中间件等待解除临时归档后再继续原生 gate。取消与消息受理串行协调，不清除已受理历史。现有原生周目 ID 保持不变，不需要修改 DSH 核心。
+
+```mermaid
+sequenceDiagram
+  participant UI as Tavern UI
+  participant Draft as PlaythroughDrafts
+  participant DSH as Public DSH APIs
+  UI->>Draft: 保存周目、配置、初始变量
+  Note over Draft: 无 DSH 会话
+  UI->>Draft: 准备唯一首条输入
+  Draft->>DSH: 创建并临时归档真实会话
+  Draft->>Draft: 转移配置与初始变量
+  Draft-->>UI: sessionId + requestId
+  UI->>DSH: 既有消息接口
+  DSH-->>Draft: 真实 turn/start
+  Draft->>Draft: 关联 catalog
+  Draft->>DSH: 解除临时归档
+  DSH-->>UI: 原生对话与流式回复
+```

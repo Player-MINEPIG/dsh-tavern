@@ -2,18 +2,29 @@
 
 [English](INSTALLATION_en.md)
 
-Tavern **2.5.1** 支持 DSH **0.2.0-rc.2**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
+Tavern 3.0.0 需要显式启用 Tavern 与独立 assembler 两个 bundle，服务加载与可选 Memory Manager v1.0.0 见[接入说明](ASSEMBLER_INTEGRATION.md)。旧完整说明保留在对应 Git tag。
+
+装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+
+当前 Tavern 源码支持 DSH **0.2.0-rc.2**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
 
 保留备份；旧外部引用按[坐标迁移指南](DSH_0.1.7_MIGRATION.md)处理，已完成迁移的 V4 引用无需再次转换，不提供回退工具。安装前将目标 DSH 放在 `PATH` 并初始化所需 profile。
 
-## 安装 2.5.1
+## 安装当前源码
 
-从 Tavern 2.5.0 升级只需更新插件并重启 Host，继续使用 DSH `0.2.0-rc.2`；无需迁移会话、timeline、Trace 或设置。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
+更新当前源码需要额外启用 assembler bundle。原 Tavern 资源、设置、原生会话、timeline 与 Trace 保留；loader 启动时把旧策略存储中缺少的条目合并到 assembler，并保留旧文件。历史坐标升级另按迁移指南处理，DSH 目标仍为 `0.2.0-rc.2`。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
 
-停止目标 Host 后，使用固定版本标签安装：
+停止目标 Host 后，启用 Tavern 3.0.0 与标准 Assembler v1.1.0。标准策略走 stock core；进阶策略还需可选 addon 与协议 1。插件安装不会修改核心：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+```
+
+可选的资源查看与管理使用 [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0)。需要时在同一 profile 追加安装，再重启 Host；通用资源装配要求见[接入说明](ASSEMBLER_INTEGRATION.md#可选-memory-manager)：
+
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 ```
 
 <a id="source-candidate"></a>
@@ -23,7 +34,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 使用目标 DSH 初始化的独立测试 profile/home：
 
 ```sh
-git clone --branch v2.5.1 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.0.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
@@ -89,6 +100,10 @@ npm run verify:2.0
 
 ## 卸载
 
+不建议在 RP 工作区内通过 DSH 原生“新建会话”创建普通对话；请使用单独的工作区。DSH 可能复用同工作区中尚未开始对话的空会话，即使它已配置 Tavern 角色卡或标题。卸载 Tavern 不会自动清除会话标题、per-session 资源选择或工作区内的周目记录，因此重装后可能重新显示旧角色绑定与归类。
+
+若仍要将 RP 工作区中的会话用于普通对话，请在卸载前，先在角色卡面板解绑并确认从原周目脱离，解绑该会话的预设、用户设定和显式世界书，关闭 RP，再检查独立装配器中已应用的来源与自定义文本。解绑只影响后续请求，不删除资源或已有消息；旧标题需要在 DSH 原生会话菜单中手动重命名。Tavern 卸载后无法通过其面板解绑；必要时先重装处理。
+
 ```text
 npm run plugin:uninstall
 ```
@@ -114,3 +129,5 @@ node scripts/uninstall.mjs --no-backup
 `--storage-dir` 让卸载器为显式配置的自定义存储目录创建快照。`--no-backup` 只跳过这次快照；普通卸载仍保留默认或自定义持久目录，也不删除当初用于导入的外部 ST 源文件。若用户明确要清除数据，应在确认备份后单独删除持久目录，而不是把“卸载软件包”与“清空用户内容”合并为一个隐式动作。
 
 卸载同样支持这些常用参数：`--profile`、`--dsh-home`、`--store-dir`、`--storage-dir` 和 `--dry-run`。完整命令摘要见 `--help`。
+
+标准版与可选 core 包见[assembler 接入](ASSEMBLER_INTEGRATION.md)。标准 user context/pre-step 会进入 DSH 历史，与进阶 request-only 路径不同。

@@ -60,7 +60,8 @@ export function apply(ctx) {
 
 - `sidebar.workspaces`：角色卡/周目投影；
 - `conversation.view`：独立 `rp` view，不注销原生 `chat`；
-- `conversation.input.dock`：按 session 隔离的空周目 greeting/import dock 与默认 view adapter；
+- `conversation.input.dock`：按 session 隔离的 greeting/import dock 与默认 view adapter；
+- `main.conversation` 与 `conversation.content` Factory：确认角色匹配的空 RP 主会话使用独立正文布局，复用官方 composer；
 - `ctx.sessions.list`：目录 snapshot 与本地 `retainedBy` 计数；主会话是 `retainedBy.mainView > 0` 的记录，不再有 `current` 字段；
 - `ctx.uiWorkspace.openSession(sessionId)`：完成持久写入和 focus 校验后的导航；除声明包依赖外，还需注入 `uiWorkspace` service。`ctx.sessions.open` 已移除。
 
@@ -73,6 +74,8 @@ export function apply(ctx) {
 5. 不通过 DOM 查询、私有 bundle symbol 或篡改另一个插件注册表取得所有权。
 
 `pmpDshTavernChrome` 不保证你的 slot 一定胜出。slot 竞争、order、priority 和 owner props 仍由 DSH 的公开 slot 合同决定。
+
+空 RP 主会话只在目录记录 `blank === true`、周目 root session 和当前角色 selection 都匹配时占用 `main.conversation`（priority `-100`）。该 entry 声明自己的 strict-session 子 slot，不复制或重声明原生 entry 的子 slot。正文通过公开 `conversation.content` Factory 的局部 `views` 组件显示 greeting，输入框、draft、model/permission、队列及交互接管仍由官方 Factory 管理；同会话的旧 greeting dock 暂时隐藏。RP/Chat 按钮只改变公开 Conversation view，Chat 显示官方 Hero。首轮导致真实 Session 不再 blank、切换到其他主会话、角色不匹配、退出 play 或卸载时撤销自有 entry；不改写 `Session.blank`、历史或初始 MVU 授权窗口。角色分类读取失败时释放该布局，保留已有 view 偏好。
 
 ### 同时保留多个会话
 

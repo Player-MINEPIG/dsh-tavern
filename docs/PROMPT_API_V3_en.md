@@ -1,7 +1,9 @@
 # Prompt assembly Trace and primitive API v3
 
-Contract version: Tavern **2.5.1**, targeting DSH **0.2.0-rc.2**.
+Contract version: Tavern **3.0.0**, targeting DSH **0.2.0-rc.2**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Verification](TESTING_en.md)
+
+Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
 ## Purpose and compatibility
 
@@ -282,14 +284,22 @@ DSH history. Protect the local data directory and API as DSH Session data.
 
 ## UI and third-party boundary
 
-Tavern Trace first shows captured configuration/resource summaries, then lazily expands lore
-decisions and loader assembly. Verified section/context bodies are displayed when recoverable.
-Schema 4 sources show metadata, hashes, and counts without `source.text`; older schema 3 records may still include source bodies labeled as legacy snapshots. Explicit reasons are
-shown when recovery fails. Current v1 resources can help diagnose current configuration, but
-the UI does not label them as historical originals.
+World-book `included` means an activation candidate, not confirmed final injection. Trace separately displays candidates and evidence from the same verified `requestAssembly`: observed requests with matching source nodes and version diagnostics can show inclusion; `WORLD_BOOK_POLICY_SKIPPED` shows the policy skip and its recorded reason. Older diagnostics without a reason remain explicitly unrecorded; ambiguous resource identities or missing request records do not establish final use. Reading does not rerun activation or write history or the manager journal.
+
+Tavern Trace first shows captured configuration/resource summaries, then expands world-book decisions and **Assembler assembly**. Historical reads retain the same v3 assembly index and record-ID detail endpoints. Complete requests come from verified detail `requestAssembly` or `nativeRequest`, projected through Assembler’s public `actualAssemblyResult`; standard requests use detail `nativeProvenance` when assembly metadata is absent. Expanding Assembler assembly directly lists every system/user/assistant/tool message as a card in send-time order. System messages show separate cards for recorded source modules, including nested source sections. Module bodies and the complete system text expand separately. Associations use recorded message coordinates or system snapshot contributor IDs, without inferring sources from matching text; unavailable module breakdowns retain the complete text with an explicit notice. Open other message cards to read their bodies; sources with explicit message coordinates appear on those cards. Further disclosures show source nodes, recorded history filtering and diagnostics. Standard records may lack separate history-filter decisions; the UI marks these unrecorded while still showing verified complete messages. It never fills another historical record with the latest-only `/actual` endpoint, or reruns current `/preview` or `/active`. Current previews belong to current drafts/resources; frozen records belong to that request; historical attribution comes from recorded evidence and verified references. Current-name fallbacks are explicitly labeled and never change historical bodies.
+
+“Assembly-stage system sections and contexts” retains original `sections`, `contexts` and observed system messages, identifying them as materials that later assembly or filtering may adjust. They cannot replace a complete request. Missing complete-request references remain explicitly unavailable; verified section/context bodies can still appear. Schema 4 sources show metadata/hash/counts without `source.text`; legacy schema 3 source bodies remain labeled historical snapshots. Unavailable bodies retain specific reasons.
+
+This display change preserves v1/v2 routes and response semantics (including `records[].worldBooks[].decisions[]`) and v3 capabilities, index, detail, section-source relationships and history references. It does not change `requestAssembly` or the storage schema. Current `dsh-prompt-assembler` and legacy `pmp-dsh-tavern` request owners are both recognized. Full section-name parsing remains outside the cross-version field-extraction contract.
 
 [HTTP reader](examples/trace-reader.mjs) imports no Tavern code.
 [Official observer](examples/official-prompt-observer.mjs) needs no v3 request. Index/detail
 reads never trigger assembly. Third parties may reorder or replace Tavern `:part:` sections in
 the official waterfall. Import context and RP policy remain separate contributions. Sampling
 still flows through `agent/request`; this API does not arbitrate third-party composition order.
+
+Native `nativeRequestRef` contains version 1 and the frozen whole-message `messagesHash`, using `sessionRef.logCutSeq`. Detail reads replay that cut through public detached Session primitives and verify the digest. Success exposes `nativeRequest.messages` and `requestContentStatus:available`; failure exposes `nativeRequestError`, without current-history or preview fallback. Storage removes hydrated `nativeRequest` bodies. Older native records without this reference retain their existing section/context reads but cannot supply a complete actual request.
+
+The actual request view follows actual message order and uses recorded provenance, without evaluating current presets. New native `nativeSourceRefs` retain version 1, item names, source field/resource identifiers, message hashes and UTF-16 ranges. They cover system contributions, context, pre-step PHI and uniquely verified nested references; bodies remain in DSH history. Older verified section references recover source identifiers. For preset items without recorded names, the recorded preset and item IDs resolve a current display name, explicitly labeled “Name from the current preset; body from the recorded request.” Current names never replace saved historical names or reconstruct bodies. Deleted items use readable ordinal labels, retaining source IDs in details. Unverified ranges show “Source not recorded”; a merged system body is not labeled as native base instructions. Detail `nativeProvenance` returns verified nodes and source status. The assembler actual API projects it into `request.metadata.assembly`, preserving `request.messages` and v3’s original `requestAssembly`. Storage removes hydrated `nativeProvenance` and node text/messages; list responses omit `nativeSourceRefs`.
+
+When an earlier native system precedes a verified current system contribution, its unannotated spans are labeled “Historical system snapshot.” They remain effective in that frozen request and do not imply that the current native-system rule is enabled.

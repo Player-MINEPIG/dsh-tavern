@@ -1,7 +1,9 @@
+import { translate } from '../i18n.js'
+import { stageImages, observeImages } from './card-images.js'
 import { restrictStaticResources } from './static-resources.js'
 import DOMPurifyFactory from 'dompurify'
 import { Marked } from 'marked'
-import { createElement, memo } from 'react'
+import { createElement, memo, useLayoutEffect, useMemo, useRef } from 'react'
 import { isolateHtmlDocuments, isolateStyledHtml, mountStyledHtml } from './rich-text-styles.js'
 import { mathExtension } from './math.js'
 
@@ -41,6 +43,15 @@ function withoutHtmlComments(html) {
   return parts.join('')
 }
 
+// Shared format recognition for static documents and interactive card routing.
+export function isCompleteHtmlDocument(html) {
+  const shape = withoutHtmlComments(html).trim().replace(/^<!doctype\s+html[^>]*>\s*/i, '')
+  const document = /^<html(?:\s[^<>]*|)>/i.test(shape) && /<\/html\s*>$/i.test(shape)
+  const headAndBody = /^<head(?:\s[^<>]*|)>/i.test(shape) && /<\/body\s*>$/i.test(shape)
+    && /<\/head\s*>\s*<body(?:\s[^<>]*|)>/i.test(shape)
+  return document || headAndBody
+}
+
 // ST display templates may wrap a whole HTML document in a Markdown fence.
 // Only closed document-shaped blocks opt in; snippets and streaming code retain
 // Markdown semantics. This is format recognition, not a security boundary:
@@ -54,11 +65,7 @@ function fencedHtmlDocument(token) {
     || closing[1].length < opening[1].length) return null
 
   const html = token.text.trim()
-  const shape = withoutHtmlComments(html).trim().replace(/^<!doctype\s+html[^>]*>\s*/i, '')
-  const document = /^<html(?:\s[^<>]*|)>/i.test(shape) && /<\/html\s*>$/i.test(shape)
-  const headAndBody = /^<head(?:\s[^<>]*|)>/i.test(shape) && /<\/body\s*>$/i.test(shape)
-    && /<\/head\s*>\s*<body(?:\s[^<>]*|)>/i.test(shape)
-  return document || headAndBody ? html : null
+  return isCompleteHtmlDocument(html) ? html : null
 }
 
 markdownConverter.use({ renderer: {
@@ -200,6 +207,7 @@ export function sanitizeRenderedHtml(html, {
   purifier = browserPurifier(),
   documentObject = globalThis.document,
   isolateStyles = false,
+  liveImages = false,
 } = {}) {
   if (purifier === null || typeof purifier?.sanitize !== 'function') return escapeHtml(html)
   const canIsolate = isolateStyles && typeof documentObject?.createElement === 'function'
@@ -218,7 +226,8 @@ export function sanitizeRenderedHtml(html, {
     element.removeAttribute('data-dtv-style-boundary')
     element.removeAttribute('data-dtv-style-root')
   }
-  restrictStaticResources(template.content)
+  if (liveImages) stageImages(template.content)
+  restrictStaticResources(template.content,{liveImages})
   for (const link of template.content.querySelectorAll('a[href]')) {
     const href = link.getAttribute('href') ?? ''
     if (href.startsWith('#')) continue
@@ -239,10 +248,13 @@ export function renderRichTextHtml(text, options) {
 // Stream updates rerender the conversation; unchanged messages must not repeat
 // Markdown parsing, sanitization, or shadow-template traversal on every chunk.
 export const RichText = memo(function RichText({ text, className }) {
+  const element = useRef(null)
+  const html=useMemo(()=>renderRichTextHtml(text,{liveImages:true}),[text])
+  useLayoutEffect(()=>{mountStyledHtml(element.current);const media=observeImages(element.current,{unavailable:translate('appearance.imageUnavailable')});return()=>media.dispose()},[html])
   return createElement('div', {
     className,
     'data-dtv-rich-text': '',
-    ref: element => mountStyledHtml(element),
-    dangerouslySetInnerHTML: { __html: renderRichTextHtml(text) },
+    ref: element,
+    dangerouslySetInnerHTML: { __html: html },
   })
 })

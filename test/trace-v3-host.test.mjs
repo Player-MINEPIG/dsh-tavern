@@ -1,3 +1,4 @@
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -35,6 +36,7 @@ test('DSH real AgentLoop: official sections, LLM capture, durable system message
       }
     }
     root.llm.registerAdapter(['synthetic'], new SyntheticAdapter())
+    await installIndependentAssembler(root, directory)
     const plugin = root.plugin({ name: tavern.name, inject: tavern.inject, apply(ctx) { store = tavern.apply(ctx, { storageDir: directory }) } })
     await plugin
     const preset = store.create({ name: 'Synthetic preset' })

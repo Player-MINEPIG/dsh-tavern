@@ -2,7 +2,13 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-合同版本：Tavern 2.5.1，仅支持 DSH `0.2.0-rc.2`。
+[MVU 状态来源](MVU.md)
+
+当前装配来源使用共享 `dshPromptSources` 协议 1；旧 `tavernRequestSources` 为同一 registry 的兼容别名。第三方入口、全部扩展路由与稳定边界见[完整接口索引](API_SURFACES.md)。
+
+装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+
+合同范围：当前 Tavern 源码（package 版本见 package.json），仅支持 DSH `0.2.0-rc.2`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -16,7 +22,7 @@ timeline 的拒绝行为。
 <a id="240-对第三方调用方的影响"></a>
 ## 当前版本对第三方调用方的影响
 
-2.5.1 面向 DSH `0.2.0-rc.2`，只增加内置 RP 与静态 HTML 导出的公式显示能力。与 2.5.0 相比没有新增路由、字段、设置开关或持久格式；HTTP 返回的消息仍是原文，第三方客户端自行决定如何渲染。持久操作日志、桌面请求令牌、头像与显示设置沿用 2.5.0 的合同，并保留以下自 2.4 系列引入的接入合同。
+当前合同面向 DSH `0.2.0-rc.2`，包含下文的可选 Host 服务与会话开场世界书路由。HTTP 返回的消息仍是原文，第三方客户端自行决定如何渲染。持久操作日志、桌面请求令牌、头像与显示设置沿用原有合同。
 
 与 `v2.3.2` 相比，API 根路径、v1/v2/v3 版本前缀和既有路由保持；这不代表所有输入、
 历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.2.0-rc.2`，其他版本不在支持范围内。
@@ -76,6 +82,34 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 公开合同与读取时机的速查见 [v3 消费方读取路径与兼容边界](PROMPT_API_V3.md#消费方读取路径与兼容边界)。
 官方装配段的正文不等于某个来源字段的原文；当前资源、历史段落和运行期装配不能互相替代。
 
+## 当前会话绑定资源
+
+会话资源目录可调用可选 Host 方法 `tavernMemorySources.listBound({scope:{sessionId,authority:'local'},signal?})`，返回深层不可变的 `{items,revision,checkCurrent}`。每项仅含 `{id,adapterId,name,type,revision,managementMode,binding}` 及可选 `enabled/sourceError`，不含正文或变量。`binding` 说明真实 session、当前角色、预设/Persona 绑定来源或既有 MVU 实例身份。目录覆盖当前角色内嵌书、当前有效选择中的独立书与会话开场书、实际绑定到该 session 的模板，以及当前角色对应的既有 MVU 状态实例。内联预设 prompt 不会伪装成持久资源。
+
+查询只检查选中的书，不扫描其他卡或全局资源，不做激活，不自动创建 MVU 实例，不授权写入或 prompt 使用。全局 `list/read` 合同继续用于全局资源管理。会话列表应以该目录的真实 ID 过滤配置与历史 trace，不能让未绑定的配置或旧 trace 补出其他卡资源；手动跨卡绑定界面不属于本接口。调用方在最后一次 await 后检查 Host-only `checkCurrent()`；当前选择代际、来源版本、会话实例/身份与服务卸载变化会撤销结果。MVU 未装载则无 MVU 项，旧 MVU 缺此元数据能力则明确拒绝，不能退回正文 catalog 猜测绑定。世界书/模板 adapter 与 `tavernMvu` 同时提供同形 `listBound`，manager 可直接转接来源方法；没有新增 HTTP 路由。
+
+## 会话开场世界书
+
+Host 可选服务 `tavernOpeningWorldBooks` 提供 `prepare` 与 `commit`，类型见包入口 `pmp-dsh-tavern/opening-worldbook`。HTTP 为 `POST /pmp-dsh-tavern/api/v1/sessions/:sessionId/opening-worldbook/prepare` 与 `/commit`，沿用本机、Host、Origin/桌面 token、JSON 与官方 DSH admission 检查。
+
+`prepare({sourceIdentity,openingId,identitySource,source?})` 只读取数据，返回 `{ok:true,proposalId,expectedRevision,entriesHash,entries,openingId,entryCount,expiresAt,sourceIdentity,resourceId}`。`sourceIdentity` 为 `{version:1,owner:'pmp-dsh-tavern',sessionId,characterId,greetingIndex,greetingSha256,identitySha256}`：index 为零基，0 对应 first_mes；greetingSha256 是 regex/macros 展开前原文哈希。Host 验证官方会话、当前选择、原卡与选择代际。`identitySource` 和 `source:{url,sha256,content}` 只接受 `opening-worldbook/manifest` 的固定公开快照，不执行其脚本。单个 sibling 同时含两组完整数据；default/alisa_party 是空跳过，police_done/hospital_done/pool 分别为 7/8/15 条。Host 从有限字面量与固定数据映射读取完整内容，缺失、不支持的表达式或 hash 不符即拒绝。
+
+可信父界面显示提案并单独取得世界书写入确认后，调用 `commit({proposalId,expectedRevision,operationId,sourceIdentity,reviewed:true,write:true})`。这不复用 MVU 变量授权；guest VM 只能请求受控 opening ID 和等待回执，不能获得确认动作、来源文本读取、fetch 或任意 Host 调用。提案最多 64 项、10 分钟有效，来源/选择 ABA/会话实例/卸载变化撤销。变更经 CAS 后原子保存，会话资源的 operationId 重试返回原回执，冲突重用拒绝；空跳过不创建资源，空回执仅在本次 Host 生命周期内可重试。
+
+回执为 `{ok:true,inserted,existing,updated,targetWorldbook,method:'session-local',receiptId,resourceId,revision}`，空选择另有 `skipped:true` 与 `resourceId:null`。书仅写入插件的会话专属存储，原卡、全局书和全局绑定保持原值。资源 ID 为 `world-book:session-opening-<digest>`，在 `tavernMemorySources` 世界书 adapter 下仅对该 session scope 可读/列出。当前选择匹配时由原生世界书激活链处理关键词、启用、概率、预算和位置；实际管理方由当前可信 manager 注册决定；注册期间使用来源默认和显式 retrieve 覆盖，缺决策或 deny 拒绝装配，卸载恢复来源默认，不因写入回执自动授权 prompt 使用。回执证明本地提交，不证明模型发送或 provider 接收。
+
+## 可选 Host scope 目录
+
+loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`），公开模块为 `pmp-dsh-tavern/scope-catalog`。消费者可通过可选 `ctx.inject` 使用它；缺少服务或版本不符时明确报告不可用，不调用完整资源列表替代目录。此服务只公开当前资源身份，不运行提示词装配，也不授权提示词使用或资源写入。
+
+`searchScopes({field,query?,cursor?,limit?,scope?:{sessionId?},signal?})` 返回 `{items:[{id,name}],nextCursor:string|null}`。field 固定为 `characterId`、`presetId`、`userId`；limit 是 1–50（默认 50），query 最多 200 字符，按 ID/名称包含匹配。全局搜索不传 sessionId。结果按真实 ID 排序；cursor 由来源签发，绑定字段、规范化查询、会话界域、来源目录代次和可见性版本。修改查询或来源后从首页重新读。每页重验来源可见性和生命周期，不暴露正文、头像或文件路径。
+
+三个资源库维护只含 ID、名称与文件指纹的 metadata index。初始化或重启时仅重建新增/变更资源的索引；后续 source-owned 创建、修改和删除同步索引。分页与 scope 解析只读索引和文件 metadata，不调用资源 `list/get` 或读取正文。外部直接改文件导致索引过期时返回 `SCOPE_CATALOG_STALE`，重载来源后重建；索引不可用不使原生资源库失效。
+
+`resolveScopeContext({sessionId,signal?})` 返回 `{scope:{sessionId,characterId,presetId,userId},revision,checkCurrent}`。characterId 映射当前 `selection.characterCardId`；presetId 是 ST prompt preset；userId 是 Tavern RP persona。缺失或不可见资源返回 null，不伪造身份。session 必须在官方 `sessions` 服务中存在。`checkCurrent` 是 Host-only 同步租约，绑定 session 实例、选择代次、目录与来源可见性；卸载或任一改变使租约失效。条件使用方必须在最终使用前复验，不能用浏览器提交的 ID 代替这些事实。
+
+权限范围沿用本地可信 Host 与本机 HTTP 防护，以及来源自身可见性。它不新增 principal ACL，也不把 manager 名单或目录读取解释为提示词使用许可。可选目录消费者的 HTTP 路由仍需实施其已有本机防护。
+
 ## 桌面请求令牌
 
 `GET /pmp-dsh-tavern/api/request-token` 要求 `X-Tavern-Client: embedded`，返回 `{ok:true,token}`，令牌是进程内的 64 位十六进制字符串，响应禁止缓存。沿用 TCP/Host 检查，拒绝异源/null Origin 与 cross-site 请求，不启用 CORS。官方 `dsh-app://app` 代理移除 Origin，因此嵌入桌面客户端在变更请求中携带 `X-Tavern-Request-Token`。仅缺省 Origin 可使用此令牌；显式异源/null Origin 仍被拒绝。HTTP 浏览器变更继续要求同源。Host 重启使令牌失效，内置客户端在 Origin 拒绝后重试一次。这是 CSRF 防护，不是鉴权。
@@ -100,8 +134,8 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件。`catalog.json` / `timeline.json` 读出后执行对应 schema/path 校验；第三方 `ext` 原样保留；受管文档响应增加精确 UTF-8 字节的 SHA-256 `revision`（64 位小写 hex） | 已实现 |
 | PUT | `/workspace/files?path=` | 普通文件仍使用 `{ content }`；`catalog.json` / `timeline.json` 必须显式带 `expectedRevision`：`null` 仅创建缺失目标，64 位小写 SHA-256 仅在当前字节 hash 相等时替换。校验、CAS、临时写和 rename 在同一目标 guard 内 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
-| POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
-| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`：日志 seq 与其格式版本；迁移检查见下文。fork 后通过公开 `sessionController.resolveAgent()` / `agent.inbox.clear()` 清空子会话的 queued/steering 输入，再复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。队列清理或校验失败返回 502 `PLAY_BRANCH_INPUT_RESET_FAILED`，不继续复制上下文；复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
+| POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。首轮 reply swipe 可另带 `stateSource:{sessionId,beforeReplyEventId}`（sessionId 必须等于 selection 来源），由 Host 冻结原请求前 MVU 状态并在首次请求前安装独立实例；普通新周目不带此字段。插入扮演工作区。**不写 timeline** 已取消且没有助手正文的请求改用 `stateSource:{sessionId,beforeUserEventId}`；两个坐标字段互斥。来源核对已持久保存的 aborted 回合，并冻结其请求前 checkpoint。 | 已实现 |
+| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion?, stateSource?:{sessionId,beforeReplyEventId} }`：显式 reply swipe 的 stateSource 必须绑定当前来源 session 和更晚的目标回复；历史仍按 atEventId fork，MVU 使用目标请求前 checkpoint。日志 seq 与其格式版本；迁移检查见下文。fork 后通过公开 `sessionController.resolveAgent()` / `agent.inbox.clear()` 清空子会话的 queued/steering 输入，再复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。队列清理或校验失败返回 502 `PLAY_BRANCH_INPUT_RESET_FAILED`，不继续复制上下文；复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409。保留前缀后的已取消请求重试同样支持互斥的 `beforeUserEventId` 坐标。 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + 每条消息的 `origin`；顶层可附带 `sessionFormatVersion` / `migratedFromV2`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现 |
 | GET | `/sessions/:id/coordinates` | 只读查询当前逻辑会话的格式版本与迁移标记；无消息正文。[字段与调用示例](#session-coordinates) | 已实现 |
@@ -114,6 +148,8 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 | GET | `/focus?path=` | 低层兼容路由：按显式 timeline path 派生 `{ sessionId }`；内置前端使用 playthrough id 路由 | 兼容面 |
 | GET | `/focus`（无 path） | 不提供默认目标；“最近写入 timeline”不是用户 focus | 400 PLAY_FOCUS_PATH_REQUIRED |
 | POST | `/focus`、`/playthroughs/:id/focus` | 不提供 | 405 |
+
+会话 messages 响应中的 `stoppedRequest` 为 null，或为最后一个已持久停止且没有助手正文的人类请求的 `{userEventId,turnStartEventId,turnEndEventId}`。运行中的回合、已完成回复和来源上下文不符合条件。它提供重试证据，不代表已保存的回复变体。
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404 PLAY_PLAYTHROUGH_NOT_FOUND；catalog 缺失返回 409 PLAY_CATALOG_UNAVAILABLE，catalog 损坏保留 400 PLAY_CATALOG_INVALID；timeline 缺失或损坏统一返回 409 PLAY_FOCUS_UNAVAILABLE。稳定入口不接受客户端 path，不读取 DSH history，也不写文件。旧 /focus?path= 仅保留迁移兼容。
 
@@ -324,7 +360,7 @@ operation log、chrome service/slot、工作区准入、本地化与发布包边
 | PUT | `/characters/:id/world-books` | 完整替换角色卡关联独立世界书的有序 ID | 已实现 |
 | GET | `/characters` | 角色卡目录、排序状态及缺失卡摘要 | 已实现 |
 | POST | `/characters` | 创建角色卡 | 已实现 |
-| POST | `/characters/import` | 导入 JSON/PNG 角色卡 | 已实现 |
+| POST | `/characters/import` | 导入 JSON/PNG 角色卡；文件上限 32 MiB，PNG 每个角色数据块解码后上限 16 MiB（导出相同） | 已实现 |
 | GET | `/characters/:id` | 完整当前角色卡；返回 character | 已实现 |
 | PATCH | `/characters/:id` | 更新角色卡字段 | 已实现 |
 | DELETE | `/characters/:id` | 删除角色卡并清理绑定，保留缺失卡摘要 | 已实现 |
@@ -514,11 +550,15 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | 请求：无；返回：`{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards? } }` | 已实现 |
-| PUT | `/conversation-settings` | 请求：`{ textScale, actionScale, bubbleStyle?, interactiveCards? }`；返回：同 GET | 已实现 |
+| GET | `/conversation-settings` | 请求：无；返回：`{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement?, renderingAdapters? } }` | 已实现 |
+| PUT | `/conversation-settings` | 请求：`{ textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement?, renderingAdapters? }`；返回：同 GET | 已实现 |
 | DELETE | `/conversation-settings` | 请求：无；返回：恢复两个字段为 `1` | 已实现 |
 
-可选 `bubbleStyle` 与布尔值 `interactiveCards` 遵循[显示协议](CONVERSATION_PRESENTATION.md)，请求体上限 16 KiB；省略或 DELETE 恢复默认。用户创建/PATCH/导入/导出支持可选栅格 data URI `avatar`，上限 128 KiB；null 清除，PATCH 省略则保留。timeline 的 `ext.pmpDshTavern.appearance` 遵循同一文档，通过现有 revision/CAS 写入，非法元数据返回 `PLAY_APPEARANCE_INVALID`。
+`scriptEnablement` 保存普通本地选择，格式为 `{ schemaVersion: 1, entries: [{ owner, key, enabled }] }`，最多 128 条。owner 使用角色/预设资源 ID；全局依赖使用规范 RP 工作区的 SHA-256 身份。Helper 优先使用原条目唯一 ID，否则按源码 SHA-256 标识唯一内容；重复源码只有名称唯一时才使用源码与名称摘要组合，排序不参与身份。无 ID 源码或用于区分的名称变化后继承来源默认；仍无法区分的重复条目不支持逐条保存覆盖，保持各自来源默认，需先在原卡添加唯一 ID。新资源 ID 与原卡导出不携带本地选择。省略或 DELETE 清除覆盖；外观页的恢复默认操作保留脚本选择及总开关。此设置仅持久化开关选择；来源或选择变化须更新选定依赖。已下载且开启的脚本可读写当前绑定变量，内部执行绑定不持久化。
+
+`renderingAdapters` 保存普通兼容模式覆盖，格式为 `{ schemaVersion: 1, entries: [{ owner, source, mode }] }`，最多 128 条；`source` 为 HTTPS 来源，`mode` 为 `builtin` 或 `original`。省略条目默认自动匹配精确 URL、字节与支持的调用语义，`builtin` 明确要求兼容映射、不支持时停止，`original` 选择原代码图。此偏好不含审批、摘要、源码或写许可；仅在下载并核验支持字节后提供兼容映射。owner 隔离、复制不继承，外观恢复保留此偏好，省略或 DELETE 清除覆盖。
+
+可选 `bubbleStyle` 与布尔值 `interactiveCards` 遵循[显示协议](CONVERSATION_PRESENTATION.md)，请求体上限 384 KiB；省略或 DELETE 恢复默认。用户创建/PATCH/导入/导出支持可选栅格 data URI `avatar`，上限 128 KiB；null 清除，PATCH 省略则保留。timeline 的 `ext.pmpDshTavern.appearance` 遵循同一文档，通过现有 revision/CAS 写入，非法元数据返回 `PLAY_APPEARANCE_INVALID`。
 
 两个 scale 均为 `0.75`–`1.5` 的有限数值，步进 `0.05`；PUT 是完整替换并拒绝未知字段。`textScale` 作用于魔丸用户/助手正文与 greeting（含空周目 opening dock），`actionScale` 只作用于 durable QA 末尾的复制、swipe、分支、回退和编辑操作行。
 
@@ -531,7 +571,6 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
 | GET | `/presets/:id/export` | 请求：无；返回：ST JSON 附件；`Content-Disposition: attachment` | 已实现 |
-
 
 ### 资源携带的原生 ST 正则
 
@@ -570,6 +609,12 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 loader 的独立书合成顺序固定为：会话显式绑定、用户关系、预设关系、角色卡关系；相同 ID 只执行一次，但 audit/resource summary 保留全部 `bindingSources`。角色卡内嵌 `character_book` 在上述独立书之后进入同一个 matcher。`GET /active` 的 `worldBookSelection` 公开 `explicitIds`、`userBoundIds`、`presetBoundIds`、`characterBoundIds`、`effectiveIds`、`duplicateIds` 和 `order`。
 
 世界书面板直接陈列这些来源。当前角色卡没有 `character_book` 时，前端可以先建立 `{ name, entries: [] }` 草稿，再由现有 `PATCH /characters/:id/world-book` 保存；这是创建可随卡导出的内嵌书，不等同于绑定独立书。
+
+### 无会话开场草稿
+
+在 v2 Play 基地址下，`POST /drafts` 保存 `{ characterId, source?, selection?, assemblyPresetId? }`，不创建 DSH 会话。`GET /drafts/:id` 返回 `{ draft, playthrough }`。`PUT /drafts/:id` 要求 `expectedRevision`，接受 selection、assemblyPresetId、variables、importContextRef 或 resetVariables，不允许更换角色身份。 `POST /drafts/:id/preview` 接受 `{ expectedRevision, preset? }`，只读预览此开场草稿的当前资源、变量和调用者的装配规则；省略 preset 时使用草稿快照。返回 `{ ok, preview }`，其中 `scope:'opening-draft'`、`draftId`、`draftRevision`、`pendingInputsIncluded:false`。不创建原生会话、不写历史、不调用模型；配置变化或开始首次发送后返回 409。
+
+`POST /drafts/:id/materialize` 接受 `{ expectedRevision, operationId, text }`，准备唯一、持久预留的会话并返回 `{ sessionId, requestId, accepted }`，自身不发送模型请求。若尚未受理，调用既有 `/sessions/:id/user-message`，传同一 text 与 requestId。`POST /drafts/:id/cancel` 在未受理时清理绑定、释放无绑定空会话并恢复草稿，`draft.lastInput` 保留该次输入用于重新打开开场；已受理时停止真实会话并保留历史。MVU 草稿 scope 为 `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`，不含 sessionId。卡片写授权仍要求当前精确 selection token 和已下载来源的执行证明。
 
 ### Tavern 周目分支组合
 
@@ -617,3 +662,37 @@ Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 内部 transport 使用 `GET /v2/chrome/events`；不支持 EventSource、连接失败或断线时降级为初始 GET、window focus 回读和1秒轮询，SSE恢复后停止轮询。BroadcastChannel 不属于合同。服务卸载会停止transport并清理所有 `when` effect；多个第三方插件的注册互相独立，各自只清理自己拥有的slot/UI。
 
 第三方 DSH 插件、独立 Web 客户端、surface 所有权、原子动作组合与卸载降级的完整说明见 [FRONTEND_INTEGRATION_zh-CN.md](FRONTEND_INTEGRATION_zh-CN.md)。当前没有配置文件一键替换魔丸、frontend provider registry 或动态 bundle loader。
+
+## 渲染执行绑定
+
+这些内部路由把可用且已开启的卡片执行绑定到准确源码和 scope，不建立用户层面的批准状态。
+
+| 方法 | 路径（v1 下） | 输入／结果 | 状态 |
+| --- | --- | --- | --- |
+| POST | `/rendering-write-grants` | 可信渲染器提交 `{source,sourceIdentity,executionId,downloaded:true,enabled:true}`；source 为完整执行包 JSON，identity 为 `{version:1,sha256,scope}`。Host 重算 SHA-256，返回 `{ok:true,grantId,sourceIdentity}` | 200；格式／身份不符 400；超限 413 |
+| DELETE | `/rendering-write-grants/:grantId` | 停止内部绑定；重复删除幂等 | 200 |
+
+沿用本机 peer、Host、Origin／桌面 token、JSON 媒体类型与 DSH admission 检查。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent` 在 MVU 最终提交前复核。内存最多保留 64 个活动绑定，不保存源码正文；没有批准到期期限，卸载全部清除。脚本开关与运行时清理撤销旧绑定，刷新时从持久下载缓存自动建立当前新绑定。scope、来源 schema、CAS 与幂等仍保留。原生卡片变量发出事实供 manager 观察；manager 的模型/store/retrieve 策略保持独立。详见 [MVU](MVU.md)。
+
+标准版与可选 core 的能力、迁移及证据范围见[装配策略](REQUEST_ASSEMBLY.md)。对所选后端检查 capabilities() 与 requireAvailable(preset)。
+
+
+## 渲染缓存存储
+
+v1 前缀 `/pmp-dsh-tavern/api/v1/rendering-cache` 提供资源与执行 API 尚未覆盖的惰性缓存存储原语。接口不下载 URL、不执行源码、不授予执行或写权限。所有路由沿用本机 peer、Host、Origin／桌面 token、JSON 变更媒体类型与 DSH admission 检查。
+
+| 方法 | 路径 | 结果／输入 |
+| --- | --- | --- |
+| GET | `/graphs` | `{ok:true,value:{graphs,sources}}`；图元数据与去重源码，每份源码只返回一次 |
+| GET | `/graphs?metadata=1` | 仅已存图元数据 `{ok:true,value:{graphs}}`，不含源码字节 |
+| GET | `/graphs?owner=` | `{ok:true,value:{generation,pending?,graph?}}`；含原文的 owner 图；缺失时 generation 为 0 |
+| POST | `/graphs?owner=` | `{}`；递增代次、置 pending、保留旧引用；返回代次 |
+| PUT | `/graphs?owner=` | `{generation,graph}`；仅当前且 pending 的代次可发布；返回布尔值 |
+| DELETE | `/graphs?owner=` | 释放引用并保留更新的无源码代次墓碑；返回代次 |
+| POST | `/graphs/import?owner=` | 旧缓存 `{generation,pending?,graph?}`；仅 Host 没有该记录时导入；返回布尔值 |
+| GET | `/sources?url=` | 精确 URL 最新已引用版本：`{content,contentDigest,downloadedAt}` 或 null |
+| GET | `/opening` | 固定惰性文本 `{generation,content}`；缺失 content 为 null |
+| PUT | `/opening` | `{content,onlyMissing?}`；核对登记 URL／摘要／大小，可要求只导入缺失的旧记录；返回布尔值 |
+| DELETE | `/opening` | 释放固定文本并保留代次墓碑 |
+
+源码以 UTF-8 文件保存于 `<storageDir>/rendering-cache/sources/`，由精确 URL 与 SHA-256 标识；`index.json` 保存代次与引用。发布检查整个环境的 512 份源码／64 MiB 物理预算（包含固定开场数据）、每份 8 MiB、4096 个 owner 记录、每图 2 MiB 元数据和整个索引 16 MiB 元数据。先原子写入新源码，再发布索引，最后回收失去引用的旧文件；读取核对文件大小与摘要。同一 Host 的并发请求通过代次 CAS 防止陈旧发布；快照是读取结果，不是执行租约。浏览器下载仍使用 CORS、无凭据与禁重定向。旧浏览器缓存迁移保留原件，失败可重试，不覆盖 Host 记录或墓碑。卡片不能访问这些存储接口；执行绑定与脚本选择仍独立管理。
