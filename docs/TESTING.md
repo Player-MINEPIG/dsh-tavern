@@ -19,7 +19,7 @@ Tavern 3.0.0 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/dee
 
 Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.0-rc.2` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
-在仓库根目录安装依赖后运行以下命令，定义以 [package.json](../package.json) 为准。
+在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖显式包含 Assembler 测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.0-rc.2`；插件运行时由目标 DSH 提供该 peer。
 
 | 改动范围 | 检查 |
 | --- | --- |

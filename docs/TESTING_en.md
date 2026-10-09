@@ -19,7 +19,7 @@ Frontend, backend and operation logs must be verified together. Run the presenta
 
 Standalone Tavern tests require Node.js `>=20`; the target DSH `0.2.0-rc.2` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
 
-After installing dependencies, run these commands from the repository root. [package.json](../package.json) is the command definition source.
+Run `npm ci --legacy-peer-deps` at the repository root to install locked dependencies, then run these commands. [package.json](../package.json) is the command definition source. Development dependencies explicitly include official `@deepseek-ai/dsh-llm` `0.2.0-rc.2` for Assembler tests; the target DSH supplies that peer at plugin runtime.
 
 | Change scope | Check |
 | --- | --- |
