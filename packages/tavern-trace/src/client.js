@@ -30,6 +30,7 @@ ${mvuStyles}
 .dttrace-content{border-top:1px solid var(--dsw-alias-border-l1);padding:11px 12px 16px;display:flex;flex-direction:column;gap:10px}.dttrace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.dttrace-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;min-width:0}.dttrace-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary)}.dttrace-value{font-size:13px;font-weight:620;margin-top:3px;overflow-wrap:anywhere}.dttrace-meta{font-size:12px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin-top:3px;overflow-wrap:anywhere}
 .dttrace-section{display:flex;flex-direction:column;gap:6px}.dttrace-section-title{font-size:14px;font-weight:670}.dttrace-book>summary{overflow-wrap:anywhere}.dttrace-book{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dttrace-decision{display:grid;grid-template-columns:76px minmax(110px,.7fr) minmax(160px,1.5fr);gap:7px;padding:6px 0;border-top:1px solid var(--dsw-alias-border-l1);font-size:12px;line-height:1.45}.dttrace-decision:first-of-type{border-top:0}.dttrace-decision-state{font-weight:650}.dttrace-decision[data-included=true] .dttrace-decision-state{color:var(--dsw-alias-state-success,#2fa36b)}.dttrace-keywords{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}.dttrace-list{margin:0;padding-left:18px;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary)}
 .dttrace-disclosure{border-top:1px solid var(--dsw-alias-border-l1);padding-top:10px;margin-top:4px}.dttrace-disclosure>summary{cursor:pointer;font-size:14px;font-weight:650}.dttrace-disclosure-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.dttrace-card .dttrace-label{text-transform:none;letter-spacing:0}
+.dttrace-messages{display:flex;flex-direction:column;gap:8px}.dttrace-message{border-left:4px solid #8192ad}.dttrace-message[data-role=user]{border-left-color:#6495ed}.dttrace-message[data-role=assistant]{border-left-color:#9472c3}.dttrace-message[data-role=tool]{border-left-color:#3d9c80}.dttrace-message>summary{cursor:pointer;font-weight:620}.dttrace-message-sources{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:400;color:var(--dsw-alias-label-secondary);margin-top:4px}.dttrace-message[open]>summary{margin-bottom:8px}
 @media(max-width:760px){.dttrace-grid{grid-template-columns:1fr}.dttrace-decision{grid-template-columns:70px 1fr}.dttrace-keywords{grid-column:1/-1}}
 `
 
@@ -277,11 +278,22 @@ function requestNodes(nodes) {
 function RecordedRequest({ result }) {
   return h('div', { className: 'dttrace-section', 'data-trace-request': result ? 'available' : 'unavailable' },
     h('p', { className: 'dttrace-note' }, uiMessage(result ? 'trace.assembler.recorded' : 'trace.assembler.unavailable')),
-    result ? h('details', null, h('summary', null, uiMessage('trace.assembler.messages', { count: result.messages.length })),
-      ...result.messages.map((message, index) => h('div', { className: 'dttrace-book', key: index },
-        h('div', null, rawText(`${index + 1} · ${message.role}`)),
-        h('pre', { style: preStyle }, rawText((message.content ?? []).map(block => block.type === 'text' ? block.text : JSON.stringify(block)).join('\n'))),
-      ))) : null,
+    result ? h('div', { className: 'dttrace-messages' },
+      h('div', { className: 'dttrace-section-title' }, uiMessage('trace.assembler.messages', { count: result.messages.length })),
+      ...result.messages.map((message, index) => {
+        // Only explicit recorded coordinates associate a source with a message.
+        // Core metadata without these coordinates remains in the source disclosure.
+        const sources = result.nodes.filter(node => node.reference?.messageId === message.id
+          && message.id !== undefined || node.messageIndex === index
+          || message.id !== undefined && node.messages?.some(item => item.id === message.id))
+        return h('details', { className: 'dttrace-book dttrace-message', key: index, 'data-role': message.role, 'data-message-index': index },
+          h('summary', null, rawText(`${index + 1} · ${message.role}`),
+            sources.length ? h('span', { className: 'dttrace-message-sources' },
+              ...sources.map((node, i) => h('span', { key: i }, requestNodeTitle(node, result.nodes.indexOf(node)),
+                sourceStatusLabels[node.sourceStatus] ? h('span', { className: 'dttrace-note' }, ' · ', uiMessage(sourceStatusLabels[node.sourceStatus])) : null))) : null),
+          h('pre', { style: preStyle }, rawText((message.content ?? []).map(block => block.type === 'text' ? block.text : JSON.stringify(block)).join('\n'))),
+        )
+      })) : null,
     result ? h('details', null, h('summary', null, uiMessage('trace.assembler.sources')), ...requestNodes(result.nodes)) : null,
     result?.historyPolicy ? h('details', null, h('summary', null, uiMessage('trace.assembler.historyPolicy')),
       h('pre', { style: preStyle }, rawText(JSON.stringify(result.historyPolicy, null, 2)))) : null,

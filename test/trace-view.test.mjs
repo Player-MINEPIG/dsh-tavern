@@ -222,3 +222,32 @@ test('world-book evidence accepts current Assembler ownership without weakening 
   value.requestAssembly.metadata.owner = 'unrelated'
   assert.ok(!text(body(value)).includes('策略跳过'))
 })
+
+test('expanding assembly exposes every message card in request order without a second list disclosure', () => {
+  const messages = [
+    { id: 's', role: 'system', content: [{ type: 'text', text: 'SYSTEM' }] },
+    { id: 'u', role: 'user', content: [{ type: 'text', text: 'USER' }] },
+    { id: 'a', role: 'assistant', content: [{ type: 'tool-call', id: 'call', name: 'probe', arguments: '{}' }] },
+    { id: 't', role: 'tool', content: [{ type: 'text', text: 'TOOL RESULT' }] },
+  ]
+  const value = { nativeRequest: { messages }, nativeProvenance: { nodes: [
+    { id: 'preset', name: 'Saved readable name', role: 'system', sourceStatus: 'recorded', reference: { messageId: 's' }, text: 'SYSTEM' },
+    { id: 'unmapped', name: 'Unmapped source', role: 'user', text: 'USER' },
+  ], diagnostics: [] } }
+  const find = (node, predicate) => Array.isArray(node) ? node.flatMap(n => find(n, predicate))
+    : !node || typeof node !== 'object' ? [] : [...predicate(node) ? [node] : [], ...find(node.children, predicate)]
+  const result = body(value)
+  const cards = find(result, node => node.props['data-message-index'] !== undefined)
+  assert.equal(cards.length, 4)
+  assert.deepEqual(cards.map(card => card.props['data-role']), ['system', 'user', 'assistant', 'tool'])
+  assert.deepEqual(cards.map(card => text(card.children[0]).split(' ').slice(0,3).join(' ')), ['1 · system', '2 · user', '3 · assistant', '4 · tool'])
+  assert.ok(text(cards[0], true).includes('Saved readable name'))
+  assert.ok(!text(cards[1], true).includes('Unmapped source'), 'matching body text does not establish source coordinates')
+  assert.ok(text(cards[2]).includes('tool-call')); assert.ok(text(cards[2]).includes('probe'))
+  assert.ok(text(cards[3]).includes('TOOL RESULT'))
+  const list = find(result, node => node.props.className === 'dttrace-messages')[0]
+  const overview = text(list, true)
+  for (const role of ['system','user','assistant','tool']) assert.ok(overview.includes(role), role)
+  assert.ok(!overview.includes('TOOL RESULT'), 'individual bodies remain expandable')
+  assert.ok(!find(result, node => node.type === 'details').some(node => text(node.children[0]).includes('发送时的完整消息顺序')))
+})
