@@ -14,6 +14,6 @@
 
 装配结果中的错误会保留到重新校验成功；修改或保存配置不代表校验通过。界面在应用当前策略或恢复默认策略前，使用当前会话/开场草稿重新预览，失败则不应用。校验不包含未发送输入，未来资源变化仍由实际请求重新校验。
 
-集成方需将 assembler 依赖更新到包含这些 API 的版本，并统一生成 package/lockfile 与客户端 bundle。历史筛选由独立历史策略模块负责。验证：`node --test test/resource-layout-*.test.mjs`；完整接口、类型与 stock/core Host 验证见 assembler 的 `docs/RESOURCE_LAYOUT.md` 和英文对应文档。
+集成方需将 assembler 依赖更新到包含这些 API 的版本，并统一生成 package/lockfile 与客户端 bundle。历史筛选由独立历史策略引擎执行；规则与资源装配同属一份策略预设，保存与应用分离。验证：`node --test test/resource-layout-*.test.mjs`；完整接口、类型与 stock/core Host 验证见 assembler 的 `docs/RESOURCE_LAYOUT.md` 和英文对应文档。
 
 排序按保存的列表逐轮执行；前一轮已定位的资源不再由后续策略移动。结果中的 `sortingStages` 记录每轮定位的节点。资源卡片在加载具体资源前展示来源声明的稳定性；结果卡片直接说明已有原生消息、系统更新、上下文/步骤前注入、仅本次请求和单独留存的装配快照是否进入原生历史。两个列表均只通过拖拽调整顺序，不提供上移下移按钮。

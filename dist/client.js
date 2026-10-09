@@ -6717,16 +6717,76 @@ var require_acorn_jsx = __commonJS({
   }
 });
 
+// node_modules/dsh-prompt-assembler/src/history/schema.js
+function normalizeHistoryPolicy(input = DEFAULT_HISTORY_POLICY) {
+  keys(input, ["version", "enabled", "sources", "contentTypes", "fragments"]);
+  if (input.version !== 1 || typeof input.enabled !== "boolean") bad("Expected policy version 1 and enabled boolean");
+  if (!Array.isArray(input.sources) || input.sources.length > 100 || !Array.isArray(input.fragments) || input.fragments.length > 100) bad("Too many or invalid rules");
+  const sources = input.sources.map((rule) => {
+    keys(rule, ["kind", "include"]);
+    if (typeof rule.kind !== "string" || !/^[\w.:/-]{1,160}$/.test(rule.kind) || typeof rule.include !== "boolean") bad("Invalid source selector");
+    return { ...rule };
+  });
+  if (new Set(sources.map((s) => s.kind)).size !== sources.length) bad("Duplicate source selector");
+  keys(input.contentTypes, ["text", "image", "reasoning"]);
+  if (["text", "image", "reasoning"].some((k) => typeof input.contentTypes[k] !== "boolean")) bad("Content type controls must be boolean");
+  const fragments = input.fragments.map((rule) => {
+    keys(rule, ["id", "sourceKind", "start", "end", "mode", "enabled"]);
+    if (typeof rule.id !== "string" || !/^[\w.-]{1,80}$/.test(rule.id) || typeof rule.sourceKind !== "string" || !/^[\w.:/-]{1,160}$/.test(rule.sourceKind)) bad("Invalid fragment identity/source");
+    if ([rule.start, rule.end].some((v2) => typeof v2 !== "string" || !v2.trim() || v2.length > 256 || /[\r\n]/.test(v2)) || rule.start === rule.end) bad("Use distinct nonempty single-line delimiters");
+    if (!["lines", "literal"].includes(rule.mode) || typeof rule.enabled !== "boolean") bad("Invalid fragment mode");
+    return { ...rule };
+  });
+  if (new Set(fragments.map((r) => r.id)).size !== fragments.length) bad("Duplicate fragment rule id");
+  return { version: 1, enabled: input.enabled, sources, contentTypes: { ...input.contentTypes }, fragments };
+}
+var DEFAULT_HISTORY_POLICY, bad, keys;
+var init_schema = __esm({
+  "node_modules/dsh-prompt-assembler/src/history/schema.js"() {
+    DEFAULT_HISTORY_POLICY = Object.freeze({
+      version: 1,
+      enabled: false,
+      sources: [
+        { kind: "dsh-prompt-assembler", include: false },
+        { kind: "runtime-context", include: false },
+        { kind: "ptc-mode", include: false },
+        { kind: "tool", include: false }
+      ],
+      contentTypes: { text: true, image: true, reasoning: false },
+      fragments: []
+    });
+    bad = (message) => {
+      throw Object.assign(new TypeError(message), { status: 400, code: "HISTORY_POLICY_INVALID" });
+    };
+    keys = (value, allowed) => {
+      if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((k) => !allowed.includes(k))) bad("Unknown history policy field");
+    };
+  }
+});
+
 // node_modules/dsh-prompt-assembler/src/history-client.js
 function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-assembler/api/v1/history-policy", request: request2 = fetch, fragmentPresets = [], onDirtyChange = () => {
 }, onSaved = () => {
+}, value, backend, onChange, onInvalid = () => {
+}, onReady = () => {
 } }) {
   const doc = container.ownerDocument, abort = new AbortController();
+  const embedded = typeof onChange === "function";
+  let loaded = false;
   let revision = 0, policy, disposed = false, standard = false, dirty = false, editGeneration = 0;
-  const setDirty = (value) => {
-    if (value) editGeneration++;
-    dirty = value;
-    onDirtyChange(value);
+  const setDirty = (value2) => {
+    if (value2) editGeneration++;
+    dirty = value2;
+    onDirtyChange(value2);
+    if (value2 && embedded && loaded) {
+      try {
+        onChange(normalizeHistoryPolicy(draft()));
+        onInvalid("");
+      } catch (error) {
+        onInvalid(error.message);
+        status.textContent = `\u89C4\u5219\u65E0\u6548\uFF1A${error.message}\u3002\u8BF7\u68C0\u67E5\u7247\u6BB5 JSON \u6216\u6765\u6E90\u540D\u79F0\u540E\u518D\u4FDD\u5B58\u3002`;
+      }
+    }
   };
   const el = (tag, text3, parent = container) => {
     const node = doc.createElement(tag);
@@ -6736,9 +6796,13 @@ function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-ass
   };
   const panel = el("section");
   panel.className = "history-policy-panel";
+  panel.dataset.view = "rules";
+  const tabs = embedded ? el("div", "", panel) : null;
+  if (tabs) tabs.className = "dta-tabs";
   panel.addEventListener("input", () => setDirty(true));
   panel.addEventListener("change", () => setDirty(true));
   const title = el("h2", "\u6A21\u578B\u5386\u53F2\u7B5B\u9009", panel);
+  title.hidden = embedded;
   const explanation2 = el("p", "\u4FDD\u7559\u539F\u59CB\u65E5\u5FD7\u548C\u5C55\u793A\u539F\u6587\u3002\u4FDD\u5B58\u540E\u4ECE\u4E0B\u4E00\u6B65\u8BF7\u6C42\u91CD\u65B0\u7B5B\u9009\u73B0\u5B58\u6709\u6548\u5386\u53F2\uFF0C\u540C\u4E00\u6B65\u91CD\u8BD5\u6CBF\u7528\u539F\u89C4\u5219\uFF1B\u5173\u95ED\u540E\u6062\u590D\u539F\u751F\u6709\u6548\u5386\u53F2\u3002\u5DF2\u88AB\u539F\u751F\u538B\u7F29\u7684\u5185\u5BB9\u4E0D\u4F1A\u590D\u539F\u3002", panel);
   const label = el("label", "", panel), enabled = el("input", "", label);
   enabled.type = "checkbox";
@@ -6763,6 +6827,7 @@ function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-ass
     el("span", ` ${name2} `, line);
   }
   const advanced = el("div", "", panel);
+  advanced.className = "history-advanced";
   advanced.append(content);
   el("h3", "\u52A9\u624B\u6B63\u6587\u7247\u6BB5\u6392\u9664\uFF08\u8FDB\u9636\u7248\uFF09", advanced);
   el("p", "\u4F7F\u7528\u7CBE\u786E\u8D77\u6B62\u6807\u8BB0\u3002lines \u4EC5\u5339\u914D\u72EC\u7ACB\u884C\u5E76\u8DF3\u8FC7\u4EE3\u7801\u56F4\u680F\uFF1Bliteral \u660E\u786E\u5141\u8BB8\u884C\u5185\u5339\u914D\u3002\u5D4C\u5957\u6216\u672A\u95ED\u5408\u6807\u8BB0\u4FDD\u7559\u5E76\u63D0\u793A\u3002\u89C4\u5219\u9ED8\u8BA4\u4E0D\u542F\u7528\u3002", advanced);
@@ -6782,13 +6847,23 @@ function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-ass
       }
     };
   }
-  const actions = el("div", "", panel), previewButton = el("button", "\u5339\u914D\u9884\u89C8", actions), saveButton = el("button", "\u4FDD\u5B58\u5386\u53F2\u89C4\u5219", actions);
+  const actions = tabs ?? el("div", "", panel);
+  const rulesButton = embedded ? el("button", "\u7B5B\u9009\u89C4\u5219", actions) : null;
+  const previewButton = el("button", "\u5339\u914D\u9884\u89C8", actions), saveButton = embedded ? null : el("button", "\u4FDD\u5B58\u5386\u53F2\u89C4\u5219", actions);
+  const show = (view) => {
+    panel.dataset.view = view;
+    rulesButton?.setAttribute("aria-pressed", String(view === "rules"));
+    previewButton.setAttribute("aria-pressed", String(view === "preview"));
+  };
+  if (rulesButton) rulesButton.onclick = () => show("rules");
+  show("rules");
   previewButton.disabled = true;
-  saveButton.disabled = true;
+  if (saveButton) saveButton.disabled = true;
   addSource.disabled = true;
   const status = el("p", "\u6B63\u5728\u8BFB\u53D6\u2026", panel);
   status.setAttribute("role", "status");
   const results = el("div", "", panel);
+  results.className = "history-results";
   results.setAttribute("aria-label", "\u5386\u53F2\u5339\u914D\u9884\u89C8");
   const reasonLabels2 = { SOURCE_EXCLUDED: "\u6309\u6765\u6E90\u6392\u9664\u65E7\u6D88\u606F", UNKNOWN_SOURCE_RETAINED: "\u672A\u77E5\u6765\u6E90\uFF1A\u4FDD\u7559\u539F\u6587", REASONING_REQUIRED_OR_UNVERIFIED: "\u6A21\u578B\u534F\u8BAE\u8981\u6C42\u4FDD\u7559\u601D\u8003\uFF0C\u6216\u5C1A\u672A\u9A8C\u8BC1\u80FD\u5B89\u5168\u7701\u7565", SOURCE_REQUIRED_REASONING_RETAINED: "\u6B64\u6D88\u606F\u542B\u5FC5\u9700\u601D\u8003\uFF0C\u4E0D\u80FD\u6574\u6761\u6392\u9664", CURRENT_OR_ASSEMBLED_CONTENT: "\u5F53\u524D\u6B65\u6216\u672C\u6B21\u88C5\u914D\u5185\u5BB9\uFF1A\u4FDD\u7559", PROTECTED_PROTOCOL_MESSAGE: "\u5DE5\u5177\u4E8B\u52A1\u3001\u7CFB\u7EDF\u6307\u4EE4\u6216 adapter replay \u6570\u636E\uFF1A\u4FDD\u7559", CURRENT_RUNTIME_CONTEXT: "\u5F53\u524D\u4ECD\u5728\u4F7F\u7528\u7684\u8FD0\u884C\u4E0A\u4E0B\u6587\uFF1A\u4FDD\u7559", AMBIGUOUS_FRAGMENT: "\u7247\u6BB5\u6807\u8BB0\u6709\u6B67\u4E49\uFF1A\u4FDD\u7559", UNCLOSED_FRAGMENT: "\u7247\u6BB5\u672A\u95ED\u5408\uFF1A\u4FDD\u7559", EMPTY_AFTER_FILTER: "\u7B5B\u9009\u540E\u65E0\u5269\u4F59\u5185\u5BB9" };
   const display = (message) => message.content.map((block) => block.type === "text" ? block.text : block.type === "reasoning" ? `\u3014\u601D\u8003\u3015
@@ -6813,7 +6888,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
   const draft = () => ({
     version: 1,
     enabled: enabled.checked,
-    sources: [...sourceRows.querySelectorAll("input")].map((input) => ({ kind: input.dataset.kind, include: input.checked })),
+    sources: [...sourceRows.querySelectorAll("input")].map((input) => ({ kind: input.dataset.kind, include: standard && ["user", "model"].includes(input.dataset.kind) ? policy.sources.find((r) => r.kind === input.dataset.kind)?.include ?? true : input.checked })),
     contentTypes: standard ? policy.contentTypes : Object.fromEntries(Object.entries(types2).map(([kind, input]) => [kind, input.checked])),
     fragments: standard ? policy.fragments : JSON.parse(fragments.value)
   });
@@ -6845,29 +6920,51 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     }
   }
   previewButton.onclick = () => action(previewButton, async () => {
-    const result = await call("/preview", "POST", { policy: draft() });
+    const result = await call("/preview", "POST", { policy: draft(), ...embedded ? { backend } : {} });
     if (disposed) return;
+    show("preview");
     results.replaceChildren();
     status.textContent = `\u9884\u89C8\uFF1A${standard ? result.operations.length : result.audit.decisions.filter((d2) => d2.action !== "keep").length} \u6761\u6D88\u606F\u6539\u53D8\uFF0C${result.audit.warnings.length} \u6761\u63D0\u793A\u3002${standard ? "\u9884\u89C8\u4E0B\u4E00\u6B65\u7684\u6E05\u7406\u4E0E\u6062\u590D\uFF1B\u672A\u5305\u542B\u4E0B\u4E00\u6B65\u65B0\u6CE8\u5165\uFF0C\u4ECD\u4FDD\u7559\u6700\u65B0\u8FD0\u884C\u4E0A\u4E0B\u6587\u3002" : "\u4EC5\u5305\u542B\u5DF2\u4FDD\u5B58\u7684\u539F\u751F\u6709\u6548\u5386\u53F2\uFF0C\u4E0D\u542B\u8F93\u5165\u6846\u8349\u7A3F\u3002"}`;
+    const legend = el("div", "", results);
+    legend.className = "history-diff-legend";
+    for (const [kind, label2] of [["remove", "\u2212 \u53BB\u9664"], ["keep", "= \u4FDD\u7559"], ["add", "+ \u65B0\u589E\uFF08\u6062\u590D\uFF09"]]) {
+      const badge = el("span", label2, legend);
+      badge.className = `history-diff-${kind}`;
+    }
     for (const row of result.preview) {
+      const kind = row.action === "exclude" ? "remove" : row.action === "restore" ? "add" : "keep";
       const item = el("details", "", results);
       item.open = row.action !== "keep";
-      el("summary", `${row.role} \xB7 ${row.sourceKind} \xB7 ${row.action} \xB7 seq ${row.seq ?? "\u672C\u6B65\u88C5\u914D"}`, item);
+      item.className = `history-result history-result-${kind}`;
+      const actionLabel = { exclude: "\u53BB\u9664", keep: "\u4FDD\u7559", edit: "\u90E8\u5206\u53BB\u9664", restore: "\u65B0\u589E\uFF08\u6062\u590D\uFF09" }[row.action] ?? row.action;
+      el("summary", `${row.role} \xB7 ${row.sourceKind} \xB7 ${actionLabel} \xB7 seq ${row.seq ?? "\u672C\u6B65\u88C5\u914D"}`, item);
       if (row.reasons.length) el("p", row.reasons.map((reason) => reasonLabels2[reason] ?? reason).join(" \xB7 "), item);
-      el("h4", "\u539F\u6587", item);
-      el("pre", display(row.original), item);
-      el("h4", "\u6709\u6548\u5185\u5BB9", item);
-      el("pre", row.effective ? display(row.effective) : "\u672C\u6B21\u8BF7\u6C42\u4E0D\u5305\u542B\u6B64\u6D88\u606F", item);
-      for (const block of row.blocks) {
-        if (block.action === "exclude") el("p", `\u6392\u9664\u5185\u5BB9\u7C7B\u578B\uFF1A${block.type}`, item);
-        for (const range of block.ranges ?? []) {
-          el("p", `\u5339\u914D\u89C4\u5219\uFF1A${range.ruleIds.join("\u3001")} \xB7 \u539F\u6587\u5B57\u7B26\u533A\u95F4 ${range.start}\u2013${range.end}`, item);
-          el("pre", row.original.content[block.index].text.slice(range.start, range.end), item);
+      const text3 = el("pre", "", item);
+      text3.className = "history-diff";
+      const segment = (value2, color) => {
+        if (!value2) return;
+        const span = el("span", value2, text3);
+        span.className = `history-diff-${color}`;
+      };
+      for (const [index, block] of row.original.content.entries()) {
+        if (index) text3.append(doc.createTextNode("\n\n"));
+        const change = row.blocks.find((b2) => b2.index === index);
+        const content2 = display({ content: [block] });
+        if (kind !== "keep" || change?.action === "exclude") {
+          segment(content2, kind === "add" ? "add" : "remove");
+          continue;
         }
+        let offset2 = 0;
+        for (const range of change?.ranges ?? []) {
+          segment(content2.slice(offset2, range.start), "keep");
+          segment(content2.slice(range.start, range.end), "remove");
+          offset2 = range.end;
+        }
+        segment(content2.slice(offset2), "keep");
       }
     }
   });
-  saveButton.onclick = () => action(saveButton, async () => {
+  if (saveButton) saveButton.onclick = () => action(saveButton, async () => {
     const savingGeneration = editGeneration;
     const result = await call("", "PUT", { policy: draft(), expectedRevision: revision });
     if (disposed) return;
@@ -6878,29 +6975,35 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     onSaved();
     status.textContent = `\u5DF2\u4FDD\u5B58\u7248\u672C ${revision}\u3002\u4ECE\u4E0B\u4E00\u6B65${standard ? "\u539F\u751F" : "\u8FDB\u9636"}\u8BF7\u6C42\u751F\u6548\uFF1B\u540C\u4E00\u6B65\u91CD\u8BD5\u548C\u8FC7\u53BB\u7684\u5BA1\u8BA1\u8BB0\u5F55\u4E0D\u53D8\u3002${dirty ? " \u4ECD\u6709\u4FDD\u5B58\u671F\u95F4\u7684\u65B0\u4FEE\u6539\u5F85\u4FDD\u5B58\u3002" : ""}`;
   });
-  const ready = call().then((result) => {
+  const ready = (value !== void 0 ? Promise.resolve({ policy: value, revision: 0 }) : sessionId ? call() : Promise.resolve({ policy: DEFAULT_HISTORY_POLICY, revision: 0 })).then((result) => {
     if (disposed) return;
-    standard = result.capabilities?.mode === "standard";
+    standard = embedded ? backend === "native" : result.capabilities?.mode === "standard";
     title.textContent = `\u6A21\u578B\u5386\u53F2\u7B5B\u9009 \xB7 ${standard ? "\u6807\u51C6\u7248" : "\u8FDB\u9636\u7248"}`;
     if (standard) {
       explanation2.textContent = "\u6309\u53EF\u9760\u6765\u6E90\u81EA\u52A8\u6E05\u7406\u5DF2\u6D88\u8D39\u7684\u63D2\u4EF6 user \u6CE8\u5165\u3002\u539F\u751F\u65E5\u5FD7\u4FDD\u7559\uFF1B\u4FDD\u5B58\u540E\u4ECE\u4E0B\u4E00\u6B65\u751F\u6548\uFF0C\u6539\u89C4\u5219\u6216\u5173\u95ED\u4F1A\u6062\u590D\u4ECD\u7531\u672C\u529F\u80FD\u9690\u85CF\u7684\u6D88\u606F\u3002\u538B\u7F29\u8986\u76D6\u7684\u5185\u5BB9\u4E0D\u4F1A\u590D\u539F\u3002\u5378\u8F7D\u4FDD\u7559\u5DF2\u5199\u5165\u7684\u6E05\u7406\u7ED3\u679C\uFF0C\u539F\u751F\u4F1A\u8BDD\u53EF\u7EE7\u7EED\uFF1B\u9700\u6062\u590D\u65F6\u8BF7\u5148\u5173\u95ED\u5E76\u8FD0\u884C\u4E00\u6B65\u3002";
       for (const input of advanced.querySelectorAll("input, textarea, button")) input.disabled = true;
       el("p", "\u6B63\u6587\u3001\u56FE\u7247\u3001\u601D\u8003\u548C MVU \u7247\u6BB5\u7B5B\u9009\u4EC5\u5728\u8FDB\u9636\u7248\u751F\u6548\uFF1B\u6807\u51C6\u7248\u5B8C\u6574\u4FDD\u7559\u52A9\u624B\u56DE\u590D\u3002", advanced);
     }
+    if (embedded) explanation2.textContent = "\u5386\u53F2\u7B5B\u9009\u4E0E\u8D44\u6E90\u88C5\u914D\u4E00\u8D77\u4FDD\u5B58\u5728\u7B56\u7565\u9884\u8BBE\u4E2D\u3002\u4E0A\u65B9\u300C\u4FDD\u5B58\u89C4\u5219\u300D\u53EA\u4FDD\u5B58\u9884\u8BBE\uFF1B\u300C\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u300D\u540E\u4ECE\u4E0B\u4E00\u6B65\u751F\u6548\u3002\u539F\u59CB\u65E5\u5FD7\u4E0E\u5C55\u793A\u539F\u6587\u4FDD\u7559\u3002";
     revision = result.revision;
-    policy = result.policy;
+    policy = normalizeHistoryPolicy(result.policy);
     enabled.checked = policy.enabled;
     for (const [kind, input] of Object.entries(types2)) input.checked = standard || policy.contentTypes[kind];
     fragments.value = JSON.stringify(policy.fragments, null, 2);
     renderSources();
-    previewButton.disabled = false;
-    saveButton.disabled = false;
+    loaded = true;
+    previewButton.disabled = !sessionId;
+    if (saveButton) saveButton.disabled = false;
     addSource.disabled = false;
-    status.textContent = `\u5DF2\u8BFB\u53D6\u7248\u672C ${revision}\u3002\u672A\u77E5\u6765\u6E90\u3001\u5DE5\u5177\u4E8B\u52A1\u548C adapter replay \u6570\u636E\u4FDD\u7559\u3002`;
+    onReady();
+    status.textContent = embedded ? `${standard ? "\u6807\u51C6\u7248\uFF1A\u6765\u6E90\u6E05\u7406\uFF1B\u52A9\u624B\u6B63\u6587\u5B8C\u6574\u4FDD\u7559\u3002" : "\u8FDB\u9636\u7248\uFF1A\u53EF\u7B5B\u9009\u6765\u6E90\u3001\u5185\u5BB9\u7C7B\u578B\u4E0E\u6B63\u6587\u7247\u6BB5\u3002"}${sessionId ? "\u5339\u914D\u9884\u89C8\u4E0D\u4FEE\u6539\u4F1A\u8BDD\u3002" : "\u5C1A\u65E0\u4F1A\u8BDD\u5386\u53F2\uFF0C\u53EF\u5148\u7F16\u8F91\u548C\u4FDD\u5B58\uFF1B\u521B\u5EFA\u4F1A\u8BDD\u540E\u518D\u9884\u89C8\u3002"}${value === void 0 && sessionId ? "\u6B64\u65E7\u9884\u8BBE\u5C1A\u65E0\u5386\u53F2\u8BBE\u7F6E\uFF0C\u5F53\u524D\u663E\u793A\u4F1A\u8BDD\u8BBE\u7F6E\uFF0C\u4FDD\u5B58\u9884\u8BBE\u65F6\u4F1A\u4E00\u5E76\u6536\u5F55\u3002" : ""}` : `\u5DF2\u8BFB\u53D6\u7248\u672C ${revision}\u3002\u672A\u77E5\u6765\u6E90\u3001\u5DE5\u5177\u4E8B\u52A1\u548C adapter replay \u6570\u636E\u4FDD\u7559\u3002`;
   }).catch((error) => {
     if (!disposed) status.textContent = error.message;
   });
-  return { ready, isDirty: () => dirty, dispose() {
+  return { ready, getPolicy() {
+    if (!loaded) throw new Error("\u5386\u53F2\u7B5B\u9009\u5C1A\u672A\u8BFB\u53D6\u6210\u529F\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u7B56\u7565\u9875\u540E\u518D\u4FDD\u5B58\u3002");
+    return normalizeHistoryPolicy(draft());
+  }, isDirty: () => dirty, dispose() {
     disposed = true;
     abort.abort();
     panel.remove();
@@ -6908,6 +7011,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
 }
 var init_history_client = __esm({
   "node_modules/dsh-prompt-assembler/src/history-client.js"() {
+    init_schema();
   }
 });
 
@@ -9634,9 +9738,9 @@ var require_dist = __commonJS({
           stack2.push(value2);
           var stepback = indent;
           indent = indent + gap;
-          var keys = propertyList || Object.keys(value2);
+          var keys2 = propertyList || Object.keys(value2);
           var partial = [];
-          for (var i4 = 0, list3 = keys; i4 < list3.length; i4 += 1) {
+          for (var i4 = 0, list3 = keys2; i4 < list3.length; i4 += 1) {
             var key3 = list3[i4];
             var propertyString = serializeProperty(key3, value2);
             if (propertyString !== void 0) {
@@ -16072,9 +16176,9 @@ function applyMvuSchema(value, definition) {
       if (!value2 || typeof value2 !== "object" || Array.isArray(value2)) fail("MVU_SCHEMA", "Expected object");
       const result = node.passthrough ? data2(value2) : {};
       if (node.kind === "record") {
-        const keys = node.key.kind === "enum" ? node.key.values : Object.keys(value2);
-        if (node.key.kind === "enum" && Object.keys(value2).some((key2) => !keys.includes(key2))) fail("MVU_SCHEMA", "Unknown record key");
-        for (const key2 of keys) {
+        const keys2 = node.key.kind === "enum" ? node.key.values : Object.keys(value2);
+        if (node.key.kind === "enum" && Object.keys(value2).some((key2) => !keys2.includes(key2))) fail("MVU_SCHEMA", "Unknown record key");
+        for (const key2 of keys2) {
           const parsedKey = apply5(key2, node.key, depth + 1);
           result[safeKey(parsedKey)] = apply5(value2[key2], node.item, depth + 1);
         }
@@ -17102,9 +17206,9 @@ function dependencyStore(indexedDB = globalThis.indexedDB) {
   function replace(transaction, owner, saved, record, sources, state, done = () => {
   }) {
     const graphs = transaction.objectStore("graphs"), bytes = transaction.objectStore("sources"), old = references(saved.graph), next = references(record.graph);
-    const keys = /* @__PURE__ */ new Set([...old, ...next]);
-    let remaining = keys.size;
-    for (const key2 of keys) {
+    const keys2 = /* @__PURE__ */ new Set([...old, ...next]);
+    let remaining = keys2.size;
+    for (const key2 of keys2) {
       const request2 = bytes.get(key2);
       request2.onsuccess = () => {
         try {
@@ -23399,38 +23503,59 @@ function AssemblyError({ message, locale = 0, context, ...attributes }) {
 var import_react8 = require("react");
 init_history_client();
 var EMPTY_PRESETS = [];
-function HistoryPanel({ sessionId, backend, fetcher, root, fragmentPresets = EMPTY_PRESETS, onDirtyChange, locale = 0 }) {
+function HistoryPanel({ sessionId, presetId, value, backend, fetcher, root, editorRef, fragmentPresets = EMPTY_PRESETS, onChange, onInvalid, onDirtyChange, locale = 0 }) {
   const container = (0, import_react8.useRef)(null);
-  const callbacks = (0, import_react8.useRef)({ onDirtyChange });
-  callbacks.current = { onDirtyChange };
+  const callbacks = (0, import_react8.useRef)({ onChange, onInvalid, onDirtyChange });
+  callbacks.current = { onChange, onInvalid, onDirtyChange };
   const presets = JSON.stringify(fragmentPresets);
   (0, import_react8.useEffect)(() => {
     let active = true;
-    callbacks.current.onDirtyChange?.(false);
     const editor = mountHistoryPolicyPanel(container.current, {
       sessionId,
       root,
       request: fetcher,
+      value,
+      backend,
       fragmentPresets: JSON.parse(presets),
+      onChange: (policy) => {
+        if (active) callbacks.current.onChange?.(policy);
+      },
+      onInvalid: (error) => {
+        if (active) callbacks.current.onInvalid?.(error);
+      },
       onDirtyChange: (dirty) => {
         if (active) callbacks.current.onDirtyChange?.(dirty);
       }
     });
+    editorRef.current = editor;
     return () => {
       active = false;
+      if (editorRef.current === editor) editorRef.current = null;
       editor.dispose();
     };
-  }, [sessionId, backend, fetcher, root, presets]);
+  }, [sessionId, presetId, backend, fetcher, root, presets]);
   return (0, import_react8.createElement)(
     "details",
-    { className: "dta-history-section" },
-    (0, import_react8.createElement)("summary", null, locale === 0 ? "\u6A21\u578B\u5386\u53F2\u7B5B\u9009" : "Model history filtering"),
+    { className: "dta-editor-section dta-history-section", open: true },
+    (0, import_react8.createElement)("summary", null, locale === 0 ? "\u5386\u53F2\u7B5B\u9009\u89C4\u5219\u4E0E\u9884\u89C8" : "History filtering rules and preview"),
     (0, import_react8.createElement)("div", { ref: container, className: "dta-history-editor" })
   );
 }
 var historyPanelCss = `
-.dta-history-section{margin-top:24px;border-top:1px solid var(--dta-border);padding-top:20px}
-.dta-history-section>summary{cursor:pointer;font-size:15px;font-weight:600;padding:4px 0;overflow-wrap:anywhere}
+.dta-editor-section{margin:24px 0;border:1px solid var(--dta-border);border-radius:12px;overflow:hidden;min-width:0}
+.dta-editor-section>summary{padding:16px 20px;background:light-dark(#edf3ff,#182a44);color:light-dark(#2458a5,#9fc4ff);font-size:17px;font-weight:650;cursor:pointer}
+.dta-editor-section>div{padding:20px;min-width:0}
+.dta-history-section>div{padding-top:0}
+.history-policy-panel[data-view=preview]>label,.history-policy-panel[data-view=preview]>fieldset,.history-policy-panel[data-view=preview]>.history-advanced{display:none}
+.history-policy-panel[data-view=rules]>.history-results{display:none}
+.history-diff-legend{display:flex;flex-wrap:wrap;gap:12px}.history-diff-legend>span{padding:6px 10px;border-radius:6px}
+.history-policy-panel .history-diff{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;line-height:1.8;background:transparent}
+.history-diff-remove{background:light-dark(#ffe0e3,#542c34);color:light-dark(#8c2431,#ffc5cd)}
+.history-diff-keep{background:light-dark(#e1edff,#223a58);color:light-dark(#214c83,#c5ddff)}
+.history-diff-add{background:light-dark(#daf4e3,#234634);color:light-dark(#1b6139,#bde9cd)}
+.history-diff span{box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.history-result-remove{border-left:4px solid #d8586b!important}.history-result-keep{border-left:4px solid #5687db!important}.history-result-add{border-left:4px solid #4a9a69!important}
+.dta-history-section>summary{overflow-wrap:anywhere}
 .dta-history-editor{min-width:0}.history-policy-panel{display:grid;gap:16px;padding-top:16px;min-width:0}
 .history-policy-panel h2,.history-policy-panel h3,.history-policy-panel h4,.history-policy-panel p{margin:0}
 .history-policy-panel h2{font-size:17px}.history-policy-panel h3{font-size:15px}.history-policy-panel h4{font-size:14px}
@@ -23533,8 +23658,8 @@ function positionRows(preset, sources) {
     const row = known.get(positionKey(p.sourceId, p.positionId));
     return row ? { ...row, ...p, enabled: row.enabled && p.enabled } : { ...p, key: positionKey(p.sourceId, p.positionId), missing: true, source: { id: p.sourceId, name: p.sourceId }, position: { id: p.positionId, name: [p.positionId, p.positionId] } };
   });
-  const keys = new Set(configured.map((r) => r.key));
-  return [...configured, ...rows.filter((r) => !keys.has(r.key))];
+  const keys2 = new Set(configured.map((r) => r.key));
+  return [...configured, ...rows.filter((r) => !keys2.has(r.key))];
 }
 function configurePosition(preset, sources, key2, patch, beforeKey, displayOrder) {
   const rows = positionRows(preset, sources);
@@ -23764,6 +23889,7 @@ function PositionDecisions({ preview, sources, locale = 0, sourceName = (id) => 
 var import_react11 = require("react");
 
 // node_modules/dsh-prompt-assembler/src/model.js
+init_schema();
 var FORMAT = "dsh-tavern-request-assembly";
 var MODULES = Object.freeze(["native-system", "history", "input", "dsh.text"]);
 var DEFAULT_RULES = Object.freeze(["native-system", "history", "input"].map((kind) => ({ id: kind, kind, enabled: true })));
@@ -23788,7 +23914,7 @@ function normalizePreset(value) {
     if (rule.inputMode !== void 0 && !["source", "text"].includes(rule.inputMode)) throw new TypeError("Invalid rule inputMode");
     return { ...rule.delivery ? { delivery: rule.delivery } : {}, ...rule.inputMode === "text" ? { inputMode: "text" } : {}, id: rule.id, kind: rule.kind, enabled: rule.enabled !== false, role: role2, lifetime, depth: rule.depth ?? null, text: rule.text ?? "", name: typeof rule.name === "string" ? rule.name.slice(0, 200) : "" };
   });
-  return { ...value.backend ? { backend: value.backend } : {}, format: FORMAT, version: 1, name: value.name.trim(), placement: layoutPlacement({ ...value, layout, placement: ["st", "native-roles", "native-slots"].includes(value.placement) ? value.placement : "modules" }), ...layout ? { layout } : {}, rules };
+  return { ...value.historyPolicy !== void 0 ? { historyPolicy: normalizeHistoryPolicy(value.historyPolicy) } : {}, ...value.backend ? { backend: value.backend } : {}, format: FORMAT, version: 1, name: value.name.trim(), placement: layoutPlacement({ ...value, layout, placement: ["st", "native-roles", "native-slots"].includes(value.placement) ? value.placement : "modules" }), ...layout ? { layout } : {}, rules };
 }
 var BUILTINS = Object.freeze([{ id: "builtin-native", ...normalizePreset({ format: FORMAT, version: 1, name: "DSH \u539F\u751F / DSH native", backend: "native", rules: DEFAULT_RULES }) }]);
 
@@ -24090,9 +24216,16 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     if (confirmation) dialog.current?.querySelector(".dta-confirm button")?.focus();
   }, [confirmation]);
   const [sources, setSources] = (0, import_react11.useState)([]), [addParser, setAddParser] = (0, import_react11.useState)("custom"), [addKind, setAddKind] = (0, import_react11.useState)(""), [defaultId3, setDefaultId] = (0, import_react11.useState)(BUILTINS[0].id);
-  const [items2, setItems] = (0, import_react11.useState)([]), [draft, setDraft] = (0, import_react11.useState)(null), [selection, setSelection] = (0, import_react11.useState)(null), [capable, setCapable] = (0, import_react11.useState)(false), [capabilities, setCapabilities] = (0, import_react11.useState)(null);
+  const [items2, setItems] = (0, import_react11.useState)([]), [draft, setDraftState] = (0, import_react11.useState)(null), [selection, setSelection] = (0, import_react11.useState)(null), [capable, setCapable] = (0, import_react11.useState)(false), [capabilities, setCapabilities] = (0, import_react11.useState)(null);
   const [status, setStatus] = (0, import_react11.useState)(""), [error, setError] = (0, import_react11.useState)(false), [busy2, setBusy] = (0, import_react11.useState)(false), [tab, setTab] = (0, import_react11.useState)("rules"), [preview, setPreview] = (0, import_react11.useState)(null), [dirty, setDirty] = (0, import_react11.useState)(false), [expanded, setExpanded] = (0, import_react11.useState)({});
   const [historyDirty, setHistoryDirty] = (0, import_react11.useState)(false);
+  const historyEditor = (0, import_react11.useRef)(null);
+  const [historyEpoch, setHistoryEpoch] = (0, import_react11.useState)(0);
+  const setDraft = (value) => {
+    setDraftState(value);
+    setHistoryEpoch((n) => n + 1);
+    setHistoryDirty(false);
+  };
   const [validationFailure, setValidationFailure] = (0, import_react11.useState)(null);
   const appliedBackend = selection?.backend ?? "native";
   const file = (0, import_react11.useRef)(), stage = (0, import_react11.useRef)(), dialog = (0, import_react11.useRef)(), generation = (0, import_react11.useRef)(0), mounted = (0, import_react11.useRef)(true);
@@ -24196,13 +24329,13 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       active = false;
     };
   }, [chromeMode, sessionId, selectionTarget]);
-  const discard = () => !busy2 && (!dirty || confirm(t("discard")));
+  const discard = () => !busy2 && (!(dirty || historyDirty) || confirm(t("discard")));
   const leave = () => !busy2 && (!(dirty || historyDirty) || confirm(t("discard")));
-  const changeHistoryBackend = (backend) => backend === appliedBackend || !historyDirty || confirm(t("discard"));
+  const changeHistoryBackend = () => !historyDirty || confirm(t("discard"));
   (0, import_react11.useEffect)(() => registerBeforeLeave?.(leave), [dirty, historyDirty, busy2, registerBeforeLeave]);
   const edit = (patch) => {
     if (busy2) return;
-    setDraft((d2) => ({ ...d2, ...patch }));
+    setDraftState((d2) => ({ ...d2, ...patch }));
     setDirty(true);
     setPreview(null);
   };
@@ -24227,18 +24360,20 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   const controlRows = (rules) => contextControlRows(rules, sources.map((s) => s.id));
   const editRule = (id, patch) => edit({ rules: controlRows(draft.rules).map((r) => r.id === id ? { ...editableRule(r), ...patch } : r) });
   const toggle = (id) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
+  const presetForSave = () => ({ ...editablePreset(draft), historyPolicy: historyEditor.current?.getPolicy() ?? draft.historyPolicy });
   async function save(asCopy = false) {
     const creates = asCopy || draft.builtin || !draft.id;
-    const data3 = await api2(creates ? "" : `/${encodeURIComponent(draft.id)}`, creates ? "POST" : "PUT", editablePreset(draft));
+    const data3 = await api2(creates ? "" : `/${encodeURIComponent(draft.id)}`, creates ? "POST" : "PUT", presetForSave());
     setDraft(data3.preset);
     setItems((list2) => [...list2.filter((p) => p.id !== data3.preset.id), data3.preset]);
     setDirty(false);
+    setHistoryDirty(false);
     setStatus(t("saved"));
     window.dispatchEvent(new window.Event(refreshEvent));
     return data3.preset;
   }
   function download() {
-    const blob = new Blob([JSON.stringify({ ...editablePreset(draft), id: void 0, builtin: void 0 }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ ...presetForSave(), id: void 0, builtin: void 0 }, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${draft.name.replace(/[\\/:*?"<>|]/g, "_")}.json`;
@@ -24382,11 +24517,17 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       (0, import_react11.createElement)(
         "div",
         { className: "dta-summary" },
-        (0, import_react11.createElement)("span", { "aria-hidden": true }, "\u{1F512}"),
+        (0, import_react11.createElement)("span", { title: t("contextControlled"), "aria-hidden": true }, "\u25C8"),
         (0, import_react11.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: busy2, "aria-label": sourceName(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
-        (0, import_react11.createElement)("span", { className: "dta-name" }, sourceName(rule.kind), (0, import_react11.createElement)("small", { className: "dta-origin" }, t("contextControlled")))
+        (0, import_react11.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, "aria-expanded": !!expanded[rule.id], onClick: () => toggle(rule.id), onKeyDown: (e) => {
+          if (["Enter", " "].includes(e.key)) {
+            e.preventDefault();
+            toggle(rule.id);
+          }
+        } }, sourceName(rule.kind), (0, import_react11.createElement)("small", { className: "dta-origin" }, originName("DSH"))),
+        summaryMetadata("assembly", "nativeRetention", "preserve")
       ),
-      (0, import_react11.createElement)("div", { className: "dta-detail" }, (0, import_react11.createElement)("small", null, t(rule.kind === "dsh.runtime-context" ? "contextMasterHint" : "contextControlHint")))
+      expanded[rule.id] && (0, import_react11.createElement)("div", { className: "dta-detail" }, (0, import_react11.createElement)("small", null, t("contextControlled")), (0, import_react11.createElement)("small", null, t(rule.kind === "dsh.runtime-context" ? "contextMasterHint" : "contextControlHint")))
     );
     const roleLabel = draft.layout?.identity === "preserve" && rule.inputMode !== "text" && !["custom", "dsh.text", "native-system", "history", "input"].includes(rule.kind) ? "sourceIdentity" : adaptiveNative && rule.kind === "worldbook" && !slotMode ? "nativeWorldRole" : slotMode && controlFor(rule) === "preset" ? "nativeSlotRole" : adaptiveNative && rule.kind === "preset" ? "nativePresetRole" : null;
     const textInput = rule.inputMode === "text" || ["custom", "dsh.text"].includes(rule.kind);
@@ -24488,7 +24629,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           setDirty(false);
           setPreview(null);
         });
-      } }), button("import", () => file.current.click()), button("export", download, !draft), button("create", async () => {
+      } }), button("import", () => file.current.click()), button("export", () => run(download), !draft), button("create", async () => {
         if (await discard()) {
           setDraft({ ...structuredClone(items2.find((p) => p.id === defaultId3) ?? items2[0] ?? BUILTINS[0]), builtin: false, id: void 0, name: t("title") });
           setDirty(true);
@@ -24523,43 +24664,51 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           setDirty(false);
           setPreview(null);
         }), !draft.id || draft.builtin), dirty && (0, import_react11.createElement)("span", null, t("dirty"))),
-        (0, import_react11.createElement)("h3", { className: "dta-section-title" }, t("rulesSection")),
-        (0, import_react11.createElement)("p", { className: "dta-notice", "data-assembly-placement-tip": true }, t("placementTip")),
-        (0, import_react11.createElement)("label", { className: "dta-toolbar" }, t("backend"), (0, import_react11.createElement)("select", { "aria-label": t("backend"), value: draft.backend ?? "core", onChange: (e) => edit({ backend: e.target.value }) }, (0, import_react11.createElement)("option", { value: "native" }, t("backendNative")), (0, import_react11.createElement)("option", { value: "core" }, t("backendCore")))),
-        (0, import_react11.createElement)("div", { className: "dta-notice" }, draft.layout ? locale === 0 ? "\u62D6\u62FD\u5373\u81EA\u5B9A\u4E49\u4F4D\u7F6E\uFF1B\u5176\u4F59\u5185\u5BB9\u6309\u81EA\u52A8\u4F18\u5148\u7EA7\u5B9A\u4F4D\u3002\u5F53\u524D\u8D44\u6E90\u53EF\u786E\u5B9A\u7684\u4F4D\u7F6E\u4F1A\u540C\u6B65\u66F4\u65B0\uFF0C\u8EAB\u4EFD\u4E0E\u8FD0\u884C\u65F6\u7EA6\u675F\u59CB\u7EC8\u751F\u6548\u3002" : "Dragging sets a custom position; other content follows automatic priority. Definite positions update from current resources, within identity and runtime constraints." : t(adaptiveNative ? draft.placement === "native-slots" ? "nativeSlotsHint" : "nativeRolesHint" : nativeDraft ? "nativeHint" : "coreHint")),
-        nativeError && (0, import_react11.createElement)(AssemblyError, { message: nativeError, locale }),
-        (0, import_react11.createElement)("div", { className: "dta-tabs" }, (0, import_react11.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
-          const result = await validateCurrent();
-          setPreview(result);
-          if (slotMode) setSlotAnalysis({ draft, preview: result });
-          setTab("expanded");
-        }), Boolean(selectionTarget && (typeof selectionTarget.previewAssembly !== "function" || selectionTarget.editable === false)), void 0, tab === "expanded" && !preview?.actual)),
-        (0, import_react11.createElement)("div", { className: "dta-result-tools" }, button("actual", () => run(actualRequest), !sessionId)),
-        (0, import_react11.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react11.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
-        tab === "rules" ? (0, import_react11.createElement)("div", null, (0, import_react11.createElement)(ResourcePositionEditor, { preset: draft, sources, preview: analysis?.preview, resolving: !!draft.layout && !!(sessionId || selectionTarget) && !analysis, resolutionError: analysis?.error, locale, busy: busy2, sourceColor, originName, sourceName, onChange: editLayout }), (0, import_react11.createElement)(
-          "details",
-          { className: "dta-source-settings" },
-          (0, import_react11.createElement)("summary", null, locale === 0 ? "\u6765\u6E90\u3001\u6587\u672C\u4E0E\u6295\u9012\u8BBE\u7F6E" : "Source, text and delivery settings"),
-          !draft.layout && (0, import_react11.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, nativeDraft ? ["modules", "native-roles", "native-slots"] : ["modules", "st"], (placement) => edit({ placement }))),
-          draft.placement === "st" && (0, import_react11.createElement)("small", null, t("stHelp")),
-          ...displayRows.map(ruleRow),
-          modules.length > 0 && (0, import_react11.createElement)("div", { className: "dta-toolbar" }, (0, import_react11.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react11.createElement)("select", { id: "dta-add-source", value: modules.some((s) => s.id === addKind) ? addKind : modules[0].id, onChange: (e) => setAddKind(e.target.value) }, ...modules.map((s) => (0, import_react11.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => addRule(modules.some((s) => s.id === addKind) ? addKind : modules[0].id))),
-          parsers.length > 0 && (0, import_react11.createElement)("div", { className: "dta-toolbar" }, (0, import_react11.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react11.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react11.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
-          (0, import_react11.createElement)("small", null, t("sourceHelp"))
-        )) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : preview?.scope === "opening-draft" ? "draftPreviewScope" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react11.createElement)("p", null, t("empty")) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)(PositionDecisions, { preview, sources, locale, sourceName }), ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code) && !(preview.scope === "opening-draft" && d2.code === "ASSEMBLY_SYSTEM_ONLY")).map((d2) => (0, import_react11.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), preview.diagnostics.some((d2) => d2.code === "NATIVE_PLACEMENT_ADJUSTED") && (0, import_react11.createElement)("div", { className: "dta-notice" }, t("nativeOrderChanged")), ...preview.diagnostics.filter((d2) => ["NATIVE_ROLE_ADJUSTED", "NATIVE_DELIVERY_ADJUSTED", "NATIVE_SLOTS_ABSENT", "NATIVE_DEPTH_APPROXIMATED", "NATIVE_DEPTH_BOUNDARY", "WORLD_BOOK_SLOT_MISSING"].includes(d2.code)).map((d2, i3) => (0, import_react11.createElement)("div", { key: `native-adjustment:${i3}`, className: "dta-notice" }, d2.code === "NATIVE_SLOTS_ABSENT" ? t("nativeSlotsAbsent") : d2.code === "WORLD_BOOK_SLOT_MISSING" ? `${d2.name} \xB7 ${t("worldSlotMissing")}: ${d2.anchor}` : d2.code === "NATIVE_DEPTH_BOUNDARY" ? `${d2.name} \xB7 ${t("nativeDepthBoundary")}: ${d2.depth} \u2192 ${t(d2.placement)}` : d2.code === "NATIVE_DEPTH_APPROXIMATED" ? `${d2.name} \xB7 ${t("nativeDepthApproximated")} (${d2.depth})` : `${d2.name} \xB7 ${t(d2.code === "NATIVE_ROLE_ADJUSTED" ? "nativeRoleChanged" : "nativeDeliveryChanged")}: ${d2.from} \u2192 ${d2.to}`)), ...preview.nodes.map(nodeRow), preview.runtimeContextControls?.length > 0 && (0, import_react11.createElement)("div", { className: "dta-notice" }, (0, import_react11.createElement)("strong", null, t("contextPreview")), ...preview.runtimeContextControls.map((c) => (0, import_react11.createElement)("div", { key: c.name }, `${c.name} \xB7 ${t(c.enabled ? "contextIncluded" : "contextExcluded")}`))), (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, `${t(preview.backend === "native" && !preview.actual ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react11.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react11.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, t("diagnostics")), (0, import_react11.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
-        (0, import_react11.createElement)("small", { style: { marginTop: 20 } }, t("tools")),
+        (0, import_react11.createElement)("details", { className: "dta-editor-section dta-assembly-section", open: true }, (0, import_react11.createElement)("summary", null, t("rulesSection")), (0, import_react11.createElement)(
+          "div",
+          null,
+          (0, import_react11.createElement)("p", { className: "dta-notice", "data-assembly-placement-tip": true }, t("placementTip")),
+          (0, import_react11.createElement)("label", { className: "dta-toolbar" }, t("backend"), (0, import_react11.createElement)("select", { "aria-label": t("backend"), value: draft.backend ?? "core", onChange: (e) => edit({ backend: e.target.value }) }, (0, import_react11.createElement)("option", { value: "native" }, t("backendNative")), (0, import_react11.createElement)("option", { value: "core" }, t("backendCore")))),
+          (0, import_react11.createElement)("div", { className: "dta-notice" }, draft.layout ? locale === 0 ? "\u62D6\u62FD\u5373\u81EA\u5B9A\u4E49\u4F4D\u7F6E\uFF1B\u5176\u4F59\u5185\u5BB9\u6309\u81EA\u52A8\u4F18\u5148\u7EA7\u5B9A\u4F4D\u3002\u5F53\u524D\u8D44\u6E90\u53EF\u786E\u5B9A\u7684\u4F4D\u7F6E\u4F1A\u540C\u6B65\u66F4\u65B0\uFF0C\u8EAB\u4EFD\u4E0E\u8FD0\u884C\u65F6\u7EA6\u675F\u59CB\u7EC8\u751F\u6548\u3002" : "Dragging sets a custom position; other content follows automatic priority. Definite positions update from current resources, within identity and runtime constraints." : t(adaptiveNative ? draft.placement === "native-slots" ? "nativeSlotsHint" : "nativeRolesHint" : nativeDraft ? "nativeHint" : "coreHint")),
+          nativeError && (0, import_react11.createElement)(AssemblyError, { message: nativeError, locale }),
+          (0, import_react11.createElement)("div", { className: "dta-tabs" }, (0, import_react11.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
+            const result = await validateCurrent();
+            setPreview(result);
+            if (slotMode) setSlotAnalysis({ draft, preview: result });
+            setTab("expanded");
+          }), Boolean(selectionTarget && (typeof selectionTarget.previewAssembly !== "function" || selectionTarget.editable === false)), void 0, tab === "expanded" && !preview?.actual)),
+          (0, import_react11.createElement)("div", { className: "dta-result-tools" }, button("actual", () => run(actualRequest), !sessionId)),
+          (0, import_react11.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react11.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
+          tab === "rules" ? (0, import_react11.createElement)("div", null, (0, import_react11.createElement)(ResourcePositionEditor, { preset: draft, sources, preview: analysis?.preview, resolving: !!draft.layout && !!(sessionId || selectionTarget) && !analysis, resolutionError: analysis?.error, locale, busy: busy2, sourceColor, originName, sourceName, onChange: editLayout }), (0, import_react11.createElement)(
+            "details",
+            { className: "dta-source-settings" },
+            (0, import_react11.createElement)("summary", null, locale === 0 ? "\u6765\u6E90\u3001\u6587\u672C\u4E0E\u6295\u9012\u8BBE\u7F6E" : "Source, text and delivery settings"),
+            !draft.layout && (0, import_react11.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, nativeDraft ? ["modules", "native-roles", "native-slots"] : ["modules", "st"], (placement) => edit({ placement }))),
+            draft.placement === "st" && (0, import_react11.createElement)("small", null, t("stHelp")),
+            ...displayRows.map(ruleRow),
+            modules.length > 0 && (0, import_react11.createElement)("div", { className: "dta-toolbar" }, (0, import_react11.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react11.createElement)("select", { id: "dta-add-source", value: modules.some((s) => s.id === addKind) ? addKind : modules[0].id, onChange: (e) => setAddKind(e.target.value) }, ...modules.map((s) => (0, import_react11.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => addRule(modules.some((s) => s.id === addKind) ? addKind : modules[0].id))),
+            parsers.length > 0 && (0, import_react11.createElement)("div", { className: "dta-toolbar" }, (0, import_react11.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react11.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react11.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
+            (0, import_react11.createElement)("small", null, t("sourceHelp"))
+          )) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : preview?.scope === "opening-draft" ? "draftPreviewScope" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react11.createElement)("p", null, t("empty")) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)(PositionDecisions, { preview, sources, locale, sourceName }), ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code) && !(preview.scope === "opening-draft" && d2.code === "ASSEMBLY_SYSTEM_ONLY")).map((d2) => (0, import_react11.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), preview.diagnostics.some((d2) => d2.code === "NATIVE_PLACEMENT_ADJUSTED") && (0, import_react11.createElement)("div", { className: "dta-notice" }, t("nativeOrderChanged")), ...preview.diagnostics.filter((d2) => ["NATIVE_ROLE_ADJUSTED", "NATIVE_DELIVERY_ADJUSTED", "NATIVE_SLOTS_ABSENT", "NATIVE_DEPTH_APPROXIMATED", "NATIVE_DEPTH_BOUNDARY", "WORLD_BOOK_SLOT_MISSING"].includes(d2.code)).map((d2, i3) => (0, import_react11.createElement)("div", { key: `native-adjustment:${i3}`, className: "dta-notice" }, d2.code === "NATIVE_SLOTS_ABSENT" ? t("nativeSlotsAbsent") : d2.code === "WORLD_BOOK_SLOT_MISSING" ? `${d2.name} \xB7 ${t("worldSlotMissing")}: ${d2.anchor}` : d2.code === "NATIVE_DEPTH_BOUNDARY" ? `${d2.name} \xB7 ${t("nativeDepthBoundary")}: ${d2.depth} \u2192 ${t(d2.placement)}` : d2.code === "NATIVE_DEPTH_APPROXIMATED" ? `${d2.name} \xB7 ${t("nativeDepthApproximated")} (${d2.depth})` : `${d2.name} \xB7 ${t(d2.code === "NATIVE_ROLE_ADJUSTED" ? "nativeRoleChanged" : "nativeDeliveryChanged")}: ${d2.from} \u2192 ${d2.to}`)), ...preview.nodes.map(nodeRow), preview.runtimeContextControls?.length > 0 && (0, import_react11.createElement)("div", { className: "dta-notice" }, (0, import_react11.createElement)("strong", null, t("contextPreview")), ...preview.runtimeContextControls.map((c) => (0, import_react11.createElement)("div", { key: c.name }, `${c.name} \xB7 ${t(c.enabled ? "contextIncluded" : "contextExcluded")}`))), (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, `${t(preview.backend === "native" && !preview.actual ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react11.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react11.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, t("diagnostics")), (0, import_react11.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+          (0, import_react11.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
+        )),
+        (0, import_react11.createElement)(HistoryPanel, { key: draft.id ?? "new", presetId: `${draft.id}:${historyEpoch}`, sessionId: selectionTarget ? void 0 : sessionId, value: draft.historyPolicy, backend: draft.backend ?? "core", fetcher, root: historyApiRoot, editorRef: historyEditor, fragmentPresets: historyFragmentPresets, onChange: (historyPolicy) => {
+          edit({ historyPolicy });
+          setHistoryDirty(false);
+        }, onInvalid: (error2) => {
+          if (error2) setHistoryDirty(true);
+        }, locale }),
         (0, import_react11.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
         (0, import_react11.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, selection?.id?.startsWith("builtin-") && !items2.some((p) => p.id === selection.id) && (0, import_react11.createElement)("small", null, t("withdrawnPreset")), !capable && (0, import_react11.createElement)("small", null, t("unavailable"))),
         onCreateSession && (0, import_react11.createElement)("div", null, createSessionControls, (0, import_react11.createElement)("div", { className: "dta-toolbar" }, button("createSession", () => run(async () => {
-          const preset = dirty || !draft.id ? await save() : draft;
+          const preset = dirty || historyDirty || !draft.id ? await save() : draft;
           if (!mounted.current) return;
           await onCreateSession(preset.id);
         }), !draftAvailable, "primary"))),
         (0, import_react11.createElement)("div", { className: "dta-toolbar" }, button("apply", async () => {
-          if (!await changeHistoryBackend(draft.backend ?? "core")) return;
           run(async () => {
             await validateCurrent();
-            const preset = dirty || !draft.id ? await save() : draft;
+            const preset = dirty || historyDirty || !draft.id ? await save() : draft;
             const data3 = await api2("/selection", "PUT", { sessionId, id: preset.id });
             setSelection(data3.selection);
             setStatus(t("appliedStatus"));
@@ -24588,8 +24737,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           });
         }, !sessionId && !selectionTarget || !selection || selectionTarget?.editable === false)),
         draft.builtin && (0, import_react11.createElement)("small", null, t("defaultHint")),
-        !sessionId && (0, import_react11.createElement)("small", null, selectionTarget ? t("deferredSelection") : t("noSession")),
-        sessionId && !selectionTarget && (0, import_react11.createElement)(HistoryPanel, { sessionId, backend: appliedBackend, fetcher, root: historyApiRoot, fragmentPresets: historyFragmentPresets, onDirtyChange: setHistoryDirty, locale })
+        !sessionId && (0, import_react11.createElement)("small", null, selectionTarget ? t("deferredSelection") : t("noSession"))
       ),
       interfaceControls && (0, import_react11.createElement)("section", { className: "dta-interface-settings", "aria-label": t("interfaceSettings") }, (0, import_react11.createElement)("h3", { className: "dta-section-title" }, t("interfaceSettings")), interfaceControls)
     ))
@@ -25891,8 +26039,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging,
       "div",
       { className: "dwb-entry-body" },
       h15(Field4, { label: uiMessage("world.entry.title") }, h15("input", { className: "dwb-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h15(Field4, { label: uiMessage("world.entry.primaryKeys") }, h15(KeywordInput, { keywords: entry.keys, onChange: (keys) => patch({ keys }) })),
-      h15(Field4, { label: uiMessage("world.entry.secondaryKeys") }, h15(KeywordInput, { keywords: secondaryKeys, onChange: (keys) => patch({ secondary_keys: keys, selective: keys.length > 0 }) })),
+      h15(Field4, { label: uiMessage("world.entry.primaryKeys") }, h15(KeywordInput, { keywords: entry.keys, onChange: (keys2) => patch({ keys: keys2 }) })),
+      h15(Field4, { label: uiMessage("world.entry.secondaryKeys") }, h15(KeywordInput, { keywords: secondaryKeys, onChange: (keys2) => patch({ secondary_keys: keys2, selective: keys2.length > 0 }) })),
       secondaryKeys.length > 0 ? h15(Field4, { label: uiMessage("world.entry.secondaryLogicShort") }, h15(
         "select",
         {
@@ -26049,8 +26197,8 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
       "div",
       { className: "dwb-entry-body" },
       h15(Field4, { label: uiMessage("world.entry.title") }, h15("input", { className: "dwb-input", value: entry.comment ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h15(Field4, { label: uiMessage("world.entry.primaryKeys") }, h15(KeywordInput, { keywords: entry.keys, onChange: (keys) => patch({ keys }) })),
-      h15(Field4, { label: uiMessage("world.entry.secondaryKeys") }, h15(KeywordInput, { keywords: secondary, onChange: (keys) => patch({ secondaryKeys: keys, selective: keys.length > 0 }) })),
+      h15(Field4, { label: uiMessage("world.entry.primaryKeys") }, h15(KeywordInput, { keywords: entry.keys, onChange: (keys2) => patch({ keys: keys2 }) })),
+      h15(Field4, { label: uiMessage("world.entry.secondaryKeys") }, h15(KeywordInput, { keywords: secondary, onChange: (keys2) => patch({ secondaryKeys: keys2, selective: keys2.length > 0 }) })),
       secondary.length > 0 ? h15(Field4, { label: uiMessage("world.entry.secondaryLogicShort") }, h15(
         "select",
         { className: "dwb-select", value: entry.selectiveLogic ?? "and_any", onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true }) },
@@ -28385,10 +28533,10 @@ function resourceTitle(resource2, fallback = "") {
   }
   return fallback;
 }
-function catalog(snapshot, ...keys) {
+function catalog(snapshot, ...keys2) {
   for (const container of [snapshot?.catalog, snapshot?.catalogs]) {
     if (!isRecord4(container)) continue;
-    for (const key2 of keys) {
+    for (const key2 of keys2) {
       if (Array.isArray(container[key2])) return container[key2];
       if (Array.isArray(container[key2]?.items)) return container[key2].items;
     }
@@ -48500,10 +48648,10 @@ var CARD_STORAGE_VALUE_LIMIT = 64 * 1024;
 var cardStorageBytes = (value) => new TextEncoder().encode(value).byteLength;
 function validateCardStorage(entries2) {
   if (!Array.isArray(entries2) || entries2.length > 32) throw Error("Card storage entry limit exceeded");
-  const keys = /* @__PURE__ */ new Set();
+  const keys2 = /* @__PURE__ */ new Set();
   for (const row of entries2) {
-    if (!Array.isArray(row) || row.length !== 2 || typeof row[0] !== "string" || !row[0] || row[0].length > 512 || typeof row[1] !== "string" || row[1].length > CARD_STORAGE_VALUE_LIMIT || cardStorageBytes(row[1]) > CARD_STORAGE_VALUE_LIMIT || keys.has(row[0])) throw Error("Invalid card storage entry");
-    keys.add(row[0]);
+    if (!Array.isArray(row) || row.length !== 2 || typeof row[0] !== "string" || !row[0] || row[0].length > 512 || typeof row[1] !== "string" || row[1].length > CARD_STORAGE_VALUE_LIMIT || cardStorageBytes(row[1]) > CARD_STORAGE_VALUE_LIMIT || keys2.has(row[0])) throw Error("Invalid card storage entry");
+    keys2.add(row[0]);
   }
   if (cardStorageBytes(JSON.stringify(entries2)) > CARD_STORAGE_LIMIT) throw Error("Card storage exceeds 128 KiB");
   return entries2.map((row) => [...row]);
@@ -51040,12 +51188,12 @@ function createPairs(schema5, iterable, ctx) {
         } else
           throw new TypeError(`Expected [key, value] tuple: ${it2}`);
       } else if (it2 && it2 instanceof Object) {
-        const keys = Object.keys(it2);
-        if (keys.length === 1) {
-          key2 = keys[0];
+        const keys2 = Object.keys(it2);
+        if (keys2.length === 1) {
+          key2 = keys2[0];
           value = it2[key2];
         } else {
-          throw new TypeError(`Expected tuple with one key, not ${keys.length} keys`);
+          throw new TypeError(`Expected tuple with one key, not ${keys2.length} keys`);
         }
       } else {
         key2 = it2;
@@ -51863,13 +52011,13 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
       pending2.sort((a, b2) => a.depth - b2.depth);
       const { content, base: base2, owner: owner2, depth } = pending2.shift();
       const analysisKey = JSON.stringify([owner2, base2]);
-      let keys = analyzed.get(content);
-      if (keys?.has(analysisKey)) continue;
-      if (!keys) {
-        keys = /* @__PURE__ */ new Set();
-        analyzed.set(content, keys);
+      let keys2 = analyzed.get(content);
+      if (keys2?.has(analysisKey)) continue;
+      if (!keys2) {
+        keys2 = /* @__PURE__ */ new Set();
+        analyzed.set(content, keys2);
       }
-      keys.add(analysisKey);
+      keys2.add(analysisKey);
       if (depth > DEPENDENCY_LIMITS.depth) throw Error("Rendering dependency depth exceeds limit");
       for (const dependency of discoverDependencies(content, base2).filter((item) => item.kind === "module")) {
         if (!dependency.url) throw Error("Blocked or unresolved module: " + dependency.raw);

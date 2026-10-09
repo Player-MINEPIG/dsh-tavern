@@ -54,9 +54,11 @@ for DeepSeek requests carrying tools is not promised.
 
 ## Installed entry points and usage
 
-Open prompt assembly settings and expand “Model history filtering” in the current-session application area. Select retained sources, inspect matching previews, then save history rules. These rules belong to the session and are saved independently from assembly strategies. Switching a strategy preserves history settings. New sessions start disabled.
+Open “History filtering rules and preview” directly below “Assembly rules and preview”. Both sections share collapsible highlighted headings and rules/preview tabs. Select sources and inspect the preview, then use “Save rules” to save the complete preset. “Apply to this session” changes the active snapshot. Save as, import/export, opening drafts and applied snapshots carry the optional `historyPolicy` field. Saving a library preset does not change already-applied sessions.
 
-The assembler plugin mounts standard cleanup using one shared `HistoryPolicyStore`; the optional core plugin mounts advanced request filtering. The actually applied backend determines API capabilities and editor controls. Editing a strategy does not change those capabilities early. When switching to advanced mode, the standard hook first restores still-live owned placeholders before filtering the request copy.
+Preview backgrounds are red for removed text, blue for retained text and green for additions (restoring messages previously hidden by this feature). Fragment edits mark retained and removed ranges in the original text. Green does not mean generated content. Preview does not mutate logs or sessions. Policies can be edited before a session exists; history previews become available after creation.
+
+Presets without `historyPolicy` retain the legacy session policy at runtime. The editor loads and identifies that fallback, capturing it into the preset on the next save. Existing resources are not rewritten in bulk. Unconfigured policies default to disabled. Standard and optional core hooks read the applied strategy snapshot. Editor controls and read-only previews follow the draft backend; execution and direct session APIs follow the applied backend. Switching to advanced mode restores live standard placeholders before filtering the request copy.
 
 History and assembly APIs share the existing security router and browser/desktop transport. Cold-session previews use public inspect and sessions.prepare without creating an Agent. Tavern supplies the MVU example and embedding, without copying the generic engine or settings store. The `./history-policy` package export provides the Tavern example and mounting function.
 

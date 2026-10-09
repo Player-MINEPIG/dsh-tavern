@@ -1,3 +1,4 @@
+import { DEFAULT_HISTORY_POLICY } from 'dsh-prompt-assembler/history-policy'
 import { CoreRequestBackend } from 'dsh-prompt-assembler/core-backend'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -26,7 +27,7 @@ test('standalone and embedded panels share last applied snapshot and refresh wit
   Object.assign(globalThis, { window, document, getComputedStyle: () => ({ display: 'block' }), IS_REACT_ACT_ENVIRONMENT: true })
   setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
   const store = new AssemblyPresetStore(directory)
-  const a = store.save({ ...BUILTINS[0], name: 'From sidebar' }), b = store.save({ ...BUILTINS[0], name: 'From Tavern' })
+  const a = store.save({ ...BUILTINS[0], name: 'From sidebar', historyPolicy: DEFAULT_HISTORY_POLICY }), b = store.save({ ...BUILTINS[0], name: 'From Tavern', historyPolicy: DEFAULT_HISTORY_POLICY })
   store.apply('shared', a.id)
   const runtime = new RequestAssembler({ ctx: { get: () => ({ requestAssemblyVersion: 1 }) }, store, resources: { compile: () => ({ assemblyInput: {} }) } })
   runtime.registerRequestBackend(new CoreRequestBackend(runtime))
@@ -56,6 +57,7 @@ test('standalone and embedded panels share last applied snapshot and refresh wit
   assert.equal(one.querySelector('.dta-grid label input').value, 'Sidebar draft')
   await act(() => Simulate.click(button(one, 'Save rules')))
   assert.equal(store.get(a.id).name, 'Sidebar draft')
+  assert.equal(store.get(a.id).historyPolicy.enabled, false)
   assert.equal(store.selection('shared').id, b.id)
   assert.ok(two.textContent.includes('Sidebar draft'), 'other panel refreshes the library')
   await act(() => Simulate.click(button(one, 'Apply to this session')))
