@@ -137,6 +137,8 @@ Historical source text stays unchanged. A historical card displayed again in the
 
 ## Supported interfaces and limitations
 
+Swipe completion follows the actual DSH turn state; a long active turn does not lose registration when the initial UI acceptance wait expires. While the page remains open, after a read failure a saved reply can be recovered as a variant of its original QA without resending input; recovery does not replace a separately selected durable head. While waiting, the greeting reads the source reply's verified read-only checkpoint, and the new reply receives its own MVU binding only after durable coordinates are confirmed. Disabled scripts, active generation and pending history bindings have distinct notices.
+
 Scripts default off; enable them in conversation settings. Start with the [counter example](examples/interactive-counter.html), placing the file in an `html` fence. Remounting, switching playthroughs or changing source creates a fresh runtime. Ordinary parent rerenders preserve state. Streaming content does not execute scripts, while historical cards retain state during other messages' streaming updates. Card variables are memory-only and reset on refresh/remount.
 
 | Interface | Scope |

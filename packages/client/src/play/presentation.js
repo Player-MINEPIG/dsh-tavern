@@ -19,12 +19,12 @@ export function ConversationPresentation({ state, playthrough, playClient, sessi
 export function messageAvatarKey(turn, role, index = 0) {
   return role === 'user' ? `${turn.id}:user` : `${turn.id}:${turn.variant?.id ?? 'live'}:assistant:${index}`
 }
-export function MessageBubble({ text, role = 'assistant', messageKey, editable = true, streaming = false, variableScope, initialBinding = false, greetingBinding = false }) {
+export function MessageBubble({ text, role = 'assistant', messageKey, editable = true, streaming = false, bindingPending = false, variableScope, initialBinding = false, greetingBinding = false }) {
   const context = useContext(Presentation)
   const settings = useConversationDisplaySettings()
   const coordinate = {playthrough:context?.playthrough,sessionId:context?.sessionId,characterId:context?.state?.display?.bindings?.characterId,timeline:context?.state?.timeline,turns:context?.state?.turns,greetingIndex:context?.state?.greeting?.index}
   const messageScope = variableScope && context?.playthrough?.id ? {...variableScope,playthroughId:context.playthrough.id} : null
-  const boundScope = messageScope ?? ((greetingBinding||initialBinding)&&!context?.disabled ? greetingCardScope(coordinate) : null)
+  const boundScope = messageScope ?? ((greetingBinding||initialBinding)&&!context?.disabled ? (context?.state?.greetingVariableScope ?? greetingCardScope(coordinate)) : null)
   const writeScope = messageScope ?? (initialBinding&&!context?.disabled&&!context?.busy ? initialCardScope(coordinate) : null)
   const latest=useRef(context);latest.current=context
   const [editing, setEditing] = useState(false)
@@ -58,9 +58,9 @@ export function MessageBubble({ text, role = 'assistant', messageKey, editable =
   const cardContext=useMemo(()=>({version:1,role,userName:display?.macros?.user??'User',characterName:display?.macros?.character??'Assistant',boundGreeting:greetingBinding?boundGreetingView({state:context?.state,scope:boundScope,disabled:context?.disabled}):null}),[scopeKey,role,display,context?.state?.greeting,greetingBinding,context?.disabled])
   const content=useMemo(()=>h(MessageContent,{text,writeScope,writesBlocked:context?.busy===true,composer:disabled?null:context?.composer,
     createBinding:boundScope?(signal,writeGrant)=>createMvuCardBinding({client:context.playClient,scope:writeGrant?writeGrantScope(writeScope,writeGrant):boundScope,signal,writeGrant}):undefined,
-    owners,helpers,enabled:settings.interactiveCards!==false&&!context?.disabled&&!streaming,scopeKey,context:cardContext,
+    owners,helpers,enabled:settings.interactiveCards!==false&&!context?.disabled&&!streaming&&!bindingPending,disabledReason:settings.interactiveCards===false?'appearance.scriptsOff':context?.disabled?'appearance.cardInactive':streaming?'appearance.cardStreaming':bindingPending?'appearance.cardBindingPending':undefined,scopeKey,context:cardContext,
     onSend:disabled||context?.busy?undefined:async(text,options)=>{const current=latest.current;if(current.disabled||current.busy)throw Error('Session input is busy');if(current.sendMessage)await current.sendMessage(text,options);else await current.playClient.postUserMessage(current.sessionId,text,options);current.changed?.()},
-  }),[text,scopeKey,writeKey,context?.busy,disabled,context?.composer,context?.playClient,owners,helpers,cardContext,settings.interactiveCards,context?.disabled,streaming])
+  }),[text,scopeKey,writeKey,context?.busy,disabled,context?.composer,context?.playClient,owners,helpers,cardContext,settings.interactiveCards,context?.disabled,streaming,bindingPending])
   return h(MessageRow, { role, className: `dtv-message dtv-message-${role}`,
     avatar: h('button', { className: 'dtv-message-avatar', type: 'button', disabled, title: translate('appearance.editAvatar'), 'aria-label': `${translate('appearance.editAvatar')} · ${name}`, style: { ...messageAvatarStyle, cursor: disabled ? 'default' : 'pointer' }, onClick: () => { setAvatar(image?.startsWith('data:') ? image : null); setEditing(true) } },
       image && failedImage !== image ? h('img', { src: image, alt: name, width: 42, height: 42, style: { objectFit: 'cover' }, onError: () => setFailedImage(image) }) : name.slice(0, 1)),

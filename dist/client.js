@@ -17968,7 +17968,10 @@ var zh_CN_default = Object.freeze({
   "appearance.mvuReadFailed": "\u672A\u80FD\u8BFB\u53D6\u5F53\u524D\u5361\u7247\u7684 MVU \u5FEB\u7167\uFF0C\u8BF7\u5728\u8FDE\u63A5\u6062\u590D\u540E\u91CD\u8BD5\u3002",
   "appearance.mvuRetry": "\u91CD\u65B0\u52A0\u8F7D\u6B64\u5361\u7247\u7684 MVU",
   "appearance.mvuRetained": "MVU \u6682\u65F6\u8BFB\u53D6\u5931\u8D25\uFF0C\u5F53\u524D\u663E\u793A\u6B64\u5361\u7247\u6700\u8FD1\u5DF2\u9A8C\u8BC1\u7684\u72B6\u6001\uFF1B\u8BFB\u53D6\u6062\u590D\u524D\u6682\u505C\u5199\u5165\u3002",
-  "appearance.scriptsOff": "\u811A\u672C\u5C1A\u672A\u542F\u7528\uFF0C\u6216\u6D88\u606F\u4ECD\u5728\u751F\u6210\u3002\u5F53\u524D\u663E\u793A\u9759\u6001\u5185\u5BB9\u3002",
+  "appearance.scriptsOff": "\u5361\u7247\u811A\u672C\u5DF2\u5173\u95ED\u3002\u53EF\u5728\u5BF9\u8BDD\u8BBE\u7F6E \u2192 \u5916\u90E8\u4EE3\u7801\u4E2D\u5F00\u542F\u3002\u5F53\u524D\u663E\u793A\u9759\u6001\u5185\u5BB9\u3002",
+  "appearance.cardStreaming": "\u8FD9\u6761\u56DE\u590D\u4ECD\u5728\u751F\u6210\uFF0C\u5B8C\u6210\u540E\u5C06\u542F\u52A8\u4EA4\u4E92\u5361\u7247\u3002",
+  "appearance.cardBindingPending": "\u56DE\u590D\u5DF2\u663E\u793A\uFF0C\u6B63\u5728\u6838\u5B9E\u5386\u53F2\u5750\u6807\u4E0E MVU \u7ED1\u5B9A\uFF1B\u5B8C\u6210\u540E\u5C06\u6062\u590D\u4EA4\u4E92\u5361\u7247\u3002",
+  "appearance.cardInactive": "\u6B63\u5728\u786E\u8BA4\u5F53\u524D\u4F1A\u8BDD\uFF0C\u6682\u65F6\u663E\u793A\u9759\u6001\u5185\u5BB9\u3002",
   "rendering.adapterHelp": "\u5185\u7F6E\u517C\u5BB9\u8BF4\u660E",
   "rendering.builtinMvu": "\u7531\u5185\u7F6E MVU \u517C\u5BB9\u5C42 v1 \u63D0\u4F9B\uFF0C\u5DF2\u5339\u914D\u7CBE\u786E URL\u3001\u5B57\u8282\u53CA\u652F\u6301\u7684\u8C03\u7528\u5F62\u5F0F\uFF0C\u4E0D\u6267\u884C\u539F\u6A21\u5757\u3002\u8BFB\u53D6\u4E0E\u63D0\u4EA4\u901A\u77E5\u9650\u5B9A\u672C\u7ED1\u5B9A\uFF1B\u5DF2\u4E0B\u8F7D\u4E14\u5F00\u542F\u7684\u811A\u672C\u53EF\u5199\u5165\u5F53\u524D\u7ED1\u5B9A\u53D8\u91CF\u3002\u5B8C\u6574 schema \u58F0\u660E\u8FD0\u884C\u524D\u4ECD\u987B\u5339\u914D\u540E\u7AEF\u539F\u6587\uFF0C\u4E0D\u63D0\u4F9B\u8FD0\u884C\u65F6 Zod\u3002",
   "rendering.revokePending": "\u672C\u5730\u8FD0\u884C\u5DF2\u505C\u6B62\uFF1B\u670D\u52A1\u7AEF\u6E05\u7406\u5C1A\u672A\u5B8C\u6210\u3002",
@@ -19071,7 +19074,10 @@ var en_default = Object.freeze({
   "appearance.mvuReadFailed": "Could not read this card\u2019s MVU snapshot. Retry when the connection is available.",
   "appearance.mvuRetry": "Reload this card\u2019s MVU",
   "appearance.mvuRetained": "MVU could not be refreshed. Showing this card\u2019s last verified state; writes are paused until reading recovers.",
-  "appearance.scriptsOff": "Scripts are disabled or the message is still streaming. Showing static content.",
+  "appearance.scriptsOff": "Card scripts are disabled. Enable them in Conversation settings \u2192 External code. Showing static content.",
+  "appearance.cardStreaming": "This reply is still generating. Interactive cards will start when it finishes.",
+  "appearance.cardBindingPending": "The reply is visible. Verifying saved history and MVU bindings before activating interactive cards.",
+  "appearance.cardInactive": "Confirming the current session. Showing static content temporarily.",
   "rendering.adapterHelp": "Built-in compatibility details",
   "rendering.builtinMvu": "Provided by built-in MVU compatibility v1 after matching exact URL, bytes and supported invocation forms; the original module is not executed. Reads and committed notifications are scoped; writes follow downloaded/enabled execution in the current binding. Complete schema declarations still require exact backend source confirmation before running; runtime Zod is unsupported.",
   "rendering.revokePending": "Local execution stopped; server cleanup is not yet complete.",
@@ -21291,6 +21297,217 @@ async function readCatalogOrEmpty(client) {
   }
 }
 
+// packages/play/src/timeline-tree.js
+function adoptedVariant(node) {
+  return node?.variants?.find((variant2) => variant2.id === node.adoptedVariantId) ?? null;
+}
+var EXTENSION_KEY = "pmpDshTavern";
+var BRANCH_HEADS_KEY = "branchHeads";
+function variantEntries(timeline) {
+  const entries2 = /* @__PURE__ */ new Map();
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant2 of node.variants ?? []) {
+      entries2.set(variant2.id, { node, variant: variant2 });
+    }
+  }
+  return entries2;
+}
+function storedBranchHeads(timeline, variants) {
+  const result = /* @__PURE__ */ new Map();
+  const values = timeline?.ext?.[EXTENSION_KEY]?.[BRANCH_HEADS_KEY];
+  if (!Array.isArray(values)) return result;
+  for (const value of values) {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
+    const branch = variants.get(value.branchVariantId);
+    const head = variants.get(value.variantId);
+    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || head.variant.sessionId !== value.sessionId) continue;
+    result.set(value.branchVariantId, {
+      sessionId: value.sessionId,
+      nodeId: value.nodeId,
+      variantId: value.variantId
+    });
+  }
+  return result;
+}
+function headPathContains(timeline, head, variantId) {
+  try {
+    return activeTimelineEntries({ ...timeline, head }).some((entry) => entry.variant.id === variantId);
+  } catch {
+    return false;
+  }
+}
+function uniqueLegacyBranchHead(timeline, variantId, variants) {
+  let currentId = variantId;
+  const visited = /* @__PURE__ */ new Set();
+  while (!visited.has(currentId)) {
+    visited.add(currentId);
+    const children = (timeline?.nodes ?? []).filter((node) => node.parentVariantId === currentId);
+    if (children.length !== 1) break;
+    const next = adoptedVariant(children[0]);
+    if (next === null) break;
+    currentId = next.id;
+  }
+  const entry = variants.get(currentId);
+  return entry === void 0 ? null : {
+    sessionId: entry.variant.sessionId,
+    nodeId: entry.node.id,
+    variantId: entry.variant.id
+  };
+}
+function withRememberedActiveHead(timeline) {
+  const head = timelineHead(timeline);
+  if (head === null) return timeline;
+  let active;
+  try {
+    active = activeTimelineEntries(timeline);
+  } catch {
+    return timeline;
+  }
+  if (active.length === 0) return timeline;
+  const variants = variantEntries(timeline);
+  const remembered = storedBranchHeads(timeline, variants);
+  for (const { variant: variant2 } of active) remembered.set(variant2.id, { ...head });
+  const branchHeads = [...remembered.entries()].map(([branchVariantId, value]) => ({
+    branchVariantId,
+    ...value
+  }));
+  return {
+    ...timeline,
+    ext: {
+      ...timeline.ext ?? {},
+      [EXTENSION_KEY]: {
+        ...timeline.ext?.[EXTENSION_KEY] ?? {},
+        [BRANCH_HEADS_KEY]: branchHeads
+      }
+    }
+  };
+}
+function isTreeTimeline(timeline) {
+  return timeline?.head !== void 0 || (timeline?.nodes ?? []).some((node) => Object.hasOwn(node, "parentVariantId"));
+}
+function legacyTimelineHead(timeline) {
+  const nodes = timeline?.nodes ?? [];
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    const node = nodes[index];
+    const variant2 = adoptedVariant(node);
+    if (variant2 !== null) {
+      return { sessionId: variant2.sessionId, nodeId: node.id, variantId: variant2.id };
+    }
+  }
+  return null;
+}
+function timelineHead(timeline) {
+  const head = timeline?.head;
+  if (head !== void 0 && head !== null) return head;
+  return legacyTimelineHead(timeline);
+}
+function activeTimelineEntries(timeline) {
+  const nodes = timeline?.nodes ?? [];
+  if (!isTreeTimeline(timeline)) {
+    return nodes.map((node) => ({ node, variant: adoptedVariant(node) })).filter((entry) => entry.variant !== null);
+  }
+  const head = timelineHead(timeline);
+  if (head === null) return [];
+  const variants = /* @__PURE__ */ new Map();
+  for (const [index, node] of nodes.entries()) {
+    for (const variant2 of node.variants ?? []) variants.set(variant2.id, { node, variant: variant2, index });
+  }
+  const reversed = [];
+  const visited = /* @__PURE__ */ new Set();
+  let variantId = head.variantId;
+  while (variantId !== null) {
+    if (visited.has(variantId)) throw new TypeError("timeline branch contains a cycle");
+    visited.add(variantId);
+    const entry = variants.get(variantId);
+    if (entry === void 0) throw new TypeError(`Unknown active variant ${variantId}`);
+    reversed.push({ node: entry.node, variant: entry.variant });
+    if (Object.hasOwn(entry.node, "parentVariantId")) {
+      variantId = entry.node.parentVariantId;
+    } else {
+      const previous = nodes[entry.index - 1];
+      variantId = adoptedVariant(previous)?.id ?? null;
+    }
+  }
+  return reversed.reverse();
+}
+function timelineWithHead(timeline, head) {
+  const remembered = withRememberedActiveHead(timeline);
+  if (head === null) {
+    const { head: _discarded, ...rest } = remembered;
+    return rest;
+  }
+  return withRememberedActiveHead({ ...remembered, head });
+}
+function timelineHeadForVariant(timeline, variantId) {
+  const variants = variantEntries(timeline);
+  const target = variants.get(variantId);
+  if (target === void 0) return null;
+  const current4 = timelineHead(timeline);
+  if (current4 !== null && headPathContains(timeline, current4, variantId)) return current4;
+  const stored = storedBranchHeads(timeline, variants).get(variantId);
+  if (stored !== void 0 && headPathContains(timeline, stored, variantId)) return stored;
+  return uniqueLegacyBranchHead(timeline, variantId, variants);
+}
+function activeVariantEnd(timeline, sessionId) {
+  const head = timelineHead(timeline);
+  if (head === null || head.sessionId !== sessionId) return -1;
+  const entry = activeTimelineEntries(timeline).at(-1);
+  return entry?.variant?.endEventId ?? -1;
+}
+
+// packages/client/src/play/swipe-completion.js
+var origin = (message) => message?.origin?.kind ?? (message?.role === "user" ? "user" : message?.role);
+function completedSwipePair(state, boundary) {
+  if (state?.incompleteTurn !== false) return null;
+  const messages = (state.messages ?? []).filter((m2) => Number.isSafeInteger(m2.seq) && m2.seq > boundary).sort((a, b2) => a.seq - b2.seq);
+  const user = messages.find((m2) => m2.role === "user" && ["user", "steering"].includes(origin(m2)));
+  if (!user || state.stoppedRequest?.userEventId === user.seq) return null;
+  const assistant = messages.findLast((m2) => m2.role === "assistant" && m2.seq > user.seq);
+  return assistant ? { user, assistant, sessionFormatVersion: state.sessionFormatVersion } : null;
+}
+async function commitSwipeReply(client, pending2, pair, {
+  variantId = `swipe-${pending2.sessionId}-${pair.user.seq}-${pair.assistant.seq}`,
+  writeTimeline = (transform) => updateTimeline(client, pending2.playthrough, transform)
+} = {}) {
+  const variant2 = {
+    id: variantId,
+    sessionId: pending2.sessionId,
+    startEventId: pair.user.seq,
+    endEventId: pair.assistant.seq,
+    ...Number.isSafeInteger(pair.sessionFormatVersion) ? { ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } } } : {}
+  };
+  const next = await writeTimeline((timeline) => {
+    const node = timeline.nodes.find((n) => n.id === pending2.nodeId);
+    if (!node || !node.variants.some((v2) => v2.sessionId === pending2.sourceSessionId && (!pending2.sourceVariantId || v2.id === pending2.sourceVariantId))) throw Error("Swipe source reply is no longer in this playthrough");
+    if (!Object.hasOwn(pending2, "expectedHead") && timeline.head && ![pending2.sourceSessionId, pending2.sessionId].includes(timeline.head.sessionId)) throw Error("Active reply changed while the swipe was waiting");
+    const existing = node.variants.find((v2) => v2.sessionId === variant2.sessionId && v2.startEventId === variant2.startEventId && v2.endEventId === variant2.endEventId);
+    const saved = existing ?? variant2;
+    const head = { sessionId: saved.sessionId, nodeId: node.id, variantId: saved.id };
+    if (JSON.stringify(timeline.head ?? null) !== JSON.stringify(head) && Object.hasOwn(pending2, "expectedHead") && JSON.stringify(timeline.head ?? null) !== JSON.stringify(pending2.expectedHead)) throw Error("Active reply changed while the swipe was waiting");
+    return timelineWithHead({ ...timeline, nodes: timeline.nodes.map((n) => n === node ? { ...n, adoptedVariantId: saved.id, variants: existing ? n.variants : [...n.variants, saved] } : n) }, head);
+  });
+  const focus = await client.getFocus(pending2.playthrough);
+  if (focus.sessionId !== pending2.sessionId) throw Error("Saved swipe does not match derived focus");
+  finishPendingSwipe(client, pending2);
+  return { timeline: next, sessionId: pending2.sessionId, nodeId: pending2.nodeId, variantId: next.head.variantId };
+}
+async function recoverCompletedSwipe(client, pending2) {
+  if (!pending2.error || pending2.kind === "request-retry") return null;
+  if (pending2.recovery) return pending2.recovery;
+  const work = (async () => {
+    const boundary = pending2.boundary ?? Math.max(-1, ...pending2.timeline.nodes.flatMap((n) => n.variants.filter((v2) => v2.id === n.adoptedVariantId).map((v2) => v2.endEventId)));
+    const pair = completedSwipePair(await client.getMessages(pending2.sessionId), boundary);
+    if (!pair) return null;
+    return commitSwipeReply(client, pending2, pair);
+  })();
+  pending2.recovery = work;
+  try {
+    return await work;
+  } finally {
+    if (pending2.recovery === work) delete pending2.recovery;
+  }
+}
+
 // packages/play/src/playthrough-state.js
 function isPlaythroughArchived(playthrough) {
   return typeof playthrough?.ext?.pmpDshTavern?.archivedAt === "string";
@@ -21479,7 +21696,7 @@ function normalizeSessionMessages(value, label = "messages") {
     if (!Array.isArray(item.content)) fail2(itemLabel, "content must be an array");
     if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail2(itemLabel, "seq must be a non-negative integer or null");
     const fallbackKind = item.role === "tool" || item.role === "developer" ? "context" : item.role;
-    const origin = item.origin === void 0 ? { kind: fallbackKind } : (() => {
+    const origin2 = item.origin === void 0 ? { kind: fallbackKind } : (() => {
       if (!isRecord3(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail2(`${itemLabel}.origin`, "kind is invalid");
       if (item.origin.kind !== "context") return { kind: item.origin.kind };
       const optional = (field, maximum) => {
@@ -21502,7 +21719,7 @@ function normalizeSessionMessages(value, label = "messages") {
       content: item.content,
       seq: item.seq,
       text: projectContentText(item.content),
-      origin
+      origin: origin2
     };
   });
   return {
@@ -22282,164 +22499,6 @@ function createPlaythroughController(client, dependencies = {}) {
   };
 }
 
-// packages/play/src/timeline-tree.js
-function adoptedVariant(node) {
-  return node?.variants?.find((variant2) => variant2.id === node.adoptedVariantId) ?? null;
-}
-var EXTENSION_KEY = "pmpDshTavern";
-var BRANCH_HEADS_KEY = "branchHeads";
-function variantEntries(timeline) {
-  const entries2 = /* @__PURE__ */ new Map();
-  for (const node of timeline?.nodes ?? []) {
-    for (const variant2 of node.variants ?? []) {
-      entries2.set(variant2.id, { node, variant: variant2 });
-    }
-  }
-  return entries2;
-}
-function storedBranchHeads(timeline, variants) {
-  const result = /* @__PURE__ */ new Map();
-  const values = timeline?.ext?.[EXTENSION_KEY]?.[BRANCH_HEADS_KEY];
-  if (!Array.isArray(values)) return result;
-  for (const value of values) {
-    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
-    const branch = variants.get(value.branchVariantId);
-    const head = variants.get(value.variantId);
-    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || head.variant.sessionId !== value.sessionId) continue;
-    result.set(value.branchVariantId, {
-      sessionId: value.sessionId,
-      nodeId: value.nodeId,
-      variantId: value.variantId
-    });
-  }
-  return result;
-}
-function headPathContains(timeline, head, variantId) {
-  try {
-    return activeTimelineEntries({ ...timeline, head }).some((entry) => entry.variant.id === variantId);
-  } catch {
-    return false;
-  }
-}
-function uniqueLegacyBranchHead(timeline, variantId, variants) {
-  let currentId = variantId;
-  const visited = /* @__PURE__ */ new Set();
-  while (!visited.has(currentId)) {
-    visited.add(currentId);
-    const children = (timeline?.nodes ?? []).filter((node) => node.parentVariantId === currentId);
-    if (children.length !== 1) break;
-    const next = adoptedVariant(children[0]);
-    if (next === null) break;
-    currentId = next.id;
-  }
-  const entry = variants.get(currentId);
-  return entry === void 0 ? null : {
-    sessionId: entry.variant.sessionId,
-    nodeId: entry.node.id,
-    variantId: entry.variant.id
-  };
-}
-function withRememberedActiveHead(timeline) {
-  const head = timelineHead(timeline);
-  if (head === null) return timeline;
-  let active;
-  try {
-    active = activeTimelineEntries(timeline);
-  } catch {
-    return timeline;
-  }
-  if (active.length === 0) return timeline;
-  const variants = variantEntries(timeline);
-  const remembered = storedBranchHeads(timeline, variants);
-  for (const { variant: variant2 } of active) remembered.set(variant2.id, { ...head });
-  const branchHeads = [...remembered.entries()].map(([branchVariantId, value]) => ({
-    branchVariantId,
-    ...value
-  }));
-  return {
-    ...timeline,
-    ext: {
-      ...timeline.ext ?? {},
-      [EXTENSION_KEY]: {
-        ...timeline.ext?.[EXTENSION_KEY] ?? {},
-        [BRANCH_HEADS_KEY]: branchHeads
-      }
-    }
-  };
-}
-function isTreeTimeline(timeline) {
-  return timeline?.head !== void 0 || (timeline?.nodes ?? []).some((node) => Object.hasOwn(node, "parentVariantId"));
-}
-function legacyTimelineHead(timeline) {
-  const nodes = timeline?.nodes ?? [];
-  for (let index = nodes.length - 1; index >= 0; index -= 1) {
-    const node = nodes[index];
-    const variant2 = adoptedVariant(node);
-    if (variant2 !== null) {
-      return { sessionId: variant2.sessionId, nodeId: node.id, variantId: variant2.id };
-    }
-  }
-  return null;
-}
-function timelineHead(timeline) {
-  const head = timeline?.head;
-  if (head !== void 0 && head !== null) return head;
-  return legacyTimelineHead(timeline);
-}
-function activeTimelineEntries(timeline) {
-  const nodes = timeline?.nodes ?? [];
-  if (!isTreeTimeline(timeline)) {
-    return nodes.map((node) => ({ node, variant: adoptedVariant(node) })).filter((entry) => entry.variant !== null);
-  }
-  const head = timelineHead(timeline);
-  if (head === null) return [];
-  const variants = /* @__PURE__ */ new Map();
-  for (const [index, node] of nodes.entries()) {
-    for (const variant2 of node.variants ?? []) variants.set(variant2.id, { node, variant: variant2, index });
-  }
-  const reversed = [];
-  const visited = /* @__PURE__ */ new Set();
-  let variantId = head.variantId;
-  while (variantId !== null) {
-    if (visited.has(variantId)) throw new TypeError("timeline branch contains a cycle");
-    visited.add(variantId);
-    const entry = variants.get(variantId);
-    if (entry === void 0) throw new TypeError(`Unknown active variant ${variantId}`);
-    reversed.push({ node: entry.node, variant: entry.variant });
-    if (Object.hasOwn(entry.node, "parentVariantId")) {
-      variantId = entry.node.parentVariantId;
-    } else {
-      const previous = nodes[entry.index - 1];
-      variantId = adoptedVariant(previous)?.id ?? null;
-    }
-  }
-  return reversed.reverse();
-}
-function timelineWithHead(timeline, head) {
-  const remembered = withRememberedActiveHead(timeline);
-  if (head === null) {
-    const { head: _discarded, ...rest } = remembered;
-    return rest;
-  }
-  return withRememberedActiveHead({ ...remembered, head });
-}
-function timelineHeadForVariant(timeline, variantId) {
-  const variants = variantEntries(timeline);
-  const target = variants.get(variantId);
-  if (target === void 0) return null;
-  const current4 = timelineHead(timeline);
-  if (current4 !== null && headPathContains(timeline, current4, variantId)) return current4;
-  const stored = storedBranchHeads(timeline, variants).get(variantId);
-  if (stored !== void 0 && headPathContains(timeline, stored, variantId)) return stored;
-  return uniqueLegacyBranchHead(timeline, variantId, variants);
-}
-function activeVariantEnd(timeline, sessionId) {
-  const head = timelineHead(timeline);
-  if (head === null || head.sessionId !== sessionId) return -1;
-  const entry = activeTimelineEntries(timeline).at(-1);
-  return entry?.variant?.endEventId ?? -1;
-}
-
 // packages/client/src/play/fork.js
 var SAFE_SEGMENT2 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
 var SAFE_SESSION_ID2 = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
@@ -22585,15 +22644,6 @@ function messageOriginKind(message) {
   if (typeof kind === "string" && kind !== "") return kind;
   return message?.role === "user" ? "user" : message?.role;
 }
-function completedPairAfter(messageState, eventId) {
-  if (messageState?.incompleteTurn === true) return null;
-  const messages = (messageState?.messages ?? []).filter((message) => Number.isSafeInteger(message.seq) && message.seq > eventId).sort((left, right) => left.seq - right.seq);
-  const user = messages.find((message) => message.role === "user" && (messageOriginKind(message) === "user" || messageOriginKind(message) === "steering"));
-  if (user === void 0) return null;
-  if (messageState.stoppedRequest?.userEventId === user.seq) return null;
-  const assistant = [...messages].reverse().find((message) => message.role === "assistant" && message.seq > user.seq);
-  return assistant === void 0 ? null : { user, assistant, sessionFormatVersion: messageState.sessionFormatVersion };
-}
 async function createRootSwipeSession(client, sourceSessionId, coordinate) {
   const binding = typeof client.getImportContextBinding === "function" ? await client.getImportContextBinding(sourceSessionId) : null;
   const importContextRef = typeof binding?.path === "string" && binding.path !== "" ? { path: binding.path } : void 0;
@@ -22627,13 +22677,14 @@ function createPlayNodeController(client, {
   );
   async function waitForReply(sessionId, boundary) {
     let sawOpenTurn = false;
-    for (let attempt = 0; attempt < maxPolls; attempt++) {
-      const messages = await client.getMessages(sessionId), pair = completedPairAfter(messages, boundary);
+    for (let idlePolls = 0; idlePolls < maxPolls; ) {
+      const messages = await client.getMessages(sessionId), pair = completedSwipePair(messages, boundary);
       if (pair) return pair;
       const accepted = messages.messages?.some((message) => message.seq > boundary && message.role === "user" && ["user", "steering"].includes(messageOriginKind(message)));
       if ((sawOpenTurn || accepted) && messages.incompleteTurn === false) throw new Error("Swipe stopped without a saved assistant reply");
       sawOpenTurn ||= messages.incompleteTurn === true;
-      if (attempt + 1 < maxPolls) await delay(pollInterval);
+      idlePolls = messages.incompleteTurn === true ? 0 : idlePolls + 1;
+      if (idlePolls < maxPolls) await delay(pollInterval);
     }
     throw new Error("Timed out waiting for the swipe reply");
   }
@@ -22711,44 +22762,19 @@ function createPlayNodeController(client, {
           sessionId: newSessionId,
           sourceSessionId: adopted.sessionId,
           nodeId: sourceNode.id,
-          timeline: pendingSwipeTimeline(timeline, entries2, sourceIndex, newSessionId)
+          timeline: pendingSwipeTimeline(timeline, entries2, sourceIndex, newSessionId),
+          sourceVariantId: adopted.id,
+          expectedHead: timeline.head ?? null,
+          boundary: forkEventId
         });
         try {
           onStarted?.({ sessionId: newSessionId, nodeId: sourceNode.id });
           await client.postUserMessage(newSessionId, user.text);
           const pair = await waitForReply(newSessionId, forkEventId);
-          const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
-          const variant2 = {
-            id: variantId,
-            sessionId: newSessionId,
-            startEventId: pair.user.seq,
-            endEventId: pair.assistant.seq,
-            ...Number.isSafeInteger(pair.sessionFormatVersion) ? {
-              ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } }
-            } : {}
-          };
-          const next = await writeTimeline(playthrough, (timeline2) => {
-            const current4 = nodeById2(timeline2, sourceNode.id);
-            const existing = current4.node.variants.find((item) => item.id === variantId);
-            if (existing !== void 0) {
-              return timelineWithHead(
-                replaceNode(timeline2, current4.index, { ...current4.node, adoptedVariantId: variantId }),
-                { sessionId: existing.sessionId, nodeId: current4.node.id, variantId }
-              );
-            }
-            return timelineWithHead(
-              replaceNode(timeline2, current4.index, {
-                ...current4.node,
-                adoptedVariantId: variantId,
-                variants: [...current4.node.variants, variant2]
-              }),
-              { sessionId: newSessionId, nodeId: current4.node.id, variantId }
-            );
+          return await commitSwipeReply(client, pending2, pair, {
+            variantId: idFactory(pair.user.seq, pair.assistant.seq, newSessionId),
+            writeTimeline: (transform) => writeTimeline(playthrough, transform)
           });
-          const focus = await client.getFocus(playthrough);
-          if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
-          finishPendingSwipe(client, pending2);
-          return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId };
         } catch (error) {
           finishPendingSwipe(client, pending2, error);
           throw error;
@@ -22768,7 +22794,7 @@ function createPlayNodeController(client, {
         const branch = parent ? await client.postBranch(sessionId, boundary, source.sessionFormatVersion, stateSource) : await createRootSwipeSession(client, sessionId, { beforeUserEventId: userEventId });
         const newSessionId = branch?.sessionId;
         if (typeof newSessionId !== "string" || !newSessionId) throw Error("Retry created no session");
-        const pending2 = beginPendingSwipe(client, { playthrough, sessionId: newSessionId, sourceSessionId: sessionId, nodeId: `live-${userEventId}`, timeline: pendingSwipeTimeline(timeline, entries2, entries2.length, newSessionId) });
+        const pending2 = beginPendingSwipe(client, { kind: "request-retry", playthrough, sessionId: newSessionId, sourceSessionId: sessionId, nodeId: `live-${userEventId}`, timeline: pendingSwipeTimeline(timeline, entries2, entries2.length, newSessionId) });
         try {
           onStarted?.({ sessionId: newSessionId });
           await client.postUserMessage(newSessionId, user.text);
@@ -51467,9 +51493,9 @@ var import_react25 = require("react");
 function IdentityActionProposal({ proposal, bridge, onError }) {
   if (!proposal) return null;
   const action = (method, event) => {
-    const native = event?.nativeEvent, timestamp3 = native?.timeStamp, now = performance.now(), origin = performance.timeOrigin;
+    const native = event?.nativeEvent, timestamp3 = native?.timeStamp, now = performance.now(), origin2 = performance.timeOrigin;
     if (event?.isTrusted !== true || native?.isTrusted !== true || !Number.isFinite(timestamp3)) return;
-    const at4 = Number.isFinite(origin) && timestamp3 >= origin ? timestamp3 - origin : timestamp3;
+    const at4 = Number.isFinite(origin2) && timestamp3 >= origin2 ? timestamp3 - origin2 : timestamp3;
     if (at4 < 0 || at4 > now || now - at4 >= 1500) return;
     bridge?.[method](proposal.proposalId, { trusted: true, at: at4 }).catch((error) => onError(error.message));
   };
@@ -51962,7 +51988,7 @@ function createDomBridge(doc, context, onProposal, onError, helperBinding) {
     if (destroyed) value.dispose();
   }, destroy };
 }
-var InteractiveCard = (0, import_react26.memo)(function InteractiveCard2({ source, enabled, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, writesBlocked = false, openingBinding }) {
+var InteractiveCard = (0, import_react26.memo)(function InteractiveCard2({ source, enabled, disabledReason, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, writesBlocked = false, openingBinding }) {
   const diagnosticId = (0, import_react26.useId)();
   const frame = (0, import_react26.useRef)(null), cleanup = (0, import_react26.useRef)(() => {
   }), generation = (0, import_react26.useRef)(0), sourceFrameRevision = (0, import_react26.useRef)(0);
@@ -52016,7 +52042,7 @@ var InteractiveCard = (0, import_react26.memo)(function InteractiveCard2({ sourc
     }
   }, [source, enabled, trustRevision, JSON.stringify(owners), JSON.stringify(helpers)]);
   const srcDoc = (0, import_react26.useMemo)(() => `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data3.html, { inertImages: true })}</body></html>`, [data3]);
-  const unsupportedMessage = data3.unsupported.length ? data3.unsupported.map((reason) => reason.startsWith("appearance.") ? translate(reason) : reason).join(" ") + " " + translate("appearance.cardStaticFallback") : !enabled && (data3.runs?.length || data3.scripts?.length) ? translate("appearance.scriptsOff") : "";
+  const unsupportedMessage = data3.unsupported.length ? data3.unsupported.map((reason) => reason.startsWith("appearance.") ? translate(reason) : reason).join(" ") + " " + translate("appearance.cardStaticFallback") : !enabled && (data3.runs?.length || data3.scripts?.length) ? translate(disabledReason ?? "appearance.scriptsOff") : "";
   const visibleError = mvuFailure && writesBlocked ? "" : error;
   const diagnosticsOutside = useCardDiagnostics([unsupportedMessage, visibleError, mvuNotice, photoError].filter(Boolean), diagnosticId);
   (0, import_react26.useLayoutEffect)(() => {
@@ -52586,12 +52612,12 @@ function ConversationPresentation({ state, playthrough, playClient, sessionId, d
 function messageAvatarKey(turn, role2, index = 0) {
   return role2 === "user" ? `${turn.id}:user` : `${turn.id}:${turn.variant?.id ?? "live"}:assistant:${index}`;
 }
-function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, editable = true, streaming = false, variableScope, initialBinding = false, greetingBinding = false }) {
+function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, editable = true, streaming = false, bindingPending = false, variableScope, initialBinding = false, greetingBinding = false }) {
   const context = (0, import_react27.useContext)(Presentation);
   const settings = useConversationDisplaySettings();
   const coordinate = { playthrough: context?.playthrough, sessionId: context?.sessionId, characterId: context?.state?.display?.bindings?.characterId, timeline: context?.state?.timeline, turns: context?.state?.turns, greetingIndex: context?.state?.greeting?.index };
   const messageScope = variableScope && context?.playthrough?.id ? { ...variableScope, playthroughId: context.playthrough.id } : null;
-  const boundScope = messageScope ?? ((greetingBinding || initialBinding) && !context?.disabled ? greetingCardScope(coordinate) : null);
+  const boundScope = messageScope ?? ((greetingBinding || initialBinding) && !context?.disabled ? context?.state?.greetingVariableScope ?? greetingCardScope(coordinate) : null);
   const writeScope = messageScope ?? (initialBinding && !context?.disabled && !context?.busy ? initialCardScope(coordinate) : null);
   const latest = (0, import_react27.useRef)(context);
   latest.current = context;
@@ -52642,7 +52668,8 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
     createBinding: boundScope ? (signal, writeGrant) => createMvuCardBinding({ client: context.playClient, scope: writeGrant ? writeGrantScope(writeScope, writeGrant) : boundScope, signal, writeGrant }) : void 0,
     owners,
     helpers,
-    enabled: settings.interactiveCards !== false && !context?.disabled && !streaming,
+    enabled: settings.interactiveCards !== false && !context?.disabled && !streaming && !bindingPending,
+    disabledReason: settings.interactiveCards === false ? "appearance.scriptsOff" : context?.disabled ? "appearance.cardInactive" : streaming ? "appearance.cardStreaming" : bindingPending ? "appearance.cardBindingPending" : void 0,
     scopeKey,
     context: cardContext,
     onSend: disabled || context?.busy ? void 0 : async (text4, options) => {
@@ -52652,7 +52679,7 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
       else await current4.playClient.postUserMessage(current4.sessionId, text4, options);
       current4.changed?.();
     }
-  }), [text3, scopeKey, writeKey, context?.busy, disabled, context?.composer, context?.playClient, owners, helpers, cardContext, settings.interactiveCards, context?.disabled, streaming]);
+  }), [text3, scopeKey, writeKey, context?.busy, disabled, context?.composer, context?.playClient, owners, helpers, cardContext, settings.interactiveCards, context?.disabled, streaming, bindingPending]);
   return (0, import_react27.createElement)(
     MessageRow,
     {
@@ -52838,14 +52865,14 @@ function messageOriginKind2(message) {
   return message?.role === "assistant" ? "assistant" : message?.role === "system" ? "system" : "user";
 }
 function contextProjection(message) {
-  const origin = message?.origin ?? {};
+  const origin2 = message?.origin ?? {};
   return {
     id: message?.id ?? `context-${message?.seq ?? "unknown"}`,
     seq: message?.seq ?? null,
     text: renderedMessageText(message),
-    producer: origin.producer ?? null,
-    form: origin.form ?? null,
-    summary: origin.summary ?? null
+    producer: origin2.producer ?? null,
+    form: origin2.form ?? null,
+    summary: origin2.summary ?? null
   };
 }
 function sessionIsInRpWorkspace(workspace, session) {
@@ -53136,8 +53163,8 @@ function messageOriginKind3(message) {
   return message?.role === "assistant" ? "assistant" : message?.role === "system" ? "system" : "user";
 }
 function isRealUserMessage(message) {
-  const origin = messageOriginKind3(message);
-  return message?.role === "user" && (origin === "user" || origin === "steering");
+  const origin2 = messageOriginKind3(message);
+  return message?.role === "user" && (origin2 === "user" || origin2 === "steering");
 }
 function extendHeadVariant(timeline, sessionId, endEventId) {
   const head = timelineHead(timeline);
@@ -53403,15 +53430,20 @@ function turnReconciler(client) {
   return reconcile;
 }
 async function loadChatState(client, sessionId, playthrough) {
-  const pending2 = pendingSwipeForSession(client, sessionId);
+  let pending2 = pendingSwipeForSession(client, sessionId);
+  if (pending2?.error) {
+    await recoverCompletedSwipe(client, pending2);
+    pending2 = pendingSwipeForSession(client, sessionId);
+  }
+  const pendingTimeline = pending2 ? await client.getTimeline(playthrough) : null;
   const reconciled = pending2 === null ? await turnReconciler(client)(sessionId, playthrough) : {
     timeline: {
       ...pending2.timeline,
       // Keep the preview's branch, but read display edits from durable metadata.
-      nodes: await client.getTimeline(playthrough).then((current4) => pending2.timeline.nodes.map((node) => ({
+      nodes: pending2.timeline.nodes.map((node) => ({
         ...node,
-        displayOverride: current4.nodes.find((item) => item.id === node.id)?.displayOverride ?? null
-      })))
+        displayOverride: pendingTimeline.nodes.find((item) => item.id === node.id)?.displayOverride ?? null
+      }))
     }
   };
   const timeline = reconciled.timeline ?? await client.getTimeline(playthrough);
@@ -53518,6 +53550,9 @@ async function loadChatState(client, sessionId, playthrough) {
   const renderingSources = await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse, { kind: "character", resourceId: bindings.characterId }), ...renderingInventory(presetResponse?.preset ?? presetResponse, { kind: "preset", resourceId: bindings.presetId })]);
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
+    // Pending children are not durable playthrough members yet. Keep the
+    // opening on the source's verified, read-only checkpoint until adoption.
+    greetingVariableScope: greetingCardScope({ playthrough, sessionId: pending2?.sourceSessionId ?? sessionId, characterId: bindings.characterId, greetingIndex: greeting?.index, timeline: pendingTimeline ?? timeline }),
     pendingSwipeError: pending2?.error ?? null,
     stoppedRequest: rootMessages?.stoppedRequest ?? null,
     timeline,
@@ -53614,7 +53649,8 @@ function Turn({ turn, hideUser = false, swipePending = false, stoppedRequest, ..
       variableScope: messageVariableScope(turn),
       messageKey: messageAvatarKey(turn, "assistant", index),
       editable: durableQa || turn.imported === true,
-      streaming: turn.running === true || turn.transient === true,
+      streaming: turn.running === true,
+      bindingPending: turn.transient === true,
       className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
       text: text3
     })),

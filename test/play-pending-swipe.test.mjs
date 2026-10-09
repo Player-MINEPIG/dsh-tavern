@@ -137,3 +137,59 @@ test('display edits and another playthrough finish while a swipe waits, and surv
   assert.equal(f.timeline.nodes[0].displayOverride, 'Retained edit')
   assert.equal(f.timeline.nodes[1].variants.length, 2)
 })
+
+test('active Host turns outlive the initial acceptance timeout and still commit once',async()=>{
+ const f=fixture()
+ let reads=0
+ const get=f.client.getMessages
+ f.client.getMessages=async id=>{if(id==='new'&&++reads>6)f.setPhase('done');return get(id)}
+ const controller=createPlayNodeController(f.client,{maxPolls:2,delay:async()=>{},idFactory:()=> 'long-reply'})
+ await controller.createReplySwipe(f.playthrough,'qa-2')
+ assert.equal(reads,7)
+ assert.equal(f.writes,1)
+ assert.equal(f.timeline.nodes[1].adoptedVariantId,'long-reply')
+ assert.equal(pendingSwipe(f.client,f.playthrough),null)
+})
+
+test('a completed swipe recovers after a lost read without resending or duplicating the reply',async()=>{
+ const f=fixture(),get=f.client.getMessages
+ let failed=false,sends=0
+ f.client.postUserMessage=async()=>{sends++}
+ f.client.getMessages=async id=>{if(id==='new'&&!failed){failed=true;throw Error('Connection lost')}return get(id)}
+ await assert.rejects(f.controller.createReplySwipe(f.playthrough,'qa-2'),/Connection lost/)
+ assert.equal(f.writes,0)
+ f.setPhase('done')
+ const [a,b]=await Promise.all([loadChatState(f.client,'new',f.playthrough),loadChatState(f.client,'new',f.playthrough)])
+ assert.equal(sends,1)
+ assert.equal(f.timeline.nodes[1].variants.length,2)
+ assert.equal(a.pendingSwipeError,null);assert.equal(b.pendingSwipeError,null)
+ assert.equal(a.turns.at(-1).assistantText,'New reply')
+ assert.equal(a.turns.at(-1).variant.sessionId,'new','the recovered reply can bind MVU to its durable variant')
+ assert.equal(pendingSwipe(f.client,f.playthrough),null)
+})
+
+test('failed swipe recovery never steals a separately selected timeline head',async()=>{
+ const f=fixture(),get=f.client.getMessages
+ let failed=false
+ f.client.getMessages=async id=>{if(id==='new'&&!failed){failed=true;throw Error('Connection lost')}return get(id)}
+ await assert.rejects(f.controller.createReplySwipe(f.playthrough,'qa-2'))
+ await f.client.putTimeline(f.playthrough,{...f.timeline,head:{sessionId:'old',nodeId:'qa-1',variantId:'v-1'}})
+ const changed=structuredClone(f.timeline)
+ f.setPhase('done')
+ await assert.rejects(loadChatState(f.client,'new',f.playthrough),/Active reply changed/)
+ assert.deepEqual(f.timeline,changed)
+})
+
+test('pending swipe greeting reads the verified source checkpoint, then switches to the committed child',async()=>{
+ const f=fixture({first:true})
+ f.client.getCharacterSelection=async()=>({selection:{characterCardId:'card',character:{greetingIndex:0}}})
+ f.client.getCharacter=async()=>({character:{id:'card',data:{name:'Neutral',firstMessage:'Hello'}}})
+ const task=f.controller.createReplySwipe(f.playthrough,'qa-1')
+ await tick()
+ const pending=await loadChatState(f.client,'new',f.playthrough)
+ assert.equal(pending.timeline.nodes.length,0)
+ assert.deepEqual(pending.greetingVariableScope,{mode:'greeting',playthroughId:'pt',sessionId:'old',characterId:'card',greetingIndex:0})
+ f.settle();await task
+ const completed=await loadChatState(f.client,'new',f.playthrough)
+ assert.equal(completed.greetingVariableScope.sessionId,'new')
+})

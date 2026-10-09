@@ -3,6 +3,8 @@ import {restoreRenderingDisplay,useRestoredRenderingDisplay} from './rendering-d
 import { readRenderingWorkspace, identifyRenderingSources, renderingInventory } from './rendering-sources.js'
 import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
 import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
+import { recoverCompletedSwipe } from './swipe-completion.js'
+import { greetingCardScope } from './mvu-scope.js'
 import {
   createElement,
   useEffect,
@@ -119,15 +121,20 @@ function turnReconciler(client) {
 }
 
 export async function loadChatState(client, sessionId, playthrough) {
-  const pending = pendingSwipeForSession(client, sessionId)
+  let pending = pendingSwipeForSession(client, sessionId)
+  if (pending?.error) {
+    await recoverCompletedSwipe(client, pending)
+    pending = pendingSwipeForSession(client, sessionId)
+  }
+  const pendingTimeline = pending ? await client.getTimeline(playthrough) : null
   const reconciled = pending === null ? await turnReconciler(client)(sessionId, playthrough) : {
     timeline: {
       ...pending.timeline,
       // Keep the preview's branch, but read display edits from durable metadata.
-      nodes: await client.getTimeline(playthrough).then(current => pending.timeline.nodes.map(node => ({
+      nodes: pending.timeline.nodes.map(node => ({
         ...node,
-        displayOverride: current.nodes.find(item => item.id === node.id)?.displayOverride ?? null,
-      }))),
+        displayOverride: pendingTimeline.nodes.find(item => item.id === node.id)?.displayOverride ?? null,
+      })),
     },
   }
   const timeline = reconciled.timeline ?? await client.getTimeline(playthrough)
@@ -241,6 +248,9 @@ export async function loadChatState(client, sessionId, playthrough) {
   const renderingSources=await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse,{kind:'character',resourceId:bindings.characterId}),...renderingInventory(presetResponse?.preset ?? presetResponse,{kind:'preset',resourceId:bindings.presetId})])
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
+    // Pending children are not durable playthrough members yet. Keep the
+    // opening on the source's verified, read-only checkpoint until adoption.
+    greetingVariableScope: greetingCardScope({playthrough,sessionId:pending?.sourceSessionId??sessionId,characterId:bindings.characterId,greetingIndex:greeting?.index,timeline:pendingTimeline??timeline}),
     pendingSwipeError: pending?.error ?? null,
     stoppedRequest:rootMessages?.stoppedRequest??null,
     timeline,
@@ -347,7 +357,8 @@ function Turn({ turn, hideUser = false, swipePending = false, stoppedRequest, ..
       variableScope: messageVariableScope(turn),
       messageKey: messageAvatarKey(turn, 'assistant', index),
       editable: durableQa || turn.imported === true,
-      streaming: turn.running === true || turn.transient === true,
+      streaming: turn.running === true,
+      bindingPending: turn.transient === true,
       className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich',
       text,
     })),

@@ -33,7 +33,7 @@ test('only a durable cancelled human request without assistant text offers a ret
 function fixture(later=false,stoppedAgain=false,legacy=false){
  const playthrough={id:'p',path:'p/timeline.json',ext:{pmpDshTavern:{rootSessionId:'old'}}}
  const parent={id:'parent',kind:'qa',parentVariantId:null,adoptedVariantId:'parent-v',variants:[{id:'parent-v',sessionId:'old',startEventId:1,endEventId:3}]}
- let timeline={nodes:later?[parent]:[],head:later?{sessionId:'old',nodeId:'parent',variantId:'parent-v'}:null},writes=0,id=0
+ let timeline={nodes:later?[parent]:[],head:later?{sessionId:'old',nodeId:'parent',variantId:'parent-v'}:null},writes=0,id=0,children=0
  const userSeq=later?5:1
  if(legacy){
   const phantom={id:'phantom',kind:'qa',displayOverride:null,parentVariantId:later?'parent-v':null,adoptedVariantId:'phantom-v',variants:[{id:'phantom-v',sessionId:'old',startEventId:userSeq,endEventId:userSeq+1}]}
@@ -45,7 +45,7 @@ function fixture(later=false,stoppedAgain=false,legacy=false){
  const user={role:'user',seq:userSeq,text:'Neutral stopped question'}
  const client={getTimeline:async()=>structuredClone(timeline),putTimeline:async(_p,next)=>{writes++;timeline=next},getFocus:async()=>timeline.head,
   getMessages:async sessionId=>({incompleteTurn:false,sessionFormatVersion:4,stoppedRequest:sessionId==='old'||stoppedAgain?stoppedRequest:null,messages:[...prefix,user,...(sessionId==='old'||stoppedAgain?[{role:'assistant',seq:userSeq+1,text:'Analysis only',content:[{type:'reasoning',text:'Analysis only'}]}]:[{role:'assistant',seq:userSeq+1,text:'Neutral saved answer'}])]}),
-  getCharacterSelection:async()=>({selection:null}),postSession:async(...args)=>{calls.push(['create',...args]);return {sessionId:'new'}},postBranch:async(...args)=>{calls.push(['branch',...args]);return {sessionId:'new'}},postUserMessage:async(...args)=>{calls.push(['send',...args]);return {accepted:true}}}
+  getCharacterSelection:async()=>({selection:null}),postSession:async(...args)=>{calls.push(['create',...args]);return {sessionId:++children===1?'new':`new-${children}`}},postBranch:async(...args)=>{calls.push(['branch',...args]);return {sessionId:++children===1?'new':`new-${children}`}},postUserMessage:async(...args)=>{calls.push(['send',...args]);return {accepted:true}}}
  const controller=createPlayNodeController(client,{idFactory:()=>`v-${++id}`,delay:()=>{throw Error('A stopped request must not wait for polling')}})
  return {playthrough,client,controller,stoppedRequest,calls,get timeline(){return timeline},get writes(){return writes}}
 }
@@ -96,4 +96,17 @@ test('legacy repair preserves real replies, alternate variants and descendant br
  }
  const saved=structuredClone(messages);saved.stoppedRequest=null;saved.messages[1].text='Saved reply'
  assert.deepEqual(appendCompletedTurns(base,saved,'old').timeline,base)
+})
+
+
+test('a read failure during request retry is not recovered as an existing reply variant',async()=>{
+ const f=fixture(),get=f.client.getMessages
+ let failed=false
+ f.client.getMessages=async id=>{if(id==='new'&&!failed){failed=true;throw Error('Connection lost')}return get(id)}
+ await assert.rejects(f.controller.retryStoppedRequest(f.playthrough,{sessionId:'old',userEventId:1}),/Connection lost/)
+ const state=await loadChatState(f.client,'new',f.playthrough)
+ assert.equal(state.pendingSwipeError,'Connection lost')
+ assert.equal(state.timeline.nodes.length,0)
+ assert.equal(f.writes,0)
+ assert.equal(f.calls.filter(call=>call[0]==='send').length,1)
 })

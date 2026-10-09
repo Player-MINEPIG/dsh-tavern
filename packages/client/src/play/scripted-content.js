@@ -260,7 +260,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
   return { bridge, attach: value => { runtime=value; if (destroyed) value.dispose() }, destroy }
 }
 
-const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, writesBlocked=false, openingBinding }) {
+const InteractiveCard = memo(function InteractiveCard({ source, enabled, disabledReason, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, writesBlocked=false, openingBinding }) {
   const diagnosticId=useId()
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0),sourceFrameRevision=useRef(0)
   const sourceFrameKey=useMemo(()=>++sourceFrameRevision.current,[source])
@@ -288,7 +288,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     try { const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = useMemo(()=>`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{display:flow-root;margin:0;font:14px system-ui;color:#243042;background:transparent}html{color-scheme:light dark}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`,[data])
-  const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):!enabled&&(data.runs?.length||data.scripts?.length)?translate('appearance.scriptsOff'):''
+  const unsupportedMessage=data.unsupported.length?data.unsupported.map(reason=>reason.startsWith('appearance.')?translate(reason):reason).join(' ')+' '+translate('appearance.cardStaticFallback'):!enabled&&(data.runs?.length||data.scripts?.length)?translate(disabledReason??'appearance.scriptsOff'):''
   const visibleError=mvuFailure&&writesBlocked?'':error
   const diagnosticsOutside=useCardDiagnostics([unsupportedMessage,visibleError,mvuNotice,photoError].filter(Boolean),diagnosticId)
   useLayoutEffect(()=>{setClosed(false);replaceProposal('');setError('');setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);setMvuReading(false);setMvuFailure(false);setMvuNotice('');retryMvu.current=false;return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,JSON.stringify(openingBinding),runtimeRevision])
