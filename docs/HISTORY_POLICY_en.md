@@ -29,7 +29,7 @@ and MVU controls are disabled and labeled advanced-only. Existing advanced rules
 the standard API rejects changes to those fields.
 
 New sessions default to disabled. Saves apply on the next accepted pre-step; retries reuse the committed surface.
-Current/unsent injections and the latest reused runtime-context stay. Old injections are replaced in place with
+Current/unsent injections stay. Excluded runtime context is refreshed into this step before its old copy is removed. Old injections are replaced in place with
 empty developer messages. Changing source rules or disabling restores still-live owned placeholders next step,
 with original user IDs/content/order; compaction-shadowed placeholders never revive. Restart preserves settings.
 New fork IDs default disabled and restore inherited placeholders on first run, unless explicitly given a copied policy.
@@ -47,7 +47,7 @@ content and removed ranges. New sessions default to disabled. Saves apply at the
 retries within a step keep the captured revision. Disabling/unloading restores native effective history,
 without undoing DSH compaction. Forked session IDs default to disabled and may explicitly copy a policy.
 
-Current-step contributions, the latest native runtime context, system instructions, tool calls/results and
+Current-step contributions, the current system prompt, developer instructions, tool calls/results and
 adapter replay data are protected. Verified DeepSeek Messages v1 replay supports text-only span edits with every block and signature retained; unknown replay formats remain unchanged. Reasoning is omitted only under a verified target-model contract;
 otherwise it remains with a warning. UI hiding is not treated as provider omission, and reasoning removal
 for DeepSeek requests carrying tools is not promised.
@@ -64,7 +64,7 @@ History and assembly APIs share the existing security router and browser/desktop
 
 Actual requests use the recorded final messages. Advanced result cards reconcile history text using `metadata.historyPolicy`, while original layout and event audit remain intact. Standard provenance uses built-in replacement events and `data.historyPolicy/sourceEventSeqs`. Layout assembly precedes history filtering.
 
-All preview messages start collapsed; expand a row to read its text. Preview reads the native effective message list, not just human/assistant chat text: DSH records `system/message`, and still-effective system snapshots appear and remain protected. Unchecking `runtime-context` excludes obsolete copies, while the latest effective snapshot remains available for DSH reuse. Preview has not created a next-step snapshot, so it retains the current latest one.
+All preview rows start collapsed. The effective native message list includes saved `system/message` events. Separate `system-prompt` (system history) and `runtime-context` (runtime context history) controls select retention. Unchecking marks old copies red, including the latest old runtime snapshot: required runtime context is supplied once as a current-step message, and DSH reconciles old system revisions into the current effective prompt. Preview excludes future step contributions; red history rows do not mean current instructions/context stop being sent. Tool transactions and developer instructions remain protected. Older policies without a system-prompt rule retain their behavior; new default policies include this exclusion but filtering itself defaults off.
 
 ## Verification boundary
 

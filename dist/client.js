@@ -6749,6 +6749,7 @@ var init_schema = __esm({
       sources: [
         { kind: "dsh-prompt-assembler", include: false },
         { kind: "runtime-context", include: false },
+        { kind: "system-prompt", include: false },
         { kind: "ptc-mode", include: false },
         { kind: "tool", include: false }
       ],
@@ -6812,7 +6813,7 @@ function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-ass
   const sources = el("fieldset", "", panel);
   el("legend", "\u4FDD\u7559\u54EA\u4E9B\u5386\u53F2\u6765\u6E90", sources);
   const sourceRows = el("div", "", sources);
-  el("p", "\u6B64\u5904\u7B5B\u9009\u5DF2\u6D88\u8D39\u7684\u65E7\u6D88\u606F\u3002\u53D6\u6D88 runtime-context \u53EA\u6E05\u7406\u8FC7\u671F\u526F\u672C\uFF0C\u6700\u65B0\u6709\u6548\u5FEB\u7167\u4ECD\u4FDD\u7559\uFF1B\u5F53\u524D\u6B65\u6CE8\u5165\u3001system/developer \u6307\u4EE4\u548C\u5DE5\u5177\u8C03\u7528\u53CA\u7ED3\u679C\u4E0D\u7531\u6765\u6E90\u5F00\u5173\u5220\u9664\u3002", sources);
+  el("p", "\u6B64\u5904\u7B5B\u9009\u5DF2\u6D88\u8D39\u7684\u65E7\u6D88\u606F\u3002\u53D6\u6D88 runtime-context \u4F1A\u6E05\u7406\u5305\u62EC\u6700\u65B0\u4E00\u6761\u5728\u5185\u7684\u65E7\u5FEB\u7167\uFF0C\u672C\u6B65\u9700\u8981\u7684\u4E0A\u4E0B\u6587\u91CD\u65B0\u52A0\u5165\uFF1B\u53D6\u6D88 system-prompt \u4F1A\u6536\u62E2\u65E7\u7CFB\u7EDF\u63D0\u793A\uFF0C\u53EA\u53D1\u9001\u672C\u8F6E\u6709\u6548\u7248\u672C\u3002\u5F53\u524D\u6B65\u6CE8\u5165\u3001developer \u6307\u4EE4\u548C\u5DE5\u5177\u8C03\u7528\u53CA\u7ED3\u679C\u4ECD\u4FDD\u7559\u3002", sources);
   const addRow = el("div", "", sources), sourceName = el("input", "", addRow);
   sourceName.placeholder = "\u7CBE\u786E source.kind";
   sourceName.setAttribute("aria-label", "\u6DFB\u52A0\u6765\u6E90");
@@ -6866,16 +6867,18 @@ function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-ass
   const results = el("div", "", panel);
   results.className = "history-results";
   results.setAttribute("aria-label", "\u5386\u53F2\u5339\u914D\u9884\u89C8");
-  const reasonLabels2 = { SOURCE_EXCLUDED: "\u6309\u6765\u6E90\u6392\u9664\u65E7\u6D88\u606F", UNKNOWN_SOURCE_RETAINED: "\u672A\u77E5\u6765\u6E90\uFF1A\u4FDD\u7559\u539F\u6587", REASONING_REQUIRED_OR_UNVERIFIED: "\u6A21\u578B\u534F\u8BAE\u8981\u6C42\u4FDD\u7559\u601D\u8003\uFF0C\u6216\u5C1A\u672A\u9A8C\u8BC1\u80FD\u5B89\u5168\u7701\u7565", SOURCE_REQUIRED_REASONING_RETAINED: "\u6B64\u6D88\u606F\u542B\u5FC5\u9700\u601D\u8003\uFF0C\u4E0D\u80FD\u6574\u6761\u6392\u9664", CURRENT_OR_ASSEMBLED_CONTENT: "\u5F53\u524D\u6B65\u6216\u672C\u6B21\u88C5\u914D\u5185\u5BB9\uFF1A\u4FDD\u7559", PROTECTED_PROTOCOL_MESSAGE: "\u5DE5\u5177\u4E8B\u52A1\u3001\u7CFB\u7EDF\u6307\u4EE4\u6216 adapter replay \u6570\u636E\uFF1A\u4FDD\u7559", CURRENT_RUNTIME_CONTEXT: "\u6700\u65B0\u6709\u6548\u8FD0\u884C\u4E0A\u4E0B\u6587\uFF1A\u5373\u4F7F\u53D6\u6D88\u8BE5\u6765\u6E90\uFF0C\u4E5F\u4F1A\u4FDD\u7559\u6B64\u5FEB\u7167\u4F9B DSH \u590D\u7528", AMBIGUOUS_FRAGMENT: "\u7247\u6BB5\u6807\u8BB0\u6709\u6B67\u4E49\uFF1A\u4FDD\u7559", UNCLOSED_FRAGMENT: "\u7247\u6BB5\u672A\u95ED\u5408\uFF1A\u4FDD\u7559", EMPTY_AFTER_FILTER: "\u7B5B\u9009\u540E\u65E0\u5269\u4F59\u5185\u5BB9" };
+  const reasonLabels2 = { SOURCE_EXCLUDED: "\u6309\u6765\u6E90\u6392\u9664\u65E7\u6D88\u606F", UNKNOWN_SOURCE_RETAINED: "\u672A\u77E5\u6765\u6E90\uFF1A\u4FDD\u7559\u539F\u6587", REASONING_REQUIRED_OR_UNVERIFIED: "\u6A21\u578B\u534F\u8BAE\u8981\u6C42\u4FDD\u7559\u601D\u8003\uFF0C\u6216\u5C1A\u672A\u9A8C\u8BC1\u80FD\u5B89\u5168\u7701\u7565", SOURCE_REQUIRED_REASONING_RETAINED: "\u6B64\u6D88\u606F\u542B\u5FC5\u9700\u601D\u8003\uFF0C\u4E0D\u80FD\u6574\u6761\u6392\u9664", CURRENT_OR_ASSEMBLED_CONTENT: "\u5F53\u524D\u6B65\u6216\u672C\u6B21\u88C5\u914D\u5185\u5BB9\uFF1A\u4FDD\u7559", PROTECTED_PROTOCOL_MESSAGE: "\u5DE5\u5177\u4E8B\u52A1\u3001\u7CFB\u7EDF\u6307\u4EE4\u6216 adapter replay \u6570\u636E\uFF1A\u4FDD\u7559", AMBIGUOUS_FRAGMENT: "\u7247\u6BB5\u6807\u8BB0\u6709\u6B67\u4E49\uFF1A\u4FDD\u7559", UNCLOSED_FRAGMENT: "\u7247\u6BB5\u672A\u95ED\u5408\uFF1A\u4FDD\u7559", EMPTY_AFTER_FILTER: "\u7B5B\u9009\u540E\u65E0\u5269\u4F59\u5185\u5BB9" };
   const display = (message) => message.content.map((block) => block.type === "text" ? block.text : block.type === "reasoning" ? `\u3014\u601D\u8003\u3015
 ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
   reasonLabels2.POLICY_DISABLED = "\u5DF2\u5173\u95ED\uFF1A\u6062\u590D\u4ECD\u7531\u672C\u529F\u80FD\u9690\u85CF\u7684\u6D88\u606F";
+  reasonLabels2.SYSTEM_REASSEMBLED = "\u65E7\u7CFB\u7EDF\u63D0\u793A\u7531 DSH \u6536\u62E2\uFF0C\u672C\u8F6E\u7CFB\u7EDF\u63D0\u793A\u91CD\u65B0\u88C5\u914D\uFF08\u4E0D\u5173\u95ED\u5F53\u524D\u6307\u4EE4\uFF09";
+  reasonLabels2.CURRENT_SYSTEM_PROMPT = "\u672C\u8F6E\u6709\u6548\u7CFB\u7EDF\u63D0\u793A\uFF1A\u4FDD\u7559";
   reasonLabels2.NATIVE_REPLACEMENT_RETAINED = "\u539F\u751F\u538B\u7F29\u6216\u5176\u4ED6\u66FF\u6362\u7ED3\u679C\uFF1A\u4FDD\u7559";
   reasonLabels2.SOURCE_REPLAY_RETAINED = "\u6B64\u6D88\u606F\u643A\u5E26\u534F\u8BAE\u91CD\u653E\u6570\u636E\uFF0C\u4FDD\u7559\u6D88\u606F\u8EAB\u4EFD\u4E0E\u5185\u5BB9\u5757";
   reasonLabels2.REPLAY_BLOCKS_RETAINED = "\u4FDD\u7559\u534F\u8BAE\u91CD\u653E\u6240\u9700\u7684\u5185\u5BB9\u5757\u4E0E\u601D\u8003\uFF0C\u4EC5\u5141\u8BB8\u5DF2\u9A8C\u8BC1\u7684\u6B63\u6587\u7247\u6BB5\u7F16\u8F91";
   function renderSources() {
     sourceRows.replaceChildren();
-    const listed = new Map([["user", true], ["model", true], ...policy.sources.map((r) => [r.kind, r.include])]);
+    const listed = new Map([["user", true], ["model", true], ["system-prompt", true], ["runtime-context", true], ...policy.sources.map((r) => [r.kind, r.include])]);
     for (const [kind, include] of listed) {
       const row = el("label", "", sourceRows), input = el("input", "", row);
       input.type = "checkbox";
@@ -6883,7 +6886,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
       input.disabled = standard && ["user", "model"].includes(kind);
       input.dataset.kind = kind;
       input.setAttribute("aria-label", `\u4FDD\u7559\u6765\u6E90 ${kind}`);
-      el("span", ` ${kind} `, row);
+      el("span", ` ${{ "system-prompt": "\u7CFB\u7EDF\u63D0\u793A\u5386\u53F2 \xB7 system-prompt", "runtime-context": "\u8FD0\u884C\u4E0A\u4E0B\u6587\u5386\u53F2 \xB7 runtime-context" }[kind] ?? kind} `, row);
     }
   }
   const draft = () => ({
