@@ -24384,7 +24384,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 0);
   }
-  const button = (label, onClick, disabled = false, cls, pressed) => (0, import_react11.createElement)("button", { type: "button", onClick, disabled: busy2 || disabled, className: cls, "aria-pressed": pressed }, t(label));
+  const button = (label, onClick, disabled = false, cls, pressed) => (0, import_react11.createElement)("button", { type: "button", onClick, disabled: busy2 || disabled, "aria-describedby": label === "apply" && applyBlockedReason ? "dta-apply-blocked" : void 0, className: cls, "aria-pressed": pressed }, t(label));
   const select = (value, values, onChange, disabled = false) => (0, import_react11.createElement)("select", { value, disabled: busy2 || disabled, onChange: (e) => onChange(e.target.value) }, ...values.map((v2) => (0, import_react11.createElement)("option", { key: v2, value: v2 }, t(v2))));
   const nodeName = (node) => {
     if (node.positionId && node.source?.module === "worldbook" && node.name?.startsWith("worldbook:")) {
@@ -24507,6 +24507,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     }
   }
   const draftAvailable = capabilities ? nativeDraft ? capabilities.native && !nativeError : capabilities.core : capable;
+  const applyBlockedReason = !draftAvailable ? nativeError || (nativeDraft ? locale === 0 ? "\u65E0\u6CD5\u5E94\u7528\uFF1A\u5F53\u524D\u5BBF\u4E3B\u4E0D\u652F\u6301\u6807\u51C6\u7248\u5B98\u65B9\u63A5\u53E3\u3002\u8BF7\u66F4\u65B0 DSH \u4E0E Assembler \u5E76\u91CD\u542F\u540E\u7AEF\uFF0C\u518D\u5237\u65B0\u9875\u9762\u3002" : "Cannot apply: this host does not support the standard public interfaces. Update DSH and Assembler, restart the backend, then refresh." : locale === 0 ? "\u65E0\u6CD5\u5E94\u7528\uFF1A\u5F53\u524D\u73AF\u5883\u672A\u542F\u7528\u8FDB\u9636\u7248\u6838\u5FC3\u6269\u5C55\u3002\u8BF7\u5C06\u300C\u63A5\u5165\u65B9\u5F0F\u300D\u5207\u56DE\u300C\u6807\u51C6\u7248 \xB7 \u5B98\u65B9\u63A5\u53E3\u300D\uFF0C\u6216\u5B89\u88C5\u5E76\u542F\u7528\u5339\u914D\u7684\u6838\u5FC3\u6269\u5C55\u3001\u91CD\u542F\u540E\u7AEF\u540E\u5237\u65B0\u9875\u9762\u3002" : "Cannot apply: the advanced core extension is not enabled in this environment. Switch Backend to \u201CStandard \xB7 public interfaces\u201D, or install and enable the matching core extension, restart the backend, then refresh.") : selectionTarget?.editable === false ? locale === 0 ? "\u65E0\u6CD5\u5E94\u7528\uFF1A\u5F53\u524D\u4F1A\u8BDD\u6B63\u5728\u751F\u6210\u6216\u6682\u4E0D\u53EF\u7F16\u8F91\u3002\u8BF7\u7B49\u5F85\u751F\u6210\u7ED3\u675F\uFF0C\u518D\u91CD\u65B0\u6253\u5F00\u88C5\u914D\u8BBE\u7F6E\u3002" : "Cannot apply: this session is generating or is not currently editable. Wait for generation to finish, then reopen assembly settings." : !sessionId && !selectionTarget ? t("noSession") : null;
   const displayRows = tab === "rules" ? draft ? controlRows(draft.rules) : [] : preview?.nodes ?? [];
   const ruleStability = (rule) => sourceDescriptor2(rule.kind)?.stability ?? "conversation";
   const summaryMetadata = (stability, lifetime, role2, history) => (0, import_react11.createElement)(SummaryMetadata, { className: history ? "dta-preview-meta" : "", items: [
@@ -24718,7 +24719,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
             setStatus(t("appliedStatus"));
             window.dispatchEvent(new window.Event(refreshEvent));
           });
-        }, !sessionId && !selectionTarget || !draftAvailable || selectionTarget?.editable === false, "primary"), button("reset", async () => {
+        }, Boolean(applyBlockedReason), "primary"), button("reset", async () => {
           const nextBackend = items2.find((p) => p.id === defaultId3)?.backend ?? "core";
           if (!await (nextBackend === appliedBackend ? discard() : leave())) return;
           run(async () => {
@@ -24740,6 +24741,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
             window.dispatchEvent(new window.Event(refreshEvent));
           });
         }, !sessionId && !selectionTarget || !selection || selectionTarget?.editable === false)),
+        applyBlockedReason && (0, import_react11.createElement)("div", { id: "dta-apply-blocked", role: "alert", className: "dta-notice", "data-error": true }, applyBlockedReason),
         draft.builtin && (0, import_react11.createElement)("small", null, t("defaultHint")),
         !sessionId && (0, import_react11.createElement)("small", null, selectionTarget ? t("deferredSelection") : t("noSession"))
       ),
