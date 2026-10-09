@@ -59,6 +59,8 @@ MVU 示例按 `sourceKind: model` 筛选助手正文，只匹配从行首开始�
 
 实际请求以保存的最终 messages 为准；进阶卡片按 `metadata.historyPolicy` 对布局中的历史正文作显示修正，保留原始布局及事件审计。标准版通过内置替换事件的 `data.historyPolicy/sourceEventSeqs` 追溯。布局先装配，历史策略随后筛选。
 
+预览条目默认全部折叠，点击条目才展开正文。此预览读取原生有效消息列表，不只是真人和助手的聊天文本：DSH 会记录 `system/message`，其中仍生效的 system 快照也会出现并受保护。取消 `runtime-context` 仅排除过期副本；最新有效快照可能被 DSH 复用，仍保留。预览尚未产生下一步快照，因此保留当前最新一条。
+
 ## 验证边界
 
 Tavern 的 `DSH_HISTORY_ASSEMBLER_ROOT=/path/to/assembler node --test test/history-policy-mvu.test.mjs`

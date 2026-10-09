@@ -64,6 +64,8 @@ History and assembly APIs share the existing security router and browser/desktop
 
 Actual requests use the recorded final messages. Advanced result cards reconcile history text using `metadata.historyPolicy`, while original layout and event audit remain intact. Standard provenance uses built-in replacement events and `data.historyPolicy/sourceEventSeqs`. Layout assembly precedes history filtering.
 
+All preview messages start collapsed; expand a row to read its text. Preview reads the native effective message list, not just human/assistant chat text: DSH records `system/message`, and still-effective system snapshots appear and remain protected. Unchecking `runtime-context` excludes obsolete copies, while the latest effective snapshot remains available for DSH reuse. Preview has not created a next-step snapshot, so it retains the current latest one.
+
 ## Verification boundary
 
 `DSH_HISTORY_ASSEMBLER_ROOT=/path/to/assembler node --test test/history-policy-mvu.test.mjs` uses the real generic engine to verify opt-in behavior, advanced MVU removal, complete standard assistant reasoning/MVU retention, identical human text retention and original-message preservation. It explicitly skips without that path.
