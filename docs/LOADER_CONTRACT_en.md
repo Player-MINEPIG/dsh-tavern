@@ -2,7 +2,9 @@
 
 [中文](LOADER_CONTRACT.md)
 
-This contract covers Tavern **3.0.0**, Assembler **v1.1.0** and DSH **0.2.0-rc.2**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
+The Tavern bundle entry loads bundled standard Assembler or reuses an independently enabled instance before mounting the service-dependent business loader. Installation order, disabling and removal follow the [integration contract](ASSEMBLER_INTEGRATION_en.md#coexistence-with-standalone-assembler).
+
+This contract covers Tavern **3.0.1**, Assembler **v1.1.0** and DSH **0.2.0-rc.2**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
 
 ## Goals and ownership
 

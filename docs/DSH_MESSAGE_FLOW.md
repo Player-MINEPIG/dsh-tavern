@@ -2,9 +2,9 @@
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
-Tavern **3.0.0** 接入独立 Assembler **v1.1.0**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
+Tavern **3.0.1** 接入独立 Assembler **v1.1.0**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
 
-本文描述 Tavern 3.0.0 在 DSH `0.2.0-rc.2` 上的当前消息合同：DSH
+本文描述 Tavern 3.0.1 在 DSH `0.2.0-rc.2` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
 `system/message` 进入有效消息 surface，`request/header` 保留 config/tools；Trace schema 4
 只持久化 metadata 与官方 Session 引用，并由 [v3 API](PROMPT_API_V3.md) 按需验证正文。

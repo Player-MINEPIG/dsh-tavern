@@ -4,7 +4,7 @@
 
 必需的独立[请求装配器](REQUEST_ASSEMBLY.md)拥有装配策略与来源注册；标准策略使用公开 sections/context/pre-step，可选进阶 addon 提供协议 1 请求排列。未应用策略的会话继续使用下文的兼容 loader 路径。DSH 保留持久历史与 Provider 序列化的所有权。
 
-本文说明 Tavern 3.0.0中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
+本文说明 Tavern 3.0.1中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
 如何进入一次模型请求，并明确未实现的映射。DSH 自身的 turn/step、Inbox、Session、
 system assembly 和 request/header 顺序另见 `DSH_MESSAGE_FLOW.md`。
 

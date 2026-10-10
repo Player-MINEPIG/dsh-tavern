@@ -4,3 +4,4 @@
       name: 'pmp-dsh-tavern'
       config:
         storageDir: !!js dshHomePath('pmp-dsh-tavern')
+        assemblerStorageDir: !!js dshHomePath('dsh-prompt-assembler')

@@ -98,7 +98,7 @@ Uninitialized MVU state or state requiring repair returns `MVU_PREVIEW_STATE_UNA
 
 Stock DSH `0.2.0-rc.2` does not expose this seam. `scripts/prepare-request-assembly.mjs` produces a separate build from the pinned rc.2 source (both source trees are verified against SHA-256 digests in the script). It never edits the source checkout or an installed runtime and rejects other revisions.
 
-Current source requires both bundles to be enabled as described in [standalone assembler integration](ASSEMBLER_INTEGRATION_en.md). Standard strategies need no core preparation. Advanced strategies require the optional core addon and Host protocol 1. The preparation tool generates reviewable output, never patches core during plugin installation; any actual runtime replacement requires separate authorization.
+Current source automatically loads the standard Assembler included with Tavern; see [assembler integration](ASSEMBLER_INTEGRATION_en.md) for standalone coexistence. Standard strategies need no core preparation. Advanced strategies require the optional core addon and Host protocol 1. The preparation tool generates reviewable output, never patches core during plugin installation; any actual runtime replacement requires separate authorization.
 
 ```sh
 npm ci

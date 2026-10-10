@@ -1,6 +1,6 @@
 # pmp-dsh-tavern
 
-独立提示词装配插件（默认标准版，进阶核心扩展可选）：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)。Tavern 的单向依赖与两插件启用方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
+独立提示词装配插件（默认标准版，进阶核心扩展可选）：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)。Tavern 默认携带并加载标准 Assembler，与独立安装共存的方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) 是可选的查看与管理扩展。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
 
@@ -10,11 +10,11 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-本文描述 Tavern **3.0.0**。独立 assembler、受限 MVU 与提示词模板的组合安装见[接入说明](docs/ASSEMBLER_INTEGRATION.md)；旧版完整文档保留在对应 Git tag。
+本文描述 Tavern **3.0.1**。独立 assembler、受限 MVU 与提示词模板的组合安装见[接入说明](docs/ASSEMBLER_INTEGRATION.md)；旧版完整文档保留在对应 Git tag。
 
 > 当前 Tavern 源码适配 DSH **0.2.0-rc.2**，提供独立 assembler 接入、受限 MVU、只读提示词模板与 RP 渲染。[变更记录](CHANGELOG.md) · [MIT License](LICENSE)。
 >
-> 从 Tavern 2.5.x 升级到 3.0.0 需要额外启用 assembler 并合并旧策略，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。DSH 目标版本不变；更新前保留备份并停止目标 Host。从旧 DSH 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
+> 从 Tavern 2.5.x 升级到 3.0.1 会自动加载 assembler 并合并旧策略，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。DSH 目标版本不变；更新前保留备份并停止目标 Host。从旧 DSH 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
 >
 > Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md)。
 >
@@ -52,11 +52,10 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。安装 Tavern 3.0.0 与标准 Assembler v1.1.0；标准版通过公开接口运行，可选进阶核心扩展见接入说明：
+请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。只需安装 Tavern 3.0.1，标准 Assembler v1.1.0 随包提供并自动加载；标准版通过公开接口运行，可选进阶核心扩展见接入说明：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+dsh plugin --profile web add pmp-dsh-tavern@3.0.1
 ```
 
 需要统一查看资源、配置存取规则与检查本轮活动时，可在同一 profile 另外安装 Memory Manager v1.0.0；能力与通用资源装配要求见[接入说明](docs/ASSEMBLER_INTEGRATION.md#可选-memory-manager)：

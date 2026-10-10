@@ -1,11 +1,11 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
-  "main": "packages/tavern-loader/src/index.js",
+  "main": "packages/tavern-loader/src/bundle.js",
   "exports": {
-    ".": "./packages/tavern-loader/src/index.js",
+    ".": "./packages/tavern-loader/src/bundle.js",
     "./format": "./packages/tavern-format/src/index.js",
     "./loader": "./packages/tavern-loader/src/index.js",
     "./world-book": "./packages/world-book/src/index.js",
@@ -98,7 +98,8 @@
         "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-chat"
+        "@deepseek-ai/dsh-client-ui-chat",
+        "@deepseek-ai/dsh-client-ui-settings-general"
       ]
     }
   },
@@ -128,6 +129,12 @@
     "@deepseek-ai/dsh-util-crypto": "0.2.0-rc.2"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Player-MINEPIG/dsh-tavern.git"
+  },
+  "publishConfig": { "access": "public" },
+  "bundleDependencies": ["dsh-prompt-assembler"],
   "dependencies": {
     "@babel/standalone": "7.26.10",
     "@jitl/quickjs-singlefile-browser-release-asyncify": "0.31.0",

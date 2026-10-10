@@ -3,6 +3,7 @@
 import { spawnSync } from 'node:child_process'
 
 const groups = [
+  { name: 'Tavern-only bundle and independent Assembler lifecycle', files: ['test/companion.test.mjs', 'test/tavern-bundle.test.mjs'] },
   {
     name: 'Presentation and desktop request security',
     files: ['test/presentation.test.mjs', 'test/play-math.test.mjs', 'test/play-rich-text.test.mjs', 'test/play-export.test.mjs', 'test/api-fetch.test.mjs', 'test/api-security.test.mjs', 'test/user-store.test.mjs'],

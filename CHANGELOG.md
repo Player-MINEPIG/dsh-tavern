@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.1 — One-package installation and Assembler coexistence
+
+- Include standard Assembler v1.1.0 in the Tavern package and automatically load its Host and browser entries. Installing Tavern alone is sufficient.
+- Prefer an enabled standalone Assembler in either installation order; release the bundled instance before handoff and restore it when the standalone instance is removed. Keep one set of routes, hooks and UI entries.
+- Retain the default Assembler storage location, saved strategies and session selections across handoff, restart and removal. Removing Tavern preserves an independently enabled Assembler.
+- Publish a prebuilt npm package and GitHub Release tarball; keep Memory Manager v1.0.0 and the advanced core addon optional.
+
 ## 3.0.0 — Independent assembly, MVU and recorded request Trace
 
 - Require the independent standard `dsh-prompt-assembler` bundle. Use Assembler `v1.1.0`, locked to verified commit `48481b630e9cfc3be9e55f6b3eb0074ae9a33ad2`; the optional core addon supplies advanced protocol-1 strategies. Standard strategies run on stock DSH `0.2.0-rc.2` through public sections/context/pre-step. Plugin installation does not modify core.

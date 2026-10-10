@@ -30,11 +30,20 @@ try {
   if (assemblyPackage.files.some(f => f.path.startsWith('core-extension/') || f.path.endsWith('prepare-request-assembly.mjs'))) throw new Error('Standard package contains core installation tooling')
   const stagedManifest = JSON.parse(readFileSync(join(stage, 'package.json')))
   stagedManifest.dependencies['dsh-prompt-assembler'] = manifest.version
+  // Bundle the selected standard source, including its freshly built client.
+  // The optional standalone tgz must not be required to install Tavern.
+  const bundledRoot = join(stage, 'node_modules', manifest.name)
+  rmSync(bundledRoot, { recursive: true, force: true })
+  for (const file of assemblyPackage.files) {
+    const target = join(bundledRoot, file.path)
+    mkdirSync(dirname(target), { recursive: true })
+    cpSync(join(assembler, file.path), target)
+  }
   if (stagedManifest.dependencies['dsh-prompt-assembler-core']) throw new Error('Tavern must not depend on the optional core extension')
   writeFileSync(join(stage, 'package.json'), JSON.stringify(stagedManifest, null, 2) + '\n')
   const corePackages = withCore ? npm(join(assembler, 'core-extension'), ['--pack-destination', output]) : []
   const [tavernPackage] = npm(stage, ['--pack-destination', output])
-  const receipt = { sourceProtocolVersion: 1, defaultBackend: 'native', optionalCoreIncluded: withCore, installTogether: true, dshVersion: '0.2.0-rc.2', published: false, packages: [assemblyPackage, tavernPackage, ...corePackages].map(p => ({ name: p.name, version: p.version, filename: p.filename, integrity: p.integrity })) }
+  const receipt = { sourceProtocolVersion: 1, defaultBackend: 'native', optionalCoreIncluded: withCore, installTogether: false, dshVersion: '0.2.0-rc.2', published: false, packages: [assemblyPackage, tavernPackage, ...corePackages].map(p => ({ name: p.name, version: p.version, filename: p.filename, integrity: p.integrity })) }
   writeFileSync(join(output, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
   console.log(JSON.stringify(receipt, null, 2))
 } finally { rmSync(stage, { recursive: true, force: true }) }
