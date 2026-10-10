@@ -8,7 +8,7 @@
 
 Tavern 单向依赖另行启用的 assembler Host bundle。Memory Manager 为可选扩展，Tavern 与 assembler 的包和服务都不要求它。assembler 拥有策略存储、来源注册和请求排列；Tavern 拥有正文、解析、权限、MVU 提交与 RP 界面。`tavernRequestSources` 是共享 `dshPromptSources` 的别名；旧 Tavern assembly-presets HTTP 转发同一 store/runtime。既有 v1/v2/v3 根路径、资源读取、selection、消息原文、Trace 官方引用、格式 exports、原生 DSH 与卸载回退继续支持。
 
-Tavern 3.0.0 的接口以本文和对应合同为准；旧版本行为查看其 Git tag。响应允许增加字段。当前请求 owner 为 `dsh-prompt-assembler`，历史仍接受 `pmp-dsh-tavern`；卸载来源撤销后续贡献，不删除历史。V4 坐标版本校验、模板未知字段拒绝、来源授权与 CAS 保留。旧调用方不能把完整 GET 响应直接回传为 mutation，不能把当前正文当作历史原文。
+Tavern 3.0.1 的接口以本文和对应合同为准；旧版本行为查看其 Git tag。响应允许增加字段。当前请求 owner 为 `dsh-prompt-assembler`，历史仍接受 `pmp-dsh-tavern`；卸载来源撤销后续贡献，不删除历史。V4 坐标版本校验、模板未知字段拒绝、来源授权与 CAS 保留。旧调用方不能把完整 GET 响应直接回传为 mutation，不能把当前正文当作历史原文。
 
 ## 程序入口
 

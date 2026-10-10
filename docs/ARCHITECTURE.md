@@ -18,7 +18,7 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 
 ## 目标 Host 与持久数据边界
 
-3.0.0 合同面向 DSH 0.2.0-rc.2、Cordis 4.0.4 与 `dsh-util-crypto` 0.2.0-rc.2，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
+3.0.1 合同面向 DSH 0.2.0-rc.2、Cordis 4.0.4 与 `dsh-util-crypto` 0.2.0-rc.2，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
 
 DSH V4 拥有 system/user/assistant/tool 历史与 producer source，包括 `runtime-context` snapshot 和原生 tool-role result。准备顺序为装配 → pre-step → request/config 准备 → 接纳消息写入 → request header 与冻结消息 → stream。Trace 捕获官方正文/错误引用及生效参数，不建立第二份历史。[单向坐标升级](DSH_0.1.7_MIGRATION.md) 使用已验证的官方迁移阶段，保留全部升级前插件备份，不改写 DSH 日志。V3 之前的 header-body Trace 引用明确拒绝转换，不提供回滚工具。
 
@@ -40,7 +40,7 @@ Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过
 
 ## 前端产品范围
 
-3.0.0 继续使用 DSH Web/Desktop 的公开扩展承载第一方 RP 前端，不另做独立 Web UI。导航、输入框和会话生命周期仍由 DSH 管理；Tavern 维护资源面板、RP 展示和诊断。第三方仍可通过现有可组合 API 开发自己的客户端。此决策不改变权威历史、原生会话或卸载行为，无需数据迁移。
+3.0.1 继续使用 DSH Web/Desktop 的公开扩展承载第一方 RP 前端，不另做独立 Web UI。导航、输入框和会话生命周期仍由 DSH 管理；Tavern 维护资源面板、RP 展示和诊断。第三方仍可通过现有可组合 API 开发自己的客户端。此决策不改变权威历史、原生会话或卸载行为，无需数据迁移。
 
 公式渲染位于 `packages/client/src/play/math.js`，通过 Marked 公开 tokenizer/renderer 扩展接入共用富文本路径。KaTeX 只生成 MathML，随后与 HTML 一并净化；公式布局样式限定在 Tavern 内容与既有样式隔离边界内。RP、开场白和静态 HTML 导出复用此路径，不增加 Host seam、网络服务、全局渲染脚本、设置存储或消息副本。语法和安全界限见[显示合同](CONVERSATION_PRESENTATION.md#数学公式)。
 

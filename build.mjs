@@ -5,15 +5,18 @@ import { build } from 'esbuild'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 
 const id = 'pmp-dsh-tavern'
+const fromAssembler = createRequire(resolve(process.env.DSH_ASSEMBLER_SOURCE ?? 'node_modules/dsh-prompt-assembler', 'package.json'))
 
 await build({
   entryPoints: ['packages/client/src/entry.js'],
   define: {...await cardWorkerDefines(),TAVERN_PHOTO_DIAGNOSTIC:JSON.stringify(process.argv.includes('--photo-diagnostic'))},
   // Joint packages must embed the same assembler source that is packed for the backend.
-  plugins: process.env.DSH_ASSEMBLER_SOURCE ? [{ name: 'joint-assembler-source', setup(builder) {
-    const fromAssembler = createRequire(resolve(process.env.DSH_ASSEMBLER_SOURCE, 'package.json'))
-    builder.onResolve({ filter: /^dsh-prompt-assembler(?:\/|$)/ }, args => ({ path: fromAssembler.resolve(args.path) }))
-  } }] : [],
+  plugins: [{ name: 'assembler-source', setup(builder) {
+    // The published plugin-client export is a ModuleLoader wrapper. Embed
+    // its fixed-version source entry rather than nesting that wrapper.
+    builder.onResolve({ filter: /^dsh-prompt-assembler\/plugin-client$/ }, () => ({ path: resolve(fromAssembler.resolve('dsh-prompt-assembler/package.json'), '../src/plugin-client.js') }))
+    if (process.env.DSH_ASSEMBLER_SOURCE) builder.onResolve({ filter: /^dsh-prompt-assembler(?:\/|$)/ }, args => ({ path: fromAssembler.resolve(args.path) }))
+  } }],
   bundle: true,
   format: 'cjs',
   platform: 'browser',

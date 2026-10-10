@@ -2,7 +2,7 @@
 
 [English](INSTALLATION_en.md)
 
-Tavern 3.0.0 需要显式启用 Tavern 与独立 assembler 两个 bundle，服务加载与可选 Memory Manager v1.0.0 见[接入说明](ASSEMBLER_INTEGRATION.md)。旧完整说明保留在对应 Git tag。
+Tavern 3.0.1 携带标准 Assembler v1.1.0，只需安装并启用 Tavern，服务加载与可选 Memory Manager v1.0.0 见[接入说明](ASSEMBLER_INTEGRATION.md)。旧完整说明保留在对应 Git tag。
 
 装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
@@ -12,13 +12,12 @@ Tavern 3.0.0 需要显式启用 Tavern 与独立 assembler 两个 bundle，服�
 
 ## 安装当前源码
 
-更新当前源码需要额外启用 assembler bundle。原 Tavern 资源、设置、原生会话、timeline 与 Trace 保留；loader 启动时把旧策略存储中缺少的条目合并到 assembler，并保留旧文件。历史坐标升级另按迁移指南处理，DSH 目标仍为 `0.2.0-rc.2`。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
+更新当前源码会自动加载随包提供的标准 Assembler，已启用的独立实例优先。原 Tavern 资源、设置、原生会话、timeline 与 Trace 保留；loader 启动时把旧策略存储中缺少的条目合并到 assembler，并保留旧文件。历史坐标升级另按迁移指南处理，DSH 目标仍为 `0.2.0-rc.2`。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
 
-停止目标 Host 后，启用 Tavern 3.0.0 与标准 Assembler v1.1.0。标准策略走 stock core；进阶策略还需可选 addon 与协议 1。插件安装不会修改核心：
+停止目标 Host 后，安装 Tavern 3.0.1 即可自动加载标准 Assembler v1.1.0。标准策略走 stock core；进阶策略还需可选 addon 与协议 1。插件安装不会修改核心：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+dsh plugin --profile web add pmp-dsh-tavern@3.0.1
 ```
 
 可选的资源查看与管理使用 [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0)。需要时在同一 profile 追加安装，再重启 Host；通用资源装配要求见[接入说明](ASSEMBLER_INTEGRATION.md#可选-memory-manager)：
@@ -34,7 +33,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 使用目标 DSH 初始化的独立测试 profile/home：
 
 ```sh
-git clone --branch v3.0.0 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.0.1 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

@@ -1,6 +1,6 @@
 # pmp-dsh-tavern
 
-Independent prompt assembly plugin (standard by default; optional advanced core addon): [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for Tavern’s dependency and activation of both plugins.
+Independent prompt assembly plugin (standard by default; optional advanced core addon): [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for the bundled standard Assembler and coexistence with a standalone installation.
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is an optional viewing and management extension. Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
 
@@ -10,11 +10,11 @@ Independent prompt assembly plugin (standard by default; optional advanced core 
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-This README describes Tavern **3.0.0**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
+This README describes Tavern **3.0.1**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
 
 > Current Tavern source targets DSH **0.2.0-rc.2**, with independent assembler integration, scoped MVU, read-only prompt templates and RP rendering. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
 >
-> Upgrading from Tavern 2.5.x to 3.0.0 additionally enables assembler and merges legacy strategies; see [integration](docs/ASSEMBLER_INTEGRATION_en.md). The DSH target is unchanged. Retain backups and stop the target Host before updating. When upgrading an older DSH, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
+> Upgrading from Tavern 2.5.x to 3.0.1 automatically loads assembler and merges legacy strategies; see [integration](docs/ASSEMBLER_INTEGRATION_en.md). The DSH target is unchanged. Retain backups and stop the target Host before updating. When upgrading an older DSH, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
@@ -54,11 +54,10 @@ Promo video: [Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/) (see t
 
 ### 0. Install
 
-Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install Tavern 3.0.0 and standard Assembler v1.1.0. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
+Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install only Tavern 3.0.1; standard Assembler v1.1.0 is included and loaded automatically. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.0
+dsh plugin --profile web add pmp-dsh-tavern@3.0.1
 ```
 
 Optional resource viewing and management is available through Memory Manager v1.0.0. Install it separately in the same profile; see [integration](docs/ASSEMBLER_INTEGRATION_en.md#optional-memory-manager) for its capabilities and generic resource assembly requirements:

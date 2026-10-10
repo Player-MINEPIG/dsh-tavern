@@ -5,9 +5,9 @@
 本文说明如何验证当前实现，不记录某次发布的验收结果。先按改动范围选择检查，再为受影响的 DSH 接口补充集成证据。
 
 <a id="backend-compatibility"></a>
-## 3.0.0 兼容范围
+## 3.0.1 兼容范围
 
-Tavern 3.0.0 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
+Tavern 3.0.1 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
 
 后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
 
@@ -84,6 +84,10 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 另外，`DSH_TAVERN_ACCEPTANCE_FIXTURE` 只启用 [特定外部预设夹具检查](../test/acceptance-fixture.test.mjs)，不是任意角色卡的通用验收入口。变量未设置或文件不存在时会跳过；文件内容不符合断言则会失败。平台不允许创建 symlink/junction 时，相关路径检查也可能跳过。阅读测试输出中的跳过原因，不将跳过记为通过。
 
 针对当前兼容边界，还需在隔离 Host 中检查：五类资源各自的创建、导入、导出、编辑；模板未保存时 Esc/切换面板保护；同一时刻保留多个会话，分别切换 RP、原生和 Trace；临时读失败恢复后保持有效绑定。采样测试使用显式参数拒绝、已输出内容、取消、鉴权错误，核对有限重试及 Trace 的 requested/effective/fallbacks。迁移应覆盖 V3 中断插入和 child catalog、旧格式链、备份冲突与重复执行。
+
+## 单包安装与 Assembler 生命周期
+
+运行 `node --test test/companion.test.mjs test/tavern-bundle.test.mjs`，覆盖仅 Tavern、独立 Assembler 先启用、后启用及同时启用，检查单实例、路由与请求回调、卸载恢复和持久选择。在临时 DSH_HOME 中只安装 Tavern 的发布包，启动目标 Web Host，确认 Tavern 与 Assembler API 均可用，DT 入口与设置中的装配入口各只有一个，装配编辑器可打开。再安装独立 Assembler v1.1.0，重启并重复检查；分别卸载独立 Assembler 和 Tavern，确认剩余组件与共享选择正常。不要在真实用户 profile 中执行这些卸载检查。
 
 ## Host 与浏览器检查
 

@@ -31,6 +31,7 @@ test('client manifest injects every DSH 0.1.2 contract owner it consumes', () =>
     '@deepseek-ai/dsh-client-ui-layout',
     '@deepseek-ai/dsh-client-ui-sidebar',
     '@deepseek-ai/dsh-client-ui-chat',
+    '@deepseek-ai/dsh-client-ui-settings-general',
   ])
 })
 

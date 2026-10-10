@@ -99,7 +99,7 @@ flowchart TD
 
 官方 DSH `0.2.0-rc.2` 没有此请求装配接口。`scripts/prepare-request-assembly.mjs` 从固定 rc.2 核心源码（脚本内以两份源码树 SHA-256 校验） 生成独立核心构建；不修改源码 checkout 或任何安装目录，不适用于其他版本。
 
-当前源码需要按[独立 assembler 接入](ASSEMBLER_INTEGRATION.md)显式启用两个 bundle。标准策略不要求核心准备。进阶策略需要可选 core addon 与宿主协议 1；下列工具仅生成可审阅的独立构建，不在插件安装中修改 DSH 核心。实际运行环境的核心替换需要另行授权。
+当前源码自动加载随 Tavern 提供的标准 Assembler；独立安装共存方式见[assembler 接入](ASSEMBLER_INTEGRATION.md)。标准策略不要求核心准备。进阶策略需要可选 core addon 与宿主协议 1；下列工具仅生成可审阅的独立构建，不在插件安装中修改 DSH 核心。实际运行环境的核心替换需要另行授权。
 
 ```sh
 npm ci

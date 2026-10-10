@@ -2,7 +2,9 @@
 
 [English](LOADER_CONTRACT_en.md)
 
-当前合同面向 Tavern **3.0.0**、Assembler **v1.1.0** 与 DSH **0.2.0-rc.2**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
+Tavern 的 bundle 入口先加载随包标准 Assembler，或复用独立启用的实例，再挂载依赖该服务的业务 loader。两种安装顺序、停用与卸载遵循[接入说明](ASSEMBLER_INTEGRATION.md#与独立-assembler-共存)。
+
+当前合同面向 Tavern **3.0.1**、Assembler **v1.1.0** 与 DSH **0.2.0-rc.2**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
 
 ## 目标与所有权
 

@@ -5,9 +5,9 @@
 This guide explains how to verify the current implementation; it does not record acceptance results for a particular release. Select checks by change scope, then add integration evidence for the affected DSH interfaces.
 
 <a id="backend-compatibility"></a>
-## 3.0.0 compatibility
+## 3.0.1 compatibility
 
-Tavern 3.0.0 targets official [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) (`639ed015397290b3745d163aafe02ffee4aa3f84`). Required runtime peers are Cordis `4.0.4` and DSH crypto `0.2.0-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
+Tavern 3.0.1 targets official [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) (`639ed015397290b3745d163aafe02ffee4aa3f84`). Required runtime peers are Cordis `4.0.4` and DSH crypto `0.2.0-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
 
 Backend scope covers plugin admission, public Session/Workspace controllers, prompt assembly and parameter fallback, V4 history and historical reference migration, Trace, and the [operation log contract](OPERATION_LOGS_en.md). Existing V4 references need no new conversion. The migration codec allowlist is separate from runtime support; see [migration](DSH_0.1.7_MIGRATION_en.md).
 
@@ -84,6 +84,10 @@ The official-module checks in these tests skip when their variables are absent; 
 Separately, `DSH_TAVERN_ACCEPTANCE_FIXTURE` enables a [specific external preset fixture check](../test/acceptance-fixture.test.mjs), not a general acceptance test for arbitrary character cards. It skips when the variable is absent or the file does not exist; contents that do not meet its assertions fail. Some path checks may also skip when the platform disallows symlink/junction creation. Read the reasons reported by the runner; skipped checks are not passes.
 
 For this compatibility boundary, additionally check all five resources through create/import/export/edit on an isolated Host; unsaved template protection on Escape and panel switching; independently retained sessions switching RP, native Chat and Trace; and recovery after temporary binding-read failures. Sampling tests exercise explicit parameter rejection, prior output, abort and authentication failure, checking bounded retries and Trace requested/effective/fallbacks. Migration covers V3 interruption insertion and child catalogs, earlier format chains, backup conflicts and reruns.
+
+## Single-package install and Assembler lifecycle
+
+Run `node --test test/companion.test.mjs test/tavern-bundle.test.mjs` for Tavern alone and independent Assembler enabled first, later, or simultaneously. Check single ownership, routes and request callbacks, removal recovery, and durable selections. Install only the published Tavern package in a temporary DSH_HOME, start the target Web Host, and confirm both APIs work, exactly one DT launcher and assembly settings entry appear, and the assembly editor opens. Then install independent Assembler v1.1.0, restart, and repeat. Remove independent Assembler and Tavern separately, checking the remaining component and shared selections. Do not perform these removal checks in real user profiles.
 
 ## Host and browser checks
 
