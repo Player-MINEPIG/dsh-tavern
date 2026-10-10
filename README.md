@@ -48,7 +48,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ## Quick Start：从角色卡到第一轮 RP 对话
 
-视频演示：[pmp-dsh-tavern「灵珠魔丸」](https://www.bilibili.com/video/BV1cf8265Ehf/)（操作细节以本文当前说明为准）
+宣传视频：[Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/)（操作细节以本文当前说明为准）
 
 ### 0. 安装
 

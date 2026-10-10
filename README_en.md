@@ -50,6 +50,8 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ## Quick Start: first RP turn from a character card
 
+Promo video: [Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/) (see this README for current operating instructions).
+
 ### 0. Install
 
 Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install Tavern 3.0.0 and standard Assembler v1.1.0. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
