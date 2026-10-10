@@ -74,6 +74,7 @@ const groups = [
     files: [
       'test/i18n.test.mjs',
       'test/scripts.test.mjs',
+      'test/package-installation.test.mjs',
     ],
   },
 ]

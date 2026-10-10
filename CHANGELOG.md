@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.2 — Market installation dependency fix
+
+- Fix GitHub/Market installations that skipped Assembler because the source manifest declared a bundled dependency absent from GitHub archives. Declare bundled dependencies only when producing a prebuilt package.
+- Pin standard `dsh-prompt-assembler` to npm version `1.1.0`, avoiding Git subdependencies rejected by current pnpm defaults. Tavern still loads it automatically and prefers an enabled standalone instance.
+- Add an offline source-archive installation regression check to release verification. Existing resources and Assembler strategies need no migration.
+
 ## 3.0.1 — One-package installation and Assembler coexistence
 
 - Include standard Assembler v1.1.0 in the Tavern package and automatically load its Host and browser entries. Installing Tavern alone is sufficient.
