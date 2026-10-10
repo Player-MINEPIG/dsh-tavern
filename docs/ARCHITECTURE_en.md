@@ -19,7 +19,7 @@ The operation journal is bounded Tavern-owned diagnostic storage, separate from 
 
 ## Target Host and durable-data boundary
 
-The 3.0.1 contract targets DSH 0.2.0-rc.2, Cordis 4.0.4, and `dsh-util-crypto` 0.2.0-rc.2. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
+The 3.0.2 contract targets DSH 0.2.0-rc.2, Cordis 4.0.4, and `dsh-util-crypto` 0.2.0-rc.2. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
 
 DSH V4 owns system/user/assistant/tool history and producer sources, including `runtime-context` snapshots and native tool-role results. Preparation order is assembly → pre-step → request/config preparation → accepted message commits → request header and frozen messages → stream. Trace captures official body/error references and effective parameters; it is not another history store. The [one-way coordinate upgrade](DSH_0.1.7_MIGRATION_en.md) follows verified official migration stages, retains all pre-upgrade plugin backups, and never rewrites DSH logs. Pre-V3 header-body Trace references explicitly refuse conversion; no rollback tool is provided.
 
@@ -41,7 +41,7 @@ This is a current-problem projection, not a history log or a new HTTP API. Bound
 
 ## Frontend product scope
 
-Version 3.0.1 continues to host the first-party RP frontend through public DSH Web/Desktop extensions; the project will not build an additional standalone Web UI. DSH owns navigation, composition input and session lifecycle. Tavern owns resource panels, RP presentation and diagnostics. Third parties can still build clients with the existing composable APIs. This decision changes neither authoritative history, native sessions nor uninstall behavior and requires no data migration.
+Version 3.0.2 continues to host the first-party RP frontend through public DSH Web/Desktop extensions; the project will not build an additional standalone Web UI. DSH owns navigation, composition input and session lifecycle. Tavern owns resource panels, RP presentation and diagnostics. Third parties can still build clients with the existing composable APIs. This decision changes neither authoritative history, native sessions nor uninstall behavior and requires no data migration.
 
 Math rendering lives in `packages/client/src/play/math.js` and uses Marked's public tokenizer/renderer extensions in the shared rich-text path. KaTeX emits only MathML, which is sanitized alongside HTML; formula layout styles stay within Tavern content and existing style-isolation boundaries. RP, greetings and static HTML exports reuse this path without adding a Host seam, network service, global renderer script, settings store or message copy. See the [presentation contract](CONVERSATION_PRESENTATION_en.md#math) for syntax and safety boundaries.
 

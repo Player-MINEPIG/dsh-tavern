@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/bundle.js",
@@ -134,7 +134,6 @@
     "url": "https://github.com/Player-MINEPIG/dsh-tavern.git"
   },
   "publishConfig": { "access": "public" },
-  "bundleDependencies": ["dsh-prompt-assembler"],
   "dependencies": {
     "@babel/standalone": "7.26.10",
     "@jitl/quickjs-singlefile-browser-release-asyncify": "0.31.0",
@@ -142,7 +141,7 @@
     "acorn": "8.15.0",
     "acorn-jsx": "5.3.2",
     "dompurify": "3.4.16",
-    "dsh-prompt-assembler": "github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0",
+    "dsh-prompt-assembler": "1.1.0",
     "json5": "2.2.3",
     "katex": "0.18.2",
     "linkedom": "0.18.12",

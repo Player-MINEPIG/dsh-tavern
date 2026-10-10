@@ -1,6 +1,6 @@
 # Prompt assembly Trace and primitive API v3
 
-Contract version: Tavern **3.0.1**, targeting DSH **0.2.0-rc.2**.
+Contract version: Tavern **3.0.2**, targeting DSH **0.2.0-rc.2**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Verification](TESTING_en.md)
 
 Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).

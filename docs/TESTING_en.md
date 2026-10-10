@@ -5,9 +5,9 @@
 This guide explains how to verify the current implementation; it does not record acceptance results for a particular release. Select checks by change scope, then add integration evidence for the affected DSH interfaces.
 
 <a id="backend-compatibility"></a>
-## 3.0.1 compatibility
+## 3.0.2 compatibility
 
-Tavern 3.0.1 targets official [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) (`639ed015397290b3745d163aafe02ffee4aa3f84`). Required runtime peers are Cordis `4.0.4` and DSH crypto `0.2.0-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
+Tavern 3.0.2 targets official [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) (`639ed015397290b3745d163aafe02ffee4aa3f84`). Required runtime peers are Cordis `4.0.4` and DSH crypto `0.2.0-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
 
 Backend scope covers plugin admission, public Session/Workspace controllers, prompt assembly and parameter fallback, V4 history and historical reference migration, Trace, and the [operation log contract](OPERATION_LOGS_en.md). Existing V4 references need no new conversion. The migration codec allowlist is separate from runtime support; see [migration](DSH_0.1.7_MIGRATION_en.md).
 

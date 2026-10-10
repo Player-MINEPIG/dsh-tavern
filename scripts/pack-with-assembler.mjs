@@ -30,6 +30,10 @@ try {
   if (assemblyPackage.files.some(f => f.path.startsWith('core-extension/') || f.path.endsWith('prepare-request-assembly.mjs'))) throw new Error('Standard package contains core installation tooling')
   const stagedManifest = JSON.parse(readFileSync(join(stage, 'package.json')))
   stagedManifest.dependencies['dsh-prompt-assembler'] = manifest.version
+  // GitHub archives have no node_modules: declaring this in the source
+  // manifest makes package managers skip downloading the dependency.
+  // Only this prebuilt stage actually carries the bundled package.
+  stagedManifest.bundleDependencies = [manifest.name]
   // Bundle the selected standard source, including its freshly built client.
   // The optional standalone tgz must not be required to install Tavern.
   const bundledRoot = join(stage, 'node_modules', manifest.name)

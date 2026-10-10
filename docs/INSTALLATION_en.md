@@ -2,7 +2,7 @@
 
 [中文](INSTALLATION.md)
 
-Tavern 3.0.1 includes standard Assembler v1.1.0; only Tavern needs to be installed and enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Memory Manager v1.0.0. Older full documentation remains at its Git tag.
+Tavern 3.0.2 includes standard Assembler v1.1.0; only Tavern needs to be installed and enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Memory Manager v1.0.0. Older full documentation remains at its Git tag.
 
 Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
@@ -12,13 +12,15 @@ Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_e
 
 ## Install current source
 
-Updating current source automatically loads bundled standard Assembler, preferring an enabled standalone instance. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.0-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
+Updating current source automatically installs and loads standard Assembler, preferring an enabled standalone instance. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.0-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
 
-Stop the target Host and install Tavern 3.0.1 to automatically load standard Assembler v1.1.0. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
+Stop the target Host and install Tavern 3.0.2 to automatically load standard Assembler v1.1.0. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
 
 ```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.1
+dsh plugin --profile web add pmp-dsh-tavern@3.0.2
 ```
+
+Market’s “installed, effective after restart” means the package is registered. Bundles containing configuration/expressions require a restart; that notice does not establish successful plugin startup. GitHub/Market installations of 3.0.1 may lack Assembler and report `failed to import`. Stop the Host, update to 3.0.2 in the same profile, then restart; no uninstall or data deletion is required. GitHub installs download the pinned npm dependency; prebuilt packages already carry it.
 
 Optional resource management is provided by [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0). To use it, additionally install it in the same profile, then restart the Host; generic resource assembly requirements are covered in [integration](ASSEMBLER_INTEGRATION_en.md#optional-memory-manager):
 
@@ -33,7 +35,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 Use an isolated test profile/home initialized with the target DSH:
 
 ```sh
-git clone --branch v3.0.1 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.0.2 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
