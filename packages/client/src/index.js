@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../client-style.js'
 import { createDraftResourceTarget } from './play/draft-resources.js'
 import { useMemo } from 'react'
 import {renderingDependencies} from './play/rendering-dependencies.js'
@@ -1299,11 +1300,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
 }
 
 function installStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-shell`
-  style.textContent = css + diagnosticsCss + presentationCss
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-shell`, css + diagnosticsCss + presentationCss)
 }
 
 export const name = PLUGIN_ID

@@ -1,5 +1,6 @@
+import { installTavernStyle } from '../../../client-style.js'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { API_V1, CLIENT_REFRESH_EVENT } from '../../../identity.js'
+import { API_V1, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../../identity.js'
 import { tavernFetch } from '../api-fetch.js'
 import { translate as t } from '../i18n.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
@@ -39,7 +40,10 @@ export async function loadDraftDisplay(client, draft, playthrough) {
 }
 
 const css = `.dtv-draft-opening{height:100%;min-height:0;display:flex;flex-direction:column;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base)}.dtv-draft-opening>header{display:flex;align-items:center;gap:12px;padding:14px 72px 14px 18px;border-bottom:1px solid var(--dsw-alias-border-l3)}.dtv-draft-opening>header strong{flex:1}.dtv-draft-opening>header small{color:var(--dsw-alias-label-tertiary)}.dtv-draft-body{flex:1;min-height:0;overflow:auto;padding:20px max(16px,calc((100% - 1040px)/2))}.dtv-draft-opening .dtv-play-chat-bubble{max-width:100%}.dtv-draft-settings{margin:18px 0;border-top:1px solid var(--dsw-alias-border-l3);padding-top:16px}.dtv-draft-settings fieldset{border:0;margin:16px 0;padding:16px 0 0;border-top:1px solid var(--dsw-alias-border-l3)}.dtv-draft-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}.dtv-draft-opening label{display:grid;gap:8px}.dtv-draft-opening select,.dtv-draft-opening textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;padding:10px;background:var(--dsw-alias-bg-layer-1);color:inherit;font:inherit}.dtv-draft-opening button{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px 12px;background:var(--dsw-alias-bg-layer-1);color:inherit;font:inherit;cursor:pointer}.dtv-draft-opening button:disabled{opacity:.5;cursor:default}.dtv-draft-books{display:flex;gap:16px;flex-wrap:wrap}.dtv-draft-books label{display:flex;align-items:center;gap:8px}.dtv-draft-composer{flex:none;padding:14px max(16px,calc((100% - 1040px)/2));border-top:1px solid var(--dsw-alias-border-l3)}.dtv-draft-composer>div{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.dtv-draft-composer textarea{resize:vertical;min-height:80px}.dtv-draft-opening [role=alert]{color:var(--dsw-alias-state-error);overflow-wrap:anywhere}.dtv-draft-settings>summary{cursor:pointer;font-weight:600}.dtv-draft-notice{margin:10px 0;font-size:12px;color:var(--dsw-alias-label-tertiary)}`
-function styles() { installPlayChatStyles(); if (document.querySelector('style[data-dtv-drafts]')) return; const node = document.createElement('style'); node.dataset.dtvDrafts = ''; node.textContent = css; document.head.append(node) }
+function styles() {
+  installPlayChatStyles()
+  installTavernStyle(`${PLUGIN_ID}-drafts`, css, 'data-dtv-drafts')
+}
 
 /** A main.conversation occurrence without any Session-scoped hooks or fake history. */
 export function DraftOpening({ draftId, playClient, openSession, switchToNative }) {

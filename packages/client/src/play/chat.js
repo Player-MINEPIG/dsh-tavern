@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../../client-style.js'
 import {carryGreetingSelection} from './bound-greeting.js'
 import {restoreRenderingDisplay,useRestoredRenderingDisplay} from './rendering-display.js'
 import { readRenderingWorkspace, identifyRenderingSources, renderingInventory } from './rendering-sources.js'
@@ -82,11 +83,7 @@ ${mathStyles('[data-dtv-rich-text]')}
 `
 
 export function installPlayChatStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-chat"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-chat`
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-play-chat`, css)
 }
 
 function adoptedSessionIds(timeline, currentSessionId) {

@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../client-style.js'
 import { AvatarInput } from '../../client/src/avatar-input.js'
 import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
@@ -317,9 +318,5 @@ export function UserPanel({ bindingTarget, sessionId, sessionBlank, close }) {
 }
 
 export function installUserStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-user"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-user`
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-user`, css)
 }

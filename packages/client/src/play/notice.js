@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../../client-style.js'
 import {OPENING_CARD_VIEWPORT_CSS} from './card-viewport.js'
 import {createMvuCardBinding} from './mvu-bridge.js'
 import {openingSourceIdentity} from './identity-opening-bridge.js'
@@ -42,11 +43,7 @@ ${OPENING_CARD_VIEWPORT_CSS}
 `
 
 function installStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-notice"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-notice`
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-play-notice`, css)
 }
 
 export function PlaySessionDock({ session, useSessions, useConversation, useInput, inputActions, conversationPhase, playClient }) {

@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../client-style.js'
 import {offerRenderingDependencies} from '../../client/src/play/rendering-dependencies.js'
 import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
@@ -470,9 +471,5 @@ export function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId,
 }
 
 export function installPresetStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = PLUGIN_ID
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(PLUGIN_ID, css)
 }

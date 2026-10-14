@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../../client-style.js'
 import {
   createElement,
   useEffect,
@@ -22,11 +23,7 @@ const css = `
 `
 
 function installStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-turn-actions"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-turn-actions`
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-play-turn-actions`, css)
 }
 
 function controller(client) {

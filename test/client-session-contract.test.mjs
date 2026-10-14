@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { parseHTML } from 'linkedom'
 import { MowanChatView } from '../packages/client/src/play/chat.js'
 import { TavernTraceView } from '../packages/tavern-trace/src/client.js'
 import { PlaySessionDock } from '../packages/client/src/play/notice.js'
@@ -21,7 +22,7 @@ function renderSelectors(component, props) {
     useCallback: callback => callback,
   }
   const previousDocument = globalThis.document
-  globalThis.document = { querySelector: () => ({}) }
+  globalThis.document = parseHTML('<html><head></head><body></body></html>').document
   try { return component(props) } finally {
     dispatcher.current = previous
     globalThis.document = previousDocument
