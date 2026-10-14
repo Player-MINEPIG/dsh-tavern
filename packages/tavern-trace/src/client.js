@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../client-style.js'
 import { MvuRoundSection, mvuStyles } from './mvu-view.js'
 import { worldBookRequestOutcome } from './world-book-request.js'
 import { recordedMessageNodes, recordedRequestResult, recordedSystemModules } from './request-view.js'
@@ -498,14 +499,7 @@ export function TavernTraceView({ sessionId, useSession, useChat }) {
 }
 
 export function installTavernTraceStyles() {
-  let style = document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-trace"]`)
-  if (!style) {
-    style = document.createElement('style')
-    style.dataset.pluginCss = `${PLUGIN_ID}-trace`
-    document.head.append(style)
-  }
-  // Reuse our owned node, but refresh its content after a plugin hot reload.
-  if (style.textContent !== css) style.textContent = css
+  installTavernStyle(`${PLUGIN_ID}-trace`, css)
 }
 
 export function registerTavernTraceView(ctx) {

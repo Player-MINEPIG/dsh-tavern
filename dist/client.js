@@ -21333,6 +21333,18 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
 // packages/client/src/entry.js
 var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
 
+// packages/client-style.js
+function installTavernStyle(key2, css14, legacyMarker) {
+  let style = document.querySelector(`style[data-plugin-css="${key2}"]`) ?? (legacyMarker ? document.querySelector(`style[${legacyMarker}]`) : null);
+  if (!style) style = document.createElement("style");
+  style.dataset.plugin = PLUGIN_ID;
+  style.dataset.pluginCss = key2;
+  if (legacyMarker) style.setAttribute(legacyMarker, "");
+  if (style.textContent !== css14) style.textContent = css14;
+  if (!style.isConnected) document.head.append(style);
+  return style;
+}
+
 // packages/client/src/play/draft-resources.js
 function createDraftResourceTarget({ client, draftId, label, fetcher = tavernFetch }) {
   let current4;
@@ -23124,11 +23136,7 @@ var css = `
 .dtv-play-display-editor{display:flex;flex-direction:column;align-self:stretch;gap:8px}.dtv-play-display-editor textarea{box-sizing:border-box;width:100%;min-height:180px;max-height:55vh;resize:vertical;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.65}.dtv-play-display-editor textarea:focus{outline:2px solid color-mix(in srgb,var(--dsw-alias-state-business-primary,#2677d9) 35%,transparent);border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-play-display-editor-actions{display:flex;justify-content:flex-end;gap:8px}.dtv-play-display-editor-button{min-width:76px;min-height:34px;padding:7px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}.dtv-play-display-editor-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}.dtv-play-display-editor-button:disabled{cursor:default;opacity:.45}
 `;
 function installStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-turn-actions"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-turn-actions`;
-  style.textContent = css;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-play-turn-actions`, css);
 }
 function controller(client) {
   let value = controllers.get(client);
@@ -25502,11 +25510,7 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
   );
 }
 function installPresetStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = PLUGIN_ID;
-  style.textContent = css2;
-  document.head.append(style);
+  installTavernStyle(PLUGIN_ID, css2);
 }
 
 // packages/character/src/client.js
@@ -26133,11 +26137,7 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
   );
 }
 function installCharacterStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-character"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-character`;
-  style.textContent = css3;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-character`, css3);
 }
 
 // packages/world-book-library/src/client.js
@@ -26992,11 +26992,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
   );
 }
 function installWorldBookStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-world-book"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-world-book`;
-  style.textContent = css4;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-world-book`, css4);
 }
 
 // packages/client/src/avatar-input.js
@@ -27414,11 +27410,7 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
   );
 }
 function installUserStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-user"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-user`;
-  style.textContent = css5;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-user`, css5);
 }
 
 // packages/tavern-trace/src/mvu-view.js
@@ -28449,13 +28441,7 @@ function TavernTraceView({ sessionId, useSession, useChat }) {
   );
 }
 function installTavernTraceStyles() {
-  let style = document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-trace"]`);
-  if (!style) {
-    style = document.createElement("style");
-    style.dataset.pluginCss = `${PLUGIN_ID}-trace`;
-    document.head.append(style);
-  }
-  if (style.textContent !== css6) style.textContent = css6;
+  installTavernStyle(`${PLUGIN_ID}-trace`, css6);
 }
 function registerTavernTraceView(ctx) {
   ctx.slots.inject("conversation.view", () => ctx.slots.register({
@@ -53979,11 +53965,7 @@ ${mathStyles("[data-dtv-rich-text]")}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function installPlayChatStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-chat"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-chat`;
-  style.textContent = css7;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-play-chat`, css7);
 }
 function adoptedSessionIds(timeline, currentSessionId) {
   const ids = /* @__PURE__ */ new Set([currentSessionId]);
@@ -55557,11 +55539,7 @@ var css8 = `
 .dtv-play-io-item{min-height:34px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;text-align:left;cursor:pointer}.dtv-play-io-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-io-item:disabled{opacity:.45;cursor:default}.dtv-play-io-error{max-width:240px;margin:3px 5px;color:var(--dsw-alias-state-error);font-size:10px;overflow-wrap:anywhere}
 `;
 function installStyles2() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-io"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-io`;
-  style.textContent = css8;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-play-io`, css8);
 }
 function safeFilename(value) {
   const normalized = String(value ?? "playthrough").replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").trim();
@@ -55702,11 +55680,7 @@ var css9 = `
 .dtv-play-modal-backdrop{position:fixed;inset:0;z-index:40;box-sizing:border-box;padding:20px;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center}.dtv-play-modal{box-sizing:border-box;width:min(420px,100%);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:17px 16px;display:flex;flex-direction:column;gap:14px}.dtv-play-modal p{margin:0;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-primary)}.dtv-play-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dtv-play-modal-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 11px;font:inherit;font-size:12px}.dtv-play-modal-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}
 `;
 function installStyles3() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-sidebar"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`;
-  style.textContent = css9;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-play-sidebar`, css9);
 }
 function Avatar({ character }) {
   const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
@@ -56511,11 +56485,7 @@ ${OPENING_CARD_VIEWPORT_CSS}
 .dtv-play-opening-actions{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--dsw-alias-border-l2)}.dtv-play-opening-actions>.dtv-play-opening-button:first-child{justify-self:start}.dtv-play-opening-actions>.dtv-play-opening-button:last-child{justify-self:end}.dtv-play-opening-actions>.dtv-play-import-controls{margin:0}.dtv-play-opening-button{min-width:0;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}.dtv-play-opening-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-opening-button:disabled{opacity:.4;cursor:default}.dtv-play-opening-error{margin:0;padding:7px 12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-state-error);font-size:11px;line-height:1.45}
 `;
 function installStyles4() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-notice"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-notice`;
-  style.textContent = css10;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-play-notice`, css10);
 }
 function PlaySessionDock({ session, useSessions, useConversation, useInput, inputActions, conversationPhase: conversationPhase2, playClient }) {
   useClientUiSettings();
@@ -56736,11 +56706,7 @@ var css11 = `
 @media(max-width:520px){.dtv-rp-opening-header{gap:6px;padding:8px 64px 8px 8px}.dtv-rp-opening-tabs{gap:2px}.dtv-rp-opening-header button{padding:7px 8px}.dtv-rp-opening-view .dtv-play-chat{padding:12px 8px 20px}}
 `;
 function installStyles5() {
-  if (document.querySelector("style[data-dtv-opening-layout]")) return;
-  const style = document.createElement("style");
-  style.dataset.dtvOpeningLayout = "";
-  style.textContent = css11;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-opening-layout`, css11, "data-dtv-opening-layout");
 }
 function OpeningViews(props) {
   const opening = (0, import_react37.useContext)(Opening);
@@ -56839,11 +56805,7 @@ async function loadDraftDisplay(client, draft, playthrough) {
 var css12 = `.dtv-draft-opening{height:100%;min-height:0;display:flex;flex-direction:column;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base)}.dtv-draft-opening>header{display:flex;align-items:center;gap:12px;padding:14px 72px 14px 18px;border-bottom:1px solid var(--dsw-alias-border-l3)}.dtv-draft-opening>header strong{flex:1}.dtv-draft-opening>header small{color:var(--dsw-alias-label-tertiary)}.dtv-draft-body{flex:1;min-height:0;overflow:auto;padding:20px max(16px,calc((100% - 1040px)/2))}.dtv-draft-opening .dtv-play-chat-bubble{max-width:100%}.dtv-draft-settings{margin:18px 0;border-top:1px solid var(--dsw-alias-border-l3);padding-top:16px}.dtv-draft-settings fieldset{border:0;margin:16px 0;padding:16px 0 0;border-top:1px solid var(--dsw-alias-border-l3)}.dtv-draft-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}.dtv-draft-opening label{display:grid;gap:8px}.dtv-draft-opening select,.dtv-draft-opening textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;padding:10px;background:var(--dsw-alias-bg-layer-1);color:inherit;font:inherit}.dtv-draft-opening button{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px 12px;background:var(--dsw-alias-bg-layer-1);color:inherit;font:inherit;cursor:pointer}.dtv-draft-opening button:disabled{opacity:.5;cursor:default}.dtv-draft-books{display:flex;gap:16px;flex-wrap:wrap}.dtv-draft-books label{display:flex;align-items:center;gap:8px}.dtv-draft-composer{flex:none;padding:14px max(16px,calc((100% - 1040px)/2));border-top:1px solid var(--dsw-alias-border-l3)}.dtv-draft-composer>div{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.dtv-draft-composer textarea{resize:vertical;min-height:80px}.dtv-draft-opening [role=alert]{color:var(--dsw-alias-state-error);overflow-wrap:anywhere}.dtv-draft-settings>summary{cursor:pointer;font-weight:600}.dtv-draft-notice{margin:10px 0;font-size:12px;color:var(--dsw-alias-label-tertiary)}`;
 function styles2() {
   installPlayChatStyles();
-  if (document.querySelector("style[data-dtv-drafts]")) return;
-  const node = document.createElement("style");
-  node.dataset.dtvDrafts = "";
-  node.textContent = css12;
-  document.head.append(node);
+  installTavernStyle(`${PLUGIN_ID}-drafts`, css12, "data-dtv-drafts");
 }
 function DraftOpening({ draftId, playClient, openSession, switchToNative }) {
   styles2();
@@ -59264,11 +59226,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   );
 }
 function installStyles6() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
-  style.textContent = css13 + diagnosticsCss + presentationCss;
-  document.head.append(style);
+  installTavernStyle(`${PLUGIN_ID}-shell`, css13 + diagnosticsCss + presentationCss);
 }
 var name = PLUGIN_ID;
 var inject = ["slots", "layout", "sessions", "workspaces", "uiWorkspace"];

@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../client-style.js'
 import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
   createElement,
@@ -827,9 +828,5 @@ export function WorldBookPanel({ bindingTarget, sessionId, close }) {
 }
 
 export function installWorldBookStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-world-book"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-world-book`
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-world-book`, css)
 }

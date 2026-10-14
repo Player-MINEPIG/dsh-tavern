@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../client-style.js'
 import {offerRenderingDependencies} from '../../client/src/play/rendering-dependencies.js'
 import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
@@ -550,9 +551,5 @@ export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConv
 }
 
 export function installCharacterStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-character"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-character`
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-character`, css)
 }

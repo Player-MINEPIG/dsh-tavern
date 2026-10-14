@@ -1,3 +1,4 @@
+import { installTavernStyle } from '../../../client-style.js'
 import { pendingSwipe, pendingSwipes } from './pending-swipe.js'
 import { mainSessionId } from '../session-selection.js'
 import { RpWorkspaceNotice } from './workspace-notice.js'
@@ -64,11 +65,7 @@ const css = `
 `
 
 function installStyles() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-sidebar"]`) !== null) return
-  const style = document.createElement('style')
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`
-  style.textContent = css
-  document.head.append(style)
+  installTavernStyle(`${PLUGIN_ID}-play-sidebar`, css)
 }
 
 function Avatar({ character }) {

@@ -1,3 +1,5 @@
+import { PLUGIN_ID } from '../../../identity.js'
+import { installTavernStyle } from '../../../client-style.js'
 import {createElement as h,createContext,useContext,useLayoutEffect,useSyncExternalStore} from 'react'
 import {translate} from '../i18n.js'
 import {MowanChatView} from './chat.js'
@@ -15,9 +17,8 @@ const css=`
 .dtv-rp-opening-view .dtv-play-greeting .dtv-message:has(.dtv-interactive-card){grid-template-columns:42px minmax(0,1fr)!important}
 @media(max-width:520px){.dtv-rp-opening-header{gap:6px;padding:8px 64px 8px 8px}.dtv-rp-opening-tabs{gap:2px}.dtv-rp-opening-header button{padding:7px 8px}.dtv-rp-opening-view .dtv-play-chat{padding:12px 8px 20px}}
 `
-function installStyles(){
- if(document.querySelector('style[data-dtv-opening-layout]'))return
- const style=document.createElement('style');style.dataset.dtvOpeningLayout='';style.textContent=css;document.head.append(style)
+function installStyles() {
+  installTavernStyle(`${PLUGIN_ID}-opening-layout`, css, 'data-dtv-opening-layout')
 }
 
 // This caller-selected component is authorized by the public content Factory.
