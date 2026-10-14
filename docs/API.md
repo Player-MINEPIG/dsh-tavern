@@ -659,7 +659,7 @@ Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 
 必需依赖的插件可声明 `inject: ['pmpDshTavernChrome']` 后读取 `ctx.pmpDshTavernChrome`；兼容性可选插件应使用 `ctx.get('pmpDshTavernChrome')` 并在缺失时保持自己的 native/fallback 行为。第三方不得重新 provide 同名服务，也不得依赖 Tavern 内部的 React state、`playSlots`、EventSource 或 timer。
 
-内部 transport 使用 `GET /v2/chrome/events`；不支持 EventSource、连接失败或断线时降级为初始 GET、window focus 回读和1秒轮询，SSE恢复后停止轮询。BroadcastChannel 不属于合同。服务卸载会停止transport并清理所有 `when` effect；多个第三方插件的注册互相独立，各自只清理自己拥有的slot/UI。
+内部 transport 默认通过初始 `GET /v2/chrome`、window focus 回读和1秒轮询同步快照，不额外占用每个页面的常驻 SSE 连接。尚未完成的回读由轮询和 focus 共享，避免网络堵塞时反复排队。`GET /v2/chrome/events` 仍可供显式 SSE 消费方使用；向内部 adapter 显式传入 EventSource 实现时，连接失败或断线会启用轮询，SSE恢复后停止轮询。BroadcastChannel 不属于合同。服务卸载会停止transport并清理所有 `when` effect；多个第三方插件的注册互相独立，各自只清理自己拥有的slot/UI。
 
 第三方 DSH 插件、独立 Web 客户端、surface 所有权、原子动作组合与卸载降级的完整说明见 [FRONTEND_INTEGRATION_zh-CN.md](FRONTEND_INTEGRATION_zh-CN.md)。当前没有配置文件一键替换魔丸、frontend provider registry 或动态 bundle loader。
 

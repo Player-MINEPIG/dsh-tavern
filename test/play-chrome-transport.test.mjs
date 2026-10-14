@@ -24,6 +24,78 @@ class FakeEventSource extends FakeTarget {
   close() { this.closed += 1 }
 }
 
+const settle = () => new Promise(resolve => setImmediate(resolve))
+
+test('default transport polls without opening an extra browser SSE connection', async () => {
+  const original = globalThis.EventSource
+  globalThis.EventSource = FakeEventSource
+  FakeEventSource.instances = []
+  const intervals = new Map()
+  const disposers = []
+  let refreshes = 0
+  try {
+    for (let tab = 0; tab < 3; tab += 1) {
+      disposers.push(startChromeModeTransport({
+        face: { refresh: async () => { refreshes += 1 } },
+        internal: { acceptSnapshot: () => {} },
+        eventsUrl: '/events',
+        focusTarget: new FakeTarget(),
+        setIntervalImpl: callback => { intervals.set(tab, callback); return tab },
+        clearIntervalImpl: id => intervals.delete(id),
+      }))
+    }
+    await settle()
+    assert.equal(FakeEventSource.instances.length, 0)
+    assert.equal(intervals.size, 3)
+    assert.equal(refreshes, 3)
+    for (const poll of intervals.values()) poll()
+    await settle()
+    assert.equal(refreshes, 6)
+  } finally {
+    for (const dispose of disposers) dispose()
+    if (original === undefined) delete globalThis.EventSource
+    else globalThis.EventSource = original
+  }
+  assert.equal(intervals.size, 0)
+})
+
+test('slow refresh does not accumulate polling and focus requests', async () => {
+  let resolveRead
+  const read = new Promise(resolve => { resolveRead = resolve })
+  const intervals = new Map()
+  const focusTarget = new FakeTarget()
+  let refreshes = 0
+  const dispose = startChromeModeTransport({
+    face: { refresh: () => { refreshes += 1; return read } },
+    internal: { acceptSnapshot: () => {} },
+    eventsUrl: '/events',
+    EventSourceImpl: null,
+    focusTarget,
+    setIntervalImpl: callback => { intervals.set('poll', callback); return 'poll' },
+    clearIntervalImpl: id => intervals.delete(id),
+  })
+  try {
+    await settle()
+    for (let tick = 0; tick < 10; tick += 1) {
+      intervals.get('poll')()
+      focusTarget.emit('focus')
+    }
+    await settle()
+    assert.equal(refreshes, 1)
+    resolveRead()
+    await settle()
+    intervals.get('poll')()
+    await settle()
+    assert.equal(refreshes, 2)
+  } finally {
+    dispose()
+    resolveRead()
+  }
+  focusTarget.emit('focus')
+  await settle()
+  assert.equal(refreshes, 2)
+})
+
 test('chrome client accepts revisioned and legacy snapshots', async () => {
   assert.deepEqual(normalizeChrome({ mode: 'play', revision: 'r1' }), { mode: 'play', revision: 'r1' })
   assert.deepEqual(normalizeChrome({ mode: 'native' }), { mode: 'native', revision: null })
@@ -62,7 +134,7 @@ test('transport converges SSE, focus, and polling fallback then disposes', async
     },
     clearIntervalImpl: id => intervals.delete(id),
   })
-  await Promise.resolve()
+  await settle()
   assert.equal(refreshes, 1)
   const source = FakeEventSource.instances[0]
   assert.equal(source.url, '/events')
@@ -74,14 +146,14 @@ test('transport converges SSE, focus, and polling fallback then disposes', async
   assert.equal(intervals.size, 1)
   intervals.values().next().value()
   focusTarget.emit('focus')
-  await Promise.resolve()
-  assert.equal(refreshes, 3)
+  await settle()
+  assert.equal(refreshes, 2)
 
   source.emit('open')
   assert.equal(intervals.size, 0)
   source.emit('chrome/change', { data: 'not-json' })
-  await Promise.resolve()
-  assert.equal(refreshes, 4)
+  await settle()
+  assert.equal(refreshes, 3)
 
   dispose()
   dispose()
@@ -105,11 +177,11 @@ test('missing or failed EventSource starts one bounded polling fallback', async 
     clearIntervalImpl: id => intervals.delete(id),
   }
   const dispose = startChromeModeTransport({ ...options, EventSourceImpl: undefined })
-  await Promise.resolve()
+  await settle()
   assert.equal(refreshes, 1)
   assert.equal(intervals.size, 1)
   intervals.get('timer')()
-  await Promise.resolve()
+  await settle()
   assert.equal(refreshes, 2)
   dispose()
   assert.equal(intervals.size, 0)

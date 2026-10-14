@@ -2,7 +2,9 @@ export function startChromeModeTransport({
   face,
   internal,
   eventsUrl,
-  EventSourceImpl = globalThis.EventSource,
+  // DSH already owns a persistent plugin SSE stream per page. Poll this
+  // small snapshot by default so background tabs leave HTTP/1 slots for RPC.
+  EventSourceImpl = null,
   focusTarget = globalThis.window,
   pollIntervalMs = 1_000,
   setIntervalImpl = globalThis.setInterval,
@@ -21,10 +23,16 @@ export function startChromeModeTransport({
   let disposed = false
   let source = null
   let pollTimer = null
+  let refreshing = null
 
   const refresh = () => {
     if (disposed) return Promise.resolve()
-    return Promise.resolve(face.refresh()).catch(() => {})
+    if (refreshing !== null) return refreshing
+    refreshing = Promise.resolve()
+      .then(() => { if (!disposed) return face.refresh() })
+      .catch(() => {})
+      .finally(() => { refreshing = null })
+    return refreshing
   }
 
   const stopPolling = () => {
