@@ -18,16 +18,16 @@ It targets DSH `0.2.0-rc.2`. Configure generic resource retrieval in Manager and
 
 ## Installation and development
 
-Tavern 3.0.2 automatically installs and loads standard `dsh-prompt-assembler` v1.1.0 and automatically loads its Host and browser entries. The optional `dsh-prompt-assembler-core` is not a production dependency. Users only need to install Tavern:
+Tavern 3.0.3 automatically installs and loads standard `dsh-prompt-assembler` v1.1.0 and automatically loads its Host and browser entries. The optional `dsh-prompt-assembler-core` is not a production dependency. Users only need to install Tavern:
 
 ```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.2
+dsh plugin --profile web add pmp-dsh-tavern@3.0.3
 ```
 
 The fixed GitHub tag and the Tavern `.tgz` attached to the Release are alternatives. Source installation still downloads dependencies; prebuilt Tavern packages already include standard Assembler and need no second package:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.2
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.3
 ```
 
 ### Coexistence with standalone Assembler

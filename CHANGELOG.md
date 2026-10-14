@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.3 — Multi-tab transport and stylesheet ownership fixes
+
+- Fix browser HTTP/1 connection contention that could leave native DSH session and plugin-list requests waiting with several tabs open. Chrome-mode synchronization defaults to initial read, focus read-back and one-second polling; unfinished reads are shared. Explicit SSE consumers remain supported. See [PR #19](https://github.com/Player-MINEPIG/dsh-tavern/pull/19).
+- Fix [#20](https://github.com/Player-MINEPIG/dsh-tavern/issues/20): tag all 13 Host-document style installers with Tavern ownership before insertion, preventing another plugin's reload or unload from removing Tavern styles. Reclaim retained legacy tags and restore styles without duplicates after Tavern is re-enabled. See [PR #21](https://github.com/Player-MINEPIG/dsh-tavern/pull/21).
+- Keep DSH `0.2.0-rc.2`, standard Assembler `1.1.0`, public APIs and stored data formats unchanged. Existing resources and sessions require no migration.
+
 ## 3.0.2 — Market installation dependency fix
 
 - Fix GitHub/Market installations that skipped Assembler because the source manifest declared a bundled dependency absent from GitHub archives. Declare bundled dependencies only when producing a prebuilt package.

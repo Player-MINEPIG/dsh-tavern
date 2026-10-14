@@ -18,16 +18,16 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 
 ## 安装与开发
 
-Tavern 3.0.2 自动安装并加载标准 `dsh-prompt-assembler` v1.1.0，并通过 Host 和浏览器组合入口自动加载。生产依赖不包含可选 `dsh-prompt-assembler-core`。普通用户只需安装 Tavern：
+Tavern 3.0.3 自动安装并加载标准 `dsh-prompt-assembler` v1.1.0，并通过 Host 和浏览器组合入口自动加载。生产依赖不包含可选 `dsh-prompt-assembler-core`。普通用户只需安装 Tavern：
 
 ```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.2
+dsh plugin --profile web add pmp-dsh-tavern@3.0.3
 ```
 
 也可安装 GitHub 固定 tag，或 Release 中的 Tavern `.tgz`；源码安装仍需下载依赖。预构建 Tavern 包已经包含标准 Assembler，不需要另装第二个包：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.2
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.3
 ```
 
 ### 与独立 Assembler 共存
