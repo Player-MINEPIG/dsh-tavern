@@ -50,10 +50,18 @@ async function evaluate(code,name='card.js',module=false,initial=false){
  deadline=started+(initial?2000:120);operations=0
  try{
   const result=await vm.evalCodeAsync(code,name,{type:module?'module':'global'})
-  if(result.error){result.error.dispose();const diagnostic=cardExecutionDiagnostic({interrupted:executionInterrupted,phase:cardExecutionPhase(code,initial),elapsedMs:performance.now()-started,bridgeWaitMs:timing.waitMs,creditedWaitMs:timing.creditedWaitMs,layoutFailure:timing.layoutFailure});throw Error('Card execution failed: '+String(name).slice(0,160)+' ['+diagnostic.code+'; phase='+diagnostic.phase+'; elapsedMs='+diagnostic.elapsedMs+'; bridgeWaitMs='+diagnostic.bridgeWaitMs+'; creditedWaitMs='+diagnostic.creditedWaitMs+'; layoutFailure='+diagnostic.layoutFailure+']')}
-  const value=vm.typeof(result.value)==='string'?vm.getString(result.value):undefined;result.value.dispose()
-  let jobs=0;while(runtime.hasPendingJob()){if(++jobs>200)throw Error('Card pending job limit exceeded');await drainJob()}
-  return value
+  const failed=()=>{const diagnostic=cardExecutionDiagnostic({interrupted:executionInterrupted,phase:cardExecutionPhase(code,initial),elapsedMs:performance.now()-started,bridgeWaitMs:timing.waitMs,creditedWaitMs:timing.creditedWaitMs,layoutFailure:timing.layoutFailure});return Error('Card execution failed: '+String(name).slice(0,160)+' ['+diagnostic.code+'; phase='+diagnostic.phase+'; elapsedMs='+diagnostic.elapsedMs+'; bridgeWaitMs='+diagnostic.bridgeWaitMs+'; creditedWaitMs='+diagnostic.creditedWaitMs+'; layoutFailure='+diagnostic.layoutFailure+']')}
+  try{
+   if(result.error){result.error.dispose();throw failed()}
+   const value=vm.typeof(result.value)==='string'?vm.getString(result.value):undefined
+   let jobs=0;while(runtime.hasPendingJob()){if(++jobs>200)throw Error('Card pending job limit exceeded');await drainJob()}
+   if(module){
+    const completion=vm.getPromiseState(result.value)
+    if(completion.type==='rejected'){completion.error.dispose();throw failed()}
+    if(completion.type==='fulfilled'&&!completion.notAPromise)completion.value.dispose()
+   }
+   return value
+  }finally{result.value?.dispose()}
  }finally{if(executionTiming===timing)executionTiming=null}
 }
 async function snapshot(forceControls=false){

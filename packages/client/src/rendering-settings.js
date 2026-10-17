@@ -67,6 +67,7 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
   const renderGraph = owner => {
     const graph=renderingDependencies.inspect(owner),state=graph?.status??'loading',items=graph?.items??[]
     const working=state==='downloading'||state==='loading'
+    const hasRemote=items.some(item=>item.url&&item.status!=='disabled'&&(renderingTrust.adapterIntent(owner,item.url)==='original'||!builtinCandidate(item.url)&&renderingTrust.adapterIntent(owner,item.url)!=='builtin'))
     const progress=dependencyProgress(graph),count=progress.discovered+(progress.capped?'+':'')
     const label=!graph?translate('rendering.graph.unknown'):progress.complete?progress.ready+' / '+count+' · '+translate('rendering.graph.complete'):
       ['waiting','changed','loading','remote'].includes(state)?'0 / '+count+' · '+translate('rendering.graph.roots'):
@@ -80,14 +81,14 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
       progress.omitted?h('p',{role:'alert',className:'dtv-script-meta'},translate('rendering.graph.omitted',{count:progress.omitted+(progress.capped?'+':'')})):null,
       h('p',{className:'dtv-script-meta'},translate('rendering.selectionScope')),
       h('div',{className:'dtv-script-actions'},
-        h('button',{type:'button',className:'dtv-button',disabled:working,onClick:()=>run(()=>renderingDependencies.acquire(owner,{refresh:state!=='waiting'}))},translate(state==='waiting'?'rendering.acquire':state==='changed'?'rendering.acquireUpdate':'rendering.redownload')),
+        hasRemote?h('button',{type:'button',className:'dtv-button',disabled:working,onClick:()=>run(()=>renderingDependencies.acquire(owner,{refresh:state!=='waiting'}))},translate(state==='waiting'?'rendering.acquire':state==='changed'?'rendering.acquireUpdate':'rendering.redownload')):null,
         h('button',{type:'button',className:'dtv-button',disabled:state==='loading',onClick:()=>run(()=>renderingDependencies.uninstall(owner))},translate(state==='downloading'?'rendering.cancel':'rendering.uninstall'))),
       h('div',{className:'dtv-dependency-items'},...[...items,...(graph?.excluded??[])].map(item=>{
         const enabled=renderingTrust.isEnabled(owner,item.url),selected=item.status!=='disabled',candidate=builtinCandidate(item.url)
-        const cached=graph?.retained?.find(record=>record.url===item.url),content=item.content??cached?.content
+        const cached=graph?.retained?.find(record=>record.url===item.url),content=item.builtin?undefined:item.content??cached?.content
         const displayUrl=item.url?new URL(item.url).hostname+new URL(item.url).pathname:item.key
         return h('details',{key:item.key,className:'dtv-entry','data-selected':selected},
-          h('summary',null,h('input',{type:'checkbox',checked:enabled,disabled:!item.url||busy||!update,'aria-label':translate('rendering.enableEntry',{name:item.key}),onClick:event=>event.stopPropagation(),onChange:event=>changeEnabled({owner,key:item.url},event.target.checked)}),h('span',{className:'dtv-entry-name'},displayUrl),h('span',{className:'dtv-entry-state'},translate(!selected?'rendering.excluded':item.builtin?'rendering.builtinProvided':enabled?'rendering.graph.'+item.status:'rendering.disabled'))),
+          h('summary',null,h('input',{type:'checkbox',checked:enabled,disabled:!item.url||busy||!update,'aria-label':translate('rendering.enableEntry',{name:item.key}),onClick:event=>event.stopPropagation(),onChange:event=>changeEnabled({owner,key:item.url},event.target.checked)}),h('span',{className:'dtv-entry-name'},displayUrl),h('span',{className:'dtv-entry-state'},translate(!selected?'rendering.excluded':item.builtin?'rendering.builtinProvided':item.errorKind==='adapter'?'rendering.adapterUnsupported':enabled?'rendering.graph.'+item.status:'rendering.disabled'))),
           h('div',{className:'dtv-entry-body'},h('p',{className:'dtv-script-meta'},item.key),item.error?h('p',{role:'alert',className:'dtv-script-meta'},item.error):null,
             item.origins?.length?h('p',{className:'dtv-script-meta'},translate('rendering.origins'),item.origins.join(' · ')):null,
             candidate?h('label',{className:'dtv-script-control'},translate('rendering.adapterMode'),h('select',{className:'dtv-select',disabled:busy||!update,'aria-label':translate('rendering.adapterMode')+' '+item.key,value:renderingTrust.adapterIntent(owner,item.url)??'auto',onChange:event=>changeAdapter(owner,item.url,event.target.value)},h('option',{value:'auto'},translate('rendering.adapterAuto')),h('option',{value:'builtin'},translate('rendering.adapterBuiltin')),h('option',{value:'original'},translate('rendering.adapterOriginal')))):null,

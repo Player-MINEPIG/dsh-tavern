@@ -1,8 +1,8 @@
 import {compileMvuSchema} from '../../../mvu-adapter/src/schema.js'
-import {MVU_BUILTINS} from './mvu-builtins.js'
+import {MVU_ADAPTERS} from './mvu-builtins.js'
 import {discoverDependencies,isSideEffectModuleReference} from './rendering-sources.js'
 
-export const builtinCandidate=url=>MVU_BUILTINS.find(item=>item.url===url)??null
+export const builtinCandidate=url=>MVU_ADAPTERS.find(item=>item.url===url)??null
 export const sourceEnabled=(source,trust)=>source.enablementAmbiguous?source.enabled!==false:trust.isEnabled(source.owner,source.preferenceKey??source.key,source.enabled!==false)
 
 // Recognize invocation forms inertly. The shared bounded schema interpreter is

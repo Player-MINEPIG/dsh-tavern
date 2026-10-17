@@ -42,45 +42,50 @@ function discovery(limits) {
     metadata:()=>({discovered:identities.size,discoveryCapped:capped,omitted:identities.size-items.length}),
   }
 }
-function directGraph(sources,limits,trust) {
+function localItem(item,trust,owner) {
+  const candidate=trust.builtinCandidate?.(item.url),mode=trust.adapterIntent?.(owner,item.url)
+  if(mode==='original'||(!candidate&&mode!=='builtin'))return null
+  const {content,contentDigest,downloadedAt,builtin,adapter,adapterVersion,error,...reference}=item
+  if(!candidate||item.adapterSupport!==true)return {...reference,status:'failed',errorKind:'adapter',error:'Unsupported built-in adapter invocation; select original-code mode to fetch its graph'}
+  return {...reference,status:'ready',error:null,builtin:true,adapter:candidate.kind,adapterVersion:candidate.version}
+}
+function directGraph(sources,limits,trust,owner) {
   const graph=discovery(limits)
   for(const source of sources)graph.add(dependencyReferences(source.content,undefined,source,trust),0)
-  return {items:graph.items,excluded:graph.excluded,...graph.metadata(),complete:false}
+  const items=graph.items.map(item=>localItem(item,trust,owner)??item)
+  return {items,excluded:graph.excluded,...graph.metadata(),complete:!graph.metadata().omitted&&!graph.metadata().discoveryCapped&&items.every(item=>item.status==='ready')}
 }
 
-async function cachedDepths(sources,graph,limits,trust,owner) {
-  const items=graph.items.filter(item=>item.status==='ready'),byUrl=new Map(items.map(item=>[item.url,item])),depths=new Map(),queue=[],support=new Map(),replacements=new Set()
-  if(byUrl.size!==items.length)throw Error('Invalid dependency cache identities')
-  const add=(dependencies,depth)=>{
-    for(const dependency of dependencies){
-      if(dependency.selected===false)continue
-      if(graph.status==='ready'&&(!dependency.url||!byUrl.has(dependency.url)))throw Error('Incomplete dependency cache')
-      if(dependency.adapterSupport===false)support.set(dependency.url,false)
-      else if(!support.has(dependency.url))support.set(dependency.url,dependency.adapterSupport)
-      if(!byUrl.has(dependency.url)||depths.has(dependency.url))continue
-      depths.set(dependency.url,depth);queue.push(dependency.url)
-    }
+function cachedGraph(sources,graph,limits,trust,owner) {
+  const pending=discovery(limits),cached=new Map(graph.items.map(item=>[item.url,item]))
+  if(cached.size!==graph.items.length)throw Error('Invalid dependency cache identities')
+  for(const source of sources)pending.add(dependencyReferences(source.content,undefined,source,trust),0)
+  for(let i=0;i<pending.items.length;i++){
+    const item=pending.items[i],local=localItem(item,trust,owner),saved=cached.get(item.url)
+    if(local){Object.assign(item,local);continue}
+    if(saved?.status==='ready'){
+      if(saved.depth!==undefined&&saved.depth!==item.depth)throw Error('Invalid dependency cache depth')
+      // Original mode always requires actual source bytes; local-provider cache
+      // metadata cannot be reinterpreted as downloaded executable code.
+      if(saved.builtin||typeof saved.content!=='string')throw Error('Incomplete original dependency cache')
+      Object.assign(item,{status:'ready',content:saved.content,contentDigest:saved.contentDigest,downloadedAt:saved.downloadedAt,error:null})
+      pending.add(dependencyReferences(item.content,item.url,{owner,key:item.url,kind:'dependency',origins:item.origins},trust),item.depth+1)
+    }else if(graph.status==='ready')throw Error('Incomplete dependency cache')
+    else if(saved?.status==='failed')Object.assign(item,{status:'failed',error:saved.error})
   }
-  for(const source of sources)add(dependencyReferences(source.content,undefined,source,trust),0)
-  for(let i=0;i<queue.length;i++){
-    const url=queue[i],depth=depths.get(url)
-    if(depth>limits.depth)throw Error('Invalid dependency cache depth')
-    const item=byUrl.get(url),candidate=trust.builtinCandidate?.(url),mode=trust.adapterIntent?.(owner,url)
-    if(mode!=='original'&&(candidate||mode==='builtin')){
-      if(support.get(url)!==true)throw Error('Unsupported built-in adapter invocation; choose original code explicitly')
-      await trust.verifyBuiltin(owner,url,item.content);replacements.add(url)
-    }else add(dependencyReferences(item.content,url,{owner,key:url,kind:'dependency',origins:item.origins??[]},trust),depth+1)
-  }
-  return items.map(item=>{
-    const depth=depths.get(item.url)
-    if(depth===undefined||item.depth!==undefined&&item.depth!==depth)throw Error('Invalid dependency cache depth')
-    if(replacements.has(item.url)&&support.get(item.url)!==true)throw Error('Unsupported built-in adapter invocation')
-    return {...item,depth,builtin:replacements.has(item.url)}
-  })
+  const visited=new Set(pending.items.map(item=>item.url))
+  if(graph.items.some(item=>item.status==='ready'&&!visited.has(item.url)))throw Error('Invalid dependency cache depth')
+  // A later import can invalidate a previously encountered shared local alias.
+  const items=pending.items.map(item=>localItem(item,trust,owner)??item),metadata=pending.metadata()
+  const legacyTruncated=graph.discovered===undefined&&/exceeds \d+ files/.test(graph.error??'')
+  if(legacyTruncated)Object.assign(metadata,{discovered:items.length+1,omitted:1,discoveryCapped:true})
+  const error=metadata.omitted||metadata.discoveryCapped?graph.error??'Dependency graph exceeds limits':null
+  const complete=!error&&!metadata.omitted&&!metadata.discoveryCapped&&items.every(item=>item.status==='ready')
+  return {items,excluded:pending.excluded,...metadata,error,complete,status:complete?'ready':items.some(item=>item.status==='failed')||error?'failed':graph.status}
 }
 
 function retainedCache(items,active=[]) {
-  const activeUrls=new Set(active.map(item=>item.url)),byUrl=new Map()
+  const activeUrls=new Set(active.filter(item=>typeof item.content==='string').map(item=>item.url)),byUrl=new Map()
   for(const item of items??[])if(item.content!==undefined){
     if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE)throw Error('Invalid inactive dependency cache')
     if(!activeUrls.has(item.url))byUrl.set(item.url,item)
@@ -177,24 +182,18 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
         if(usable&&graph.discovered!==undefined&&(!Number.isSafeInteger(graph.discovered)||graph.discovered<graph.items.length||graph.discovered>MAX_DEPENDENCY_IDENTITIES||graph.omitted!==graph.discovered-graph.items.length||typeof graph.discoveryCapped!=='boolean'||typeof graph.complete!=='boolean'||graph.complete!==(graph.status==='ready')||graph.complete&&(graph.omitted||graph.discoveryCapped||graph.items.some(item=>item.status!=='ready'))))throw Error('Invalid dependency cache progress')
         // Derive minimum paths from this snapshot's declarations and exact
         // cached bytes before hashing; never trust a lowered depth hint alone.
-        const prepared=usable?await cachedDepths(state.sources,graph,limits,trust,state.owner):null
-        const commit=usable?await trust.prepare(state.owner,prepared):null
+        const resolved=usable?cachedGraph(state.sources,graph,limits,trust,state.owner):directGraph(state.sources,limits,trust,state.owner)
+        const commit=await trust.prepare(state.owner,resolved.items.filter(item=>item.status==='ready'))
         if(!current(state))return
         const accepted=await store.readCurrent(state.owner,saved,()=>{
           if(!current(state))return false
           remember(state.owner,graph,saved.generation)
           commit?.()
           state.cacheGeneration=saved.generation
-          const counts=usable?{
-            // Older failed count-budget caches omitted at least one known file.
-            discovered:graph.discovered??(graph.items.length+(/exceeds \d+ files/.test(graph.error??'')?1:0)),
-            discoveryCapped:graph.discoveryCapped??/exceeds \d+ files/.test(graph.error??''),
-            omitted:graph.omitted??(/exceeds \d+ files/.test(graph.error??'')?1:0),
-            complete:graph.complete??(graph.status==='ready'&&graph.items.every(item=>item.status==='ready')),
-            items:graph.items,excluded:graph.excluded??[],
-          }:directGraph(state.sources,limits,trust)
-          Object.assign(state,counts);state.retained=retainedCache(state.cacheItems,usable?graph.items:[]);state.error=usable?(graph.error??null):null
-          state.status=saved.pending?'remote':usable?graph.status:graph?'changed':'waiting'
+          Object.assign(state,resolved)
+          state.retained=retainedCache(state.cacheItems,resolved.items)
+          state.error=resolved.error??null
+          state.status=resolved.complete?'ready':saved.pending?'remote':resolved.items.some(item=>item.status==='failed')?'failed':usable?resolved.status:graph?'changed':'waiting'
           return true
         })
         if(!current(state))return
@@ -237,7 +236,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       const previous=states.get(owner)
       if(previous?.signature===signature&&previous.status!=='failed')return previous.ready
       previous?.controller?.abort();trust.removeOwner(owner)
-      const state={owner,signature,sources,status:'loading',...directGraph(sources,limits,trust),retained:[],cacheItems:previous?.cacheItems??[],fingerprint:null,error:null,cacheGeneration:0}
+      const state={owner,signature,sources,status:'loading',...directGraph(sources,limits,trust,owner),retained:[],cacheItems:previous?.cacheItems??[],fingerprint:null,error:null,cacheGeneration:0}
       states.set(owner,state);emit()
       state.ready=(async()=>{
         try{
@@ -283,6 +282,8 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
         if(!current(state)||state.controller.signal.aborted)return
         const item=state.items[i]
         if(item.status==='failed')continue
+        const local=localItem(item,trust,owner)
+        if(local){Object.assign(item,local);emit();continue}
         item.status='downloading';emit()
         const controller=new AbortController(),abort=()=>controller.abort()
         state.controller.signal.addEventListener('abort',abort,{once:true})
@@ -297,14 +298,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
           bytes+=new TextEncoder().encode(content).byteLength
           if(bytes>limits.bytes)throw Error('Dependency graph exceeds byte limit')
           item.content=content
-          const candidate=trust.builtinCandidate?.(item.url),mode=trust.adapterIntent?.(owner,item.url)
-          if(mode!=='original'&&(candidate||mode==='builtin')){
-            if(item.adapterSupport!==true)throw Error('Unsupported built-in adapter invocation; choose original code explicitly to download its graph')
-            const adapter=await trust.verifyBuiltin(owner,item.url,content)
-            controller.signal.throwIfAborted()
-            if(!current(state))return
-            item.builtin=true;item.adapter=adapter.kind
-          }else enqueue(dependencyReferences(content,item.url,{owner,key:item.url,kind:'dependency',origins:item.origins},trust),item.depth+1)
+          enqueue(dependencyReferences(content,item.url,{owner,key:item.url,kind:'dependency',origins:item.origins},trust),item.depth+1)
           item.status='ready'
         }catch(error){item.status='failed';item.error=controller.signal.aborted?'Download cancelled or timed out':error.message}
         finally{clearTimeout(timer);state.controller.signal.removeEventListener('abort',abort)}
@@ -312,7 +306,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
         if(bytes>limits.bytes){for(const pending of state.items.filter(item=>item.status==='queued')){pending.status='failed';pending.error='Dependency graph exceeds byte limit'};break}
       }
       if(!current(state)||state.controller.signal.aborted)return
-      for(const item of state.items)if(item.builtin&&item.adapterSupport!==true){item.status='failed';item.error='Unsupported built-in adapter invocation';item.builtin=false}
+      for(const item of state.items)if(item.builtin&&item.adapterSupport!==true){item.status='failed';item.errorKind='adapter';item.error='Unsupported built-in adapter invocation';item.builtin=false}
       state.status=state.error||state.items.some(item=>item.status==='failed')?'failed':'ready'
       state.complete=state.status==='ready'
       state.retained=retainedCache(state.cacheItems,state.items)
@@ -332,14 +326,14 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
   async function uninstall(owner) {
     const previous=states.get(owner)
     previous?.controller?.abort()
-    const state=previous?{...previous,...directGraph(previous.sources,limits,trust),retained:[],cacheItems:[],status:'waiting',error:null,starting:true,controller:null}:null
+    const state=previous?{...previous,...directGraph(previous.sources,limits,trust,owner),retained:[],cacheItems:[],status:'waiting',error:null,starting:true,controller:null}:null
     if(state)states.set(owner,state)
     trust.removeOwner(owner);emit()
     try{
       const generation=await store.remove(owner)
       accounted=false
       remember(owner,null,generation)
-      if(state&&current(state)){state.cacheGeneration=generation;state.starting=false;if(state.refreshPending){state.refreshPending=false;await refresh(owner)}}
+      if(state&&current(state)){state.cacheGeneration=generation;state.starting=false;await restore(state,{generation,pending:false});if(state.refreshPending){state.refreshPending=false;await refresh(owner)}}
       broadcast(owner)
     }catch(error){if(state&&current(state)){state.starting=false;state.status='failed';state.error=error.message;emit()};throw error}
   }
@@ -351,7 +345,7 @@ export const renderingDependencies=createRenderingDependencies()
 export async function offerRenderingDependencies(resource,kind,resourceId,{confirm=message=>globalThis.confirm(message),message,dependencies=renderingDependencies}={}) {
   const sources=await identifyRenderingSources(renderingInventory(resource,{kind,resourceId}))
   await dependencies.sync(sources)
-  const roots=dependencies.inspect(`${kind}:${resourceId}`).items.map(item=>item.url??item.key)
+  const roots=dependencies.inspect(`${kind}:${resourceId}`).items.filter(item=>!item.builtin&&item.errorKind!=='adapter').map(item=>item.url??item.key)
   if(!roots.length)return
   const sourceList=roots.map(url=>'• '+url).join('\n')
   if(await confirm(typeof message==='function'?message(sourceList):message.replace('{sources}',sourceList)))void dependencies.acquire(`${kind}:${resourceId}`).catch(()=>{})

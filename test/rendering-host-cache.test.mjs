@@ -130,3 +130,18 @@ test('target Cordis Host mounts the production cache route, restores after remou
   await plugin.dispose();assert.equal(route,null)
  }finally{await ctx.fiber.dispose();await new Promise(resolve=>server.close(resolve))}
 })
+
+test('Host persists local MVU contract metadata without remote bytes and restores it for another browser',async t=>{
+ const cache=fixture(t),server=await host(t,cache.store),store=hostDependencyStore({request:server.request}),owner='character:local-contract'
+ const url='https://cdn.jsdelivr.net/gh/MagicalAstrogy/MagVarUpdate/artifact/bundle.js'
+ const sources=[{owner,key:'helper',kind:'helper',enabled:true,content:`import '${url}';`}]
+ const trust=createRenderingTrust(),manager=createRenderingDependencies({trust,store,channelFactory:()=>null,download:async()=>{throw Error('No upstream access')}});t.after(()=>manager.dispose())
+ await manager.sync(sources);await manager.acquire(owner)
+ assert.equal(manager.inspect(owner).status,'ready')
+ assert.equal(cache.store.source(url),null)
+ const saved=cache.store.get(owner)
+ assert.equal(saved.graph.items[0].adapterVersion,1);assert.equal(saved.graph.items[0].contentDigest,undefined)
+ const nextTrust=createRenderingTrust(),next=createRenderingDependencies({trust:nextTrust,store:hostDependencyStore({request:server.request}),channelFactory:()=>null,download:async()=>{throw Error('Offline')}});t.after(()=>next.dispose())
+ await next.sync(sources)
+ assert.equal(next.inspect(owner).status,'ready');assert.equal(nextTrust.inspect(owner,url).builtin,true)
+})

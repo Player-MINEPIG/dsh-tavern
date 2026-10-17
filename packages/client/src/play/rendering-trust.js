@@ -1,5 +1,5 @@
 import {DEPENDENCY_LIMITS, RENDERING_CACHE_LIMITS} from './rendering-limits.js'
-import {mvuBuiltin,MVU_BUILTINS} from './mvu-builtins.js'
+import {MVU_ADAPTERS} from './mvu-builtins.js'
 import {normalizeRenderingAdapters} from '../../../presentation/rendering-adapters.js'
 import {createRenderingCacheBudget,renderingCacheBudget} from './rendering-cache-budget.js'
 import { externalUrl, MAX_RENDER_SOURCE } from './rendering-sources.js'
@@ -7,7 +7,7 @@ import {uniqueSourceBytes} from './rendering-shared-sources.js'
 
 // Outside-card executable cache. Only the resource acquisition lifecycle installs
 // downloaded graphs. Enabled scripts use their current bound variable capability.
-export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS,budget=createRenderingCacheBudget()}={}) {
+export function createRenderingTrust({candidates=MVU_ADAPTERS,budget=createRenderingCacheBudget()}={}) {
   const installs = new Map(), records = new Map(), intentions = new Map(), adapters = new Map(), listeners = new Set()
   let revision = 0, generation = 0
   let inactiveBytes=()=>0
@@ -56,12 +56,6 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
     adapterIntent(owner,source){return adapters.get(keyFor(owner,source))},
     builtinCandidate(source){return candidates.find(item=>item.url===source)??null},
     selection(owner){const selected=values=>[...values].filter(([key])=>JSON.parse(key)[0]===owner).sort((a,b)=>a[0].localeCompare(b[0]));return {enablement:selected(intentions),adapters:selected(adapters)}},
-    async verifyBuiltin(owner,source,content) {
-      const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
-      const descriptor=builtin(source,digest)
-      if(!descriptor)throw Error('Unsupported built-in adapter bytes; choose original code explicitly to download its graph')
-      return descriptor
-    },
     async stage(owner, source, content) {
       if (typeof owner !== 'string' || owner.length > 300 || typeof source !== 'string' || source.length > 2048 || typeof content !== 'string' || content.length > MAX_RENDER_SOURCE) throw Error('Rendering source exceeds limit')
       if (source.startsWith('https:') && externalUrl(source) !== source) throw Error('Unsupported dependency URL')
@@ -89,11 +83,16 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
       await budget.ready()
       if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
       const next=await Promise.all(items.map(async item=>{
-        if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE||item.depth!==undefined&&(!Number.isSafeInteger(item.depth)||item.depth<0||item.depth>DEPENDENCY_LIMITS.depth))throw Error('Invalid cached dependency')
+        if(externalUrl(item.url)!==item.url||item.depth!==undefined&&(!Number.isSafeInteger(item.depth)||item.depth<0||item.depth>DEPENDENCY_LIMITS.depth))throw Error('Invalid cached dependency')
+        if(item.builtin===true){
+          const adapter=candidates.find(candidate=>candidate.url===item.url)
+          if(!adapter||item.adapter!==adapter.kind||item.adapterVersion!==adapter.version||adapters.get(keyFor(owner,item.url))==='original')throw Error('Invalid built-in adapter selection')
+          return {owner,source:item.url,depth:item.depth,approved:true,builtin:true,adapter:adapter.kind,adapterVersion:adapter.version}
+        }
+        if(typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE)throw Error('Invalid cached dependency')
         const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(item.content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
         if(item.contentDigest&&item.contentDigest!==digest)throw Error('Shared dependency content changed')
-        if(item.builtin===true&&(!builtin(item.url,digest)||adapters.get(keyFor(owner,item.url))==='original'))throw Error('Invalid built-in adapter selection')
-        return {owner,source:item.url,content:item.content,depth:item.depth,digest,approved:true,...(item.builtin===true?{builtin:true}:{})}
+        return {owner,source:item.url,content:item.content,depth:item.depth,digest,approved:true}
       }))
       return () => {
         if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
@@ -112,17 +111,12 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
       if (!value?.digest || digest !== value.digest) throw Error('Rendering content changed; review again')
       records.set(keyFor(owner,source),{...value,approved:true}); emit()
     },
-    setBuiltin(owner,source,enabled) {
-      const key=keyFor(owner,source),record=records.get(key)
-      if(!record?.approved||!builtin(source,record.digest))throw Error('Built-in adapter requires downloaded exact supported bytes')
-      records.set(key,{...record,builtin:enabled===true});emit()
-    },
     revoke(owner,source) { reserveRecords([...records.values()].filter(item=>item.owner!==owner||item.source!==source));records.delete(keyFor(owner,source)); emit() },
     read(owner,source) {
       const value=records.get(keyFor(owner,source))
       if (source.startsWith('https:') && intentions.get(keyFor(owner,source)) === false) throw Error('Rendering source is disabled')
       if (!value?.approved) throw Error('Rendering dependency is not downloaded; open External code to download dependencies')
-      return value.content
+      return value.builtin?'':value.content
     },
     clear() { reserveRecords([]);generation++; records.clear(); emit() },
   }

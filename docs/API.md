@@ -556,7 +556,7 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 
 `scriptEnablement` 保存普通本地选择，格式为 `{ schemaVersion: 1, entries: [{ owner, key, enabled }] }`，最多 128 条。owner 使用角色/预设资源 ID；全局依赖使用规范 RP 工作区的 SHA-256 身份。Helper 优先使用原条目唯一 ID，否则按源码 SHA-256 标识唯一内容；重复源码只有名称唯一时才使用源码与名称摘要组合，排序不参与身份。无 ID 源码或用于区分的名称变化后继承来源默认；仍无法区分的重复条目不支持逐条保存覆盖，保持各自来源默认，需先在原卡添加唯一 ID。新资源 ID 与原卡导出不携带本地选择。省略或 DELETE 清除覆盖；外观页的恢复默认操作保留脚本选择及总开关。此设置仅持久化开关选择；来源或选择变化须更新选定依赖。已下载且开启的脚本可读写当前绑定变量，内部执行绑定不持久化。
 
-`renderingAdapters` 保存普通兼容模式覆盖，格式为 `{ schemaVersion: 1, entries: [{ owner, source, mode }] }`，最多 128 条；`source` 为 HTTPS 来源，`mode` 为 `builtin` 或 `original`。省略条目默认自动匹配精确 URL、字节与支持的调用语义，`builtin` 明确要求兼容映射、不支持时停止，`original` 选择原代码图。此偏好不含审批、摘要、源码或写许可；仅在下载并核验支持字节后提供兼容映射。owner 隔离、复制不继承，外观恢复保留此偏好，省略或 DELETE 清除覆盖。
+`renderingAdapters` 保存普通兼容模式覆盖，格式为 `{ schemaVersion: 1, entries: [{ owner, source, mode }] }`，最多 128 条；`source` 为 HTTPS 来源，`mode` 为 `builtin` 或 `original`。省略条目默认按精确导入入口与支持的调用语义选择本地能力合同，`builtin` 明确要求内置能力、不支持时停止，`original` 选择原代码图。此偏好不含审批、摘要、源码或写许可；内置 MVU 不下载或执行上游模块，原版代码仍需下载并核验缓存内容摘要。owner 隔离、复制不继承，外观恢复保留此偏好，省略或 DELETE 清除覆盖。
 
 可选 `bubbleStyle` 与布尔值 `interactiveCards` 遵循[显示协议](CONVERSATION_PRESENTATION.md)，请求体上限 384 KiB；省略或 DELETE 恢复默认。用户创建/PATCH/导入/导出支持可选栅格 data URI `avatar`，上限 128 KiB；null 清除，PATCH 省略则保留。timeline 的 `ext.pmpDshTavern.appearance` 遵循同一文档，通过现有 revision/CAS 写入，非法元数据返回 `PLAY_APPEARANCE_INVALID`。
 
@@ -614,7 +614,7 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 在 v2 Play 基地址下，`POST /drafts` 保存 `{ characterId, source?, selection?, assemblyPresetId? }`，不创建 DSH 会话。`GET /drafts/:id` 返回 `{ draft, playthrough }`。`PUT /drafts/:id` 要求 `expectedRevision`，接受 selection、assemblyPresetId、variables、importContextRef 或 resetVariables，不允许更换角色身份。 `POST /drafts/:id/preview` 接受 `{ expectedRevision, preset? }`，只读预览此开场草稿的当前资源、变量和调用者的装配规则；省略 preset 时使用草稿快照。返回 `{ ok, preview }`，其中 `scope:'opening-draft'`、`draftId`、`draftRevision`、`pendingInputsIncluded:false`。不创建原生会话、不写历史、不调用模型；配置变化或开始首次发送后返回 409。
 
-`POST /drafts/:id/materialize` 接受 `{ expectedRevision, operationId, text }`，准备唯一、持久预留的会话并返回 `{ sessionId, requestId, accepted }`，自身不发送模型请求。若尚未受理，调用既有 `/sessions/:id/user-message`，传同一 text 与 requestId。`POST /drafts/:id/cancel` 在未受理时清理绑定、释放无绑定空会话并恢复草稿，`draft.lastInput` 保留该次输入用于重新打开开场；已受理时停止真实会话并保留历史。MVU 草稿 scope 为 `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`，不含 sessionId。卡片写授权仍要求当前精确 selection token 和已下载来源的执行证明。
+`POST /drafts/:id/materialize` 接受 `{ expectedRevision, operationId, text }`，准备唯一、持久预留的会话并返回 `{ sessionId, requestId, accepted }`，自身不发送模型请求。若尚未受理，调用既有 `/sessions/:id/user-message`，传同一 text 与 requestId。`POST /drafts/:id/cancel` 在未受理时清理绑定、释放无绑定空会话并恢复草稿，`draft.lastInput` 保留该次输入用于重新打开开场；已受理时停止真实会话并保留历史。MVU 草稿 scope 为 `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`，不含 sessionId。卡片写授权仍要求当前精确 selection token 和已就绪来源的执行证明。
 
 ### Tavern 周目分支组合
 
@@ -665,14 +665,14 @@ Tavern client 通过 DSH `0.2.1-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 
 ## 渲染执行绑定
 
-这些内部路由把可用且已开启的卡片执行绑定到准确源码和 scope，不建立用户层面的批准状态。
+这些内部路由把可用且已开启的卡片执行绑定到准确源码和 scope，不建立用户层面的批准状态。历史字段 `downloaded:true` 表示执行来源已就绪，包含本地 MVU 初始化代码；执行包摘要不代表下载或核验了上游 bundle。
 
 | 方法 | 路径（v1 下） | 输入／结果 | 状态 |
 | --- | --- | --- | --- |
 | POST | `/rendering-write-grants` | 可信渲染器提交 `{source,sourceIdentity,executionId,downloaded:true,enabled:true}`；source 为完整执行包 JSON，identity 为 `{version:1,sha256,scope}`。Host 重算 SHA-256，返回 `{ok:true,grantId,sourceIdentity}` | 200；格式／身份不符 400；超限 413 |
 | DELETE | `/rendering-write-grants/:grantId` | 停止内部绑定；重复删除幂等 | 200 |
 
-沿用本机 peer、Host、Origin／桌面 token、JSON 媒体类型与 DSH admission 检查。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent` 在 MVU 最终提交前复核。内存最多保留 64 个活动绑定，不保存源码正文；没有批准到期期限，卸载全部清除。脚本开关与运行时清理撤销旧绑定，刷新时从持久下载缓存自动建立当前新绑定。scope、来源 schema、CAS 与幂等仍保留。原生卡片变量发出事实供 manager 观察；manager 的模型/store/retrieve 策略保持独立。详见 [MVU](MVU.md)。
+沿用本机 peer、Host、Origin／桌面 token、JSON 媒体类型与 DSH admission 检查。`tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent` 在 MVU 最终提交前复核。内存最多保留 64 个活动绑定，不保存源码正文；没有批准到期期限，卸载全部清除。脚本开关与运行时清理撤销旧绑定，刷新时从本地能力或持久下载缓存自动建立当前新绑定。scope、来源 schema、CAS 与幂等仍保留。原生卡片变量发出事实供 manager 观察；manager 的模型/store/retrieve 策略保持独立。详见 [MVU](MVU.md)。
 
 标准版与可选 core 的能力、迁移及证据范围见[装配策略](REQUEST_ASSEMBLY.md)。对所选后端检查 capabilities() 与 requireAvailable(preset)。
 

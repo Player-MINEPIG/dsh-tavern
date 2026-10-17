@@ -1,13 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {MVU_BUILTINS,mvuBuiltin,confirmMvuSchemas} from '../packages/client/src/play/mvu-builtins.js'
+import {MVU_ADAPTERS,mvuAdapter,confirmMvuSchemas} from '../packages/client/src/play/mvu-builtins.js'
 import {isSideEffectModuleReference} from '../packages/client/src/play/rendering-sources.js'
 import {initialCardScope,greetingCardScope} from '../packages/client/src/play/mvu-scope.js'
-test('builtin replacements require exact bytes and side-effect imports, never URL suffixes or runtime exports',()=>{
- const entry=MVU_BUILTINS[0]
- assert.equal(mvuBuiltin(entry.url,entry.sha256),entry)
- assert.equal(mvuBuiltin(entry.url+'?version=2',entry.sha256),null)
- assert.equal(mvuBuiltin(entry.url,'different'),null)
+test('local replacements require an exact alias, contract version and supported side-effect import',()=>{
+ const entry=MVU_ADAPTERS[0]
+ assert.equal(mvuAdapter(entry.url,entry.version),entry)
+ assert.equal(mvuAdapter(entry.url+'?version=2',entry.version),null)
+ assert.equal(mvuAdapter(entry.url,2),null)
  assert.equal(isSideEffectModuleReference(`import '${entry.url}';\nMvu.getMvuData()`,entry.url),true)
  for(const source of [`import {value} from '${entry.url}'`,`import('${entry.url}')`,`export * from '${entry.url}'`,`import '${entry.url}';import('${entry.url}')`])assert.equal(isSideEffectModuleReference(source,entry.url),false)
 })

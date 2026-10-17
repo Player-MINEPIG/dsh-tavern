@@ -56,14 +56,14 @@ test('different exact URLs do not alias merely because their decoded bytes match
   assert.deepEqual(calls,[url,other]);assert.equal(budget.snapshot().total,6);manager.dispose()
 })
 
-test('sharing bytes never inherits another owner original-mode choice or bypasses builtin hash verification',async()=>{
+test('original downloads and local contracts remain independent across owners',async()=>{
   const descriptor={url,sha256:createHash('sha256').update('good').digest('hex'),kind:'mvu-facade',version:1}
-  const trust=createRenderingTrust({candidates:[descriptor],builtin:(source,hash)=>source===url&&hash===descriptor.sha256?descriptor:null})
+  const trust=createRenderingTrust({candidates:[descriptor]})
   trust.setAdapterIntents({schemaVersion:1,entries:[{owner:A,source:url,mode:'original'}]})
   let requests=0;const manager=managerFor({store:memory(),trust,download:async()=>{requests++;return 'changed'}})
   await manager.sync([source(A),source(B)]);await manager.acquire(A);await manager.acquire(B)
-  assert.equal(requests,1);assert.equal(manager.inspect(A).status,'ready');assert.equal(manager.inspect(B).status,'failed')
-  assert.match(manager.inspect(B).items[0].error,/Unsupported built-in adapter bytes/);assert.equal(trust.inspect(B,url),null)
+  assert.equal(requests,1);assert.equal(manager.inspect(A).status,'ready');assert.equal(manager.inspect(B).status,'ready')
+  assert.equal(trust.inspect(B,url).builtin,true);assert.equal(trust.inspect(B,url).content,undefined)
   assert.equal(trust.read(A,url),'changed');manager.dispose()
 })
 

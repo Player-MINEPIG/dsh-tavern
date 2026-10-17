@@ -7,7 +7,7 @@ import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBU
 import { selectedPhoto } from './card-photo.js'
 import {createPhotoPickerDiagnostic} from './card-photo-diagnostic.js'
 import {DEPENDENCY_LIMITS} from './rendering-limits.js'
-import {mvuBuiltin,confirmMvuSchemas,confirmMvuCommandHooks} from './mvu-builtins.js'
+import {mvuAdapter,confirmMvuSchemas,confirmMvuCommandHooks} from './mvu-builtins.js'
 import {commandHookDeclaration} from '../../../mvu-adapter/src/command-hook-declaration.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
@@ -110,7 +110,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     if (seen.size > DEPENDENCY_LIMITS.count || total > DEPENDENCY_LIMITS.bytes) throw Error('Rendering dependency graph exceeds limit')
     const record=trust.inspect(owner,url)
     if(record?.depth!==undefined&&(!Number.isSafeInteger(record.depth)||record.depth<0||record.depth>DEPENDENCY_LIMITS.depth))throw Error('Invalid rendering dependency depth')
-    return {content,owner,depth:record?.depth,builtin:record?.builtin?mvuBuiltin(url,record.digest):null}
+    return {content,owner,depth:record?.depth,builtin:record?.builtin?mvuAdapter(url,record.adapterVersion):null}
   }
   // Original inline source is outside the acquired graph; its first URL is
   // depth zero, matching acquisition. Downloaded HTML/scripts start inside it.
@@ -166,9 +166,9 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     total += content.length
     if(total > DEPENDENCY_LIMITS.bytes)throw Error('Rendering dependency graph exceeds limit')
     expanded+=content.length;if(expanded>DEPENDENCY_LIMITS.bytes||runs.length>=128)throw Error('Expanded card input exceeds limit')
-    const schemaDependencies=discoverDependencies(content).filter(item=>item.kind==='module').map(item=>({item,record:trust.inspect(helper.owner,item.url)})).filter(({item,record})=>record?.builtin&&mvuBuiltin(item.url,record.digest)?.kind==='backend-schema')
+    const schemaDependencies=discoverDependencies(content).filter(item=>item.kind==='module').map(item=>({item,record:trust.inspect(helper.owner,item.url)})).filter(({item,record})=>record?.builtin&&mvuAdapter(item.url,record.adapterVersion)?.kind==='backend-schema')
     if(schemaDependencies.length){
-      for(const {item,record} of schemaDependencies){trust.read(helper.owner,item.url);adapters.push({...mvuBuiltin(item.url,record.digest),owner:helper.owner,replacement:'Complete schema declaration handled by the backend interpreter'})}
+      for(const {item,record} of schemaDependencies){trust.read(helper.owner,item.url);adapters.push({...mvuAdapter(item.url,record.adapterVersion),owner:helper.owner,replacement:'Complete schema declaration handled by the backend interpreter'})}
       schemaDeclarations.push({source:content,owner:helper.owner,key:helper.key,sha256:helper.contentDigest??trust.inspect(helper.owner,helper.key)?.digest})
       continue
     }
