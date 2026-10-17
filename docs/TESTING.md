@@ -87,7 +87,7 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 
 ## 单包安装与 Assembler 生命周期
 
-运行 `node --test test/companion.test.mjs test/tavern-bundle.test.mjs`，覆盖仅 Tavern、独立 Assembler 先启用、后启用及同时启用，检查单实例、路由与请求回调、卸载恢复和持久选择。在临时 DSH_HOME 中只安装 Tavern 的发布包，启动目标 Web Host，确认 Tavern 与 Assembler API 均可用，DT 入口与设置中的装配入口各只有一个，装配编辑器可打开。再安装独立 Assembler v1.1.1，重启并重复检查；分别卸载独立 Assembler 和 Tavern，确认剩余组件与共享选择正常。不要在真实用户 profile 中执行这些卸载检查。
+运行 `node --test test/companion.test.mjs test/tavern-bundle.test.mjs`，覆盖仅 Tavern、独立 Assembler 先启用、后启用及同时启用，检查单实例、路由与请求回调、卸载恢复和持久选择。在临时 DSH_HOME 中只安装 Tavern 的发布包，启动目标 Web Host，确认 Tavern 与 Assembler API 均可用，DT 入口与“插件 → 已安装插件”中的装配配置入口各只有一个，装配编辑器可打开。再安装独立 Assembler v1.1.1，重启并重复检查；分别卸载独立 Assembler 和 Tavern，确认剩余组件与共享选择正常。不要在真实用户 profile 中执行这些卸载检查。
 
 ## Host 与浏览器检查
 

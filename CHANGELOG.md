@@ -2,6 +2,9 @@
 
 ## 3.0.4
 
+- 独立 Assembler 配置入口迁至“插件 → 已安装插件”的包详情页；DT 内的装配入口继续复用同一策略库与应用状态。
+- Move standalone Assembler configuration to Plugins → Installed plugins, keeping Tavern’s embedded assembly entry on the same strategy store and applied state.
+
 - 气泡宽度可按用户、助手分别设置，默认用户随内容、助手占满消息栏；交互卡可随窄屏收缩，开场箭头在按钮内居中。
 - Configure bubble widths per role, defaulting to content width for users and full width for assistants. Card frames remain responsive and opening arrows are centered inside their buttons.
 

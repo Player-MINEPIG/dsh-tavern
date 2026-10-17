@@ -2,7 +2,7 @@
 
 [English](ASSEMBLER_INTEGRATION_en.md) · [装配行为](REQUEST_ASSEMBLY.md) · [独立插件仓库](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.1`（开发 lockfile 固定已审查的 Git 修订 `003e73f713d7289033a3f69533d95cb19a1d259e`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和设置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
+Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.1`（开发 lockfile 固定已审查的 Git 修订 `f78aaace9b95e814bee0c78b9af5e7a80621c4c5`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和插件配置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
 
 ## 可选 Memory Manager
 
@@ -52,7 +52,9 @@ Tavern 共享 assembler store/registry/runtime，通过 attachTavern 提供只�
 
 新界面使用 assembler 自有 `/dsh-prompt-assembler/api/v1/assembly-presets`、安全 fetch 和实际请求只读接口。Tavern 的旧 assembly-presets 路径仍转发同一 store/runtime；Trace 仍可读取 DSH 中的实际请求。当前记录 owner 为 `dsh-prompt-assembler`，旧 `pmp-dsh-tavern` owner 继续可读。迁移仅合并旧存储缺少的项，原文件保留；新应用统一绑定 session ID，优先于旧 play/native scope，不因重新安装 Tavern 恢复旧选择。
 
-“设置 → 提示词装配”独立入口与 Tavern 内嵌面板共享策略库和会话绑定，没有插件优先级；最后一次成功应用决定后续请求的快照。编辑草稿或保存策略不改变已应用快照。两个面板使用 assembler 的刷新事件同步当前应用状态，保留各自未保存的草稿。
+只安装 Tavern 时，配置按钮归属 `pmp-dsh-tavern` 的已安装插件详情页；独立 Assembler 启用时归属 `dsh-prompt-assembler`。
+
+“插件 → 已安装插件 → dsh-prompt-assembler → 提示词装配”独立入口与 Tavern 内嵌面板共享策略库和会话绑定，没有插件优先级；最后一次成功应用决定后续请求的快照。编辑草稿或保存策略不改变已应用快照。两个面板使用 assembler 的刷新事件同步当前应用状态，保留各自未保存的草稿。
 
 卸载 Tavern 时取消其来源和只读 provider，assembler 的入口、策略和 DSH 自定义文本继续工作。依赖已卸载来源的模块有明确诊断，不重建缺失资源，不改写原生历史。Memory Manager adapter 使用公开服务；无需安装 Manager 就能使用 assembler 的原生来源。
 

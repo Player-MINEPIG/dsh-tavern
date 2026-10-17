@@ -87,7 +87,7 @@ For this compatibility boundary, additionally check all five resources through c
 
 ## Single-package install and Assembler lifecycle
 
-Run `node --test test/companion.test.mjs test/tavern-bundle.test.mjs` for Tavern alone and independent Assembler enabled first, later, or simultaneously. Check single ownership, routes and request callbacks, removal recovery, and durable selections. Install only the published Tavern package in a temporary DSH_HOME, start the target Web Host, and confirm both APIs work, exactly one DT launcher and assembly settings entry appear, and the assembly editor opens. Then install independent Assembler v1.1.1, restart, and repeat. Remove independent Assembler and Tavern separately, checking the remaining component and shared selections. Do not perform these removal checks in real user profiles.
+Run `node --test test/companion.test.mjs test/tavern-bundle.test.mjs` for Tavern alone and independent Assembler enabled first, later, or simultaneously. Check single ownership, routes and request callbacks, removal recovery, and durable selections. Install only the published Tavern package in a temporary DSH_HOME, start the target Web Host, and confirm both APIs work, exactly one DT launcher and one Assembler configuration entry under Plugins → Installed plugins appear, and the assembly editor opens. Then install independent Assembler v1.1.1, restart, and repeat. Remove independent Assembler and Tavern separately, checking the remaining component and shared selections. Do not perform these removal checks in real user profiles.
 
 ## Host and browser checks
 

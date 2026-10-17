@@ -123,7 +123,7 @@ Stock rc.2 has no arbitrary request-time `messages[]` projection or atomic multi
 
 Tavern UI and `/pmp-dsh-tavern/api/v1/*` manage resources and session selections. Imported ST presets, cards and world books pass their format adapters before entering resource stores. Editing a resource is distinct from binding it to a session. Effective world books combine session/opening, user, preset and character relations with stable ID de-duplication, then the card's embedded book.
 
-Assembler's Settings entry and Tavern's embedded panel share one strategy store and session application snapshot. Editing/saving a strategy does not apply it; successful explicit application determines subsequent assembly. Independent DSH sessions have no implicit RP strategy; new Tavern openings default to standard Preset slots first. Existing explicit choices, including opt-outs, remain unchanged.
+Assembler's installed-plugin configuration entry and Tavern's embedded panel share one strategy store and session application snapshot. Editing/saving a strategy does not apply it; successful explicit application determines subsequent assembly. Independent DSH sessions have no implicit RP strategy; new Tavern openings default to standard Preset slots first. Existing explicit choices, including opt-outs, remain unchanged.
 
 ### 2.2 Data plane: resource resolution followed by assembly
 
