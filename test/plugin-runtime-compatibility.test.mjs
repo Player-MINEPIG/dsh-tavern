@@ -11,15 +11,16 @@ test('official plugin admission accepts the target without an exemption and reje
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
   const { evaluatePluginCompatibility, getDshRuntimeVersion } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-app-boot')).href)
   const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
-  const target = manifest.peerDependencies['@deepseek-ai/dsh-util-crypto']
+  const target = manifest.engines.dsh
   assert.equal(getDshRuntimeVersion(), target)
   assert.equal(evaluatePluginCompatibility(manifest), undefined)
 
-  const previous = { ...manifest, peerDependencies: { ...manifest.peerDependencies, '@deepseek-ai/dsh-util-crypto': '0.1.7-alpha.2' } }
+  const previous = { ...manifest, engines: { ...manifest.engines, dsh: '0.2.0-rc.2' } }
   const denied = evaluatePluginCompatibility(previous)
   assert.equal(denied.exempted, false)
-  assert.deepEqual(denied.peers, { '@deepseek-ai/dsh-util-crypto': '0.1.7-alpha.2' })
-  for (const unverified of ['0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.3']) {
+  assert.deepEqual(denied.requirements, { 'engines.dsh': '0.2.0-rc.2' })
+  for (const unverified of ['0.1.7-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.3']) {
     assert.equal(evaluatePluginCompatibility(manifest, {}, unverified).exempted, false)
   }
+
 })

@@ -15,7 +15,7 @@ async function settle(ctx) {
   }
 }
 for (const order of ['tavern-only', 'independent-first', 'tavern-first', 'simultaneous']) {
-  test(`production Tavern bundle and Assembler v1.1.0 coexist: ${order}`, async t => {
+  test(`production Tavern bundle and Assembler v1.1.1 coexist: ${order}`, async t => {
     const dir = mkdtempSync(join(tmpdir(), 'tavern-bundle-')), ctx = new Context(), routes = new Map()
     t.after(async () => { await ctx.fiber.dispose(); rmSync(dir, { recursive: true, force: true }) })
     const server = createServer((req, res) => {

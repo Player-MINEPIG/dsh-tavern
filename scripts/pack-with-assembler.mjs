@@ -15,7 +15,7 @@ for (let i = 0; i < args.length; i++) {
 }
 const npm = (cwd, options) => JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--cache', join(output, '.npm-cache'), ...options], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }))
 const manifest = JSON.parse(readFileSync(join(assembler, 'package.json')))
-if (manifest.name !== 'dsh-prompt-assembler' || manifest.version !== '1.1.0') throw new Error('Expected dsh-prompt-assembler@1.1.0')
+if (manifest.name !== 'dsh-prompt-assembler' || manifest.version !== '1.1.1') throw new Error('Expected dsh-prompt-assembler@1.1.1')
 // Build before copying package files; npm pack --ignore-scripts cannot refresh dist.
 execFileSync('npm', ['run', 'build'], { cwd: assembler, stdio: 'inherit' })
 execFileSync('npm', ['run', 'build'], { cwd: project, stdio: 'inherit', env: { ...process.env, DSH_ASSEMBLER_SOURCE: assembler } })
@@ -47,7 +47,7 @@ try {
   writeFileSync(join(stage, 'package.json'), JSON.stringify(stagedManifest, null, 2) + '\n')
   const corePackages = withCore ? npm(join(assembler, 'core-extension'), ['--pack-destination', output]) : []
   const [tavernPackage] = npm(stage, ['--pack-destination', output])
-  const receipt = { sourceProtocolVersion: 1, defaultBackend: 'native', optionalCoreIncluded: withCore, installTogether: false, dshVersion: '0.2.0-rc.2', published: false, packages: [assemblyPackage, tavernPackage, ...corePackages].map(p => ({ name: p.name, version: p.version, filename: p.filename, integrity: p.integrity })) }
+  const receipt = { sourceProtocolVersion: 1, defaultBackend: 'native', optionalCoreIncluded: withCore, installTogether: false, dshVersion: '0.2.1-rc.2', published: false, packages: [assemblyPackage, tavernPackage, ...corePackages].map(p => ({ name: p.name, version: p.version, filename: p.filename, integrity: p.integrity })) }
   writeFileSync(join(output, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
   console.log(JSON.stringify(receipt, null, 2))
 } finally { rmSync(stage, { recursive: true, force: true }) }

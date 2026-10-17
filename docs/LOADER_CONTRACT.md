@@ -4,7 +4,7 @@
 
 Tavern 的 bundle 入口先加载随包标准 Assembler，或复用独立启用的实例，再挂载依赖该服务的业务 loader。两种安装顺序、停用与卸载遵循[接入说明](ASSEMBLER_INTEGRATION.md#与独立-assembler-共存)。
 
-当前合同面向 Tavern **3.0.3**、Assembler **v1.1.0** 与 DSH **0.2.0-rc.2**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
+当前合同面向 Tavern **3.0.4**、Assembler **v1.1.1** 与 DSH **0.2.1-rc.2**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
 
 ## 目标与所有权
 
@@ -31,7 +31,7 @@ loader 通过 `attachTavern` 向共享 store/registry/runtime 提供只读资源
 
 ## Session policy
 
-当前只支持 DSH 0.2.0-rc.2 运行时。Host 等待串行 `agent/created` listener：先冻结或恢复资源选择，从公开 own events 重建 pending input，再初始化 RP 及只读沙箱，之后才允许 Agent 处理请求。初始化失败向注册过程传播，不降为 warning；fork、resume 与委派 agent 使用同一初始化边界。
+当前只支持 DSH 0.2.1-rc.2 运行时。Host 等待串行 `agent/created` listener：先冻结或恢复资源选择，从公开 own events 重建 pending input，再初始化 RP 及只读沙箱，之后才允许 Agent 处理请求。初始化失败向注册过程传播，不降为 warning；fork、resume 与委派 agent 使用同一初始化边界。
 
 持久文件为插件 data 目录下的 `session-selections.json`：
 
@@ -165,7 +165,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ## Composition semantics
 
-已应用策略使用 Assembler v1.1.0 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
+已应用策略使用 Assembler v1.1.1 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
 
 ### Preset-only compatibility
 

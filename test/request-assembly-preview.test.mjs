@@ -70,7 +70,8 @@ test('official rc.2 cold preview runs AgentLoop variables and SessionController 
   try {
     await ctx.plugin(SystemPrompt, { includeHarnessIdentity: false, personaPrefix: '{{provider}}/{{model}} at {{cwd}}' })
     for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
-    ctx.provide('typert', { lookups: { configure: () => () => {} }, contexts: { configureHost: () => () => {} } })
+    await ctx.plugin((await load('@deepseek-ai/dsh-typert-registry')).default)
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-remote-access')).default)
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
     ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
     const defaults = { provider: 'default', model: 'base' }

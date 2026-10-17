@@ -8,7 +8,7 @@ Current assembly sources use shared `dshPromptSources` protocol 1; legacy `taver
 
 Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
-Contract: current Tavern source (package version in package.json), supporting only DSH `0.2.0-rc.2`.
+Contract: current Tavern source (package version in package.json), supporting only DSH `0.2.1-rc.2`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -24,11 +24,11 @@ message coordinates, branch inputs, and unmigrated timeline references.
 <a id="impact-on-third-party-consumers-in-240"></a>
 ## Impact on third-party consumers in the current version
 
-The current contract targets DSH `0.2.0-rc.2`, including the optional Host services and session opening world-book routes below. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their existing contracts.
+The current contract targets DSH `0.2.1-rc.2`, including the optional Host services and session opening world-book routes below. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their existing contracts.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
-Only DSH `0.2.0-rc.2` is supported; other versions are outside the supported range.
+Only DSH `0.2.1-rc.2` is supported; other versions are outside the supported range.
 
 | Integration | Impact and consumer requirements |
 | --- | --- |
@@ -666,7 +666,7 @@ Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_e
 
 ## Browser chrome mode service
 
-The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.2.0-rc.2` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
+The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.2.1-rc.2` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
 
 Public face:
 

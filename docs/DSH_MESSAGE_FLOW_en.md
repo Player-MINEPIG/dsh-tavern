@@ -2,10 +2,10 @@
 
 [中文](DSH_MESSAGE_FLOW.md)
 
-Tavern **3.0.3** integrates independent Assembler **v1.1.0**. Tavern resolves resources and owns source permissions; Assembler owns strategies, rendering and placement; DSH owns sessions and provider calls. Standard strategies use public sections/context/pre-step. Only the separately installed core addon enables protocol-1 request projection. The no-strategy loader renderer is a retained compatibility path, not the default RP strategy. See [integration](ASSEMBLER_INTEGRATION_en.md) and [Host/resource contract](LOADER_CONTRACT_en.md).
+Tavern **3.0.4** integrates independent Assembler **v1.1.1**. Tavern resolves resources and owns source permissions; Assembler owns strategies, rendering and placement; DSH owns sessions and provider calls. Standard strategies use public sections/context/pre-step. Only the separately installed core addon enables protocol-1 request projection. The no-strategy loader renderer is a retained compatibility path, not the default RP strategy. See [integration](ASSEMBLER_INTEGRATION_en.md) and [Host/resource contract](LOADER_CONTRACT_en.md).
 
-This page defines the current message contract for Tavern 3.0.3 on DSH
-`0.2.0-rc.2`: native DSH flow, DT flow, DT interception points, and one complete model
+This page defines the current message contract for Tavern 3.0.4 on DSH
+`0.2.1-rc.2`: native DSH flow, DT flow, DT interception points, and one complete model
 step. V4 system prompts enter the effective surface through `system/message`, while
 `request/header` retains config/tools. Trace schema 4 persists metadata and official
 Session references only; [API v3](PROMPT_API_V3_en.md) verifies bodies on demand.
@@ -19,7 +19,7 @@ Coordinate and migration rules are in the [upgrade guide](DSH_0.1.7_MIGRATION_en
 
 ## 1. Native DSH flow
 
-On stock rc.2, without Tavern or assembler strategies, an ordinary DSH `0.2.0-rc.2` agent step follows this sequence:
+On stock rc.2, without Tavern or assembler strategies, an ordinary DSH `0.2.1-rc.2` agent step follows this sequence:
 
 ```text
 User submit
@@ -39,7 +39,12 @@ agent/pre-step waterfall accepts, replaces, or rejects proposed messages
 step/start → agent/request waterfall → prepareCall() validates config and binds the adapter
   │
   ▼
-DSH admits the frozen assembly and accepted input
+systemPrompt.refreshContext() rereads runtime facts before admission
+  ├─ retain selected optional contexts and restore required contexts
+  └─ literal contexts skip interpolation; admission replaces the proposed context snapshot
+  │
+  ▼
+DSH admits the system assembly and accepted input
   ├─ system sections → official system/message
   └─ accepted user and runtime-context messages → user/message (once per step)
   │
@@ -60,7 +65,7 @@ The current request has four authoritative input classes:
 
 | Channel | Authoritative source | Final destination |
 | --- | --- | --- |
-| System and runtime context | official `system/message` / context `user/message` produced by `systemPrompt.assemble()` | LLM request `messages` |
+| System and runtime context | official `system/message` / context `user/message` produced by `systemPrompt.assemble()` and admission-time `refreshContext()` | LLM request `messages` |
 | Conversation history | effective message surface from `Session.deriveMessages()` | LLM request `messages` |
 | Tools | tools from system assembly | LLM request `tools` and `request/header.tools` |
 | Model parameters | `agent/request` waterfall | provider/model/temperature call config and `request/header.config` |
@@ -73,6 +78,7 @@ Key facts:
   claimed batch after the claim-delete event and before system assembly.
 - DSH calls public `agent/pre-step` after system assembly. The hook sees claimed messages but
   cannot rewrite the frozen assembly.
+- DSH 0.2.1-rc.2 refreshes runtime context after `agent/request`. `working-directory:current` is a required literal fact. Native variables no longer supply `cwd`; Assembler supplies it through the public workingDirectory service for existing text strategies. Trace verifies refreshed content, including context clearing, against the durable snapshot in the actual request.
 - `Session.deriveMessages()` projects system, context, user, assistant, and tool content from
   the effective message surface. Turn/step boundaries and streaming chunks do not become
   duplicate model messages.
@@ -137,7 +143,7 @@ An applied strategy makes the loader return resource models without pre-renderin
 
 Standard Preset roles first preserves supported authored roles within native delivery regions. Preset slots first adapts preset-controlled content around native history/input boundaries and identifies adjustments in preview. System contributions use official sections; user contributions use context or accepted pre-step delivery and **enter durable history**. Removing a source stops future contributions; previous user bodies remain historical. Native history, input and tool transactions retain their protected order.
 
-Advanced strategies require both the core addon and a protocol-1 Host. They project a frozen request with the supported role/depth/retention rules and record official `request/assembly`; request-only bodies are not fabricated durable chat messages. A missing backend fails explicitly. Exact behavior and limits are in [request assembly](REQUEST_ASSEMBLY_en.md) and [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS_en.md).
+Advanced strategies require both the core addon and a protocol-1 Host. They project a frozen request with the supported role/depth/retention rules and record official `request/assembly`; request-only bodies are not fabricated durable chat messages. A missing backend fails explicitly. Exact behavior and limits are in [request assembly](REQUEST_ASSEMBLY_en.md) and [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS_en.md).
 
 With no applied strategy, the compatibility renderer expands the Tavern profile into system parts. Its role/depth approximations apply only to that path; they do not describe current standard or advanced strategies.
 

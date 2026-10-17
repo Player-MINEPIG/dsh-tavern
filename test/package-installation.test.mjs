@@ -21,7 +21,7 @@ test('source archive installs its Assembler dependency when node_modules is abse
   for (const key of ['bundleDependencies', 'bundledDependencies']) if (key in manifest) packageJson[key] = manifest[key]
   await writeFile(join(source, 'package.json'), JSON.stringify(packageJson))
   await writeFile(join(source, 'index.js'), "export { marker } from 'dsh-prompt-assembler'\n")
-  await writeFile(join(assembler, 'package.json'), JSON.stringify({ name: 'dsh-prompt-assembler', version: '1.1.0', type: 'module', main: 'index.js' }))
+  await writeFile(join(assembler, 'package.json'), JSON.stringify({ name: 'dsh-prompt-assembler', version: '1.1.1', type: 'module', main: 'index.js' }))
   await writeFile(join(assembler, 'index.js'), "export const marker = 'installed dependency'\n")
   await writeFile(join(consumer, 'package.json'), JSON.stringify({ private: true }))
   const npm = (cwd, args) => {

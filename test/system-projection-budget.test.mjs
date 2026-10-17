@@ -28,7 +28,7 @@ function runtimeFor(input, maxProfileBytes = profileLimit) {
   const runtime = new RequestAssembler({
     ctx: { get: key => key === 'systemPrompt'
       ? { assemble: async () => ({ sections: [{ text: textOf(input.nativeMessages[0]) }] }) }
-      : { requestAssemblyVersion: 1 } },
+      : key === 'agentLoop' ? { requestAssemblyVersion: 1 } : undefined },
     store: { selection: () => BUILTINS[0] },
     resources: { maxProfileBytes, assembledFor: () => snapshot, compile: () => snapshot },
   })

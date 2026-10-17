@@ -2,27 +2,27 @@
 
 [中文](INSTALLATION.md)
 
-Tavern 3.0.3 includes standard Assembler v1.1.0; only Tavern needs to be installed and enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Memory Manager v1.0.0. Older full documentation remains at its Git tag.
+Tavern 3.0.4 includes standard Assembler v1.1.1; only Tavern needs to be installed and enabled. See [integration](ASSEMBLER_INTEGRATION_en.md) for service loading and optional Memory Manager v1.0.0. Older full documentation remains at its Git tag.
 
 Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
-Current Tavern source supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
+Current Tavern source supports DSH **0.2.1-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
 
 Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_en.md) for older external references. Already migrated V4 references need no further conversion; no rollback tool is provided. Put the target DSH on `PATH` and initialize the intended profile before installation.
 
 ## Install current source
 
-Updating current source automatically installs and loads standard Assembler, preferring an enabled standalone instance. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.0-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
+Updating current source automatically installs and loads standard Assembler, preferring an enabled standalone instance. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.1-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
 
-Stop the target Host and install Tavern 3.0.3 to automatically load standard Assembler v1.1.0. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
+Stop the target Host and install Tavern 3.0.4 to automatically load standard Assembler v1.1.1. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
 
 ```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.3
+dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
 ```
 
-Market’s “installed, effective after restart” means the package is registered. Bundles containing configuration/expressions require a restart; that notice does not establish successful plugin startup. GitHub/Market installations of 3.0.1 may lack Assembler and report `failed to import`. Stop the Host, update to 3.0.3 in the same profile, then restart; no uninstall or data deletion is required. GitHub installs download the pinned npm dependency; prebuilt packages already carry it.
+Market’s “installed, effective after restart” means the package is registered. Bundles containing configuration/expressions require a restart; that notice does not establish successful plugin startup. GitHub/Market installations of 3.0.1 may lack Assembler and report `failed to import`. Stop the Host, update to 3.0.4 in the same profile, then restart; no uninstall or data deletion is required. GitHub installs download the pinned npm dependency and require Assembler `1.1.1` on npm; until it is published, install the prebuilt Tavern package, which already carries it.
 
-Optional resource management is provided by [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0). To use it, additionally install it in the same profile, then restart the Host; generic resource assembly requirements are covered in [integration](ASSEMBLER_INTEGRATION_en.md#optional-memory-manager):
+Optional resource management is provided by [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0). Version 1.0.0 was validated on DSH 0.2.0-rc.2 and needs separate validation for this target; generic resource assembly requirements are covered in [integration](ASSEMBLER_INTEGRATION_en.md#optional-memory-manager):
 
 ```sh
 dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
@@ -32,10 +32,10 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 <a id="source-installation"></a>
 ### Install and validate from source
 
-Use an isolated test profile/home initialized with the target DSH:
+Use an isolated test profile/home initialized with the target DSH. `npm ci` uses the reviewed Git revision in the lockfile; the source installer below still requires the exact Assembler npm dependency to be published. Before that, build a package with `npm run pack:with-assembler -- --assembler /path/to/assembler` and install that Tavern tarball:
 
 ```sh
-git clone --branch v3.0.3 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch codex/dsh-021-compat https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
@@ -45,11 +45,11 @@ Start DSH with that same `DSH_HOME`, then follow [developer verification](TESTIN
 
 ### DSH provides the runtime peers
 
-The current `package.json` declares `@deepseek-ai/dsh-util-crypto` at `0.2.0-rc.2` and `@deepseek-ai/cordis` at `4.0.4` as required `peerDependencies` supplied by the DSH runtime, so the plugin does not install a second copy. Source builds and tests use the `0.2.0-rc.2` crypto package pinned in `devDependencies`. Browser contracts are declared in `dsh.client.inject`, supplied by DSH, and not bundled into Tavern.
+The current `package.json` declares `@deepseek-ai/dsh-util-crypto` at `0.2.1-rc.2` and `@deepseek-ai/cordis` at `4.0.5` as required `peerDependencies` supplied by the DSH runtime, so the plugin does not install a second copy. Source builds and tests use the `0.2.1-rc.2` crypto package pinned in `devDependencies`. Browser contracts are declared in `dsh.client.inject`, supplied by DSH, and not bundled into Tavern.
 
 DSH profiles use `nodeLinker: hoisted` and `autoInstallPeers: false`; DSH's profile package resolver supplies official dependencies from its installation at startup. Consequently, `dsh plugin add` or `pnpm peers check` may report these peers as missing because the static check does not recognize runtime resolution. Do not rely on a `<DSH_HOME>/profiles/node_modules` link being present, or on a standalone Node process outside DSH as the sole check; verify the Host's resolved versions and plugin startup.
 
-An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is the target `0.2.0-rc.2`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. DSH installation and startup checks use the plugin’s declared DSH peer versions. Passing admission does not establish compatibility with every Host behavior; also check the target version and runtime acceptance results.
+An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is the target `0.2.1-rc.2`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. DSH installation and startup checks use the plugin’s declared DSH peer versions. Passing admission does not establish compatibility with every Host behavior; also check the target version and runtime acceptance results.
 
 ### Data and source installation
 

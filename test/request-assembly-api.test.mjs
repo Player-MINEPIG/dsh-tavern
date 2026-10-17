@@ -62,7 +62,7 @@ test('assembly API keeps edits distinct from apply, rejects running/unsupported 
 test('preview rebuilds current native instructions and never duplicates historical loader text', async () => {
   const events = [{ id: 'old', role: 'system', content: [{ type: 'text', text: 'OLD CHARACTER' }] }, { id: 'user', role: 'user', content: [{ type: 'text', text: 'hello' }] }]
   let previewContext
-  const runtime = new RequestAssembler({ ctx: { get: key => key === 'systemPrompt' ? { async assemble(context) { previewContext = context; return { sections: [{ name: 'core', text: 'CURRENT {{name}}' }], variables: { name: 'CORE' } } } } : { requestAssemblyVersion: 1 } }, store: {}, resources: { compile: () => ({ assemblyInput: { character: { data: { description: 'CHARACTER' } } } }) } })
+  const runtime = new RequestAssembler({ ctx: { get: key => key === 'systemPrompt' ? { async assemble(context) { previewContext = context; return { sections: [{ name: 'core', text: 'CURRENT {{name}}' }], variables: { name: 'CORE' } } } } : key === 'agentLoop' ? { requestAssemblyVersion: 1 } : undefined }, store: {}, resources: { compile: () => ({ assemblyInput: { character: { data: { description: 'CHARACTER' } } } }) } })
   runtime.registerRequestBackend(new CoreRequestBackend(runtime))
   const result = await runtime.preview({ preset: BUILTINS[0], agent: { session: { deriveMessages: () => events } } })
   assert.equal(previewContext.tavernAssemblyPreview, true)
@@ -72,7 +72,7 @@ test('preview rebuilds current native instructions and never duplicates historic
 
 test('empty runtime assembly fails locally with an actionable error', async () => {
   const preset = { ...BUILTINS[0], rules: BUILTINS[0].rules.map(r => ({ ...r, enabled: false })) }
-  const runtime = new RequestAssembler({ ctx: { get: () => ({ requestAssemblyVersion: 1 }) }, store: { selection: () => preset }, resources: { assembledFor: () => ({ assemblyInput: {} }) } })
+  const runtime = new RequestAssembler({ ctx: { get: key => key === 'agentLoop' ? { requestAssemblyVersion: 1 } : undefined }, store: { selection: () => preset }, resources: { assembledFor: () => ({ assemblyInput: {} }) } })
   runtime.registerRequestBackend(new CoreRequestBackend(runtime))
   const payload = { agent: { id: 'empty', session: { snapshotEvents: () => [] } } }
   await assert.rejects(runtime.execute(payload, async () => ({ messages: [] })), { code: 'ASSEMBLY_EMPTY' })

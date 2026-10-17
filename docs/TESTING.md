@@ -5,9 +5,9 @@
 本文说明如何验证当前实现，不记录某次发布的验收结果。先按改动范围选择检查，再为受影响的 DSH 接口补充集成证据。
 
 <a id="backend-compatibility"></a>
-## 3.0.3 兼容范围
+## 3.0.4 兼容范围
 
-Tavern 3.0.3 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
+Tavern 3.0.4 目标为官方 [DSH 0.2.1-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2)（`687f282e8625c6b8d11ff58211a90524be2e4317`）。必需运行时 peer 为 Cordis `4.0.5` 与 DSH crypto `0.2.1-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
 
 后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
 
@@ -17,9 +17,9 @@ Tavern 3.0.3 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/dee
 
 ## 环境与命令
 
-Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.0-rc.2` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
+Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.1-rc.2` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
-在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖显式包含 Assembler 测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.0-rc.2`；插件运行时由目标 DSH 提供该 peer。
+在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖显式包含 Assembler 测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.1-rc.2`；插件运行时由目标 DSH 提供该 peer。
 
 | 改动范围 | 检查 |
 | --- | --- |
@@ -87,7 +87,7 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 
 ## 单包安装与 Assembler 生命周期
 
-运行 `node --test test/companion.test.mjs test/tavern-bundle.test.mjs`，覆盖仅 Tavern、独立 Assembler 先启用、后启用及同时启用，检查单实例、路由与请求回调、卸载恢复和持久选择。在临时 DSH_HOME 中只安装 Tavern 的发布包，启动目标 Web Host，确认 Tavern 与 Assembler API 均可用，DT 入口与设置中的装配入口各只有一个，装配编辑器可打开。再安装独立 Assembler v1.1.0，重启并重复检查；分别卸载独立 Assembler 和 Tavern，确认剩余组件与共享选择正常。不要在真实用户 profile 中执行这些卸载检查。
+运行 `node --test test/companion.test.mjs test/tavern-bundle.test.mjs`，覆盖仅 Tavern、独立 Assembler 先启用、后启用及同时启用，检查单实例、路由与请求回调、卸载恢复和持久选择。在临时 DSH_HOME 中只安装 Tavern 的发布包，启动目标 Web Host，确认 Tavern 与 Assembler API 均可用，DT 入口与设置中的装配入口各只有一个，装配编辑器可打开。再安装独立 Assembler v1.1.1，重启并重复检查；分别卸载独立 Assembler 和 Tavern，确认剩余组件与共享选择正常。不要在真实用户 profile 中执行这些卸载检查。
 
 ## Host 与浏览器检查
 

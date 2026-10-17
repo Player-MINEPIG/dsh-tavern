@@ -2,7 +2,7 @@
 
 [English](ASSEMBLER_INTEGRATION_en.md) · [装配行为](REQUEST_ASSEMBLY.md) · [独立插件仓库](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.0`（lockfile 校验包完整性，对应 GitHub `v1.1.0`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和设置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
+Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.1`（开发 lockfile 固定已审查的 Git 修订 `003e73f713d7289033a3f69533d95cb19a1d259e`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和设置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
 
 ## 可选 Memory Manager
 
@@ -14,20 +14,20 @@ Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.0`（lockfi
 dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 ```
 
-该版本适配 DSH `0.2.0-rc.2`。通过管理规则将通用资源提供给模型时，需在 Manager 中配置读取规则，并在 assembler 策略中选择 `memory-manager.resources`；这条路径要求支持 request-assembly 协议 1 的宿主。DSH 原生 Skill 调用和 Tavern 自行执行的世界书、MVU、模板贡献仍使用各自来源路径。详见 v1.0.0 的[安装指南](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/INSTALLATION.md)、[使用指南](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/USAGE.md)与[assembler 接入](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/ASSEMBLER.md)。
+该 Manager 版本仅验证 DSH `0.2.0-rc.2`，不自动支持当前目标。通过管理规则将通用资源提供给模型时，需在 Manager 中配置读取规则，并在 assembler 策略中选择 `memory-manager.resources`；这条路径要求支持 request-assembly 协议 1 的宿主。DSH 原生 Skill 调用和 Tavern 自行执行的世界书、MVU、模板贡献仍使用各自来源路径。详见 v1.0.0 的[安装指南](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/INSTALLATION.md)、[使用指南](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/USAGE.md)与[assembler 接入](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/ASSEMBLER.md)。
 
 ## 安装与开发
 
-Tavern 3.0.3 自动安装并加载标准 `dsh-prompt-assembler` v1.1.0，并通过 Host 和浏览器组合入口自动加载。生产依赖不包含可选 `dsh-prompt-assembler-core`。普通用户只需安装 Tavern：
+Tavern 3.0.4 自动安装并加载标准 `dsh-prompt-assembler` v1.1.1，并通过 Host 和浏览器组合入口自动加载。生产依赖不包含可选 `dsh-prompt-assembler-core`。普通用户只需安装 Tavern：
 
 ```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.3
+dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
 ```
 
-也可安装 GitHub 固定 tag，或 Release 中的 Tavern `.tgz`；源码安装仍需下载依赖。预构建 Tavern 包已经包含标准 Assembler，不需要另装第二个包：
+预构建 Tavern 包包含标准 Assembler，不需要另装第二个包。源码分支如下；DSH 的 GitHub／Market 源码安装要求 Assembler `1.1.1` 已在 npm 发布。尚未发布时使用预构建 Tavern 包：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.3
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/dsh-021-compat
 ```
 
 ### 与独立 Assembler 共存
@@ -35,16 +35,16 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.3
 需要脱离 Tavern 使用 Assembler 时，可以在同一 profile 另外安装：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#codex/dsh-021-compat
 ```
 
 组合入口优先使用独立启用的 Assembler。先装或后装均只运行一个 Host 实例和一组浏览器入口；后装时先释放随 Tavern 加载的实例，再由独立实例接管。停用或移除独立实例时，仍启用的 Tavern 恢复随包实例。移除 Tavern 不关闭独立实例；两者都停用或移除时，装配 hooks、路由和界面入口全部释放。
 
 默认实例共用 `<DSH_HOME>/dsh-prompt-assembler/`，策略与会话选择不会因切换、更新或重启而删除。自定义独立实例的存储目录时，须将 Tavern 的 `assemblerStorageDir` 配置为同一路径，才能共用已有设置。仅将包加入 npm 依赖不会让 DSH 自动启用其 bundle；Tavern 的组合入口负责这一加载过程，业务 loader 仍声明 `dshPromptAssembler` 服务依赖。
 
-源码开发可单独 clone assembler 并运行其 `npm ci`、`npm run check`。Tavern 的 `npm ci` 使用 lockfile 锁定的 npm 包。需要一起验证本地修改时，可在临时 checkout 使用 `npm install --no-save --package-lock=false /path/to/assembler`，不要提交临时路径。
+源码开发可单独 clone assembler 并运行其 `npm ci`、`npm run check`。Tavern 的 `npm ci` 使用 lockfile 锁定的已审查修订。需要一起验证本地修改时，可在临时 checkout 使用 `npm install --no-save --package-lock=false /path/to/assembler`，不要提交临时路径。
 
-标准策略通过公开 sections/context/pre-step 在 stock rc.2 执行。进阶策略要求独立打包的 core addon 与准备后的协议 1 核心。旧策略缺 backend 仍是进阶，缺能力明确报错；见[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS.md)。
+标准策略通过公开 sections/context/pre-step 在 stock rc.2 执行。进阶策略要求独立打包的 core addon 与准备后的协议 1 核心。旧策略缺 backend 仍是进阶，缺能力明确报错；见[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS.md)。
 
 ## Tavern 的接入切面
 
@@ -64,10 +64,10 @@ Tavern 文本使用一个 `tavern.text` 入口，依次执行受限 EJS、内容
 
 ## GitHub 的依赖表示
 
-依赖图为 Tavern→标准 assembler，addon peer 同一 assembler，Manager 可选，不需要 submodule。源码 manifest 固定 npm 版本 `1.1.0`，lockfile 校验标准包完整性。GitHub／Market 安装会由包管理器下载该依赖；源码 manifest 不声明 `bundleDependencies`，因为 GitHub archive 没有 `node_modules`。仅预构建打包时声明该依赖已打包，并将选定标准包携带在 Tavern tgz 内；另产出的 assembler tgz 供独立使用。只安装 Tavern 即可由组合入口加载 Host 服务。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
+依赖图为 Tavern→标准 assembler，addon peer 同一 assembler，Manager 可选，不需要 submodule。源码 manifest 固定 npm 版本 `1.1.1`，开发 lockfile 固定已审查修订。GitHub／Market 安装会由包管理器从 npm 下载该依赖，要求对应版本已发布；源码 manifest 不声明 `bundleDependencies`，因为 GitHub archive 没有 `node_modules`。仅预构建打包时声明该依赖已打包，并将选定标准包携带在 Tavern tgz 内；另产出的 assembler tgz 供独立使用。只安装 Tavern 即可由组合入口加载 Host 服务。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
 
 [接口索引](API_SURFACES.md) · [Tavern 架构图](assets/architecture/tavern.zh-CN.html) · [组合架构图](assets/architecture/ecosystem.zh-CN.html)。
 
-用 npm run pack:with-assembler 打包标准 assembler 与 Tavern；只有显式追加 -- --with-core 才额外生成进阶 addon。默认 receipt 包含携带 Assembler 的 Tavern 包和可选独立使用的标准 Assembler 包，两者不要求一起安装；标准 assembler 不含核心准备工具。addon 在准备核心后另行安装，见其[README](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/core-extension/README.md)。
+用 npm run pack:with-assembler 打包标准 assembler 与 Tavern；只有显式追加 -- --with-core 才额外生成进阶 addon。默认 receipt 包含携带 Assembler 的 Tavern 包和可选独立使用的标准 Assembler 包，两者不要求一起安装；标准 assembler 不含核心准备工具。addon 在准备核心后另行安装，见其[README](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/core-extension/README.md)。
 
 打包命令会先重建两个前端，并让 Tavern 内嵌面板使用本次打包的 assembler 源码（含 `--assembler` 指定的目录），避免安装包中前后端策略格式不一致。运行前需在两份源码目录安装构建依赖。

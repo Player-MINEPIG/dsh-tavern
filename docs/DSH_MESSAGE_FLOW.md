@@ -2,9 +2,9 @@
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
-Tavern **3.0.3** 接入独立 Assembler **v1.1.0**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
+Tavern **3.0.4** 接入独立 Assembler **v1.1.1**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
 
-本文描述 Tavern 3.0.3 在 DSH `0.2.0-rc.2` 上的当前消息合同：DSH
+本文描述 Tavern 3.0.4 在 DSH `0.2.1-rc.2` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
 `system/message` 进入有效消息 surface，`request/header` 保留 config/tools；Trace schema 4
 只持久化 metadata 与官方 Session 引用，并由 [v3 API](PROMPT_API_V3.md) 按需验证正文。
@@ -18,7 +18,7 @@ Tavern Host adapter 显式调用 session/workspace/directory-picker controllers�
 
 ## 1. DSH 原生 flow
 
-在 stock rc.2 上，未接入 Tavern 或装配策略时，DSH `0.2.0-rc.2` 的普通 agent step 按以下顺序工作：
+在 stock rc.2 上，未接入 Tavern 或装配策略时，DSH `0.2.1-rc.2` 的普通 agent step 按以下顺序工作：
 
 ```text
 用户提交
@@ -38,7 +38,12 @@ agent/pre-step waterfall 接受、替换或拒绝待提交消息
 step/start → agent/request waterfall → prepareCall() 校验配置并绑定 adapter
   │
   ▼
-DSH 接纳已冻结装配与已接受输入
+systemPrompt.refreshContext() 在接纳前重读运行时事实
+  ├─ 保留策略选中的可选 context，并恢复 required context
+  └─ literal context 不执行变量插值；接纳时替换待提交的 context snapshot
+  │
+  ▼
+DSH 接纳 system 装配与已接受输入
   ├─ system sections → 官方 system/message
   └─ 已接受的 user 与 runtime-context messages → user/message（每 step 一次）
   │
@@ -59,7 +64,7 @@ PreparedLlmCall.stream(request) 到达 llm/stream
 
 | 通道 | 权威来源 | 最终去向 |
 | --- | --- | --- |
-| system 与 runtime context | `systemPrompt.assemble()` 产出的官方 `system/message` / context `user/message` | LLM 请求的 `messages` |
+| system 与 runtime context | `systemPrompt.assemble()` 与接纳前 `refreshContext()` 产出的官方 `system/message` / context `user/message` | LLM 请求的 `messages` |
 | 会话历史 | `Session.deriveMessages()` 的有效 message surface | LLM 请求的 `messages` |
 | 工具 | system assembly 的 tools | LLM 请求的 `tools` 与 `request/header.tools` |
 | 模型参数 | `agent/request` waterfall | provider/model/temperature 等 call config 与 `request/header.config` |
@@ -72,6 +77,7 @@ PreparedLlmCall.stream(request) 到达 llm/stream
   assembly 之前得到本次 batch。
 - DSH 完成 system assembly 后才调用公开的 `agent/pre-step`。该 hook 能看见 claimed
   messages，但不能回写已经冻结的装配。
+- DSH 0.2.1-rc.2 在 `agent/request` 之后刷新 runtime context。`working-directory:current` 是必需的字面事实；原生变量不再提供 `cwd`，Assembler 为既有文本策略通过公开 workingDirectory 服务补齐它。Trace 以实际请求对应的持久快照核验刷新后的内容，包括上下文清除。
 - `Session.deriveMessages()` 从当前有效 message surface 投影 system、context、user、
   assistant 与 tool 内容；turn/step 边界和流式 chunk 不会重复成为模型消息。
 - `agent/request` 只负责 call config，不生成历史，也不能替换已冻结的 system assembly。
@@ -133,7 +139,7 @@ Assembler 的设置入口与 Tavern 内嵌面板共享策略库和会话应用�
 
 标准“预设身份优先”在原生投递区域内保留受支持的原角色；“预设插槽优先”围绕原生历史/输入边界适配预设控制的内容，并在预览标出调整。system 贡献走官方 sections；user 贡献走 context 或接纳的 pre-step 投递，**会进入 durable history**。移除来源停止后续贡献，旧 user 正文仍属于历史。原生历史、输入和工具事务保持受保护的内部顺序。
 
-进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS.md)。
+进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS.md)。
 
 未应用策略时，兼容渲染器才把 Tavern profile 展开为 system parts。其 role/depth 近似只适用于该路径，不能用来描述当前标准或进阶策略。
 

@@ -2,7 +2,7 @@
 
 [English](REQUEST_ASSEMBLY_en.md)
 
-标准版新增“预设身份优先”和“预设插槽优先”。前者保留预设条目的 system/user，按原生投递区域排序；后者识别历史/输入引用，将历史前内容适配为 system、历史后内容适配为 user，通过 pre-step 夹住历史或本步输入。预览逐条标注角色调整，没有引用时退回身份优先。user 贡献会进入历史；原生块内部顺序保持不变。选择策略后需显式应用，既有会话不自动迁移。详见 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS.md)。
+标准版新增“预设身份优先”和“预设插槽优先”。前者保留预设条目的 system/user，按原生投递区域排序；后者识别历史/输入引用，将历史前内容适配为 system、历史后内容适配为 user，通过 pre-step 夹住历史或本步输入。预览逐条标注角色调整，没有引用时退回身份优先。user 贡献会进入历史；原生块内部顺序保持不变。选择策略后需显式应用，既有会话不自动迁移。详见 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS.md)。
 
 标准 assembler 通过 stock rc.2 的公开 sections/context/pre-step 接口工作，Tavern 正常依赖它；Manager 可选。可选 core addon 保留已验证的协议 1 进阶后端。两种后端共享策略、来源与 UI，旧策略缺 backend 仍为 core。明确 session 选择（含 null）不随灵珠/魔丸视图变化；独立新会话无默认，新 Tavern 开场默认标准预设插槽优先，安装 addon 不改变默认方案。
 
@@ -97,7 +97,7 @@ flowchart TD
 
 ## 核心扩展和安装边界
 
-官方 DSH `0.2.0-rc.2` 没有此请求装配接口。`scripts/prepare-request-assembly.mjs` 从固定 rc.2 核心源码（脚本内以两份源码树 SHA-256 校验） 生成独立核心构建；不修改源码 checkout 或任何安装目录，不适用于其他版本。
+官方 DSH `0.2.1-rc.2` 没有此请求装配接口。`scripts/prepare-request-assembly.mjs` 从固定 rc.2 核心源码（脚本内以两份源码树 SHA-256 校验） 生成独立核心构建；不修改源码 checkout 或任何安装目录，不适用于其他版本。
 
 当前源码自动加载随 Tavern 提供的标准 Assembler；独立安装共存方式见[assembler 接入](ASSEMBLER_INTEGRATION.md)。标准策略不要求核心准备。进阶策略需要可选 core addon 与宿主协议 1；下列工具仅生成可审阅的独立构建，不在插件安装中修改 DSH 核心。实际运行环境的核心替换需要另行授权。
 

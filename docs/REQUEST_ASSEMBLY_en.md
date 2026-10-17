@@ -2,7 +2,7 @@
 
 [中文](REQUEST_ASSEMBLY.md)
 
-Standard adds Preset roles first and Preset slots first. Roles first preserves authored system/user roles and orders contributions within native delivery regions. Slots first detects history/input references, adapts content before history to system and after history to user, and uses pre-step delivery around history/current input. Preview identifies role adjustments; absent references fall back to roles first. User contributions enter history and native internal order is preserved. Applying remains explicit; existing sessions are not migrated automatically. See [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/BACKENDS_en.md).
+Standard adds Preset roles first and Preset slots first. Roles first preserves authored system/user roles and orders contributions within native delivery regions. Slots first detects history/input references, adapts content before history to system and after history to user, and uses pre-step delivery around history/current input. Preview identifies role adjustments; absent references fall back to roles first. User contributions enter history and native internal order is preserved. Applying remains explicit; existing sessions are not migrated automatically. See [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS_en.md).
 
 The standard assembler uses public DSH sections/context/pre-step on stock rc.2. Tavern normally depends on it; optional Manager supplies management and observations. The optional core addon retains the validated protocol-1 advanced backend. Both share strategies/registry/UI; legacy strategies without backend remain core. Native/play views cannot change explicit session selections, including null. New standalone sessions have no implicit strategy; new Tavern openings use standard preset slots first even with the advanced addon installed.
 
@@ -96,7 +96,7 @@ Uninitialized MVU state or state requiring repair returns `MVU_PREVIEW_STATE_UNA
 
 ## Core extension and installation boundary
 
-Stock DSH `0.2.0-rc.2` does not expose this seam. `scripts/prepare-request-assembly.mjs` produces a separate build from the pinned rc.2 source (both source trees are verified against SHA-256 digests in the script). It never edits the source checkout or an installed runtime and rejects other revisions.
+Stock DSH `0.2.1-rc.2` does not expose this seam. `scripts/prepare-request-assembly.mjs` produces a separate build from the pinned rc.2 source (both source trees are verified against SHA-256 digests in the script). It never edits the source checkout or an installed runtime and rejects other revisions.
 
 Current source automatically loads the standard Assembler included with Tavern; see [assembler integration](ASSEMBLER_INTEGRATION_en.md) for standalone coexistence. Standard strategies need no core preparation. Advanced strategies require the optional core addon and Host protocol 1. The preparation tool generates reviewable output, never patches core during plugin installation; any actual runtime replacement requires separate authorization.
 

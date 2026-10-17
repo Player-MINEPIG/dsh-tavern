@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/bundle.js",
@@ -114,19 +114,20 @@
     "pack:with-assembler": "node scripts/pack-with-assembler.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20",
+    "dsh": "0.2.1-rc.2"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.4",
-    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
-    "@deepseek-ai/dsh-util-crypto": "0.2.0-rc.2",
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-util-crypto": "0.2.1-rc.2",
     "esbuild": "^0.28.2",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "4.0.4",
-    "@deepseek-ai/dsh-util-crypto": "0.2.0-rc.2"
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-util-crypto": "0.2.1-rc.2"
   },
   "license": "MIT",
   "repository": {
@@ -143,7 +144,7 @@
     "acorn": "8.15.0",
     "acorn-jsx": "5.3.2",
     "dompurify": "3.4.16",
-    "dsh-prompt-assembler": "1.1.0",
+    "dsh-prompt-assembler": "1.1.1",
     "json5": "2.2.3",
     "katex": "0.18.2",
     "linkedom": "0.18.12",

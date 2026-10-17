@@ -18,6 +18,7 @@ const groups = [
       'test/plugin-runtime-compatibility.test.mjs',
       'test/trace-v3.test.mjs',
       'test/trace-v3-host.test.mjs',
+      'test/trace-context-refresh-host.test.mjs',
       'test/trace-failures.test.mjs',
       'test/trace-failures-host.test.mjs',
     ],

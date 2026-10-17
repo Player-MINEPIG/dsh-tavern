@@ -6717,7 +6717,7 @@ var require_acorn_jsx = __commonJS({
   }
 });
 
-// node_modules/dsh-prompt-assembler/src/history/schema.js
+// .local/dsh-021-compat/assembler/src/history/schema.js
 function normalizeHistoryPolicy(input = DEFAULT_HISTORY_POLICY) {
   keys(input, ["version", "enabled", "sources", "contentTypes", "fragments"]);
   if (input.version !== 1 || typeof input.enabled !== "boolean") bad("Expected policy version 1 and enabled boolean");
@@ -6742,7 +6742,7 @@ function normalizeHistoryPolicy(input = DEFAULT_HISTORY_POLICY) {
 }
 var DEFAULT_HISTORY_POLICY, bad, keys;
 var init_schema = __esm({
-  "node_modules/dsh-prompt-assembler/src/history/schema.js"() {
+  ".local/dsh-021-compat/assembler/src/history/schema.js"() {
     DEFAULT_HISTORY_POLICY = Object.freeze({
       version: 1,
       enabled: false,
@@ -6765,7 +6765,7 @@ var init_schema = __esm({
   }
 });
 
-// node_modules/dsh-prompt-assembler/src/history-client.js
+// .local/dsh-021-compat/assembler/src/history-client.js
 function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-assembler/api/v1/history-policy", request: request2 = fetch, fragmentPresets = [], onDirtyChange = () => {
 }, onSaved = () => {
 }, value, backend, onChange, onInvalid = () => {
@@ -7014,7 +7014,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
   } };
 }
 var init_history_client = __esm({
-  "node_modules/dsh-prompt-assembler/src/history-client.js"() {
+  ".local/dsh-021-compat/assembler/src/history-client.js"() {
     init_schema();
   }
 });
@@ -23630,7 +23630,7 @@ ${conversationSettingsCss}
 // packages/request-assembler/client.js
 var import_react12 = require("react");
 
-// node_modules/dsh-prompt-assembler/src/assembly-error.js
+// .local/dsh-021-compat/assembler/src/assembly-error.js
 var import_react7 = require("react");
 function AssemblyError({ message, locale = 0, context, ...attributes }) {
   const zh = locale === 0;
@@ -23649,7 +23649,7 @@ function AssemblyError({ message, locale = 0, context, ...attributes }) {
   );
 }
 
-// node_modules/dsh-prompt-assembler/src/history-panel.js
+// .local/dsh-021-compat/assembler/src/history-panel.js
 var import_react8 = require("react");
 init_history_client();
 var EMPTY_PRESETS = [];
@@ -23721,7 +23721,7 @@ var historyPanelCss = `
 .history-policy-panel details[open]>summary,.history-policy-panel details p,.history-policy-panel details h4{margin-bottom:12px}.history-policy-panel pre{margin:12px 0}
 `;
 
-// node_modules/dsh-prompt-assembler/src/actual-result.js
+// .local/dsh-021-compat/assembler/src/actual-result.js
 var textOf = (message) => (message.content ?? []).map((block) => block.type === "text" ? block.text : `[${block.type}]`).join("\n");
 function actualAssemblyResult(record) {
   const result = record.metadata?.assembly ?? { diagnostics: [], nodes: record.messages.map((m2, index) => ({
@@ -23746,10 +23746,12 @@ function actualAssemblyResult(record) {
   return { ...result, diagnostics: result.diagnostics ?? [], nodes, messages: record.messages, historyPolicy: record.metadata?.historyPolicy, actual: true };
 }
 
-// node_modules/dsh-prompt-assembler/src/native-context.js
-var DSH_CONTEXT_NAMES = Object.freeze(["sandbox:policy", "approval:policy", "subagent:delegation"]);
+// .local/dsh-021-compat/assembler/src/native-context.js
+var OPTIONAL_DSH_CONTEXT_NAMES = Object.freeze(["sandbox:policy", "approval:policy", "subagent:delegation", "harness:source", "app:web-surface"]);
+var REQUIRED_DSH_CONTEXT_NAMES = Object.freeze(["working-directory:current", "team:identity"]);
+var DSH_CONTEXT_NAMES = Object.freeze([...OPTIONAL_DSH_CONTEXT_NAMES, ...REQUIRED_DSH_CONTEXT_NAMES]);
 var CONTEXT_CONTROLS = Object.freeze([
-  { kind: "dsh.runtime-context", name: "DSH \u539F\u751F\u8FD0\u884C\u73AF\u5883\u63D0\u793A", sections: DSH_CONTEXT_NAMES },
+  { kind: "dsh.runtime-context", name: "DSH \u539F\u751F\u8FD0\u884C\u73AF\u5883\u63D0\u793A", sections: OPTIONAL_DSH_CONTEXT_NAMES },
   { kind: "dsh.sandbox-policy", name: "\u6C99\u7BB1\u7B56\u7565\u63D0\u793A", sections: ["sandbox:policy"] },
   { kind: "dsh.approval-policy", name: "\u5BA1\u6279\u7B56\u7565\u63D0\u793A", sections: ["approval:policy"] }
 ]);
@@ -23764,7 +23766,7 @@ function contextControlRows(rules, available = CONTEXT_CONTROLS.map((c) => c.kin
   })];
 }
 
-// node_modules/dsh-prompt-assembler/src/strategies.js
+// .local/dsh-021-compat/assembler/src/strategies.js
 var STRATEGY_PROTOCOL_VERSION = 1;
 var idPattern = /^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,159}$/;
 var freeze = (value) => {
@@ -23832,7 +23834,7 @@ function createPositionStrategyRegistry() {
   return registry;
 }
 
-// node_modules/dsh-prompt-assembler/src/resource-positions.js
+// .local/dsh-021-compat/assembler/src/resource-positions.js
 var idPattern2 = /^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,159}$/;
 function normalizePositions(value) {
   if (value === void 0) return void 0;
@@ -23970,7 +23972,7 @@ function resolvedPositionRows(preset, sources, preview) {
   return rows.map((row) => row.resolved ? known.shift() : row);
 }
 
-// node_modules/dsh-prompt-assembler/src/resource-layout.js
+// .local/dsh-021-compat/assembler/src/resource-layout.js
 function normalizeLayout(value) {
   if (value === void 0) return void 0;
   if (!value || value.version !== 1 || !["manual", "preset-slots"].includes(value.source) || !["preserve", "position"].includes(value.identity) || !["source-order", "error"].includes(value.fallback) || !Array.isArray(value.overrides) || value.overrides.length > 128) throw new TypeError("Invalid resource layout policy");
@@ -23989,10 +23991,10 @@ function layoutPlacement(preset) {
   return preset.backend === "native" ? preset.layout.source === "preset-slots" && preset.layout.identity === "position" ? "native-slots" : "native-roles" : preset.layout.source === "preset-slots" ? "st" : "modules";
 }
 
-// node_modules/dsh-prompt-assembler/src/resource-layout-client.js
+// .local/dsh-021-compat/assembler/src/resource-layout-client.js
 var import_react10 = require("react");
 
-// node_modules/dsh-prompt-assembler/src/sortable-list.js
+// .local/dsh-021-compat/assembler/src/sortable-list.js
 var import_react9 = require("react");
 function SortableList({ items: items2, itemKey, itemName, canMove = () => true, onMove, renderItem, className, label, handleLabel, busy: busy2, locale = 0 }) {
   const [dragFrom, setDragFrom] = (0, import_react9.useState)(null), [dropIndex, setDropIndex] = (0, import_react9.useState)(null);
@@ -24051,7 +24053,7 @@ function SortableList({ items: items2, itemKey, itemName, canMove = () => true, 
   }), placeholder(items2.length));
 }
 
-// node_modules/dsh-prompt-assembler/src/resource-layout-client.js
+// .local/dsh-021-compat/assembler/src/resource-layout-client.js
 var strategyName = (id, strategies, locale = 0) => strategies?.find((s) => s.id === id)?.name?.[locale] ?? id;
 function SummaryMetadata({ items: items2, className = "" }) {
   return (0, import_react10.createElement)("dl", { className: `dta-summary-meta ${className}`, style: { "--dta-meta-columns": items2.length } }, ...items2.map((item) => (0, import_react10.createElement)("div", { key: item.label }, (0, import_react10.createElement)("dt", null, item.label), (0, import_react10.createElement)("dd", { className: item.className }, item.content))));
@@ -24147,10 +24149,10 @@ function PositionDecisions({ preview, sources, strategies = createPositionStrate
   })));
 }
 
-// node_modules/dsh-prompt-assembler/src/client.js
+// .local/dsh-021-compat/assembler/src/client.js
 var import_react11 = require("react");
 
-// node_modules/dsh-prompt-assembler/src/model.js
+// .local/dsh-021-compat/assembler/src/model.js
 init_schema();
 var FORMAT = "dsh-tavern-request-assembly";
 var MODULES = Object.freeze(["native-system", "history", "input", "dsh.text"]);
@@ -24180,7 +24182,7 @@ function normalizePreset(value) {
 }
 var BUILTINS = Object.freeze([{ id: "builtin-native", ...normalizePreset({ format: FORMAT, version: 1, name: "DSH \u539F\u751F / DSH native", backend: "native", rules: DEFAULT_RULES }) }]);
 
-// node_modules/dsh-prompt-assembler/src/native-policy.js
+// .local/dsh-021-compat/assembler/src/native-policy.js
 var fail3 = (message, detail) => {
   throw Object.assign(new Error(message), { status: 409, code: "ASSEMBLY_NATIVE_UNSUPPORTED", detail });
 };
@@ -24232,7 +24234,7 @@ function validateNativePreset(value) {
   return preset;
 }
 
-// node_modules/dsh-prompt-assembler/src/client.js
+// .local/dsh-021-compat/assembler/src/client.js
 var labels = {
   "dsh.runtime-context": ["DSH \u539F\u751F\u8FD0\u884C\u73AF\u5883\u63D0\u793A\uFF08\u603B\u5F00\u5173\uFF09", "DSH runtime environment prompts (master)"],
   "dsh.sandbox-policy": ["\u6C99\u7BB1\u7B56\u7565\u63D0\u793A \xB7 sandbox:policy", "Sandbox prompt \xB7 sandbox:policy"],
@@ -24241,6 +24243,7 @@ var labels = {
   contextMasterHint: ["\u603B\u5F00\u5173\u53EA\u7BA1\u7406 sandbox:policy\u3001approval:policy\u3001subagent:delegation\u3002\u603B\u5F00\u5173\u5173\u95ED\u65F6\uFF0C\u5B50\u9879\u8BBE\u7F6E\u4FDD\u7559\u4F46\u6682\u4E0D\u53D1\u9001\u3002\u5176\u4ED6\u6765\u6E90\u4FDD\u7559\uFF0C\u6709\u5269\u4F59 context \u65F6\u5C01\u88C5\u6587\u5B57\u4ECD\u4F1A\u51FA\u73B0\u3002", "The master covers only sandbox:policy, approval:policy and subagent:delegation. When off, child settings are retained but not sent. Other sources remain; framing remains whenever any context survives."],
   contextControlled: ["\u539F\u751F\u4E0A\u4E0B\u6587 \xB7 \u4EC5\u63A7\u5236\u53D1\u9001\u5F00\u5173", "Native context \xB7 transmission toggle only"],
   contextPreview: ["DSH \u539F\u751F\u8FD0\u884C\u73AF\u5883\u63D0\u793A", "DSH runtime environment prompts"],
+  contextRequired: ["\u5BBF\u4E3B\u5FC5\u9700\uFF0C\u59CB\u7EC8\u4FDD\u7559", "Required by Host, always retained"],
   contextIncluded: ["\u672C\u6B21\u4FDD\u7559", "Included"],
   contextExcluded: ["\u672C\u6B21\u5173\u95ED", "Disabled"],
   sourceIdentity: ["\u6309\u6765\u6E90\u6761\u76EE\u8EAB\u4EFD", "Per source entry"],
@@ -24955,7 +24958,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel: sessio
             modules.length > 0 && (0, import_react11.createElement)("div", { className: "dta-toolbar" }, (0, import_react11.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react11.createElement)("select", { id: "dta-add-source", value: modules.some((s) => s.id === addKind) ? addKind : modules[0].id, onChange: (e) => setAddKind(e.target.value) }, ...modules.map((s) => (0, import_react11.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("add", () => addRule(modules.some((s) => s.id === addKind) ? addKind : modules[0].id))),
             parsers.length > 0 && (0, import_react11.createElement)("div", { className: "dta-toolbar" }, (0, import_react11.createElement)("label", { htmlFor: "dta-add-parser" }, t("parser")), (0, import_react11.createElement)("select", { id: "dta-add-parser", value: addParser, onChange: (e) => setAddParser(e.target.value) }, ...parsers.map((s) => (0, import_react11.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), button("addText", () => addRule(addParser, "text"))),
             (0, import_react11.createElement)("small", null, t("sourceHelp"))
-          )) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)("div", { className: "dta-notice dta-help" }, t(preview?.actual ? "actualNotice" : preview?.scope === "opening-draft" ? "draftPreviewScope" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react11.createElement)("p", null, t("empty")) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)(PositionDecisions, { strategies, preview, sources, locale, sourceName }), ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code) && !(preview.scope === "opening-draft" && d2.code === "ASSEMBLY_SYSTEM_ONLY")).map((d2) => (0, import_react11.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), preview.diagnostics.some((d2) => d2.code === "NATIVE_PLACEMENT_ADJUSTED") && (0, import_react11.createElement)("div", { className: "dta-notice" }, t("nativeOrderChanged")), ...preview.diagnostics.filter((d2) => ["NATIVE_ROLE_ADJUSTED", "NATIVE_DELIVERY_ADJUSTED", "NATIVE_SLOTS_ABSENT", "NATIVE_DEPTH_APPROXIMATED", "NATIVE_DEPTH_BOUNDARY", "WORLD_BOOK_SLOT_MISSING"].includes(d2.code)).map((d2, i3) => (0, import_react11.createElement)("div", { key: `native-adjustment:${i3}`, className: "dta-notice" }, d2.code === "NATIVE_SLOTS_ABSENT" ? t("nativeSlotsAbsent") : d2.code === "WORLD_BOOK_SLOT_MISSING" ? `${d2.name} \xB7 ${t("worldSlotMissing")}: ${d2.anchor}` : d2.code === "NATIVE_DEPTH_BOUNDARY" ? `${d2.name} \xB7 ${t("nativeDepthBoundary")}: ${d2.depth} \u2192 ${t(d2.placement)}` : d2.code === "NATIVE_DEPTH_APPROXIMATED" ? `${d2.name} \xB7 ${t("nativeDepthApproximated")} (${d2.depth})` : `${d2.name} \xB7 ${t(d2.code === "NATIVE_ROLE_ADJUSTED" ? "nativeRoleChanged" : "nativeDeliveryChanged")}: ${d2.from} \u2192 ${d2.to}`)), ...preview.nodes.map(nodeRow), preview.runtimeContextControls?.length > 0 && (0, import_react11.createElement)("div", { className: "dta-notice" }, (0, import_react11.createElement)("strong", null, t("contextPreview")), ...preview.runtimeContextControls.map((c) => (0, import_react11.createElement)("div", { key: c.name }, `${c.name} \xB7 ${t(c.enabled ? "contextIncluded" : "contextExcluded")}`))), (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, `${t(preview.backend === "native" && !preview.actual ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react11.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react11.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, t("diagnostics")), (0, import_react11.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+          )) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)("div", { className: "dta-notice dta-help" }, t(preview?.actual ? "actualNotice" : preview?.scope === "opening-draft" ? "draftPreviewScope" : preview?.backend === "native" ? "nativePreviewScope" : "previewScope")), !preview ? (0, import_react11.createElement)("p", null, t("empty")) : (0, import_react11.createElement)("div", null, (0, import_react11.createElement)(PositionDecisions, { strategies, preview, sources, locale, sourceName }), ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code) && !(preview.scope === "opening-draft" && d2.code === "ASSEMBLY_SYSTEM_ONLY")).map((d2) => (0, import_react11.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), preview.diagnostics.some((d2) => d2.code === "NATIVE_PLACEMENT_ADJUSTED") && (0, import_react11.createElement)("div", { className: "dta-notice" }, t("nativeOrderChanged")), ...preview.diagnostics.filter((d2) => ["NATIVE_ROLE_ADJUSTED", "NATIVE_DELIVERY_ADJUSTED", "NATIVE_SLOTS_ABSENT", "NATIVE_DEPTH_APPROXIMATED", "NATIVE_DEPTH_BOUNDARY", "WORLD_BOOK_SLOT_MISSING"].includes(d2.code)).map((d2, i3) => (0, import_react11.createElement)("div", { key: `native-adjustment:${i3}`, className: "dta-notice" }, d2.code === "NATIVE_SLOTS_ABSENT" ? t("nativeSlotsAbsent") : d2.code === "WORLD_BOOK_SLOT_MISSING" ? `${d2.name} \xB7 ${t("worldSlotMissing")}: ${d2.anchor}` : d2.code === "NATIVE_DEPTH_BOUNDARY" ? `${d2.name} \xB7 ${t("nativeDepthBoundary")}: ${d2.depth} \u2192 ${t(d2.placement)}` : d2.code === "NATIVE_DEPTH_APPROXIMATED" ? `${d2.name} \xB7 ${t("nativeDepthApproximated")} (${d2.depth})` : `${d2.name} \xB7 ${t(d2.code === "NATIVE_ROLE_ADJUSTED" ? "nativeRoleChanged" : "nativeDeliveryChanged")}: ${d2.from} \u2192 ${d2.to}`)), ...preview.nodes.map(nodeRow), preview.runtimeContextControls?.length > 0 && (0, import_react11.createElement)("div", { className: "dta-notice" }, (0, import_react11.createElement)("strong", null, t("contextPreview")), ...preview.runtimeContextControls.map((c) => (0, import_react11.createElement)("div", { key: c.name }, `${c.name} \xB7 ${t(c.required ? "contextRequired" : c.enabled ? "contextIncluded" : "contextExcluded")}`))), (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, `${t(preview.backend === "native" && !preview.actual ? "logicalMessages" : "result")} (${preview.messages.length})`), ...preview.messages.map((m2, i3) => (0, import_react11.createElement)("div", { key: `${m2.id}:${i3}`, className: "dta-child" }, `${i3 + 1} \xB7 ${m2.role}`, (0, import_react11.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react11.createElement)("details", null, (0, import_react11.createElement)("summary", null, t("diagnostics")), (0, import_react11.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
           (0, import_react11.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
         )),
         (0, import_react11.createElement)(HistoryPanel, { key: draft.id ?? "new", presetId: `${draft.id}:${historyEpoch}`, sessionId: selectionTarget ? void 0 : sessionId, value: draft.historyPolicy, backend: draft.backend ?? "core", fetcher, root: historyApiRoot, editorRef: historyEditor, fragmentPresets: historyFragmentPresets, onChange: (historyPolicy) => {
@@ -25011,7 +25014,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel: sessio
   ));
 }
 
-// node_modules/dsh-prompt-assembler/src/client-fetch.js
+// .local/dsh-021-compat/assembler/src/client-fetch.js
 var API_ROOT2 = "/dsh-prompt-assembler/api/v1";
 function createAssemblerFetch({ fetcher = (...args) => globalThis.fetch(...args), protocol = () => globalThis.location?.protocol } = {}) {
   let tokenPromise2;
@@ -59319,7 +59322,7 @@ function apply3(ctx, { conversationPhase: conversationPhase2 }) {
   }, TavernShell));
 }
 
-// node_modules/dsh-prompt-assembler/src/plugin-client.js
+// .local/dsh-021-compat/assembler/src/plugin-client.js
 var plugin_client_exports = {};
 __export(plugin_client_exports, {
   AssemblyLauncher: () => AssemblyLauncher,

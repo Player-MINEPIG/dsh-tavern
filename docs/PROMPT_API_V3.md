@@ -1,9 +1,11 @@
 # 提示词装配 Trace 与 v3 元 API
 
-合同版本：Tavern **3.0.3**，目标 DSH **0.2.0-rc.2**。
+合同版本：Tavern **3.0.4**，目标 DSH **0.2.1-rc.2**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [开发验证](TESTING.md)
 
 装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+
+DSH 0.2.1-rc.2 在请求准入阶段刷新已注册运行上下文。Trace 的 `contexts` 以实际请求中的官方持久快照为准，保留字面文本并处理上下文清除；不使用装配前的旧正文或当前资源补全历史。
 
 ## 定位和兼容
 

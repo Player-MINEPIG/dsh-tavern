@@ -1,5 +1,5 @@
 import { nativeRequestProvenance } from './native-provenance.js'
-import { digest } from '../../prompt-metadata.js'
+import { digest, counts } from '../../prompt-metadata.js'
 import { snapshotSessionEvents } from '../../session-events.js'
 import { readFailureReference } from './failure-references.js'
 
@@ -50,13 +50,27 @@ export function captureBodyReferences(session, options, sections, contexts, veri
 
   // Official context snapshots retain their named sections. Their user-message
   // body has an official prefix, so system-style offsets cannot address it.
-  const contextEvent = nodes.findLast(event => event.type === 'user/message' && systemContext(event.data))
+  const contextEvent = nodes.findLast(event => event.type === 'user/message' && (event.data?.source?.kind === 'runtime-context'
+    || event.data?.source?.plugin === '@deepseek-ai/dsh-system-prompt'))
   if (contextEvent) {
     const message = contextEvent.data
     const actual = messages.filter(item => item.role === 'user'
       && (typeof item.id !== 'string' || item.id === message.id)
       && contentHash(item) === contentHash(message))
     const reference = actual.length === 1 ? messageReference(contextEvent, 'context-section') : null
+    // Admission can refresh facts after the assembly waterfall. Only the
+    // durable snapshot observed in this exact request owns their final text.
+    const admitted = message.source.sections
+    if (reference && message.source.kind === 'runtime-context' && admitted === undefined && message.source.form === undefined) contexts.splice(0, contexts.length)
+    if (reference && Array.isArray(admitted) && admitted.every(part => typeof part.name === 'string' && typeof part.text === 'string')
+      && messageText(message).endsWith(admitted.map(part => part.text).join('\n\n'))) {
+      const previous = contexts.slice()
+      contexts.splice(0, contexts.length, ...admitted.map((part, index) => {
+        const hash = digest(part.text)
+        const known = previous.find(value => value.name === part.name && value.hash === hash)
+        return { ...(known ?? { provenance: 'official-runtime-context', sources: [] }), name: part.name, index, hash, ...counts(part.text) }
+      }))
+    }
     if (reference) for (const section of contexts) {
       const matches = (message.source.sections ?? []).flatMap((item, index) => item.name === section.name
         && typeof item.text === 'string' && digest(item.text) === section.hash ? [index] : [])
