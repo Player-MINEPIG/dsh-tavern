@@ -18064,6 +18064,7 @@ var zh_CN_default = Object.freeze({
   "rendering.graph.changed": "\u6765\u6E90\u6216\u4E0B\u8F7D\u9009\u62E9\u5DF2\u53D8\u5316\uFF0C\u9700\u8981\u66F4\u65B0\u4F9D\u8D56",
   "rendering.graph.waiting": "\u5C1A\u672A\u4E0B\u8F7D",
   "rendering.graph.loading": "\u6B63\u5728\u8BFB\u53D6\u7F13\u5B58",
+  "rendering.cacheCleared": "\u5DF2\u6E05\u9664\u4E0B\u8F7D\u7F13\u5B58\u3002\u5185\u7F6E MVU \u4ECD\u7531\u63D2\u4EF6\u63D0\u4F9B\uFF1B\u5982\u9700\u505C\u6B62\u8FD0\u884C\uFF0C\u8BF7\u5173\u95ED\u5BF9\u5E94\u811A\u672C\u3002",
   "rendering.uninstall": "\u6E05\u9664\u4E0B\u8F7D\u7F13\u5B58",
   "rendering.redownload": "\u91CD\u65B0\u4E0B\u8F7D",
   "rendering.acquireUpdate": "\u4E0B\u8F7D\u66F4\u65B0\u540E\u7684\u4F9D\u8D56",
@@ -19193,6 +19194,7 @@ var en_default = Object.freeze({
   "rendering.graph.changed": "Sources or download choices changed; update dependencies",
   "rendering.graph.waiting": "Not downloaded",
   "rendering.graph.loading": "Reading cache",
+  "rendering.cacheCleared": "Downloaded cache cleared. Built-in MVU remains available; disable its script to stop execution.",
   "rendering.uninstall": "Clear downloaded cache",
   "rendering.redownload": "Download again",
   "rendering.acquireUpdate": "Download updated dependencies",
@@ -21176,7 +21178,7 @@ function configureRenderingTooltip(Tooltip2) {
   HostTooltip = Tooltip2;
 }
 function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy: busy2 = false, status }) {
-  const [sources, setSources] = (0, import_react2.useState)([]), [error, setError] = (0, import_react2.useState)(""), [version3, setVersion] = (0, import_react2.useState)(0);
+  const [sources, setSources] = (0, import_react2.useState)([]), [error, setError] = (0, import_react2.useState)(""), [notice, setNotice] = (0, import_react2.useState)(""), [version3, setVersion] = (0, import_react2.useState)(0);
   const [revision, setRevision] = (0, import_react2.useState)(renderingTrust.revision), [dependencyRevision, setDependencyRevision] = (0, import_react2.useState)(0);
   const generation = (0, import_react2.useRef)(0);
   const [, setExecutionRevision] = (0, import_react2.useState)(0);
@@ -21193,6 +21195,7 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     const ticket = ++generation.current;
     setSources([]);
     setError("");
+    setNotice("");
     Promise.all([
       bindings.characterId ? client.getCharacter(bindings.characterId) : null,
       bindings.presetId ? client.getPreset(bindings.presetId) : null,
@@ -21224,6 +21227,7 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
   const run = async (callback) => {
     try {
       setError("");
+      setNotice("");
       await callback();
     } catch (error2) {
       setError(error2.message);
@@ -21262,6 +21266,7 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     const graph = renderingDependencies.inspect(owner), state = graph?.status ?? "loading", items2 = graph?.items ?? [];
     const working = state === "downloading" || state === "loading";
     const hasRemote = items2.some((item) => item.url && item.status !== "disabled" && (renderingTrust.adapterIntent(owner, item.url) === "original" || !builtinCandidate(item.url) && renderingTrust.adapterIntent(owner, item.url) !== "builtin"));
+    const canClear = state === "downloading" || state === "remote" || [...items2, ...graph?.retained ?? []].some((item) => typeof item.content === "string");
     const progress = dependencyProgress(graph), count = progress.discovered + (progress.capped ? "+" : "");
     const label = !graph ? translate("rendering.graph.unknown") : progress.complete ? progress.ready + " / " + count + " \xB7 " + translate("rendering.graph.complete") : ["waiting", "changed", "loading", "remote"].includes(state) ? "0 / " + count + " \xB7 " + translate("rendering.graph.roots") : translate("rendering.graph.discovered", { ready: progress.ready, count }) + " \xB7 " + translate(state === "downloading" ? "rendering.graph.discovering" : "rendering.graph.incomplete");
     return (0, import_react2.createElement)(
@@ -21278,7 +21283,10 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
         "div",
         { className: "dtv-script-actions" },
         hasRemote ? (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: working, onClick: () => run(() => renderingDependencies.acquire(owner, { refresh: state !== "waiting" })) }, translate(state === "waiting" ? "rendering.acquire" : state === "changed" ? "rendering.acquireUpdate" : "rendering.redownload")) : null,
-        (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: state === "loading", onClick: () => run(() => renderingDependencies.uninstall(owner)) }, translate(state === "downloading" ? "rendering.cancel" : "rendering.uninstall"))
+        canClear ? (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: state === "loading", onClick: () => run(async () => {
+          await renderingDependencies.uninstall(owner);
+          setNotice(translate("rendering.cacheCleared"));
+        }) }, translate(state === "downloading" ? "rendering.cancel" : "rendering.uninstall")) : null
       ),
       (0, import_react2.createElement)("div", { className: "dtv-dependency-items" }, ...[...items2, ...graph?.excluded ?? []].map((item) => {
         const enabled = renderingTrust.isEnabled(owner, item.url), selected = item.status !== "disabled", candidate = builtinCandidate(item.url);
@@ -21314,6 +21322,7 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     (0, import_react2.createElement)("section", { className: "dtv-script-group" }, (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.cardScripts")), help(translate("rendering.safetyDetails"), translate("rendering.enablementHelp"))), ...helpers.map(renderHelper), !helpers.length ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
     (0, import_react2.createElement)("section", { className: "dtv-script-group" }, (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.dependencies")), help(translate("rendering.safetyDetails"), translate("rendering.boundary"))), ...owners.map(renderGraph), !owners.length ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
     ...renderingWriteRequests.listRevocations().map((item) => (0, import_react2.createElement)("div", { key: item.id, role: "alert" }, (0, import_react2.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""), (0, import_react2.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke")))),
+    notice ? (0, import_react2.createElement)("p", { role: "status" }, notice) : null,
     error ? (0, import_react2.createElement)("p", { role: "alert" }, error) : null
   );
 }

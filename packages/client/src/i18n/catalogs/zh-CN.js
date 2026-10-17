@@ -122,6 +122,7 @@ export default Object.freeze({
   "rendering.graph.changed": "来源或下载选择已变化，需要更新依赖",
   "rendering.graph.waiting": "尚未下载",
   "rendering.graph.loading": "正在读取缓存",
+  "rendering.cacheCleared": "已清除下载缓存。内置 MVU 仍由插件提供；如需停止运行，请关闭对应脚本。",
   "rendering.uninstall": "清除下载缓存",
   "rendering.redownload": "重新下载",
   "rendering.acquireUpdate": "下载更新后的依赖",

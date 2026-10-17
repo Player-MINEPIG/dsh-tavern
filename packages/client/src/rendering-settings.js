@@ -16,7 +16,7 @@ let HostTooltip
 export function configureRenderingTooltip(Tooltip) { HostTooltip = Tooltip }
 
 export function RenderingSettings({client,activeSnapshot,settings={},update,busy=false,status}) {
-  const [sources,setSources]=useState([]), [error,setError]=useState(''), [version,setVersion]=useState(0)
+  const [sources,setSources]=useState([]), [error,setError]=useState(''), [notice,setNotice]=useState(''), [version,setVersion]=useState(0)
   const [revision,setRevision]=useState(renderingTrust.revision), [dependencyRevision,setDependencyRevision]=useState(0)
   const generation=useRef(0)
   const [,setExecutionRevision]=useState(0)
@@ -26,7 +26,7 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
   useEffect(()=>renderingTrust.subscribe(()=>setRevision(renderingTrust.revision())),[])
   useEffect(()=>{const refresh=()=>setVersion(v=>v+1);window.addEventListener(CLIENT_REFRESH_EVENT,refresh);return()=>window.removeEventListener(CLIENT_REFRESH_EVENT,refresh)},[])
   useEffect(()=>{
-    const ticket=++generation.current;setSources([]);setError('')
+    const ticket=++generation.current;setSources([]);setError('');setNotice('')
     Promise.all([
       bindings.characterId ? client.getCharacter(bindings.characterId):null,
       bindings.presetId ? client.getPreset(bindings.presetId):null,
@@ -45,7 +45,7 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
   useEffect(()=>{
     if(sources.length)void renderingDependencies.sync(sources).catch(error=>setError(error.message))
   },[sources,settings.scriptEnablement,settings.renderingAdapters])
-  const run=async callback=>{try{setError('');await callback()}catch(error){setError(error.message)}}
+  const run=async callback=>{try{setError('');setNotice('');await callback()}catch(error){setError(error.message)}}
   const help = (label, text) => h(HostTooltip??'span',HostTooltip?{label:text,portal:true,maxWidth:320,side:'bottom',openOnClick:true}:{title:text},h('button',{type:'button',className:'dtv-script-info','aria-label':label},'ⓘ'))
   const sourceView = content => h('textarea',{className:'dtv-script-source',readOnly:true,value:content,spellCheck:false,wrap:'off','aria-label':translate('rendering.source')})
   const changeEnabled = (entry, enabled) => run(()=>update?.({...settings,scriptEnablement:updateScriptEnablement(settings.scriptEnablement,entry.owner,entry.preferenceKey??entry.key,enabled)}))
@@ -68,6 +68,7 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
     const graph=renderingDependencies.inspect(owner),state=graph?.status??'loading',items=graph?.items??[]
     const working=state==='downloading'||state==='loading'
     const hasRemote=items.some(item=>item.url&&item.status!=='disabled'&&(renderingTrust.adapterIntent(owner,item.url)==='original'||!builtinCandidate(item.url)&&renderingTrust.adapterIntent(owner,item.url)!=='builtin'))
+    const canClear=state==='downloading'||state==='remote'||[...items,...(graph?.retained??[])].some(item=>typeof item.content==='string')
     const progress=dependencyProgress(graph),count=progress.discovered+(progress.capped?'+':'')
     const label=!graph?translate('rendering.graph.unknown'):progress.complete?progress.ready+' / '+count+' · '+translate('rendering.graph.complete'):
       ['waiting','changed','loading','remote'].includes(state)?'0 / '+count+' · '+translate('rendering.graph.roots'):
@@ -82,7 +83,7 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
       h('p',{className:'dtv-script-meta'},translate('rendering.selectionScope')),
       h('div',{className:'dtv-script-actions'},
         hasRemote?h('button',{type:'button',className:'dtv-button',disabled:working,onClick:()=>run(()=>renderingDependencies.acquire(owner,{refresh:state!=='waiting'}))},translate(state==='waiting'?'rendering.acquire':state==='changed'?'rendering.acquireUpdate':'rendering.redownload')):null,
-        h('button',{type:'button',className:'dtv-button',disabled:state==='loading',onClick:()=>run(()=>renderingDependencies.uninstall(owner))},translate(state==='downloading'?'rendering.cancel':'rendering.uninstall'))),
+        canClear?h('button',{type:'button',className:'dtv-button',disabled:state==='loading',onClick:()=>run(async()=>{await renderingDependencies.uninstall(owner);setNotice(translate('rendering.cacheCleared'))})},translate(state==='downloading'?'rendering.cancel':'rendering.uninstall')):null),
       h('div',{className:'dtv-dependency-items'},...[...items,...(graph?.excluded??[])].map(item=>{
         const enabled=renderingTrust.isEnabled(owner,item.url),selected=item.status!=='disabled',candidate=builtinCandidate(item.url)
         const cached=graph?.retained?.find(record=>record.url===item.url),content=item.builtin?undefined:item.content??cached?.content
@@ -105,5 +106,6 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
     h('section',{className:'dtv-script-group'},h('div',{className:'dtv-script-actions'},h('h4',null,translate('rendering.cardScripts')),help(translate('rendering.safetyDetails'),translate('rendering.enablementHelp'))),...helpers.map(renderHelper),!helpers.length?h('p',{className:'dtv-script-meta'},translate('rendering.none')):null),
     h('section',{className:'dtv-script-group'},h('div',{className:'dtv-script-actions'},h('h4',null,translate('rendering.dependencies')),help(translate('rendering.safetyDetails'),translate('rendering.boundary'))),...owners.map(renderGraph),!owners.length?h('p',{className:'dtv-script-meta'},translate('rendering.none')):null),
     ...renderingWriteRequests.listRevocations().map(item=>h('div',{key:item.id,role:'alert'},h('p',null,translate('rendering.revokePending'),item.error?' · '+item.error:''),h('button',{type:'button',disabled:item.pending,onClick:()=>run(()=>renderingWriteRequests.retryRevocation(item.id))},translate('rendering.retryRevoke')))),
+    notice?h('p',{role:'status'},notice):null,
     error?h('p',{role:'alert'},error):null)
 }

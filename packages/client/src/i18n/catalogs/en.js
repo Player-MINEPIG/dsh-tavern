@@ -122,6 +122,7 @@ export default Object.freeze({
   "rendering.graph.changed": "Sources or download choices changed; update dependencies",
   "rendering.graph.waiting": "Not downloaded",
   "rendering.graph.loading": "Reading cache",
+  "rendering.cacheCleared": "Downloaded cache cleared. Built-in MVU remains available; disable its script to stop execution.",
   "rendering.uninstall": "Clear downloaded cache",
   "rendering.redownload": "Download again",
   "rendering.acquireUpdate": "Download updated dependencies",

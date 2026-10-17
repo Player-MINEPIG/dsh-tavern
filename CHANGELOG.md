@@ -2,8 +2,8 @@
 
 ## 3.0.4
 
-- 内置 MVU 与原版代码下载解耦：本地能力离线解析，保留完整 schema 核验、来源选择和原版隔离执行；旧失败缓存可恢复为内置能力，模块初始化拒绝会显示运行错误。
-- Resolve built-in MVU locally without downloading upstream bundles, retaining schema confirmation, source choices and isolated original-code execution. Restore old failed caches as local capabilities and surface rejected module initialization as runtime errors.
+- 内置 MVU 与原版代码下载解耦：本地能力离线解析，保留完整 schema 核验、来源选择和原版隔离执行；旧失败缓存可恢复为内置能力，模块初始化拒绝会显示运行错误；仅在有下载内容或未完成下载时显示清除操作，并反馈清除结果。
+- Resolve built-in MVU locally without downloading upstream bundles, retaining schema confirmation, source choices and isolated original-code execution. Restore old failed caches as local capabilities and surface rejected module initialization as runtime errors. Show cache-clearing actions only for downloaded content or unfinished downloads, with completion feedback.
 
 - 适配 DSH 0.2.1-rc.2、Cordis 4.0.5 与 Assembler 1.1.1，使用 engines.dsh 声明精确宿主版本。
 - Trace 从实际发送请求对应的官方持久 runtime-context 快照核对刷新后的段落，正确处理字面文本及上下文清除；历史读取仍验证引用与摘要。
