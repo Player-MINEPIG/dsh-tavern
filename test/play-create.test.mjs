@@ -454,3 +454,56 @@ for (const code of ['PLAY_COORDINATES_MIGRATION_REQUIRED', 'PLAY_PATH_NOT_FOUND'
     assert.equal(client.calls.length, 0)
   })
 }
+
+function fakeDraftClient() {
+  const client = fakeClient(), drafts = new Map()
+  client.postDraft = async body => {
+    const id = `draft-${drafts.size + 1}`
+    const playthrough = { id, path: `character-a/${id}/timeline.json`, ext: { pmpDshTavern: { characterId: body.characterId, draftId: id, playthroughNumber: drafts.size + 1 } } }
+    const draft = { id, phase: 'draft', claim: null, selection: { characterCardId: body.characterId, userId: body.source?.templateId ?? null }, variables: { hp: 100 } }
+    drafts.set(id, { draft, playthrough })
+    const catalog = await client.getCatalog().catch(error => { if (error.code !== 'PLAY_PATH_NOT_FOUND') throw error; return { playthroughs: [] } })
+    await client.putCatalog({ ...catalog, playthroughs: [...catalog.playthroughs, playthrough] })
+    client.calls.push(['postDraft', body])
+    return structuredClone({ draft, playthrough, sessionId: null })
+  }
+  client.getDraft = async id => structuredClone(drafts.get(id))
+  return { client, drafts }
+}
+
+test('repeated create joins and reopens the same pending opening, preserving edits across controllers', async () => {
+  const { client, drafts } = fakeDraftClient(), controller = createPlaythroughController(client)
+  const args = { character: { id: 'character-a' } }
+  const first = controller.create(args)
+  assert.equal(controller.create(args), first)
+  const created = await first
+  drafts.get(created.draft.id).draft.variables.hp = 70
+  const reopened = await controller.create(args)
+  const remounted = await createPlaythroughController(client).create(args)
+  assert.equal(reopened.playthrough.id, created.playthrough.id)
+  assert.equal(remounted.playthrough.id, created.playthrough.id)
+  assert.equal(reopened.reused, true)
+  assert.equal(remounted.draft.variables.hp, 70)
+  assert.equal(client.calls.filter(call => call[0] === 'postDraft').length, 1)
+})
+
+for (const state of ['preparing', 'started', 'claimed', 'archived']) test(`new opening does not reuse a ${state} draft`, async () => {
+  const { client, drafts } = fakeDraftClient(), args = { character: { id: 'character-a' } }
+  const first = await createCharacterPlaythrough(client, args), record = drafts.get(first.draft.id)
+  if (state === 'claimed') record.draft.claim = { sessionId: 'preparing-session' }
+  else if (state === 'archived') record.playthrough.ext.pmpDshTavern.archivedAt = '2026-10-18T00:00:00Z'
+  else record.draft.phase = state
+  const second = await createCharacterPlaythrough(client, args)
+  assert.notEqual(second.playthrough.id, first.playthrough.id)
+})
+
+test('configuration-based creation reuses a matching draft and honors a different explicit configuration', async () => {
+  const { client } = fakeDraftClient()
+  const args = { character: { id: 'character-a' }, configurationSource: { mode: 'template', templateId: 'user-a' }, configurationSelection: { characterCardId: 'character-a', userId: 'user-a' } }
+  const first = await createCharacterPlaythrough(client, args)
+  assert.equal((await createCharacterPlaythrough(client, args)).playthrough.id, first.playthrough.id)
+  const changed = await createCharacterPlaythrough(client, { ...args, configurationSource: { mode: 'template', templateId: 'user-b' }, configurationSelection: { characterCardId: 'character-a', userId: 'user-b' } })
+  assert.notEqual(changed.playthrough.id, first.playthrough.id)
+  assert.equal(changed.draft.selection.userId, 'user-b')
+  assert.equal(client.calls.filter(call => call[0] === 'postDraft').length, 2)
+})

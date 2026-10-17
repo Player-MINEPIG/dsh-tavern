@@ -4,7 +4,7 @@
 
 进阶扩展冻结在 Assembler `1.1.0` / DSH `0.2.0-rc.2`，不承诺适配后续 DSH。当前 Assembler `1.1.1` 与 Tavern 仅分发标准包，不包含新版核心改动。下文进阶语义仅用于读取旧配置与理解历史记录。
 
-Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.1`（开发 lockfile 固定已审查的 Git 修订 `fbb32e6f838a5bc5aa3718f1db0321b089136de8`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和插件配置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
+Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.1`（对应源码标签 `v1.1.1`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和插件配置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
 
 ## 可选 Memory Manager
 
@@ -68,7 +68,7 @@ Tavern 文本使用一个 `tavern.text` 入口，依次执行受限 EJS、内容
 
 ## GitHub 的依赖表示
 
-依赖图为 Tavern→标准 assembler，Manager 可选，不需要 submodule；冻结 addon 仅 peer 标准 1.1.0。源码 manifest 固定 npm 版本 `1.1.1`，开发 lockfile 固定已审查修订。GitHub／Market 安装会由包管理器从 npm 下载该依赖，要求对应版本已发布；源码 manifest 不声明 `bundleDependencies`，因为 GitHub archive 没有 `node_modules`。仅预构建打包时声明该依赖已打包，并将选定标准包携带在 Tavern tgz 内；另产出的 assembler tgz 供独立使用。只安装 Tavern 即可由组合入口加载 Host 服务。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
+依赖图为 Tavern→标准 assembler，Manager 可选，不需要 submodule；冻结 addon 仅 peer 标准 1.1.0。源码 manifest 固定 npm 版本 `1.1.1`，lockfile 固定已发布包及完整性。GitHub／Market 安装会由包管理器从 npm 下载该依赖，要求对应版本已发布；源码 manifest 不声明 `bundleDependencies`，因为 GitHub archive 没有 `node_modules`。仅预构建打包时声明该依赖已打包，并将选定标准包携带在 Tavern tgz 内；另产出的 assembler tgz 供独立使用。只安装 Tavern 即可由组合入口加载 Host 服务。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
 
 [接口索引](API_SURFACES.md) · [Tavern 架构图](assets/architecture/tavern.zh-CN.html) · [组合架构图](assets/architecture/ecosystem.zh-CN.html)。
 

@@ -2,6 +2,7 @@ import { characterIdFromSelection } from './sidebar-model.js'
 import { loadPlaythroughImportContext } from './import.js'
 import { updateCatalog } from './mutations.js'
 import { isPlaythroughArchived } from '../../../play/src/playthrough-state.js'
+import { normalizeTemplateSelection } from '../../../session-template/src/model.js'
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -149,11 +150,27 @@ export function sourceSessionIdForCharacter(character) {
   return rooted?.rootSessionId ?? null
 }
 
+async function reusableOpeningDraft(client, characterId, configurationSelection) {
+  const latest = latestCharacterPlaythrough(await catalogOrEmpty(client), characterId)
+  if (!latest || isPlaythroughArchived(latest) || rootSessionId(latest) || latest.ext?.pmpDshTavern?.draftId !== latest.id) return null
+  let result
+  try { result = await client.getDraft(latest.id) }
+  catch (error) {
+    if (['PLAY_DRAFT_NOT_FOUND', 'PLAY_DRAFT_ARCHIVED'].includes(error.code)) return null
+    throw error
+  }
+  const { draft, playthrough } = result
+  if (draft.phase !== 'draft' || draft.claim || draft.selection.characterCardId !== characterId || isPlaythroughArchived(playthrough) || rootSessionId(playthrough)) return null
+  if (configurationSelection && JSON.stringify(normalizeTemplateSelection(draft.selection)) !== JSON.stringify(normalizeTemplateSelection(configurationSelection))) return null
+  return { ...result, sessionId: null, reused: true }
+}
+
 export async function createCharacterPlaythrough(client, {
   character,
   selectionFromSessionId = null,
   configureSession = null,
   configurationSource = null,
+  configurationSelection = null,
   reuseEmpty = true,
   now = () => new Date(),
   randomUUID = () => globalThis.crypto.randomUUID(),
@@ -162,6 +179,8 @@ export async function createCharacterPlaythrough(client, {
   if (typeof reuseEmpty !== 'boolean') throw new TypeError('reuseEmpty must be a boolean')
   const characterId = safeSegment(character?.id, 'character.id')
   if (typeof client.postDraft === 'function') {
+    const pending = reuseEmpty ? await reusableOpeningDraft(client, characterId, configurationSelection) : null
+    if (pending) return pending
     return { ...await client.postDraft({ characterId, ...(configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: 'current', sessionId: selectionFromSessionId } } : {}) }), reused: false }
   }
   const createdAt = isoNow(now)
@@ -281,7 +300,7 @@ export function createPlaythroughController(client, dependencies = {}) {
         ? (dependencies.reuseEmpty === undefined ? true : dependencies.reuseEmpty)
         : args.reuseEmpty
       if (typeof reuseEmpty !== 'boolean') throw new TypeError('reuseEmpty must be a boolean')
-      const key = `${characterId}:${reuseEmpty}`
+      const key = JSON.stringify([characterId, reuseEmpty, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null])
       const existing = inFlight.get(key)
       if (existing !== undefined) return existing
       const task = tail.catch(() => {}).then(() => createCharacterPlaythrough(client, {

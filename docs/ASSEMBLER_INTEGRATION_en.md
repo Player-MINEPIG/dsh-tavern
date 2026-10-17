@@ -4,7 +4,7 @@
 
 Advanced is frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, with no commitment to later DSH versions. Current Assembler `1.1.1` and Tavern distribute Standard only, without newer core changes. Advanced semantics below describe legacy configurations and historical records.
 
-Tavern depends on `dsh-prompt-assembler` at exact npm version `1.1.1` (the development lockfile pins reviewed Git revision `fbb32e6f838a5bc5aa3718f1db0321b089136de8`). The assembler owns strategy storage, source registration, the request hook, secure API and installed-plugin configuration entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
+Tavern depends on `dsh-prompt-assembler` at exact npm version `1.1.1` (matching source tag `v1.1.1`). The assembler owns strategy storage, source registration, the request hook, secure API and installed-plugin configuration entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
 
 ## Optional Memory Manager
 
@@ -68,7 +68,7 @@ Tavern has one `tavern.text` entry: restricted EJS, content references, then ST 
 
 ## GitHub dependency representation
 
-The dependency graph is Tavern → standard assembler, while Manager remains optional. The frozen addon peers only with standard 1.1.0. No submodule is needed. The source manifest pins npm version `1.1.1`, and the development lockfile pins the reviewed Git revision. GitHub/Market installations download this dependency from npm through the package manager and require that version to be published. The source manifest declares no `bundleDependencies`, because GitHub archives have no `node_modules`. Only prebuilt packaging declares this dependency bundled and includes the selected Assembler package inside the Tavern tgz; the additional Assembler tgz is for optional standalone use. Installing only Tavern loads the Host service through its composition entry. Public-directory submissions, tags, releases and npm publishing remain separate actions.
+The dependency graph is Tavern → standard assembler, while Manager remains optional. The frozen addon peers only with standard 1.1.0. No submodule is needed. The source manifest pins npm version `1.1.1`, and the lockfile pins the published package and integrity. GitHub/Market installations download this dependency from npm through the package manager and require that version to be published. The source manifest declares no `bundleDependencies`, because GitHub archives have no `node_modules`. Only prebuilt packaging declares this dependency bundled and includes the selected Assembler package inside the Tavern tgz; the additional Assembler tgz is for optional standalone use. Installing only Tavern loads the Host service through its composition entry. Public-directory submissions, tags, releases and npm publishing remain separate actions.
 
 [API surfaces](API_SURFACES_en.md) · [Tavern architecture](assets/architecture/tavern.en.html) · [Combined architecture](assets/architecture/ecosystem.en.html).
 

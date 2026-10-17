@@ -2,6 +2,9 @@
 
 ## 3.0.4
 
+- 重复创建周目会复用未开始的开场草稿并保留编辑；从插件页面打开草稿会通过公开导航返回会话区域。
+- Repeated creation reopens the unstarted opening draft with edits preserved; opening drafts from Plugins returns to the Conversation through public navigation.
+
 - 跟随 Assembler 标准版：进阶扩展冻结在 Assembler 1.1.0 / DSH 0.2.0-rc.2，新版不携带核心改动，打包拒绝 `--with-core`。
 - Follow Standard Assembler only: freeze Advanced at Assembler 1.1.0 / DSH 0.2.0-rc.2, ship no newer core changes and reject `--with-core` during packaging.
 

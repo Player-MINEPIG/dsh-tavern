@@ -196,7 +196,9 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       activeDraftId = playthrough.id; draftMainSessionId = mainSessionId(ctx.sessions?.list?.getSnapshot?.())
       draftRosterReady = ctx.sessions?.list?.getSnapshot?.()?.phase === 'ready'
       try { window.sessionStorage.setItem(draftKey, activeDraftId) } catch {}
-      selectPlaythrough(playthrough.id); syncOpeningEntries(); notifyBindings(); return
+      selectPlaythrough(playthrough.id); syncOpeningEntries(); notifyBindings()
+      ctx.layout.selectPanel(null)
+      return
     }
     activeDraftId = null
     try { window.sessionStorage.removeItem(draftKey) } catch {}

@@ -22491,6 +22491,49 @@ async function unbindPlaythroughImport(client, playthrough) {
   return { sessionId, binding: null };
 }
 
+// packages/session-template/src/model.js
+var MAX_RESOURCE_ID_CHARACTERS = 200;
+var MAX_WORLD_BOOKS = 100;
+function stringOrNull(value) {
+  return typeof value === "string" && value !== "" && value.length <= MAX_RESOURCE_ID_CHARACTERS ? value : null;
+}
+function characterOptions(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
+  const result = {};
+  if (Number.isSafeInteger(value.greetingIndex) && value.greetingIndex >= 0) result.greetingIndex = value.greetingIndex;
+  if (typeof value.preferCharacterSystemPrompt === "boolean") result.preferCharacterSystemPrompt = value.preferCharacterSystemPrompt;
+  if (typeof value.preferCharacterPostHistory === "boolean") result.preferCharacterPostHistory = value.preferCharacterPostHistory;
+  return result;
+}
+var RP_SOURCES = /* @__PURE__ */ new Set(["command", "character-follow"]);
+var SANDBOX_MODES = /* @__PURE__ */ new Set(["read-only", "workspace-write", "danger-full-access"]);
+function rpState(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return { active: false, source: null, followSuppressed: false, sandboxBefore: null };
+  }
+  return {
+    active: value.active === true,
+    source: RP_SOURCES.has(value.source) ? value.source : null,
+    followSuppressed: value.followSuppressed === true,
+    sandboxBefore: SANDBOX_MODES.has(value.sandboxBefore) ? value.sandboxBefore : null
+  };
+}
+function normalizeTemplateSelection(value = {}) {
+  const worldBookIds = Array.isArray(value?.worldBookIds) ? [...new Set(value.worldBookIds.filter((item) => typeof item === "string" && item !== "" && item.length <= MAX_RESOURCE_ID_CHARACTERS))].slice(0, MAX_WORLD_BOOKS) : [];
+  return {
+    presetId: stringOrNull(value?.presetId),
+    characterCardId: stringOrNull(value?.characterCardId),
+    userId: stringOrNull(value?.userId),
+    worldBookIds,
+    character: characterOptions(value?.character),
+    rp: rpState(value?.rp)
+  };
+}
+var sessionTemplateModelConstants = Object.freeze({
+  maxResourceIdCharacters: MAX_RESOURCE_ID_CHARACTERS,
+  maxWorldBooks: MAX_WORLD_BOOKS
+});
+
 // packages/client/src/play/create.js
 var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
 var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
@@ -22620,11 +22663,27 @@ function sourceSessionIdForCharacter(character) {
   const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
   return rooted?.rootSessionId ?? null;
 }
+async function reusableOpeningDraft(client, characterId, configurationSelection) {
+  const latest = latestCharacterPlaythrough(await catalogOrEmpty(client), characterId);
+  if (!latest || isPlaythroughArchived(latest) || rootSessionId3(latest) || latest.ext?.pmpDshTavern?.draftId !== latest.id) return null;
+  let result;
+  try {
+    result = await client.getDraft(latest.id);
+  } catch (error) {
+    if (["PLAY_DRAFT_NOT_FOUND", "PLAY_DRAFT_ARCHIVED"].includes(error.code)) return null;
+    throw error;
+  }
+  const { draft, playthrough } = result;
+  if (draft.phase !== "draft" || draft.claim || draft.selection.characterCardId !== characterId || isPlaythroughArchived(playthrough) || rootSessionId3(playthrough)) return null;
+  if (configurationSelection && JSON.stringify(normalizeTemplateSelection(draft.selection)) !== JSON.stringify(normalizeTemplateSelection(configurationSelection))) return null;
+  return { ...result, sessionId: null, reused: true };
+}
 async function createCharacterPlaythrough(client, {
   character,
   selectionFromSessionId = null,
   configureSession = null,
   configurationSource = null,
+  configurationSelection = null,
   reuseEmpty = true,
   now = () => /* @__PURE__ */ new Date(),
   randomUUID = () => globalThis.crypto.randomUUID()
@@ -22633,6 +22692,8 @@ async function createCharacterPlaythrough(client, {
   if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
   const characterId = safeSegment(character?.id, "character.id");
   if (typeof client.postDraft === "function") {
+    const pending2 = reuseEmpty ? await reusableOpeningDraft(client, characterId, configurationSelection) : null;
+    if (pending2) return pending2;
     return { ...await client.postDraft({ characterId, ...configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: "current", sessionId: selectionFromSessionId } } : {} }), reused: false };
   }
   const createdAt = isoNow(now);
@@ -22744,7 +22805,7 @@ function createPlaythroughController(client, dependencies = {}) {
       const characterId = safeSegment(args?.character?.id, "character.id");
       const reuseEmpty = args?.reuseEmpty === void 0 ? dependencies.reuseEmpty === void 0 ? true : dependencies.reuseEmpty : args.reuseEmpty;
       if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
-      const key2 = `${characterId}:${reuseEmpty}`;
+      const key2 = JSON.stringify([characterId, reuseEmpty, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null]);
       const existing = inFlight.get(key2);
       if (existing !== void 0) return existing;
       const task = tail.catch(() => {
@@ -28913,6 +28974,7 @@ async function createConfiguredPlaythroughWorkflow({
     },
     selectionFromSessionId: source?.mode === "current" ? source.sessionId : null,
     configurationSource: source,
+    configurationSelection: checked.selection,
     configureSession: (targetSessionId) => applySelection(targetSessionId, source)
   });
   openSession(result.sessionId, result.playthrough);
@@ -56080,9 +56142,7 @@ function PlayWorkspaceBrowser({
       const result = await creator.current.controller.create({
         character,
         selectionFromSessionId: sourceSessionIdForCharacter(character),
-        // This explicit action starts a new run even when the previous run has
-        // no DSH turns yet: its card may already have persistent MVU state.
-        reuseEmpty: false
+        reuseEmpty: typeof playClient.postDraft === "function"
       });
       openSession(result.sessionId, result.playthrough);
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
@@ -57273,6 +57333,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
       selectPlaythrough(playthrough.id);
       syncOpeningEntries();
       notifyBindings();
+      ctx.layout.selectPanel(null);
       return;
     }
     activeDraftId = null;

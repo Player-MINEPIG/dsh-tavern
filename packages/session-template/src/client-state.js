@@ -75,6 +75,7 @@ export async function createConfiguredPlaythroughWorkflow({
     },
     selectionFromSessionId: source?.mode === 'current' ? source.sessionId : null,
     configurationSource: source,
+    configurationSelection: checked.selection,
     configureSession: targetSessionId => applySelection(targetSessionId, source),
   })
   openSession(result.sessionId, result.playthrough)

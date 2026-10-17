@@ -59,3 +59,26 @@ test('Mowan owns only the sidebar shadow and additive unbound notice while Lingz
   for (const cleanup of declarationCleanups) cleanup()
   assert.equal(registrations.slice(2).every(item => !item.active), true)
 })
+
+test('opening a draft leaves the Plugins panel through public layout navigation without creating a Session', () => {
+  let panel = 'plugins', sessionOpened = false
+  const registrations = [], cleanups = []
+  const ctx = {
+    layout: { selectPanel(value) { panel = value } },
+    sessions: { list: { getSnapshot: () => ({ phase: 'ready', byId: {} }) } },
+    uiWorkspace: { openSession() { sessionOpened = true } },
+    slots: {
+      inject(_name, fn) { cleanups.push(fn()) },
+      register(options) { const item = { options, active: true }; registrations.push(item); return () => { item.active = false } },
+    },
+  }
+  try {
+    const occupancy = installPlaySlotOccupancy(ctx, {})
+    occupancy.setMode('play')
+    occupancy.openPlaythrough(null, { id: 'draft-1', ext: { pmpDshTavern: { draftId: 'draft-1' } } })
+    assert.equal(panel, null, 'the global Plugins panel must yield to the Conversation area')
+    assert.equal(occupancy.getActiveDraftId(), 'draft-1')
+    assert.equal(registrations.find(item => item.active && item.options.name === 'main.conversation').options.inject().draftId, 'draft-1')
+    assert.equal(sessionOpened, false, 'plugin-owned draft IDs must never be passed to a native Session API')
+  } finally { for (const cleanup of cleanups) cleanup?.() }
+})
