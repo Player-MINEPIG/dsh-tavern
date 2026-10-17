@@ -1,6 +1,6 @@
 # pmp-dsh-tavern
 
-Independent prompt assembly plugin (standard by default; optional advanced core addon): [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for the bundled standard Assembler and coexistence with a standalone installation.
+Independent prompt assembly plugin (new versions are Standard only; Advanced frozen at DSH 0.2.0-rc.2): [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler). See the [integration guide](docs/ASSEMBLER_INTEGRATION_en.md) for the bundled standard Assembler and coexistence with a standalone installation.
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is an optional viewing and management extension. Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
 
@@ -56,7 +56,7 @@ Promo video: [Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/) (see t
 
 ### 0. Install
 
-Use DSH `0.2.1-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install only Tavern 3.0.4; standard Assembler v1.1.1 is installed and loaded automatically. Standard strategies use public interfaces; see the integration guide for the optional advanced core extension:
+Use DSH `0.2.1-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install only Tavern 3.0.4; standard Assembler v1.1.1 is installed and loaded automatically. Standard strategies use public interfaces; Advanced is frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2 with no commitment to later versions; see the integration guide:
 
 ```sh
 dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
@@ -101,7 +101,7 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | Area | Main capabilities | Details |
 | --- | --- | --- |
 | Resources | ST presets, V1/V2/V3 JSON/PNG cards, standalone/embedded world books, user profiles, bindings, export | [Usage](docs/USAGE_en.md) |
-| Request assembly | Assembler v1.1.1 strategies, source modules, standard delivery, optional advanced placement, previews and recorded requests | [Request assembly](docs/REQUEST_ASSEMBLY_en.md) · [Integration](docs/ASSEMBLER_INTEGRATION_en.md) |
+| Request assembly | Assembler v1.1.1 strategies, source modules, standard delivery, legacy advanced configuration reads, previews and recorded requests | [Request assembly](docs/REQUEST_ASSEMBLY_en.md) · [Integration](docs/ASSEMBLER_INTEGRATION_en.md) |
 | MVU variables | [initvar] initialization, restricted schemas, reply updates, branch-specific state, Trace inspection and scoped card reads/writes | [MVU](docs/MVU_en.md) |
 | Prompt templates | Restricted read-only EJS, source-variable dependencies and assembly modules | [Prompt templates](docs/PROMPT_TEMPLATE_en.md) |
 | RP frontend | Character/playthrough sidebar, greeting, Markdown/HTML/LaTeX rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |

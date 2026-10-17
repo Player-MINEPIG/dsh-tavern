@@ -2,6 +2,8 @@
 
 [中文](REQUEST_ASSEMBLY.md)
 
+Current versions support Standard through public interfaces only. Advanced is frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, with no commitment to later DSH versions; advanced contracts below describe legacy configurations and historical records.
+
 Standard adds Preset roles first and Preset slots first. Roles first preserves authored system/user roles and orders contributions within native delivery regions. Slots first detects history/input references, adapts content before history to system and after history to user, and uses pre-step delivery around history/current input. Preview identifies role adjustments; absent references fall back to roles first. User contributions enter history and native internal order is preserved. Applying remains explicit; existing sessions are not migrated automatically. See [Assembler backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS_en.md).
 
 The standard assembler uses public DSH sections/context/pre-step on stock rc.2. Tavern normally depends on it; optional Manager supplies management and observations. The optional core addon retains the validated protocol-1 advanced backend. Both share strategies/registry/UI; legacy strategies without backend remain core. Native/play views cannot change explicit session selections, including null. New standalone sessions have no implicit strategy; new Tavern openings use standard preset slots first even with the advanced addon installed.
@@ -96,20 +98,9 @@ Uninitialized MVU state or state requiring repair returns `MVU_PREVIEW_STATE_UNA
 
 ## Core extension and installation boundary
 
-Stock DSH `0.2.1-rc.2` does not expose this seam. `scripts/prepare-request-assembly.mjs` produces a separate build from the pinned rc.2 source (both source trees are verified against SHA-256 digests in the script). It never edits the source checkout or an installed runtime and rejects other revisions.
+Current source loads Standard Assembler through public DSH `0.2.1-rc.2` interfaces and provides no core-preparation command. Advanced preparation and switching are frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, without a commitment to later versions. Use the [v1.1.0 installation guide](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION_en.md) to restore an old environment to stock before upgrading. Never copy old prepared builds into newer DSH.
 
-Current source automatically loads the standard Assembler included with Tavern; see [assembler integration](ASSEMBLER_INTEGRATION_en.md) for standalone coexistence. Standard strategies need no core preparation. Advanced strategies require the optional core addon and Host protocol 1. The preparation tool generates reviewable output, never patches core during plugin installation; any actual runtime replacement requires separate authorization.
-
-```sh
-npm ci
-npm run build
-node scripts/prepare-request-assembly.mjs /path/to/dsh-source /path/to/prepared-core
-node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-build
-```
-
-Output includes reviewable `session/src` and `agent-loop/src`, their `lib/index.js` and `lib/invariant.js` builds, source maps and `receipt.json`. Stop an isolated rc.2 runtime, back up `@deepseek-ai/dsh-session/lib` and `@deepseek-ai/dsh-agent-loop/lib`, copy the corresponding output `lib/` files into those packages, then restart. Providers need no changes. Restore both backups to roll back. The script builds runtime JS; it does not publish upstream npm packages or replace published declarations. Plugins needing declarations should incorporate the output `request-assembly.ts` and event types into a DSH source build.
-
-The Cordis waterfall `agent/assemble-request(payload,next)` receives `agent/turn/step/messages/tools/config/signal` and returns `{messages,metadata}` with JSON metadata. No listener means native passthrough. The core persists the result before freezing and sending it; the companion invariant verifies both the recorded messages and original config/tools. Capability is explicitly detected through `agentLoop.requestAssemblyVersion === 1`.
+The historical Cordis waterfall `agent/assemble-request(payload,next)` receives `agent/turn/step/messages/tools/config/signal` and returns `{messages,metadata}` with JSON metadata. No listener means native passthrough. The core persists the result before freezing and sending it; the companion invariant verifies both the recorded messages and original config/tools. Capability is explicitly detected through `agentLoop.requestAssemblyVersion === 1`.
 
 ## HTTP primitives
 

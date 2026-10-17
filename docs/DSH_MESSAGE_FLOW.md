@@ -2,6 +2,8 @@
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
+本文的进阶协议路径是冻结的 Assembler `1.1.0` / DSH `0.2.0-rc.2` 历史合同。当前目标 DSH 仅验收标准版公开扩展点，新版不提供核心改动或后续进阶适配承诺。
+
 Tavern **3.0.4** 接入独立 Assembler **v1.1.1**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
 
 本文描述 Tavern 3.0.4 在 DSH `0.2.1-rc.2` 上的当前消息合同：DSH

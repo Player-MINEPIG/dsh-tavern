@@ -6,10 +6,10 @@ import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 const project = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
-let assembler = join(project, '.local/dsh-prompt-assembler'), output = join(project, '.local/packages'), withCore = false
+let assembler = join(project, '.local/dsh-prompt-assembler'), output = join(project, '.local/packages')
 for (let i = 0; i < args.length; i++) {
-  if (args[i] === '--with-core') { withCore = true; continue }
-  if (!['--assembler', '--output'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: node scripts/pack-with-assembler.mjs [--assembler <source>] [--output <directory>] [--with-core]')
+  if (args[i] === '--with-core') throw new Error('Advanced core packaging is frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2; new versions package Standard only')
+  if (!['--assembler', '--output'].includes(args[i]) || !args[i + 1]) throw new Error('Usage: node scripts/pack-with-assembler.mjs [--assembler <source>] [--output <directory>]')
   if (args[i] === '--assembler') assembler = resolve(args[i + 1]); else output = resolve(args[i + 1])
   i++
 }
@@ -45,9 +45,8 @@ try {
   }
   if (stagedManifest.dependencies['dsh-prompt-assembler-core']) throw new Error('Tavern must not depend on the optional core extension')
   writeFileSync(join(stage, 'package.json'), JSON.stringify(stagedManifest, null, 2) + '\n')
-  const corePackages = withCore ? npm(join(assembler, 'core-extension'), ['--pack-destination', output]) : []
   const [tavernPackage] = npm(stage, ['--pack-destination', output])
-  const receipt = { sourceProtocolVersion: 1, defaultBackend: 'native', optionalCoreIncluded: withCore, installTogether: false, dshVersion: '0.2.1-rc.2', published: false, packages: [assemblyPackage, tavernPackage, ...corePackages].map(p => ({ name: p.name, version: p.version, filename: p.filename, integrity: p.integrity })) }
+  const receipt = { sourceProtocolVersion: 1, defaultBackend: 'native', optionalCoreIncluded: false, installTogether: false, dshVersion: '0.2.1-rc.2', published: false, packages: [assemblyPackage, tavernPackage].map(p => ({ name: p.name, version: p.version, filename: p.filename, integrity: p.integrity })) }
   writeFileSync(join(output, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
   console.log(JSON.stringify(receipt, null, 2))
 } finally { rmSync(stage, { recursive: true, force: true }) }

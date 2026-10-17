@@ -1,6 +1,6 @@
 # pmp-dsh-tavern
 
-独立提示词装配插件（默认标准版，进阶核心扩展可选）：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)。Tavern 默认携带并加载标准 Assembler，与独立安装共存的方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
+独立提示词装配插件（新版仅标准版；进阶冻结于 DSH 0.2.0-rc.2）：[dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler)。Tavern 默认携带并加载标准 Assembler，与独立安装共存的方式见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) 是可选的查看与管理扩展。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
 
@@ -54,7 +54,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-请使用 DSH `0.2.1-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。只需安装 Tavern 3.0.4，标准 Assembler v1.1.1 自动安装并加载；标准版通过公开接口运行，可选进阶核心扩展见接入说明：
+请使用 DSH `0.2.1-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。只需安装 Tavern 3.0.4，标准 Assembler v1.1.1 自动安装并加载；标准版通过公开接口运行，进阶扩展冻结于 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配，见接入说明：
 
 ```sh
 dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
@@ -113,7 +113,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 | 模块 | 主要能力 | 详细文档 |
 | --- | --- | --- |
 | 资源 | ST 预设、V1/V2/V3 JSON/PNG 角色卡、独立/内嵌世界书、用户资料、资源绑定与导出 | [中文使用指南](docs/USAGE_zh-CN.md) |
-| 请求装配 | Assembler v1.1.1 的策略、来源模块、标准投递与可选进阶排列；预览和已记录请求 | [请求装配](docs/REQUEST_ASSEMBLY.md) · [接入说明](docs/ASSEMBLER_INTEGRATION.md) |
+| 请求装配 | Assembler v1.1.1 的策略、来源模块、标准投递、旧进阶配置读取；预览和已记录请求 | [请求装配](docs/REQUEST_ASSEMBLY.md) · [接入说明](docs/ASSEMBLER_INTEGRATION.md) |
 | MVU 变量 | [initvar] 初始化、受限 schema、回复变量更新、分支独立状态、Trace 查看与受限卡片读写 | [MVU](docs/MVU.md) |
 | 提示词模板 | 受限只读 EJS、来源变量依赖与装配模块接入 | [提示词模板](docs/PROMPT_TEMPLATE.md) |
 | RP 前端 | 角色卡/周目侧栏、greeting、Markdown/HTML/LaTeX 渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE_zh-CN.md) |

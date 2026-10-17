@@ -2,6 +2,8 @@
 
 [中文](DSH_MESSAGE_FLOW.md)
 
+The advanced protocol path in this document is the frozen Assembler `1.1.0` / DSH `0.2.0-rc.2` historical contract. Current DSH acceptance covers Standard public extension points only; new versions provide no core changes or commitment to future advanced adaptation.
+
 Tavern **3.0.4** integrates independent Assembler **v1.1.1**. Tavern resolves resources and owns source permissions; Assembler owns strategies, rendering and placement; DSH owns sessions and provider calls. Standard strategies use public sections/context/pre-step. Only the separately installed core addon enables protocol-1 request projection. The no-strategy loader renderer is a retained compatibility path, not the default RP strategy. See [integration](ASSEMBLER_INTEGRATION_en.md) and [Host/resource contract](LOADER_CONTRACT_en.md).
 
 This page defines the current message contract for Tavern 3.0.4 on DSH

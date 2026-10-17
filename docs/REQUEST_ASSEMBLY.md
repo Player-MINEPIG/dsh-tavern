@@ -2,6 +2,8 @@
 
 [English](REQUEST_ASSEMBLY_en.md)
 
+当前版本仅支持标准版公开接口。进阶扩展冻结在 Assembler `1.1.0` / DSH `0.2.0-rc.2`，不承诺后续 DSH 适配；下文进阶合同保留用于旧配置与历史记录。
+
 标准版新增“预设身份优先”和“预设插槽优先”。前者保留预设条目的 system/user，按原生投递区域排序；后者识别历史/输入引用，将历史前内容适配为 system、历史后内容适配为 user，通过 pre-step 夹住历史或本步输入。预览逐条标注角色调整，没有引用时退回身份优先。user 贡献会进入历史；原生块内部顺序保持不变。选择策略后需显式应用，既有会话不自动迁移。详见 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS.md)。
 
 标准 assembler 通过 stock rc.2 的公开 sections/context/pre-step 接口工作，Tavern 正常依赖它；Manager 可选。可选 core addon 保留已验证的协议 1 进阶后端。两种后端共享策略、来源与 UI，旧策略缺 backend 仍为 core。明确 session 选择（含 null）不随灵珠/魔丸视图变化；独立新会话无默认，新 Tavern 开场默认标准预设插槽优先，安装 addon 不改变默认方案。
@@ -97,20 +99,9 @@ flowchart TD
 
 ## 核心扩展和安装边界
 
-官方 DSH `0.2.1-rc.2` 没有此请求装配接口。`scripts/prepare-request-assembly.mjs` 从固定 rc.2 核心源码（脚本内以两份源码树 SHA-256 校验） 生成独立核心构建；不修改源码 checkout 或任何安装目录，不适用于其他版本。
+当前源码自动加载标准 Assembler，通过 DSH `0.2.1-rc.2` 的公开接口运行，不再提供核心准备命令。进阶准备与切换工具仅适用于冻结的 Assembler `1.1.0` / DSH `0.2.0-rc.2`，不承诺后续版本适配。旧环境的安装与恢复 stock 核心见 [v1.1.0 安装文档](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION.md)。升级前先在旧环境恢复 stock，勿将旧准备产物复制到新版 DSH。
 
-当前源码自动加载随 Tavern 提供的标准 Assembler；独立安装共存方式见[assembler 接入](ASSEMBLER_INTEGRATION.md)。标准策略不要求核心准备。进阶策略需要可选 core addon 与宿主协议 1；下列工具仅生成可审阅的独立构建，不在插件安装中修改 DSH 核心。实际运行环境的核心替换需要另行授权。
-
-```sh
-npm ci
-npm run build
-node scripts/prepare-request-assembly.mjs /path/to/dsh-source /path/to/prepared-core
-node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-build
-```
-
-输出含 `session/src`、`agent-loop/src` 的可审源码、各自 `lib/index.js` 与 `lib/invariant.js`、source maps 和 `receipt.json`。在停止的隔离 DSH rc.2 测试运行时中，备份 `@deepseek-ai/dsh-session/lib` 和 `@deepseek-ai/dsh-agent-loop/lib`，将两个输出 `lib/` 中的构建文件复制到对应包后重启。只替换这两个包，Provider 包无需修改；回滚时恢复两个备份。此构建流程目前产出运行时 JS，不发布上游 npm 包或替换其声明文件。其他插件若需要类型声明，应在 DSH 源码构建中合入输出的 `request-assembly.ts` 与事件声明。
-
-新接口 `agent/assemble-request(payload,next)` 使用 Cordis waterfall；payload 含 `agent/turn/step/messages/tools/config/signal`，结果为 `{messages,metadata}`，metadata 为 JSON。无监听器时透传原生消息。核心先持久化结果再冻结、发送，配套 invariant 同时验证消息快照与原生 config/tools。`agentLoop.requestAssemblyVersion === 1` 是明确的能力探测。
+历史协议 `agent/assemble-request(payload,next)` 使用 Cordis waterfall；payload 含 `agent/turn/step/messages/tools/config/signal`，结果为 `{messages,metadata}`，metadata 为 JSON。无监听器时透传原生消息。核心先持久化结果再冻结、发送，配套 invariant 同时验证消息快照与原生 config/tools。`agentLoop.requestAssemblyVersion === 1` 是明确的能力探测。
 
 ## HTTP 原语
 

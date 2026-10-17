@@ -14,7 +14,7 @@ Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_e
 
 Updating current source automatically installs and loads standard Assembler, preferring an enabled standalone instance. Existing Tavern resources, settings, native sessions, timelines and Trace are retained; loader startup merges missing legacy strategy entries into assembler storage without rewriting the old file. Historical coordinate upgrades remain separate. Continue using DSH `0.2.1-rc.2`. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
 
-Stop the target Host and install Tavern 3.0.4 to automatically load standard Assembler v1.1.1. Standard strategies use stock core; advanced strategies require the optional addon plus protocol 1. Plugin installation never patches core:
+Stop the target Host and install Tavern 3.0.4 to automatically load standard Assembler v1.1.1. New versions support Standard on stock core only. Advanced is frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2, with no commitment to later adaptation. Plugin installation never patches core:
 
 ```sh
 dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
@@ -193,4 +193,4 @@ All common options work for uninstall too: `--profile`, `--dsh-home`,
 `--store-dir`, `--storage-dir`, and `--dry-run`. Use `--help` for the complete
 command summary.
 
-For the standard and optional core packages, see [assembler integration](ASSEMBLER_INTEGRATION_en.md). Standard user context/pre-step persist in DSH history; they are not the advanced request-only transport.
+For Standard and the historical advanced boundary, see [assembler integration](ASSEMBLER_INTEGRATION_en.md). Standard user context/pre-step persist in DSH history; they are not the advanced request-only transport.

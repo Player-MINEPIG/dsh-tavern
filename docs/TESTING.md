@@ -119,13 +119,13 @@ node --test test/play-sessions.test.mjs
 
 记录证据时注明源码版本、Node/DSH 版本、启用的检查、跳过项及可复现步骤，并区分自动测试、真实 Host、浏览器和外部联调覆盖。诊断报告与 Trace 元数据也可能包含私密标识和内容，公开问题报告前应检查并删去敏感信息。
 
-使用 `installIndependentAssembler` 的既有 Host 套件还会加载可选 core addon。将 `DSH_ASSEMBLER_CORE_EXTENSION_ROOT` 指向经验证 assembler 提交的 `core-extension` 目录，并让 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 使用配套准备后协议 1 运行时；迁移 root 可保持 stock。这些进阶夹具与下文 stock 标准后端验收分别记录；缺少 addon 或协议属于测试配置失败，不能据此推断标准策略需要准备核心。
+当前 DSH 只验收 stock 标准后端。`installIndependentAssembler` 的旧进阶 Host 套件保留作历史夹具，只有冻结的 Assembler 1.1.0 / DSH 0.2.0-rc.2 环境适用；不要将新版源码中的标准包与旧 addon 混合作为受支持配置。新版检查不设置 core 环境变量，跳过的历史进阶项不构成新版兼容承诺。
 
 ## 实际请求 Trace 与 RP 分类回归
 
 运行 `node --test test/trace-view.test.mjs test/trace-v3.test.mjs test/trace-references.test.mjs test/mvu-trace-view.test.mjs test/play-chat-model.test.mjs`。比较最新与较早 record-ID 详情，核对每条消息的原始请求顺序；验证原生坐标、requestMessageIds 与完整 system 的 contributor IDs。模块正文与完整 system 原文分别默认折叠；system 字节变化却未刷新模块证据时，不能套用旧来源。证据缺失保持明确，不用当前预览或仅返回最新请求的 `/actual` 填补历史。展开 MVU 前打开 Trace 不应读取该状态，收起或切换须释放轮询。
 
-标准后端将 `DSH_ASSEMBLER_STOCK_ROOT` 指向 stock 目标 DSH 依赖根，`DSH_ASSEMBLER_MANAGER_ROOT` 指向隔离 Manager 源码检出，再运行 `node --test test/request-assembly-native-host.test.mjs`。它以真实 Host 模块、合成 provider 和临时会话覆盖 head/in-history 更新、实际请求、冷 replay、世界书 slot 角色/顺序与卸载后继续使用。原生 runtime-context 清理消息独立存在；贡献消息顺序单独比较，完整记录仍须与 provider 请求一致。进阶协议 1 使用 `DSH_TAVERN_ASSEMBLY_CORE_ROOT` 与 `test/request-assembly-host.test.mjs`，stock 与准备后核心证据分别记录。
+标准后端将 `DSH_ASSEMBLER_STOCK_ROOT` 指向 stock 目标 DSH 依赖根，`DSH_ASSEMBLER_MANAGER_ROOT` 指向隔离 Manager 源码检出，再运行 `node --test test/request-assembly-native-host.test.mjs`。它以真实 Host 模块、合成 provider 和临时会话覆盖 head/in-history 更新、实际请求、冷 replay、世界书 slot 角色/顺序与卸载后继续使用。原生 runtime-context 清理消息独立存在；贡献消息顺序单独比较，完整记录仍须与 provider 请求一致。历史进阶协议 1 的夹具不用于当前 DSH 验收。
 
 在获授权的 Host/浏览器核对四种角色、较早请求、来源名称回退、模块/原文折叠和 MVU 按需读取。RP 分类以合成的无关缺失/损坏 timeline 与健康非根分支验证：健康 RP 视图正常加载，侧栏诊断保留；直接 owner 读取、权限和迁移错误仍应失败。不通过修复旧日志使分类测试通过。这些检查不代表原生 Windows、真实 provider 或实际第三方 memory-archive 接入验收。
 

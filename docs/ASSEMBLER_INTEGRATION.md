@@ -2,7 +2,9 @@
 
 [English](ASSEMBLER_INTEGRATION_en.md) · [装配行为](REQUEST_ASSEMBLY.md) · [独立插件仓库](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.1`（开发 lockfile 固定已审查的 Git 修订 `f78aaace9b95e814bee0c78b9af5e7a80621c4c5`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和插件配置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
+进阶扩展冻结在 Assembler `1.1.0` / DSH `0.2.0-rc.2`，不承诺适配后续 DSH。当前 Assembler `1.1.1` 与 Tavern 仅分发标准包，不包含新版核心改动。下文进阶语义仅用于读取旧配置与理解历史记录。
+
+Tavern 单向依赖 `dsh-prompt-assembler` 的 npm 精确版本 `1.1.1`（开发 lockfile 固定已审查的 Git 修订 `b87d3c1602f53441b394a5dc85e71df1426fb6bb`）。assembler 自己拥有策略存储、来源注册、请求钩子、安全 API 和插件配置入口，无 Tavern 或 Memory Manager 包依赖。`adapters/tavern`、`adapters/memory-manager` 位于 assembler 仓库，接收来源公开的只读服务；第三方可 fork 或向该仓库提 PR。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。
 
 ## 可选 Memory Manager
 
@@ -66,10 +68,10 @@ Tavern 文本使用一个 `tavern.text` 入口，依次执行受限 EJS、内容
 
 ## GitHub 的依赖表示
 
-依赖图为 Tavern→标准 assembler，addon peer 同一 assembler，Manager 可选，不需要 submodule。源码 manifest 固定 npm 版本 `1.1.1`，开发 lockfile 固定已审查修订。GitHub／Market 安装会由包管理器从 npm 下载该依赖，要求对应版本已发布；源码 manifest 不声明 `bundleDependencies`，因为 GitHub archive 没有 `node_modules`。仅预构建打包时声明该依赖已打包，并将选定标准包携带在 Tavern tgz 内；另产出的 assembler tgz 供独立使用。只安装 Tavern 即可由组合入口加载 Host 服务。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
+依赖图为 Tavern→标准 assembler，Manager 可选，不需要 submodule；冻结 addon 仅 peer 标准 1.1.0。源码 manifest 固定 npm 版本 `1.1.1`，开发 lockfile 固定已审查修订。GitHub／Market 安装会由包管理器从 npm 下载该依赖，要求对应版本已发布；源码 manifest 不声明 `bundleDependencies`，因为 GitHub archive 没有 `node_modules`。仅预构建打包时声明该依赖已打包，并将选定标准包携带在 Tavern tgz 内；另产出的 assembler tgz 供独立使用。只安装 Tavern 即可由组合入口加载 Host 服务。公开插件目录提交、tag、release 与 npm 发布是另外的操作。
 
 [接口索引](API_SURFACES.md) · [Tavern 架构图](assets/architecture/tavern.zh-CN.html) · [组合架构图](assets/architecture/ecosystem.zh-CN.html)。
 
-用 npm run pack:with-assembler 打包标准 assembler 与 Tavern；只有显式追加 -- --with-core 才额外生成进阶 addon。默认 receipt 包含携带 Assembler 的 Tavern 包和可选独立使用的标准 Assembler 包，两者不要求一起安装；标准 assembler 不含核心准备工具。addon 在准备核心后另行安装，见其[README](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/core-extension/README.md)。
+用 `npm run pack:with-assembler` 仅打包标准 Assembler 与 Tavern。`--with-core` 会被拒绝；receipt 固定 `optionalCoreIncluded:false`。Tavern 包携带标准 Assembler，独立标准包可单独安装。冻结进阶版的安装与回退见 [v1.1.0 文档](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION.md)。
 
 打包命令会先重建两个前端，并让 Tavern 内嵌面板使用本次打包的 assembler 源码（含 `--assembler` 指定的目录），避免安装包中前后端策略格式不一致。运行前需在两份源码目录安装构建依赖。

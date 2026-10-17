@@ -14,7 +14,7 @@ Tavern 3.0.4 携带标准 Assembler v1.1.1，只需安装并启用 Tavern，服�
 
 更新当前源码会自动安装并加载标准 Assembler，已启用的独立实例优先。原 Tavern 资源、设置、原生会话、timeline 与 Trace 保留；loader 启动时把旧策略存储中缺少的条目合并到 assembler，并保留旧文件。历史坐标升级另按迁移指南处理，DSH 目标为 `0.2.1-rc.2`。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
 
-停止目标 Host 后，安装 Tavern 3.0.4 即可自动加载标准 Assembler v1.1.1。标准策略走 stock core；进阶策略还需可选 addon 与协议 1。插件安装不会修改核心：
+停止目标 Host 后，安装 Tavern 3.0.4 即可自动加载标准 Assembler v1.1.1。新版仅支持 stock core 标准策略。进阶扩展冻结在 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配。插件安装不会修改核心：
 
 ```sh
 dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
@@ -131,4 +131,4 @@ node scripts/uninstall.mjs --no-backup
 
 卸载同样支持这些常用参数：`--profile`、`--dsh-home`、`--store-dir`、`--storage-dir` 和 `--dry-run`。完整命令摘要见 `--help`。
 
-标准版与可选 core 包见[assembler 接入](ASSEMBLER_INTEGRATION.md)。标准 user context/pre-step 会进入 DSH 历史，与进阶 request-only 路径不同。
+标准版及历史进阶边界见[assembler 接入](ASSEMBLER_INTEGRATION.md)。标准 user context/pre-step 会进入 DSH 历史，与进阶 request-only 路径不同。
