@@ -23,13 +23,13 @@ That Manager release was validated only on DSH `0.2.0-rc.2`; support for the cur
 Tavern 3.0.4 automatically installs and loads standard `dsh-prompt-assembler` v1.1.1 and automatically loads its Host and browser entries. The optional `dsh-prompt-assembler-core` is not a production dependency. Users only need to install Tavern:
 
 ```sh
-dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
+dsh plugin --profile web add pmp-dsh-tavern@3.0.4
 ```
 
-Prebuilt Tavern packages include standard Assembler and need no second package. The source branch is shown below; DSH GitHub/Market source installation requires Assembler `1.1.1` to be published on npm. Until then, use the prebuilt Tavern package:
+The npm and Release Tavern packages include standard Assembler and need no second package. Source installation can use the fixed tag below; GitHub/Market installs download the published Assembler `1.1.1`:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/dsh-021-compat
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.4
 ```
 
 ### Coexistence with standalone Assembler
@@ -37,7 +37,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/dsh-021-comp
 To use Assembler independently of Tavern, install it in the same profile:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#codex/dsh-021-compat
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.1
 ```
 
 The composition entry prefers an independently enabled Assembler. Either installation order runs one Host instance and one set of browser entries. Installing standalone later releases the bundled instance before handing over. Disabling or removing standalone restores the bundled instance while Tavern remains enabled. Removing Tavern leaves an independent instance running; disabling or removing both releases all assembly hooks, routes and UI entries.
@@ -46,7 +46,7 @@ Default instances share `<DSH_HOME>/dsh-prompt-assembler/`; switching, updating 
 
 Clone the assembler separately for source development and run `npm ci` and `npm run check` there. Tavern's `npm ci` uses the npm package pinned by its lockfile. To test local changes together, use `npm install --no-save --package-lock=false /path/to/assembler` in a temporary checkout, without committing the temporary path.
 
-Standard strategies execute on stock rc.2 through public sections/context/pre-step. Advanced strategies require the separately packaged core addon and a prepared protocol-1 core. Legacy strategies without a backend remain advanced and fail explicitly when capabilities are absent. Plugin installation never modifies core. See the assembler [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS_en.md).
+Standard strategies execute on stock rc.2 through public sections/context/pre-step. Advanced strategies require the separately packaged core addon and a prepared protocol-1 core. Legacy strategies without a backend remain advanced and fail explicitly when capabilities are absent. Plugin installation never modifies core. See the assembler [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.1/docs/BACKENDS_en.md).
 
 ## Tavern's integration seam
 

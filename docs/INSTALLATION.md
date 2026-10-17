@@ -17,10 +17,10 @@ Tavern 3.0.4 携带标准 Assembler v1.1.1，只需安装并启用 Tavern，服�
 停止目标 Host 后，安装 Tavern 3.0.4 即可自动加载标准 Assembler v1.1.1。新版仅支持 stock core 标准策略。进阶扩展冻结在 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配。插件安装不会修改核心：
 
 ```sh
-dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
+dsh plugin --profile web add pmp-dsh-tavern@3.0.4
 ```
 
-Market 的「已安装，重启后生效」表示软件包已登记；含配置／表达式的 bundle 需要重启加载，该提示本身不证明插件已成功启动。3.0.1 的 GitHub／Market 安装可能缺少 Assembler 并出现 `failed to import`；停止 Host 后，在同一 profile 更新到 3.0.4，再重启即可，无需卸载或删除数据。GitHub 安装需从 npm 下载固定的 Assembler `1.1.1`；该版本发布前使用已携带该依赖的预构建 Tavern 包。
+Market 的「已安装，重启后生效」表示软件包已登记；含配置／表达式的 bundle 需要重启加载，该提示本身不证明插件已成功启动。3.0.1 的 GitHub／Market 安装可能缺少 Assembler 并出现 `failed to import`；停止 Host 后，在同一 profile 更新到 3.0.4，再重启即可，无需卸载或删除数据。GitHub 安装从 npm 下载固定的 Assembler `1.1.1`；npm Tavern 包和 Release 中的预构建 tgz 已携带该依赖。
 
 可选的资源查看与管理使用 [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0)。该版本仅验证 DSH 0.2.0-rc.2，当前目标的支持需另行验证；通用资源装配要求见[接入说明](ASSEMBLER_INTEGRATION.md#可选-memory-manager)：
 
@@ -32,10 +32,10 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 <a id="source-installation"></a>
 ### 从源码安装和验收
 
-使用目标 DSH 初始化的独立测试 profile/home。`npm ci` 使用 lockfile 固定的已审查 Git 修订；下面的源码安装器仍要求精确的 Assembler npm 依赖已发布。发布前可先运行 `npm run pack:with-assembler -- --assembler /path/to/assembler`，然后安装产出的 Tavern tgz：
+使用目标 DSH 初始化的独立测试 profile/home。`npm ci` 使用 lockfile 固定的 npm 包和完整性；标准 Assembler `1.1.1` 已发布。下面的安装器构建并安装已检出的版本。需要预构建包时，运行 `npm run pack:with-assembler -- --assembler node_modules/dsh-prompt-assembler`，或下载 [v3.0.4 Release](https://github.com/Player-MINEPIG/dsh-tavern/releases/tag/v3.0.4) 的 Tavern tgz：
 
 ```sh
-git clone --branch codex/dsh-021-compat https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.0.4 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

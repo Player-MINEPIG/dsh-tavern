@@ -165,7 +165,7 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 
 ## Composition semantics
 
-Applied strategies use Assembler v1.1.1 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
+Applied strategies use Assembler v1.1.1 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.1/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
 
 ### Preset-only compatibility
 

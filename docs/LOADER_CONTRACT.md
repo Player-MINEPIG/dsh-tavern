@@ -165,7 +165,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ## Composition semantics
 
-已应用策略使用 Assembler v1.1.1 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
+已应用策略使用 Assembler v1.1.1 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.1/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
 
 ### Preset-only compatibility
 

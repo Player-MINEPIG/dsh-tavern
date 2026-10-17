@@ -141,7 +141,7 @@ Assembler 的已安装插件配置入口与 Tavern 内嵌面板共享策略库�
 
 标准“预设身份优先”在原生投递区域内保留受支持的原角色；“预设插槽优先”围绕原生历史/输入边界适配预设控制的内容，并在预览标出调整。system 贡献走官方 sections；user 贡献走 context 或接纳的 pre-step 投递，**会进入 durable history**。移除来源停止后续贡献，旧 user 正文仍属于历史。原生历史、输入和工具事务保持受保护的内部顺序。
 
-进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/codex/dsh-021-compat/docs/BACKENDS.md)。
+进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.1/docs/BACKENDS.md)。
 
 未应用策略时，兼容渲染器才把 Tavern profile 展开为 system parts。其 role/depth 近似只适用于该路径，不能用来描述当前标准或进阶策略。
 

@@ -57,7 +57,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 请使用 DSH `0.2.1-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。只需安装 Tavern 3.0.4，标准 Assembler v1.1.1 自动安装并加载；标准版通过公开接口运行，进阶扩展冻结于 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配，见接入说明：
 
 ```sh
-dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
+dsh plugin --profile web add pmp-dsh-tavern@3.0.4
 ```
 
 可选 Memory Manager v1.0.0 仅在旧 DSH 0.2.0-rc.2 上验证，当前目标的组合兼容性须另行验证；能力与通用资源装配要求见[接入说明](docs/ASSEMBLER_INTEGRATION.md#可选-memory-manager)：

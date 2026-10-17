@@ -59,7 +59,7 @@ Promo video: [Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/) (see t
 Use DSH `0.2.1-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Install only Tavern 3.0.4; standard Assembler v1.1.1 is installed and loaded automatically. Standard strategies use public interfaces; Advanced is frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2 with no commitment to later versions; see the integration guide:
 
 ```sh
-dsh plugin --profile web add /path/to/pmp-dsh-tavern-3.0.4.tgz
+dsh plugin --profile web add pmp-dsh-tavern@3.0.4
 ```
 
 Optional resource viewing and management is available through Memory Manager v1.0.0. Version 1.0.0 was validated on DSH 0.2.0-rc.2 and needs separate validation for this target; see [integration](docs/ASSEMBLER_INTEGRATION_en.md#optional-memory-manager) for its capabilities and generic resource assembly requirements:
