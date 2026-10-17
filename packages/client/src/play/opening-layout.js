@@ -13,7 +13,6 @@ const css=`
 .dtv-rp-opening-tabs{flex:none;display:flex;gap:6px}.dtv-rp-opening-header button{font:inherit;font-size:12px;padding:7px 10px;border:0;border-radius:8px;color:inherit;background:transparent;cursor:pointer;white-space:nowrap}.dtv-rp-opening-header [aria-selected=true]{background:var(--dsw-alias-interactive-bg-selected);color:var(--dsw-alias-state-business-primary)}
 .dtv-rp-opening-shell [data-conversation-scroll]{scroll-padding-bottom:calc(var(--dsh-composer-height,160px) + 12px)}
 .dtv-rp-opening-view{flex:1 0 auto;min-height:auto;min-width:0}.dtv-rp-opening-view .dtv-play-chat{height:auto;min-height:100%;overflow:visible;padding:16px max(12px,calc((100% - 1040px)/2)) 24px}.dtv-rp-opening-view .dtv-play-chat-bubble{max-width:100%;min-width:0}
-.dtv-rp-opening-view .dtv-play-greeting .dtv-play-chat-bubble:has(.dtv-interactive-card){width:100%!important}
 .dtv-rp-opening-view .dtv-play-greeting .dtv-message:has(.dtv-interactive-card){grid-template-columns:42px minmax(0,1fr)!important}
 @media(max-width:520px){.dtv-rp-opening-header{gap:6px;padding:8px 64px 8px 8px}.dtv-rp-opening-tabs{gap:2px}.dtv-rp-opening-header button{padding:7px 8px}.dtv-rp-opening-view .dtv-play-chat{padding:12px 8px 20px}}
 `

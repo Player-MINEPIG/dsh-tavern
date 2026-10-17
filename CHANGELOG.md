@@ -2,6 +2,9 @@
 
 ## 3.0.4
 
+- 开场与对话气泡默认占满现有消息栏宽度，交互卡可随窄屏收缩，避免初始内容较少限制后续动态内容。
+- Opening and conversation bubbles fill the existing message lane, with responsive card frames for later dynamic content.
+
 - 内置 MVU 与原版代码下载解耦：本地能力离线解析，保留完整 schema 核验、来源选择和原版隔离执行；旧失败缓存可恢复为内置能力，模块初始化拒绝会显示运行错误；仅在有下载内容或未完成下载时显示清除操作，并反馈清除结果。
 - Resolve built-in MVU locally without downloading upstream bundles, retaining schema confirmation, source choices and isolated original-code execution. Restore old failed caches as local capabilities and surface rejected module initialization as runtime errors. Show cache-clearing actions only for downloaded content or unfinished downloads, with completion feedback.
 

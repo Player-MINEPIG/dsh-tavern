@@ -556,7 +556,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, disable
   // Extracting scripts can leave srcDoc identical after a source edit. Give
   // that source its own iframe so onLoad recreates the disposed runtime.
   return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout),'data-dtv-card-instance':diagnosticId},
-    closed?null:h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding,runtimeRevision]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
+    closed?null:h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,openingBinding,runtimeRevision]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{display:'block',width:'100%',boxSizing:'border-box',minWidth:0,height:160,maxHeight:800,border:0,borderRadius:0,background:'transparent'}}),
     mvuReading||mvuFailure&&writesBlocked?h('p',{role:'status'},translate('appearance.mvuLoading')):null,
     mvuFailure&&!writesBlocked?h('button',{type:'button',onClick:()=>setRuntimeRevision(value=>value+1)},translate('appearance.mvuRetry')):null,
     ...(!diagnosticsOutside?[unsupportedMessage,visibleError,mvuNotice,photoError].filter(Boolean).map(message=>h(CardDiagnosticNotice,{key:message,message,cardId:diagnosticId})):[]),

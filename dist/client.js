@@ -23380,7 +23380,7 @@ function messageBubbleStyle(style, role2 = "assistant") {
     ...bubbleCss(style, role2),
     boxSizing: "border-box",
     minWidth: 0,
-    width: "fit-content",
+    width: "100%",
     maxWidth: "100%",
     overflowWrap: "anywhere",
     marginLeft: role2 === "user" ? "auto" : 0,
@@ -53215,7 +53215,7 @@ var InteractiveCard = (0, import_react26.memo)(function InteractiveCard2({ sourc
   return (0, import_react26.createElement)(
     "section",
     { className: "dtv-interactive-card", "data-dtv-viewport": String(viewportLayout), "data-dtv-card-instance": diagnosticId },
-    closed ? null : (0, import_react26.createElement)("iframe", { key: JSON.stringify([sourceFrameKey, scopeKey, enabled, trustRevision, owners, helpers, openingBinding, runtimeRevision]), ref: frame, title: translate("appearance.card"), sandbox: "allow-same-origin", referrerPolicy: "no-referrer", srcDoc, onLoad: load, style: { display: "block", width: "100%", boxSizing: "border-box", minWidth: 220, height: 160, maxHeight: 800, border: 0, borderRadius: 0, background: "transparent" } }),
+    closed ? null : (0, import_react26.createElement)("iframe", { key: JSON.stringify([sourceFrameKey, scopeKey, enabled, trustRevision, owners, helpers, openingBinding, runtimeRevision]), ref: frame, title: translate("appearance.card"), sandbox: "allow-same-origin", referrerPolicy: "no-referrer", srcDoc, onLoad: load, style: { display: "block", width: "100%", boxSizing: "border-box", minWidth: 0, height: 160, maxHeight: 800, border: 0, borderRadius: 0, background: "transparent" } }),
     mvuReading || mvuFailure && writesBlocked ? (0, import_react26.createElement)("p", { role: "status" }, translate("appearance.mvuLoading")) : null,
     mvuFailure && !writesBlocked ? (0, import_react26.createElement)("button", { type: "button", onClick: () => setRuntimeRevision((value) => value + 1) }, translate("appearance.mvuRetry")) : null,
     ...!diagnosticsOutside ? [unsupportedMessage, visibleError, mvuNotice, photoError].filter(Boolean).map((message) => (0, import_react26.createElement)(CardDiagnosticNotice, { key: message, message, cardId: diagnosticId })) : [],
@@ -56701,7 +56701,6 @@ var css11 = `
 .dtv-rp-opening-tabs{flex:none;display:flex;gap:6px}.dtv-rp-opening-header button{font:inherit;font-size:12px;padding:7px 10px;border:0;border-radius:8px;color:inherit;background:transparent;cursor:pointer;white-space:nowrap}.dtv-rp-opening-header [aria-selected=true]{background:var(--dsw-alias-interactive-bg-selected);color:var(--dsw-alias-state-business-primary)}
 .dtv-rp-opening-shell [data-conversation-scroll]{scroll-padding-bottom:calc(var(--dsh-composer-height,160px) + 12px)}
 .dtv-rp-opening-view{flex:1 0 auto;min-height:auto;min-width:0}.dtv-rp-opening-view .dtv-play-chat{height:auto;min-height:100%;overflow:visible;padding:16px max(12px,calc((100% - 1040px)/2)) 24px}.dtv-rp-opening-view .dtv-play-chat-bubble{max-width:100%;min-width:0}
-.dtv-rp-opening-view .dtv-play-greeting .dtv-play-chat-bubble:has(.dtv-interactive-card){width:100%!important}
 .dtv-rp-opening-view .dtv-play-greeting .dtv-message:has(.dtv-interactive-card){grid-template-columns:42px minmax(0,1fr)!important}
 @media(max-width:520px){.dtv-rp-opening-header{gap:6px;padding:8px 64px 8px 8px}.dtv-rp-opening-tabs{gap:2px}.dtv-rp-opening-header button{padding:7px 8px}.dtv-rp-opening-view .dtv-play-chat{padding:12px 8px 20px}}
 `;

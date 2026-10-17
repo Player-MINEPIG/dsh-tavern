@@ -41,7 +41,7 @@ In **DT → User**, upload PNG/JPEG/WebP and save the resource. The browser acce
 
 The default user image comes from the user bound to the playthrough root session. The character image uses the bound card's existing PNG endpoint, with a placeholder when absent. Names/descriptions enter prompt assembly; avatars do not.
 
-Message avatars sit beyond the composer's outer edges: character on the left, user on the right, with message bodies and actions in the center. Bubbles shrink to their content and wrap at the center column's maximum width; user bubbles and text align right. Layout follows the Host composer width variable and scopes composer side clearance through public slots to the Session displaying Tavern; leaving the Tavern view restores the Host clearance. Settings previews share the bubble layout and update action sizes from the draft; Apply and save persists the changes.
+Message avatars sit beyond the composer's outer edges: character on the left, user on the right, with message bodies and actions in the center. Opening and conversation bubbles fill the center column's available maximum width, independent of initial content length; user text remains right-aligned. Interactive card iframes shrink with their parent so later dynamic content wraps within that width. Layout follows the Host composer width variable and scopes composer side clearance through public slots to the Session displaying Tavern; leaving the Tavern view restores the Host clearance. Settings previews share the bubble layout and update action sizes from the draft; Apply and save persists the changes.
 
 Click a conversation avatar to upload a replacement for one message or every user/character avatar in this playthrough:
 
