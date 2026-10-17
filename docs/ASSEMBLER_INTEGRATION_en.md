@@ -4,7 +4,7 @@
 
 Advanced is frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, with no commitment to later DSH versions. Current Assembler `1.1.1` and Tavern distribute Standard only, without newer core changes. Advanced semantics below describe legacy configurations and historical records.
 
-Tavern depends on `dsh-prompt-assembler` at exact npm version `1.1.1` (the development lockfile pins reviewed Git revision `b87d3c1602f53441b394a5dc85e71df1426fb6bb`). The assembler owns strategy storage, source registration, the request hook, secure API and installed-plugin configuration entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
+Tavern depends on `dsh-prompt-assembler` at exact npm version `1.1.1` (the development lockfile pins reviewed Git revision `fbb32e6f838a5bc5aa3718f1db0321b089136de8`). The assembler owns strategy storage, source registration, the request hook, secure API and installed-plugin configuration entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
 
 ## Optional Memory Manager
 
@@ -56,7 +56,7 @@ The UI uses the assembler's `/dsh-prompt-assembler/api/v1/assembly-presets`, sec
 
 With only Tavern installed, its installed-package detail page owns the configuration button; an enabled standalone Assembler owns the button on its own package page.
 
-The standalone Plugins → Installed plugins → dsh-prompt-assembler → Prompt assembly entry and embedded Tavern panel share the strategy library and session binding, with no plugin priority. The last successful application determines the snapshot for future requests. Editing a draft or saving a strategy leaves the applied snapshot unchanged. Both panels use the assembler refresh event to synchronize applied status while preserving their own unsaved drafts.
+The standalone Plugins → Installed plugins → dsh-prompt-assembler → Configure current session entry and embedded Tavern panel share the strategy library and session binding, with no plugin priority. The last successful application determines the snapshot for future requests. Editing a draft or saving a strategy leaves the applied snapshot unchanged. Both panels use the assembler refresh event to synchronize applied status while preserving their own unsaved drafts.
 
 Removing Tavern unregisters its sources and read provider. The assembler entry, strategies and native DSH text remain usable. Missing source modules report diagnostics without rebuilding absent resources or rewriting native history. The Manager adapter consumes public services; native assembly does not require Manager installation.
 
