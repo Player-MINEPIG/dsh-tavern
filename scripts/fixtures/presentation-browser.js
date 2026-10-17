@@ -47,7 +47,7 @@ try{
  check('both avatars stay outside the shared body and action column',columns.every(rect=>rect.x===columns[0].x&&rect.width===columns[0].width)&&avatars[0].left>=columns[0].right&&avatars[1].right<=columns[1].left)
  check('large action buttons wrap within the center column on narrow screens',[...container.querySelectorAll('.dtv-play-turn-action')].every(el=>{const rect=el.getBoundingClientRect();return rect.left>=columns[2].left&&rect.right<=columns[2].right}))
  const shortUser=container.querySelector('.dtv-play-chat-user').getBoundingClientRect()
- check('short user bubbles fill the shared body column and retain right text alignment',Math.abs(shortUser.width-columns[0].width)<1&&Math.abs(shortUser.right-columns[0].right)<1&&getComputedStyle(container.querySelector('.dtv-play-chat-user')).textAlign==='right')
+ check('short user bubbles default to content width and retain right text alignment',shortUser.width<columns[0].width&&Math.abs(shortUser.right-columns[0].right)<1&&getComputedStyle(container.querySelector('.dtv-play-chat-user')).textAlign==='right')
  const shortAssistant=container.querySelector('.dtv-play-chat-assistant').getBoundingClientRect()
  check('short assistant bubbles fill the shared body column and retain left alignment',Math.abs(shortAssistant.width-columns[1].width)<1&&Math.abs(shortAssistant.left-columns[1].left)<1)
  flushSync(()=>root.render(React.createElement(MessageBubble,{text:'LongUnbrokenText'.repeat(80),role:'user',editable:false})))
@@ -69,6 +69,7 @@ try{
    const bubbles=[...container.querySelectorAll('.dtv-play-chat-bubble')].map(el=>el.getBoundingClientRect())
    check(`greeting and ordinary bubbles share alignment and maximum width (locked=${locked})`,bubbles.length===2&&bubbles[0].left===bubbles[1].left&&bubbles[0].width===bubbles[1].width)
    const navigation=container.querySelector('.dtv-play-greeting-navigation')
+   if(navigation)check('greeting arrow buttons center their content without generic button padding',[...navigation.querySelectorAll('button')].every(button=>getComputedStyle(button).padding==='0px'&&getComputedStyle(button).display==='grid'))
    check(`greeting navigation stays below the bubble or disappears when locked (${locked})`,locked?navigation===null:navigation.getBoundingClientRect().top>=bubbles[0].bottom)
    if(!locked)navigation.querySelectorAll('button')[1].click()
  }

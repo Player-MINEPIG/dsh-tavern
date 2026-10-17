@@ -41,7 +41,7 @@ In **DT → User**, upload PNG/JPEG/WebP and save the resource. The browser acce
 
 The default user image comes from the user bound to the playthrough root session. The character image uses the bound card's existing PNG endpoint, with a placeholder when absent. Names/descriptions enter prompt assembly; avatars do not.
 
-Message avatars sit beyond the composer's outer edges: character on the left, user on the right, with message bodies and actions in the center. Opening and conversation bubbles fill the center column's available maximum width, independent of initial content length; user text remains right-aligned. Interactive card iframes shrink with their parent so later dynamic content wraps within that width. Layout follows the Host composer width variable and scopes composer side clearance through public slots to the Session displaying Tavern; leaving the Tavern view restores the Host clearance. Settings previews share the bubble layout and update action sizes from the draft; Apply and save persists the changes.
+Message avatars sit beyond the composer's outer edges: character on the left, user on the right, with message bodies and actions in the center. Opening and assistant bubbles fill the center column's available maximum width, independent of initial content length. User bubbles default to content width with right-aligned text. Appearance settings offer independent Fit content and Fill message lane choices for each role. Interactive card iframes shrink with their parent so later dynamic content wraps within that width. Layout follows the Host composer width variable and scopes composer side clearance through public slots to the Session displaying Tavern; leaving the Tavern view restores the Host clearance. Settings previews share the bubble layout and update action sizes from the draft; Apply and save persists the changes.
 
 Click a conversation avatar to upload a replacement for one message or every user/character avatar in this playthrough:
 
@@ -78,10 +78,12 @@ Open **DT → Conversation settings**. Choose Soft, Paper or Midnight, or edit c
 {
   "format": "tavern-bubble", "version": 1, "name": "Paper",
   "radius": 4, "padding": 20, "borderWidth": 1, "font": "serif",
-  "user": {"background":"#f4ecd9","text":"#483923","border":"#d5c6a9"},
-  "assistant": {"background":"#fffaf0","text":"#40392d","border":"#ded3bd"}
+  "user": {"background":"#f4ecd9","text":"#483923","border":"#d5c6a9","widthMode":"content"},
+  "assistant": {"background":"#fffaf0","text":"#40392d","border":"#ded3bd","widthMode":"full"}
 }
 ```
+
+`user` and `assistant` each accept optional `widthMode`: `content` (fit content) or `full` (fill the message lane). Omission defaults to `content` for users and `full` for assistants, so existing v1 styles need no migration. Preview, persistence and JSON import/export share this rule. Older clients that do not recognize the field reject styles containing it as an unknown field.
 
 Name: 1–80 characters. Colors: six-digit `#RRGGBB`. Integer pixels: radius 0–32, padding 8–24, border 0–3. Font: `sans|serif|mono`. Files are limited to 16 KiB. Unknown fields, versions and invalid values fail explicitly. There are no CSS, HTML, JS, URL or privileged-code fields.
 

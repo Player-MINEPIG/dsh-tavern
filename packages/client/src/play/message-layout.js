@@ -4,7 +4,7 @@ import { bubbleCss } from '../../../presentation/bubble-style.js'
 export function messageBubbleStyle(style, role = 'assistant') {
   return {
     ...bubbleCss(style, role), boxSizing: 'border-box', minWidth: 0,
-    width: '100%', maxWidth: '100%', overflowWrap: 'anywhere',
+    maxWidth: '100%', overflowWrap: 'anywhere',
     marginLeft: role === 'user' ? 'auto' : 0,
     textAlign: role === 'user' ? 'right' : 'left',
   }

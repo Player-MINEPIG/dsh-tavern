@@ -41,7 +41,7 @@ RP 正文、开场白、显示编辑和静态 HTML 导出共用 Markdown → KaT
 
 默认用户图取自周目根 session 所绑定的用户资源；角色图使用当前绑定角色卡的现有 PNG 接口，缺图使用占位。名称/描述参与提示词装配，头像不进入提示词。
 
-消息头像位于输入栏外沿两侧：角色在左，用户在右；正文和操作按钮位于中间。开场和对话气泡默认占满中间列的可用最大宽度，不随初始内容长度收缩；用户正文仍右对齐。交互卡 iframe 随父容器收缩，后续动态内容在既有宽度内换行。布局使用 Host 的 composer 宽度变量，在显示 Tavern 的 Session 内通过公开 slot 限定 composer 两侧留白；离开 Tavern 视图后恢复 Host 默认留白。设置预览使用相同的气泡布局，按钮尺寸随草稿实时变化，点击“应用并保存”后生效。
+消息头像位于输入栏外沿两侧：角色在左，用户在右；正文和操作按钮位于中间。开场和助手气泡默认占满中间列的可用最大宽度，不随初始内容长度收缩；用户气泡默认随内容收缩，正文仍右对齐。可在外观设置中分别选择两种角色的“随内容收缩”或“占满消息栏”。交互卡 iframe 随父容器收缩，后续动态内容在既有宽度内换行。布局使用 Host 的 composer 宽度变量，在显示 Tavern 的 Session 内通过公开 slot 限定 composer 两侧留白；离开 Tavern 视图后恢复 Host 默认留白。设置预览使用相同的气泡布局，按钮尺寸随草稿实时变化，点击“应用并保存”后生效。
 
 点击对话头像可以上传替换图，选择“仅此条”或“此周目所有用户/角色头像”。优先级如下：
 
@@ -71,10 +71,12 @@ flowchart LR
 {
   "format": "tavern-bubble", "version": 1, "name": "Paper",
   "radius": 4, "padding": 20, "borderWidth": 1, "font": "serif",
-  "user": {"background":"#f4ecd9","text":"#483923","border":"#d5c6a9"},
-  "assistant": {"background":"#fffaf0","text":"#40392d","border":"#ded3bd"}
+  "user": {"background":"#f4ecd9","text":"#483923","border":"#d5c6a9","widthMode":"content"},
+  "assistant": {"background":"#fffaf0","text":"#40392d","border":"#ded3bd","widthMode":"full"}
 }
 ```
+
+`user`、`assistant` 分别支持可选 `widthMode`，取值为 `content`（随内容收缩）或 `full`（占满消息栏）。缺省时用户为 `content`、助手为 `full`，旧 v1 样式无需迁移；预览、保存及 JSON 导入导出使用同一规则。尚不认识该字段的旧客户端会按未知字段拒绝包含它的样式。
 
 名称 1–80 字符；颜色必须是六位 `#RRGGBB`；圆角 0–32、边距 8–24、边框 0–3（整数像素）；字体为 `sans|serif|mono`。文件最多 16 KiB，未知字段、版本或非法值明确拒绝。没有 CSS、HTML、JS、资源 URL 或任意代码字段。
 

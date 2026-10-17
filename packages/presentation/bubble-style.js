@@ -20,8 +20,12 @@ export function normalizeBubbleStyle(value) {
   const result = { format: 'tavern-bubble', version: 1, name: value.name.trim(), radius: number(value.radius, 0, 32, 'radius'), padding: number(value.padding, 8, 24, 'padding'), borderWidth: number(value.borderWidth, 0, 3, 'borderWidth'), font: value.font }
   if (value.fontSize !== undefined) result.fontSize = number(value.fontSize, 8, 48, 'fontSize')
   for (const key of ['user', 'assistant']) {
-    fields(value[key], ['background', 'text', 'border'])
+    fields(value[key], ['background', 'text', 'border', 'widthMode'])
     result[key] = {}
+    if (value[key].widthMode !== undefined) {
+      if (!['content', 'full'].includes(value[key].widthMode)) throw new TypeError(`${key}.widthMode: content or full`)
+      result[key].widthMode = value[key].widthMode
+    }
     for (const token of ['background', 'text', 'border']) {
       if (!/^#[a-f0-9]{6}$/i.test(value[key][token])) throw new TypeError(`${key}.${token}: use #RRGGBB`)
       result[key][token] = value[key][token]
@@ -31,5 +35,6 @@ export function normalizeBubbleStyle(value) {
 }
 export function bubbleCss(style, role = 'assistant') {
   const value = normalizeBubbleStyle(style ?? BUBBLE_STYLES[0])
-  return { ...(value.fontSize === undefined ? {} : { fontSize: value.fontSize }), background: value[role].background, color: value[role].text, border: `${value.borderWidth}px solid ${value[role].border}`, borderRadius: value.radius, padding: value.padding, fontFamily: { sans: 'system-ui, sans-serif', serif: 'Georgia, serif', mono: 'ui-monospace, monospace' }[value.font] }
+  const widthMode = value[role].widthMode ?? (role === 'user' ? 'content' : 'full')
+  return { ...(value.fontSize === undefined ? {} : { fontSize: value.fontSize }), width: widthMode === 'content' ? 'fit-content' : '100%', background: value[role].background, color: value[role].text, border: `${value.borderWidth}px solid ${value[role].border}`, borderRadius: value.radius, padding: value.padding, fontFamily: { sans: 'system-ui, sans-serif', serif: 'Georgia, serif', mono: 'ui-monospace, monospace' }[value.font] }
 }

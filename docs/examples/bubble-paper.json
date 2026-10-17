@@ -9,12 +9,14 @@
   "user": {
     "background": "#f4ecd9",
     "text": "#483923",
-    "border": "#d5c6a9"
+    "border": "#d5c6a9",
+    "widthMode": "content"
   },
   "assistant": {
     "background": "#fffaf0",
     "text": "#40392d",
-    "border": "#ded3bd"
+    "border": "#ded3bd",
+    "widthMode": "full"
   },
   "fontSize": 16
 }

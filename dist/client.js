@@ -18130,6 +18130,9 @@ var zh_CN_default = Object.freeze({
   "appearance.custom": "\u81EA\u5B9A\u4E49",
   "appearance.styleFile": "\u5BFC\u5165\u6837\u5F0F JSON",
   "appearance.editJson": "\u7F16\u8F91\u6837\u5F0F JSON\uFF08\u9AD8\u7EA7\uFF09",
+  "appearance.widthMode": "\u6C14\u6CE1\u5BBD\u5EA6",
+  "appearance.widthContent": "\u968F\u5185\u5BB9\u6536\u7F29",
+  "appearance.widthFull": "\u5360\u6EE1\u6D88\u606F\u680F",
   "appearance.preview": "\u6837\u5F0F\u9884\u89C8",
   "appearance.previewUser": "\u665A\u4E0A\u597D\uFF0C\u8FD9\u91CC\u8FD8\u6709\u7A7A\u4F4D\u5417\uFF1F",
   "appearance.previewAssistant": "\u5F53\u7136\u3002\u7089\u706B\u6B63\u6696\uFF0C\u6545\u4E8B\u624D\u521A\u5F00\u59CB\u3002",
@@ -19260,6 +19263,9 @@ var en_default = Object.freeze({
   "appearance.custom": "Custom",
   "appearance.styleFile": "Import style JSON",
   "appearance.editJson": "Edit style JSON (advanced)",
+  "appearance.widthMode": "Bubble width",
+  "appearance.widthContent": "Fit content",
+  "appearance.widthFull": "Fill message lane",
   "appearance.preview": "Style preview",
   "appearance.previewUser": "Good evening. Is this seat free?",
   "appearance.previewAssistant": "Of course. The fire is warm, and the story is just beginning.",
@@ -21470,8 +21476,12 @@ function normalizeBubbleStyle(value) {
   const result = { format: "tavern-bubble", version: 1, name: value.name.trim(), radius: number(value.radius, 0, 32, "radius"), padding: number(value.padding, 8, 24, "padding"), borderWidth: number(value.borderWidth, 0, 3, "borderWidth"), font: value.font };
   if (value.fontSize !== void 0) result.fontSize = number(value.fontSize, 8, 48, "fontSize");
   for (const key2 of ["user", "assistant"]) {
-    fields(value[key2], ["background", "text", "border"]);
+    fields(value[key2], ["background", "text", "border", "widthMode"]);
     result[key2] = {};
+    if (value[key2].widthMode !== void 0) {
+      if (!["content", "full"].includes(value[key2].widthMode)) throw new TypeError(`${key2}.widthMode: content or full`);
+      result[key2].widthMode = value[key2].widthMode;
+    }
     for (const token of ["background", "text", "border"]) {
       if (!/^#[a-f0-9]{6}$/i.test(value[key2][token])) throw new TypeError(`${key2}.${token}: use #RRGGBB`);
       result[key2][token] = value[key2][token];
@@ -21481,7 +21491,8 @@ function normalizeBubbleStyle(value) {
 }
 function bubbleCss(style, role2 = "assistant") {
   const value = normalizeBubbleStyle(style ?? BUBBLE_STYLES[0]);
-  return { ...value.fontSize === void 0 ? {} : { fontSize: value.fontSize }, background: value[role2].background, color: value[role2].text, border: `${value.borderWidth}px solid ${value[role2].border}`, borderRadius: value.radius, padding: value.padding, fontFamily: { sans: "system-ui, sans-serif", serif: "Georgia, serif", mono: "ui-monospace, monospace" }[value.font] };
+  const widthMode = value[role2].widthMode ?? (role2 === "user" ? "content" : "full");
+  return { ...value.fontSize === void 0 ? {} : { fontSize: value.fontSize }, width: widthMode === "content" ? "fit-content" : "100%", background: value[role2].background, color: value[role2].text, border: `${value.borderWidth}px solid ${value[role2].border}`, borderRadius: value.radius, padding: value.padding, fontFamily: { sans: "system-ui, sans-serif", serif: "Georgia, serif", mono: "ui-monospace, monospace" }[value.font] };
 }
 
 // packages/client/src/play/turn-actions.js
@@ -23380,7 +23391,6 @@ function messageBubbleStyle(style, role2 = "assistant") {
     ...bubbleCss(style, role2),
     boxSizing: "border-box",
     minWidth: 0,
-    width: "100%",
     maxWidth: "100%",
     overflowWrap: "anywhere",
     marginLeft: role2 === "user" ? "auto" : 0,
@@ -23496,7 +23506,18 @@ function BubbleEditor({ settings, update, busy: busy2, status, onDirty }) {
       (0, import_react5.createElement)("p", null, translate("conversationSettings.actionScale.help")),
       ...["radius", "padding", "borderWidth"].map((token) => (0, import_react5.createElement)("label", { key: token }, translate(`appearance.${token}`), `: ${preview[token]} px`, (0, import_react5.createElement)("input", { type: "range", min: token === "padding" ? 8 : 0, max: token === "radius" ? 32 : token === "padding" ? 24 : 3, value: preview[token], onChange: (event) => choose({ ...preview, [token]: Number(event.target.value) }) }))),
       (0, import_react5.createElement)("label", null, translate("appearance.font"), (0, import_react5.createElement)("select", { value: preview.font, onChange: (event) => choose({ ...preview, font: event.target.value }) }, ...["sans", "serif", "mono"].map((font) => (0, import_react5.createElement)("option", { key: font, value: font }, font)))),
-      ...["user", "assistant"].map((role2) => (0, import_react5.createElement)("fieldset", { key: role2 }, (0, import_react5.createElement)("legend", null, translate(`appearance.${role2}`)), ...["background", "text", "border"].map((token) => (0, import_react5.createElement)("label", { key: token, style: { display: "inline-flex", alignItems: "center", gap: 4, marginRight: 8 } }, translate(`appearance.${token}`), (0, import_react5.createElement)("input", { type: "color", value: preview[role2][token], onChange: (event) => choose({ ...preview, [role2]: { ...preview[role2], [token]: event.target.value } }) })))))
+      ...["user", "assistant"].map((role2) => (0, import_react5.createElement)(
+        "fieldset",
+        { key: role2 },
+        (0, import_react5.createElement)("legend", null, translate(`appearance.${role2}`)),
+        (0, import_react5.createElement)("label", null, translate("appearance.widthMode"), (0, import_react5.createElement)(
+          "select",
+          { "aria-label": translate(`appearance.${role2}`) + " " + translate("appearance.widthMode"), value: preview[role2].widthMode ?? (role2 === "user" ? "content" : "full"), onChange: (event) => choose({ ...preview, [role2]: { ...preview[role2], widthMode: event.target.value } }) },
+          (0, import_react5.createElement)("option", { value: "content" }, translate("appearance.widthContent")),
+          (0, import_react5.createElement)("option", { value: "full" }, translate("appearance.widthFull"))
+        )),
+        ...["background", "text", "border"].map((token) => (0, import_react5.createElement)("label", { key: token, style: { display: "inline-flex", alignItems: "center", gap: 4, marginRight: 8 } }, translate(`appearance.${token}`), (0, import_react5.createElement)("input", { type: "color", value: preview[role2][token], onChange: (event) => choose({ ...preview, [role2]: { ...preview[role2], [token]: event.target.value } }) })))
+      ))
     ) : null,
     (0, import_react5.createElement)("details", null, (0, import_react5.createElement)("summary", null, translate("appearance.editJson")), (0, import_react5.createElement)("textarea", { "aria-label": translate("appearance.editJson"), value: draft, onChange: (event) => setDraft(event.target.value), spellCheck: false, rows: 14, style: { width: "100%", boxSizing: "border-box", fontFamily: "monospace" } })),
     preview ? (0, import_react5.createElement)(
@@ -53956,6 +53977,7 @@ ${mathStyles("[data-dtv-rich-text]")}
 .dtv-play-greeting{width:100%;min-width:0;display:grid;gap:8px}.dtv-play-greeting-navigation{display:flex;align-items:center;justify-content:center;width:100%;gap:6px}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
+.dtv-play-greeting .dtv-play-greeting-button{padding:0;display:grid;place-items:center;line-height:1}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-message-diagnostics{margin:8px 0;display:grid;gap:6px;font-size:12px;line-height:1.5;overflow-wrap:anywhere}

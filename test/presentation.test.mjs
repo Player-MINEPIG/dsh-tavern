@@ -63,3 +63,19 @@ test('bubble body font size is portable and old v1 styles preserve legacy scalin
   assert.equal(conversationDisplayStyle({ textScale: 1.25, actionScale: 1 })['--dtv-rp-text-scale'], 1.25)
   for (const fontSize of [7, 49, 14.5, '18']) assert.throws(() => normalizeBubbleStyle({ ...style, fontSize }), /fontSize/)
 })
+
+test('bubble widths default by role and explicit choices persist in portable styles',()=>{
+ const legacy=structuredClone(BUBBLE_STYLES[0])
+ assert.equal(bubbleCss(legacy,'user').width,'fit-content')
+ assert.equal(bubbleCss(legacy,'assistant').width,'100%')
+ const style=normalizeBubbleStyle({...legacy,user:{...legacy.user,widthMode:'full'},assistant:{...legacy.assistant,widthMode:'content'}})
+ const directory=mkdtempSync(join(tmpdir(),'tavern-bubble-width-'))
+ try{
+  const store=new ConversationSettingsStore(directory);store.set({textScale:1,actionScale:1,bubbleStyle:JSON.parse(JSON.stringify(style))})
+  const restored=new ConversationSettingsStore(directory).get().bubbleStyle
+  assert.equal(bubbleCss(restored,'user').width,'100%')
+  assert.equal(bubbleCss(restored,'assistant').width,'fit-content')
+  assert.equal(restored.user.widthMode,'full');assert.equal(restored.assistant.widthMode,'content')
+ }finally{rmSync(directory,{recursive:true,force:true})}
+ for(const widthMode of ['auto','100%',null,true])assert.throws(()=>normalizeBubbleStyle({...legacy,user:{...legacy.user,widthMode}}),/widthMode/)
+})
