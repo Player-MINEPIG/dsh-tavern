@@ -2,6 +2,9 @@ import {createRenderingCache} from '../../rendering-cache/store.js'
 import {createRenderingCacheHandler,isRenderingCachePath} from '../../rendering-cache/http.js'
 import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
 import { createDraftPreviewContext } from './draft-preview-context.js'
+import { PlayMaintenanceService } from '../../play/src/maintenance.js'
+import { PlayCleanupService } from '../../play/src/cleanup.js'
+import { installMaintenanceTools } from './maintenance-tools.js'
 import { PlaythroughDrafts } from './playthrough-drafts.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
 import { createCharacterDiscovery } from '../../mvu-adapter/src/discovery.js'
@@ -584,6 +587,31 @@ export function apply(ctx, config = {}) {
     }),
     onError: error => recordFailure('playthrough.draft', error) })
   playthroughDrafts.importContexts = importContexts
+  const playMaintenance = new PlayMaintenanceService({
+    workspaceStore: playWorkspaceStore,
+    inspectSession: sessionId => playHost.inspectSession(sessionId),
+    isDraftProtected: row => {
+      const id = row.ext?.pmpDshTavern?.draftId
+      if (id === undefined) return false
+      const record = playthroughDrafts.state.records[id]
+      return !record || record.phase !== 'started' || record.claim?.published !== true
+        || playthroughDrafts.tasks.has(id) || playthroughDrafts.admissions.has(id) || playthroughDrafts.cancellations.has(id)
+    },
+  })
+  const playCleanup = new PlayCleanupService({
+    workspaceStore: playWorkspaceStore, maintenance: playMaintenance,
+    protectedPaths: ({ playthrough, sessionIds }) => [
+      ...Object.entries(importContexts.state.sessions)
+        .filter(([id]) => !sessionIds.includes(id)).map(([, binding]) => binding.path),
+      ...Object.values(playthroughDrafts.state.records)
+        .filter(record => record.id !== playthrough.id && record.rootPath === playWorkspaceStore.get().rootPath)
+        .map(record => record.importContextRef?.path).filter(Boolean),
+    ],
+  })
+  if (config.maintenanceTools === true) installMaintenanceTools(ctx, {
+    workspaceStore: playWorkspaceStore, maintenance: playMaintenance, cleanup: playCleanup,
+    operationJournal, logger: ctx.logger,
+  })
   ctx.on('session/event', (session, event) => playthroughDrafts.observe(session, event))
   // The public archive gate runs at pre-step. Publish an admitted first turn
   // before that gate evaluates; an unstarted preparation remains archived.
@@ -838,6 +866,7 @@ export function apply(ctx, config = {}) {
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
     const playApi = createPlayApiHandler({
+      maintenanceService: playMaintenance,
       drafts: playthroughDrafts,
       chromeStore,
       workspaceStore: playWorkspaceStore,
@@ -934,6 +963,8 @@ export function apply(ctx, config = {}) {
     chromeStore: { value: chromeStore, enumerable: false },
     playWorkspaceStore: { value: playWorkspaceStore, enumerable: false },
     playthroughDrafts: { value: playthroughDrafts, enumerable: false },
+    playMaintenance: { value: playMaintenance, enumerable: false },
+    playCleanup: { value: playCleanup, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
     assemblyStore: { value: assemblyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },

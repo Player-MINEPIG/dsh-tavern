@@ -205,6 +205,14 @@ export function createLivePlayClient({
       return getJsonFile('catalog.json', normalizeCatalog, 'catalog')
     },
 
+    inspectPlaythrough(playthroughId) {
+      return v2('GET', `/playthroughs/${encodeURIComponent(playthroughId)}/availability`)
+    },
+
+    archiveInvalidPlaythrough(playthroughId, { expectedWorkspaceScope } = {}) {
+      return v2('POST', `/playthroughs/${encodeURIComponent(playthroughId)}/archive-invalid`, { expectedWorkspaceScope })
+    },
+
     putCatalog(catalog) {
       return putJsonFile('catalog.json', catalog, normalizeCatalog, 'catalog')
     },

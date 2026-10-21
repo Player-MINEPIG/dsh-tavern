@@ -191,6 +191,10 @@ Choose **Archive playthrough** in a playthrough's `⋯` menu to remove it from t
 
 Archiving preserves the name, number, branches, display edits, external-record references, and session settings. Its sessions do not reappear as loose sessions in Mowan; a session shared with another active playthrough remains visible there. New runs do not reuse archived empty playthroughs and continue the existing numbering. Archived runs do not produce everyday diagnostic warnings; restoration checks them again.
 
+In diagnostics, choose **Archive invalid playthroughs** to inspect the current workspace and archive runs whose saved session references are all missing. The result reports archived, preserved, and failed counts. A surviving branch, native DSH archive, an unstarted draft, empty references, or a failed read prevents bulk archive. The archive box still restores these runs.
+
+To clean invalid runs' Tavern files, enable `maintenanceTools: true` in the plugin configuration and ask an agent to call `tavern_cleanup_invalid_playthroughs`. The default call only previews. Execution requires `clean`, explicit playthrough IDs, and the workspace returned by preview. The tool keeps the catalog row and dedicated run files in `.tavern-trash` recovery backups and returns a backupId. Use `restore` with that ID to recover them. Shared directories and files still referenced by import bindings are preserved. Backups are not deleted automatically; this does not delete DSH history or reclaim disk space. See the [API contract](API_en.md#optional-agent-cleanup-tool) for arguments and results.
+
 This organizes Tavern playthroughs only. It does not archive native DSH sessions, delete history, or reclaim disk space. Native DSH lists still expose the sessions. Older Tavern versions can read the same data but do not hide archived playthroughs.
 
 ## 8. Tavern Trace

@@ -121,6 +121,14 @@ Record the source revision, Node/DSH versions, enabled checks, skipped checks, a
 
 Current DSH acceptance covers the stock Standard backend only. Legacy advanced Host suites using `installIndependentAssembler` remain historical fixtures for the frozen Assembler 1.1.0 / DSH 0.2.0-rc.2 environment. Mixing the new standard package with the old addon is unsupported. New-version checks leave core environment variables unset; skipped historical tests imply no newer compatibility commitment.
 
+## Invalid playthrough archive and cleanup regression
+
+Run `node --test test/play-maintenance.test.mjs test/play-cleanup.test.mjs test/play-archive.test.mjs` and `node scripts/verify-play-maintenance-browser.mjs`. Temporary workspaces cover multi-run archive, all-reference absence, surviving branches, draft and empty-reference protection, read failures, CAS, workspace switching, cancellation, case aliases, shared import context, interrupted cleanup, and restore conflicts. The Chrome fixture checks real React buttons, counts, older Hosts, and response isolation after switching or unmounting.
+
+Set `DSH_TAVERN_PROMPT_COMPAT_ROOT` to the target official runtime and run `node --test test/maintenance-tools-host.test.mjs`. Real Cordis, tools, and Session controller check default-disabled behavior, opt-in, preview, clean, restore, remount, and disposal while native sessions remain unchanged. This uses temporary data and no real model calls.
+
+On an isolated target Web Host, check the diagnostics entry, batch archive, the archive box after refresh, and restoration. Check the same interaction and forwarding on the desktop Host separately. Browser fixtures and official-module tests alone do not establish official desktop application acceptance. Do not manufacture missing logs or execute cleanup against real user workspaces for acceptance.
+
 ## Recorded request Trace and RP classification regression
 
 Run `node --test test/trace-view.test.mjs test/trace-v3.test.mjs test/trace-references.test.mjs test/mvu-trace-view.test.mjs test/play-chat-model.test.mjs`. Compare latest and earlier record-ID details with every message in the original request order. Verify native coordinates, requestMessageIds and complete-system contributor IDs; keep module bodies and complete system text separately collapsed. Changed system bytes without refreshed module evidence must not receive stale attribution. Missing evidence must stay explicit; current preview and latest-only `/actual` must not fill historical requests. Opening Trace must issue no MVU reads until its section is expanded; closing or switching must release polling.

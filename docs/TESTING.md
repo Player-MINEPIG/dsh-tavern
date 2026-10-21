@@ -121,6 +121,14 @@ node --test test/play-sessions.test.mjs
 
 当前 DSH 只验收 stock 标准后端。`installIndependentAssembler` 的旧进阶 Host 套件保留作历史夹具，只有冻结的 Assembler 1.1.0 / DSH 0.2.0-rc.2 环境适用；不要将新版源码中的标准包与旧 addon 混合作为受支持配置。新版检查不设置 core 环境变量，跳过的历史进阶项不构成新版兼容承诺。
 
+## 失效周目归档与清理回归
+
+运行 `node --test test/play-maintenance.test.mjs test/play-cleanup.test.mjs test/play-archive.test.mjs` 和 `node scripts/verify-play-maintenance-browser.mjs`。临时工作区覆盖多周目归档、全部引用缺失、存活分支、草稿与空引用保护、读取错误、CAS、工作区切换、取消、大小写目录别名、共享导入上下文、清理中断与恢复冲突。Chrome 夹具验证真实 React 按钮、结果数量、旧 Host、切换和卸载后的响应隔离。
+
+设置 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 为目标官方 runtime 后运行 `node --test test/maintenance-tools-host.test.mjs`。真实 Cordis、工具与 Session controller 验证默认关闭、启用、预览、清理、恢复、重新挂载和卸载后工具释放，并对照原生会话未变。该测试只使用临时数据，不调用真实模型。
+
+在隔离目标 Web Host 中检查诊断入口、批量归档、刷新后的归档箱和恢复。桌面 Host 另检查同一交互与转发；浏览器夹具和官方模块测试不能独自建立官方桌面应用验收。不要在真实用户工作区制造缺失日志或执行清理来验收。
+
 ## 实际请求 Trace 与 RP 分类回归
 
 运行 `node --test test/trace-view.test.mjs test/trace-v3.test.mjs test/trace-references.test.mjs test/mvu-trace-view.test.mjs test/play-chat-model.test.mjs`。比较最新与较早 record-ID 详情，核对每条消息的原始请求顺序；验证原生坐标、requestMessageIds 与完整 system 的 contributor IDs。模块正文与完整 system 原文分别默认折叠；system 字节变化却未刷新模块证据时，不能套用旧来源。证据缺失保持明确，不用当前预览或仅返回最新请求的 `/actual` 填补历史。展开 MVU 前打开 Trace 不应读取该状态，收起或切换须释放轮询。

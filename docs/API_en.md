@@ -158,6 +158,8 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`. Bind or rebind an already-written workspace import-context on an empty session | Implemented |
 | DELETE | `/sessions/:id/import-context` | Unbind an empty session. Idempotent `{ binding: null }` | Implemented |
 | GET | `/playthroughs/:id/focus` | Resolve the playthrough via catalog and return `{ playthroughId, sessionId, nodeId, variantId }`. Empty playthroughs use `rootSessionId` | Implemented |
+| GET | `/playthroughs/:id/availability` | Inspect every saved session reference of the specified run. Return status, reason, sessionIds, and workspaceScope without writes | Implemented |
+| POST | `/playthroughs/:id/archive-invalid` | `{ expectedWorkspaceScope? }`. Recheck the specified run and add the archive marker only when the Host confirms every reference is missing | Implemented |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`. Rebind only that playthrough and its root/swipe/branch descendant sessions to an existing card. An explicit user choice is not limited by automatic classification | Implemented |
 | POST | `/playthroughs/:id/detach-session` | `{ sessionId }`. Remove the target session's timeline variant and descendants from that playthrough. Sibling branches, the DSH session/history, and the empty catalog playthrough remain. The server validates the tree and commits with managed-file revision/CAS | Implemented |
 | GET | `/focus?path=` | Low-level compatibility route: derive `{ sessionId }` from an explicit timeline path. The bundled frontend uses the playthrough-id route | Compatibility surface |
@@ -170,9 +172,29 @@ Path exists but method is wrong → `405 PLAY_METHOD_NOT_ALLOWED` (for example `
 
 ### Playthrough archive state
 
-The optional playthrough field `ext.pmpDshTavern.archivedAt` is a UTC ISO timestamp in `YYYY-MM-DDTHH:mm:ss.sssZ` format; absence means active. Both the server and bundled client validate it. Archive and restore use the existing `PUT /workspace/files?path=catalog.json` revision/CAS contract: add or remove this field on the selected row while preserving other rows, extensions, names, numbers, paths, and session references. The bundled client rereads and replays local intent after conflicts; repeated archive retains the original timestamp. No archive or delete route is added.
+The optional playthrough field `ext.pmpDshTavern.archivedAt` is a UTC ISO timestamp in `YYYY-MM-DDTHH:mm:ss.sssZ` format; absence means active. Both the server and bundled client validate it. Archive and restore use the existing `PUT /workspace/files?path=catalog.json` revision/CAS contract: add or remove this field on the selected row while preserving other rows, extensions, names, numbers, paths, and session references. The bundled client rereads and replays local intent after conflicts; repeated archive retains the original timestamp. Conditional archive of invalid runs uses the endpoint below. No HTTP delete endpoint is provided.
 
 Archive is list visibility, not detachment, session lifecycle, or disk cleanup. Timelines and selections remain unchanged; focus, history reads, and current turns remain usable. Sidebar ownership includes archived root, variant, head, and saved branch-head sessions so they do not become loose sessions; shared members remain visible in other active playthroughs. The archive box supports viewing and restoring. Everyday diagnostics exclude archived runs. Creation does not reuse an archived empty run but still counts its number. Older catalogs without the field behave as before; older clients ignore this visibility convention.
+
+### Availability and conditional archive
+
+`availability` returns `{ ok:true, id, status, reason?, sessionIds, workspaceScope }`. `status` is `invalid`, `available`, `empty`, `protected`, or `unavailable`. `invalid` requires at least one reference and confirmation through public `sessionController.inspect()` that every catalog root, timeline head, variant, and saved branch head is missing. Native archive, a different workspace, read failures, and corruption do not establish absence. Drafts, empty reference sets, and incomplete checks are preserved. Archived runs return `protected`.
+
+`archive-invalid` rechecks the references, current workspace, catalog and timeline revisions, and process-local leases before writing. Pass the inspection response's `workspaceScope` to prevent a workspace switch between requests from targeting the same ID elsewhere. An unmet condition still returns HTTP 200 with the current assessment. Only `status:"archived"` means this call wrote the marker. Invalid input returns `400 PLAY_MAINTENANCE_INPUT_INVALID`; CAS conflicts retain `409 PLAY_FILE_REVISION_CONFLICT`. Callers compose batches from the current catalog and recheck each original target independently. Restore through the existing archive box.
+
+### Optional agent cleanup tool
+
+Set `maintenanceTools: true` in the Tavern plugin configuration to register `tavern_cleanup_invalid_playthroughs`. It defaults to disabled and adds no required DSH service. Registration uses public `tools` and is disposed with the plugin. Card scripts cannot call this tool.
+
+| Input | Behavior |
+| --- | --- |
+| `{}` or `{ "action":"preview" }` | Inspect the current workspace without writes, including archived runs. Return `workspaceScope`, run `items`, and recovery `backups` |
+| `{ "action":"clean", "ids":["playthrough-example"], "workspaceScope":"<preview value>" }` | Recheck selected runs, remove eligible catalog rows, and move each dedicated directory to `.tavern-trash/<backupId>/files` in the current workspace |
+| `{ "action":"restore", "ids":["<backupId>"], "workspaceScope":"<preview value>" }` | Restore the original directory and merge its original row into the current catalog without overwriting existing directories or different rows with the same ID |
+
+Mutations require the preview's workspace and 1 to 100 explicit target IDs. There is no implicit clean-all action. Results are per target. `cleaned` and `restored` mean completion; other states mean preserved, recovery required, or failed. `PLAY_CLEANUP_CONFLICT` means workspace, directory ownership, or recovery locations need a fresh preview or conflict resolution.
+
+Cleanup accepts only runs whose sessions are all missing and whose timeline resides in a dedicated directory named after its `playthrough-*` ID. Shared directories, case aliases, symlinks, and files still referenced by other runs or import bindings are preserved. A durable `record.json` precedes catalog removal. Interrupted operations retain the original directory or recovery copy; restore with the backupId returned by execution or preview. Restoration retains the name, number, extensions, and archive state. Backups do not expire automatically or reclaim disk space. DSH sessions, history, selections, and global resources are never deleted.
 
 <a id="session-coordinates"></a>
 ### Query and use Session coordinate versions

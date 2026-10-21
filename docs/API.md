@@ -143,6 +143,8 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
 | GET | `/playthroughs/:id/focus` | 经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现 |
+| GET | `/playthroughs/:id/availability` | 检查指定周目的全部已保存会话引用，返回状态、原因、sessionIds 与 workspaceScope；只读 | 已实现 |
+| POST | `/playthroughs/:id/archive-invalid` | `{ expectedWorkspaceScope? }`。重新检查指定周目，仅在全部引用均被 Host 确认缺失时写入归档标记 | 已实现 |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`；只把指定周目及其 root/swipe/branch 后代 session 重新绑定到一张现存角色卡。显式用户选择不受自动归类规则限制 | 已实现 |
 | POST | `/playthroughs/:id/detach-session` | `{ sessionId }`；把目标 session 对应 timeline variant 及其后代从该周目移除，保留兄弟分支、DSH session/历史和空 catalog 周目。服务端校验树并以受管文件 revision/CAS 提交 | 已实现 |
 | GET | `/focus?path=` | 低层兼容路由：按显式 timeline path 派生 `{ sessionId }`；内置前端使用 playthrough id 路由 | 兼容面 |
@@ -155,9 +157,29 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 
 ### 周目归档状态
 
-周目 `ext.pmpDshTavern.archivedAt` 为可选 UTC ISO 时间字符串，格式为 `YYYY-MM-DDTHH:mm:ss.sssZ`；缺失表示未归档。服务端和 bundled client 均校验该字段。归档与恢复复用 `PUT /workspace/files?path=catalog.json` 及现有 revision/CAS：归档为指定条目增加字段，恢复移除字段，其他条目、扩展字段、名称、编号、路径和会话引用保持不变。内置客户端在冲突时重新读取并重放本地意图；重复归档保留原归档时间。没有新增归档或删除路由。
+周目 `ext.pmpDshTavern.archivedAt` 为可选 UTC ISO 时间字符串，格式为 `YYYY-MM-DDTHH:mm:ss.sssZ`；缺失表示未归档。服务端和 bundled client 均校验该字段。归档与恢复复用 `PUT /workspace/files?path=catalog.json` 及现有 revision/CAS：归档为指定条目增加字段，恢复移除字段，其他条目、扩展字段、名称、编号、路径和会话引用保持不变。内置客户端在冲突时重新读取并重放本地意图；重复归档保留原归档时间。失效周目的条件归档使用下文接口；不提供 HTTP 删除接口。
 
 归档是列表可见性状态，不是解绑、会话生命周期或磁盘清理操作。timeline 和 selection 不变；focus、历史读取及当前回合继续可用。侧边栏保持归档成员的归属，包括 root、variant、head 和保存的 branch head；这些成员不会变成游离会话，也不会压制其他未归档周目的共享成员。归档箱可查看或恢复，日常诊断排除归档周目，新建周目跳过已归档空周目的复用但仍计入编号。缺失该字段的旧 catalog 保持原行为；旧版客户端会忽略该显示约定。
+
+### 失效检查与条件归档
+
+`availability` 返回 `{ ok:true, id, status, reason?, sessionIds, workspaceScope }`。`status` 为 `invalid`、`available`、`empty`、`protected` 或 `unavailable`。`invalid` 要求至少一个引用，且 catalog root、timeline head、全部 variant 与保存的 branch head 都经公开 `sessionController.inspect()` 确认不存在。原生归档、移出工作区、读取失败和损坏均不是缺失证据。草稿、空引用和无法完整检查的记录保留；已归档记录返回 `protected`。
+
+`archive-invalid` 执行前重新检查，并核对工作区、catalog 和 timeline 的当前 revision 与进程内租约。传入检查响应的 `workspaceScope` 可避免跨请求切换工作区后操作同名 ID。条件未满足时仍返回 HTTP 200 与当前检查状态；只有 `status:"archived"` 表示本次写入。请求格式错误返回 `400 PLAY_MAINTENANCE_INPUT_INVALID`，CAS 冲突沿用 `409 PLAY_FILE_REVISION_CONFLICT`。调用方按当前 catalog 组合批量操作，每个目标独立重新检查，不扩大原始目标集合。归档后从原有归档箱恢复。
+
+### 可选 agent 清理工具
+
+在 Tavern 插件配置中设置 `maintenanceTools: true`，Host 才注册 `tavern_cleanup_invalid_playthroughs`。默认关闭，不增加必需的 DSH 服务。启用后通过公开 `tools` 注册，随插件卸载释放。工具不开放给卡片脚本。
+
+| 输入 | 行为 |
+| --- | --- |
+| `{}` 或 `{ "action":"preview" }` | 只读检查当前工作区，包含已归档记录；返回 `workspaceScope`、周目 `items` 和回收记录 `backups` |
+| `{ "action":"clean", "ids":["playthrough-example"], "workspaceScope":"<preview value>" }` | 重新检查所选周目；移除合格 catalog 条目，将专属周目目录移到当前工作区的 `.tavern-trash/<backupId>/files` |
+| `{ "action":"restore", "ids":["<backupId>"], "workspaceScope":"<preview value>" }` | 恢复原目录，并将原条目合并回当前 catalog；不覆盖已存在的目录或不同的同 ID 条目 |
+
+执行动作必须指定预览的工作区和 1 至 100 个目标 ID，不接受隐含的“全部清理”。工具按目标返回结果；`cleaned` 和 `restored` 表示完成，其他状态表示保留、恢复待处理或失败。`PLAY_CLEANUP_CONFLICT` 表示工作区、目录归属或恢复位置不再安全，需要重新预览或处理冲突。
+
+清理只接受全部会话缺失、且 timeline 位于同名 `playthrough-*` 专属目录的周目。共享目录、大小写别名、符号链接、其他周目或导入绑定仍引用的文件均保留。备份记录 `record.json` 先于 catalog 移除持久化；操作中断时保留原目录或回收副本，使用返回或预览中的 backupId 恢复。恢复保留原名称、编号、扩展字段和归档状态。备份不自动过期，也不释放磁盘空间。DSH 会话、历史、selection 与全局资源均不删除。
 
 <a id="session-coordinates"></a>
 ### 会话坐标版本查询与使用

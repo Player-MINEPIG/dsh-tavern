@@ -1,4 +1,10 @@
 export default Object.freeze({
+  "diagnostics.archiveInvalid": "Archive invalid playthroughs",
+  "diagnostics.logsOperation.playthrough.archive-invalid": "Archive an invalid playthrough",
+  "diagnostics.archiveInvalidBusy": "Checking and archiving…",
+  "diagnostics.archiveInvalidHint": "Archive playthroughs only when every referenced DSH session is confirmed missing. Empty drafts and uncertain results are preserved. Restore them from the archive list.",
+  "diagnostics.archiveInvalidResult": "Archived {archived}; preserved {preserved}; failed {failed}.",
+  "diagnostics.archiveInvalidFailed": "Could not complete the check. Refresh and try again.",
   "play.draft.sendFailed": "Could not send: {message}",
   "play.draft.bind": "Apply to this opening playthrough",
   "play.draft.unbind": "Clear this opening selection",

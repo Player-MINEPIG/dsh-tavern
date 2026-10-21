@@ -13,7 +13,7 @@ export function isPlayApiPath(url) {
 
 export function createPlayApiHandler({
   chromeStore, workspaceStore, host, validateFile = validatePlayDocument, now,
-  logger, operationOptions, operationJournal, membershipService, resolveCharacter, relinkPlaythrough, drafts,
+  logger, operationOptions, operationJournal, membershipService, maintenanceService, resolveCharacter, relinkPlaythrough, drafts,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
@@ -67,6 +67,22 @@ export function createPlayApiHandler({
   })
   route('/focus', sessionApi !== null, { GET: quiet(({ req, res, searchParams }) => sessionApi.focus(req, res, searchParams)) })
   route('/playthroughs/:id/focus', sessionApi !== null, { GET: quiet(({ req, res, id }) => sessionApi.playthroughFocus(req, res, id)) })
+  route('/playthroughs/:id/availability', maintenanceService !== undefined, {
+    GET: quiet(async ({ id, res }) => sendJson(res, 200, { ok: true, ...await maintenanceService.inspect(safeDecodeId(id, 'playthrough id')) })),
+  })
+  route('/playthroughs/:id/archive-invalid', maintenanceService !== undefined, {
+    POST: mutation('playthrough.archive-invalid', async ({ id, req, res, operation }) => {
+      const playthroughId = safeDecodeId(id, 'playthrough id')
+      operation.identify({ playthroughId })
+      const body = await readBoundedJson(req, 1024)
+      if (body === null || typeof body !== 'object' || Array.isArray(body)
+        || Object.keys(body).some(key => key !== 'expectedWorkspaceScope')
+        || (body.expectedWorkspaceScope !== undefined && typeof body.expectedWorkspaceScope !== 'string')) {
+        throw httpError(400, 'archive-invalid accepts only an optional expectedWorkspaceScope string', 'PLAY_MAINTENANCE_INPUT_INVALID')
+      }
+      return sendJson(res, 200, { ok: true, ...await maintenanceService.archiveInvalid(playthroughId, { operation, expectedWorkspaceScope: body.expectedWorkspaceScope }) })
+    }),
+  })
   route('/playthroughs/:id/relink-character', typeof resolveCharacter === 'function' && typeof relinkPlaythrough === 'function', {
     POST: mutation('playthrough.character.relink', async ({ req, res, id, operation }) => {
       const playthroughId = safeDecodeId(id, 'playthrough id')

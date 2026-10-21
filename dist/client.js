@@ -17941,6 +17941,12 @@ function isSupportedUiLocale(value) {
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
+  "diagnostics.archiveInvalid": "\u4E00\u952E\u5F52\u6863\u5931\u6548\u5468\u76EE",
+  "diagnostics.logsOperation.playthrough.archive-invalid": "\u4E00\u952E\u5F52\u6863\u5931\u6548\u5468\u76EE",
+  "diagnostics.archiveInvalidBusy": "\u6B63\u5728\u68C0\u67E5\u5E76\u5F52\u6863\u2026",
+  "diagnostics.archiveInvalidHint": "\u4EC5\u5F53\u5468\u76EE\u5F15\u7528\u7684\u5168\u90E8 DSH \u4F1A\u8BDD\u5747\u786E\u8BA4\u4E0D\u5B58\u5728\u65F6\u5F52\u6863\u3002\u7A7A\u8349\u7A3F\u548C\u65E0\u6CD5\u786E\u5B9A\u7684\u7ED3\u679C\u4F1A\u4FDD\u7559\uFF0C\u53EF\u5728\u5F52\u6863\u7BB1\u6062\u590D\u3002",
+  "diagnostics.archiveInvalidResult": "\u5DF2\u5F52\u6863 {archived}\uFF0C\u5DF2\u4FDD\u7559 {preserved}\uFF0C\u5931\u8D25 {failed}\u3002",
+  "diagnostics.archiveInvalidFailed": "\u672A\u80FD\u5B8C\u6210\u68C0\u67E5\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u3002",
   "play.draft.sendFailed": "\u53D1\u9001\u5931\u8D25\uFF1A{message}",
   "play.draft.bind": "\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u5468\u76EE",
   "play.draft.unbind": "\u89E3\u9664\u5F53\u524D\u5F00\u573A\u9009\u62E9",
@@ -19074,6 +19080,12 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
+  "diagnostics.archiveInvalid": "Archive invalid playthroughs",
+  "diagnostics.logsOperation.playthrough.archive-invalid": "Archive an invalid playthrough",
+  "diagnostics.archiveInvalidBusy": "Checking and archiving\u2026",
+  "diagnostics.archiveInvalidHint": "Archive playthroughs only when every referenced DSH session is confirmed missing. Empty drafts and uncertain results are preserved. Restore them from the archive list.",
+  "diagnostics.archiveInvalidResult": "Archived {archived}; preserved {preserved}; failed {failed}.",
+  "diagnostics.archiveInvalidFailed": "Could not complete the check. Refresh and try again.",
   "play.draft.sendFailed": "Could not send: {message}",
   "play.draft.bind": "Apply to this opening playthrough",
   "play.draft.unbind": "Clear this opening selection",
@@ -21776,6 +21788,19 @@ async function recoverCompletedSwipe(client, pending2) {
 // packages/play/src/playthrough-state.js
 function isPlaythroughArchived(playthrough) {
   return typeof playthrough?.ext?.pmpDshTavern?.archivedAt === "string";
+}
+function withPlaythroughArchive(playthrough, archivedAt) {
+  if (isPlaythroughArchived(playthrough) === (archivedAt !== null)) return playthrough;
+  const known = { ...playthrough.ext?.pmpDshTavern };
+  if (archivedAt === null) delete known.archivedAt;
+  else known.archivedAt = archivedAt;
+  const ext = { ...playthrough.ext };
+  if (Object.keys(known).length === 0) delete ext.pmpDshTavern;
+  else ext.pmpDshTavern = known;
+  const updated = { ...playthrough };
+  if (Object.keys(ext).length === 0) delete updated.ext;
+  else updated.ext = ext;
+  return updated;
 }
 function isArchiveTimestamp(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
@@ -55042,7 +55067,8 @@ var operations = /* @__PURE__ */ new Set([
   "plugin.start",
   "plugin.stop",
   "rp.policy",
-  "trace.record"
+  "trace.record",
+  "playthrough.archive-invalid"
 ]);
 var checkpoints = /* @__PURE__ */ new Set([
   "session.created",
@@ -55087,6 +55113,37 @@ function operationLocator(row) {
   if (row.runId !== void 0) locator.pluginInstanceId = row.runId;
   if (row.sessionId) locator.traceIndexApiPath = `${API_V3}/sessions/${encodeURIComponent(row.sessionId)}/assemblies`;
   return JSON.stringify(locator, null, 2);
+}
+
+// packages/client/src/play/maintenance.js
+async function archiveInvalidPlaythroughs(client, { isCurrent = () => true } = {}) {
+  const workspace = await client.getWorkspace();
+  const expectedWorkspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  const catalog2 = await client.getCatalog();
+  const report = { archived: 0, preserved: 0, failed: 0 };
+  const candidates = [];
+  for (const row of catalog2.playthroughs.filter((row2) => !isPlaythroughArchived(row2))) {
+    if (!isCurrent()) return null;
+    try {
+      const inspection = await client.inspectPlaythrough(row.id);
+      if (inspection.workspaceScope !== expectedWorkspaceScope) return null;
+      if (inspection.status === "invalid") candidates.push(row.id);
+      else report.preserved++;
+    } catch {
+      report.failed++;
+    }
+  }
+  for (const id of candidates) {
+    if (!isCurrent()) return null;
+    try {
+      const result = await client.archiveInvalidPlaythrough(id, { expectedWorkspaceScope });
+      if (result.status === "archived") report.archived++;
+      else report.preserved++;
+    } catch {
+      report.failed++;
+    }
+  }
+  return isCurrent() ? report : null;
 }
 
 // packages/client/src/play/diagnostics.js
@@ -55143,6 +55200,8 @@ function explanation(issue) {
 function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroughId = null, showAll, close: close2 }) {
   const snapshot = (0, import_react32.useSyncExternalStore)(controller2.subscribe, controller2.getSnapshot);
   const [copyStatus, setCopyStatus] = (0, import_react32.useState)(null);
+  const workspace = (0, import_react32.useRef)(null);
+  if (snapshot.resources?.workspace) workspace.current = snapshot.resources.workspace;
   const issues = playthroughId === null ? snapshot.issues : snapshot.issues.filter((issue) => issue.kind === "workspace" || issue.playthroughId === playthroughId);
   const copy2 = async (selected) => {
     try {
@@ -55164,6 +55223,7 @@ function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroug
     h27(
       "div",
       { className: "dtv-body" },
+      h27(InvalidPlaythroughArchive, { client, controller: controller2, workspace: workspace.current }),
       h27(OperationLogsPanel, { client }),
       h27("p", { className: "dtv-note" }, uiMessage("diagnostics.scope")),
       snapshot.resources?.workspace?.rootPath ? h27("p", { className: "dtv-note" }, rawText(snapshot.resources.workspace.rootPath)) : null,
@@ -55198,6 +55258,54 @@ function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroug
         );
       })
     )
+  );
+}
+function InvalidPlaythroughArchive({ client, controller: controller2, workspace }) {
+  const [busy2, setBusy] = (0, import_react32.useState)(false);
+  const [report, setReport] = (0, import_react32.useState)(null);
+  const [failed, setFailed] = (0, import_react32.useState)(false);
+  const generation = (0, import_react32.useRef)(0);
+  const scope = workspaceDiagnosticScope(workspace);
+  (0, import_react32.useEffect)(() => {
+    generation.current++;
+    setBusy(false);
+    setReport(null);
+    setFailed(false);
+    return () => {
+      generation.current++;
+    };
+  }, [client, scope]);
+  const archive = async () => {
+    const request2 = ++generation.current;
+    const isCurrent = () => generation.current === request2;
+    setBusy(true);
+    setReport(null);
+    setFailed(false);
+    try {
+      const result = await archiveInvalidPlaythroughs(client, { isCurrent });
+      if (!isCurrent()) return;
+      if (result === null) setFailed(true);
+      else setReport(result);
+      await controller2.refresh();
+    } catch {
+      if (isCurrent()) setFailed(true);
+    } finally {
+      if (isCurrent()) setBusy(false);
+    }
+  };
+  if (!client?.inspectPlaythrough || !client?.archiveInvalidPlaythrough) return null;
+  return h27(
+    "div",
+    { className: "dtv-diagnostic-card" },
+    h27("p", null, uiMessage("diagnostics.archiveInvalidHint")),
+    h27("button", {
+      type: "button",
+      className: "dtv-button",
+      disabled: busy2 || workspace?.selected !== true,
+      onClick: archive
+    }, uiMessage(busy2 ? "diagnostics.archiveInvalidBusy" : "diagnostics.archiveInvalid")),
+    report ? h27("p", { role: "status" }, uiMessage("diagnostics.archiveInvalidResult", report)) : null,
+    failed ? h27("p", { role: "status" }, uiMessage("diagnostics.archiveInvalidFailed")) : null
   );
 }
 function OperationLogsPanel({ client }) {
@@ -55598,16 +55706,8 @@ async function setPlaythroughArchived(client, playthrough, archived, { now = () 
     const index = current4.playthroughs.findIndex((item) => item.id === playthrough.id && item.path === playthrough.path);
     if (index < 0) throw new Error("play.archive.missing");
     const fresh = current4.playthroughs[index];
-    if (isPlaythroughArchived(fresh) === archived) return current4;
-    const known = { ...fresh.ext?.pmpDshTavern };
-    if (archived) known.archivedAt = archivedAt;
-    else delete known.archivedAt;
-    const ext = { ...fresh.ext };
-    if (Object.keys(known).length === 0) delete ext.pmpDshTavern;
-    else ext.pmpDshTavern = known;
-    const updated = { ...fresh };
-    if (Object.keys(ext).length === 0) delete updated.ext;
-    else updated.ext = ext;
+    const updated = withPlaythroughArchive(fresh, archivedAt);
+    if (updated === fresh) return current4;
     const playthroughs = [...current4.playthroughs];
     playthroughs[index] = updated;
     return { ...current4, playthroughs };
@@ -57801,6 +57901,12 @@ function createLivePlayClient({
     },
     getCatalog() {
       return getJsonFile("catalog.json", normalizeCatalog, "catalog");
+    },
+    inspectPlaythrough(playthroughId) {
+      return v2("GET", `/playthroughs/${encodeURIComponent(playthroughId)}/availability`);
+    },
+    archiveInvalidPlaythrough(playthroughId, { expectedWorkspaceScope } = {}) {
+      return v2("POST", `/playthroughs/${encodeURIComponent(playthroughId)}/archive-invalid`, { expectedWorkspaceScope });
     },
     putCatalog(catalog2) {
       return putJsonFile("catalog.json", catalog2, normalizeCatalog, "catalog");
