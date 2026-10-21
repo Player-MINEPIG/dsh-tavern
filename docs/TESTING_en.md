@@ -123,7 +123,7 @@ Current DSH acceptance covers the stock Standard backend only. Legacy advanced H
 
 ## Invalid playthrough archive and cleanup regression
 
-Run `node --test test/play-maintenance.test.mjs test/play-cleanup.test.mjs test/play-archive.test.mjs` and `node scripts/verify-play-maintenance-browser.mjs`. Temporary workspaces cover multi-run archive, all-reference absence, surviving branches, draft and empty-reference protection, read failures, CAS, workspace switching, cancellation, case aliases, shared import context, interrupted cleanup, and restore conflicts. The Chrome fixture checks real React buttons, counts, older Hosts, and response isolation after switching or unmounting.
+Run `node --test test/play-maintenance.test.mjs test/play-cleanup.test.mjs test/play-archive.test.mjs` and `node scripts/verify-play-maintenance-browser.mjs`. Temporary workspaces cover archive of multiple diagnostic failures, including corruption, missing data, and read failures, while preserving healthy runs and drafts, CAS, and workspace identity. Cleanup separately covers strict all-reference absence, surviving branches, empty references, cancellation, case aliases, shared import context, interrupted cleanup, and restore conflicts. The Chrome fixture checks real React buttons, counts, older Hosts, and response isolation after switching or unmounting.
 
 Set `DSH_TAVERN_PROMPT_COMPAT_ROOT` to the target official runtime and run `node --test test/maintenance-tools-host.test.mjs`. Real Cordis, tools, and Session controller check default-disabled behavior, opt-in, preview, clean, restore, remount, and disposal while native sessions remain unchanged. This uses temporary data and no real model calls.
 

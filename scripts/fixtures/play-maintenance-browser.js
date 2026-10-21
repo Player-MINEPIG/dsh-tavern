@@ -9,55 +9,77 @@ const check = (name, condition) => results.push({ name, pass: Boolean(condition)
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
 const workspace = { selected: true, workspaceId: 'workspace', rootPath: '/fixture' }
 const workspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath])
-const rows = ['first', 'second', 'empty', 'surviving', 'unknown', 'failed', 'archived'].map(id => ({ id, ...(id === 'archived' ? { ext: { pmpDshTavern: { archivedAt: '2026-10-21T00:00:00.000Z' } } } : {}) }))
+const rows = ['corrupt', 'unreadable', 'moved', 'no-session', 'healthy', 'draft'].map(id => ({ id, path: `card/${id}/timeline.json`, ext: { pmpDshTavern: id === 'draft' ? { draftId: id } : {} } }))
+
+function fixture() {
+  let catalog = { playthroughs: structuredClone(rows), ext: { thirdParty: 'keep' } }
+  const state = { refreshes: 0, writes: 0, inspections: 0 }
+  const snapshot = () => ({ availabilityReady: true, resources: { workspace, catalog }, issues: catalog.playthroughs.filter(row => ['corrupt', 'unreadable', 'moved', 'no-session'].includes(row.id) && !row.ext.pmpDshTavern.archivedAt).map(playthrough => ({ kind: 'timeline', playthrough })) })
+  const controller = { async refresh() { state.refreshes++ }, getSnapshot: snapshot }
+  const client = {
+    getWorkspace: async () => workspace,
+    async updateCatalog(mutator, options) {
+      check('catalog write carries the starting workspace identity', options.expectedWorkspaceScope === workspaceScope)
+      catalog = await mutator(catalog)
+      state.writes++
+      return catalog
+    },
+    inspectPlaythrough() { state.inspections++; throw new Error('Strict cleanup inspection must not run for archive') },
+  }
+  return { client, controller, state, catalog: () => catalog }
+}
 
 async function run() {
   setClientUiSettings({ locale: 'en' })
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host)
-  let refreshed = 0
-  const controller = { async refresh() { refreshed++ } }
-  const inspections = [], archived = []
-  const client = {
-    getWorkspace: async () => workspace,
-    getCatalog: async () => ({ playthroughs: rows }),
-    async inspectPlaythrough(id) {
-      inspections.push(id)
-      if (id === 'failed') throw new Error('lookup failed')
-      return { id, status: ['first', 'second'].includes(id) ? 'invalid' : id === 'empty' ? 'empty' : id === 'surviving' ? 'available' : 'unavailable', workspaceScope }
-    },
-    async archiveInvalidPlaythrough(id, options) { archived.push({ id, options }); return { id, status: 'archived', workspaceScope } },
-  }
-  const mount = (value = client, binding = workspace) => flushSync(() => root.render(createElement(InvalidPlaythroughArchive, { client: value, controller, workspace: binding })))
+  let f = fixture()
+  const mount = (value = f, binding = workspace) => flushSync(() => root.render(createElement(InvalidPlaythroughArchive, { client: value.client, controller: value.controller, workspace: binding, availabilityReady: value.controller.getSnapshot().availabilityReady })))
   const click = async () => { await act(async () => { host.querySelector('button').click(); await tick() }) }
   mount(); await tick()
-  check('opening diagnostics does not inspect or mutate any playthrough', inspections.length === 0 && archived.length === 0)
+  check('opening diagnostics does not inspect or mutate any playthrough', f.state.refreshes === 0 && f.state.writes === 0)
   await click()
-  check('one click archives multiple confirmed invalid playthroughs in exact preview order', archived.map(row => row.id).join(',') === 'first,second')
-  check('each archive is bound to the inspected workspace', archived.every(row => row.options.expectedWorkspaceScope === workspaceScope))
-  check('empty, surviving, uncertain and failed rows are reported and retained', host.textContent.includes('Archived 2; preserved 3; failed 1.') && !inspections.includes('archived'))
-  check('archive completion refreshes sidebar resources once', refreshed === 1)
-  check('archive keeps the diagnostics action usable', !host.querySelector('button').disabled)
-  setClientUiSettings({ locale: 'zh-CN' }); mount({ ...client }); await tick(); await click()
-  check('Chinese action and counts are translated', host.textContent.includes('一键归档失效周目') && host.textContent.includes('已归档 2，已保留 3，失败 1'))
+  check('one click archives corrupt, unreadable, moved and unavailable-session diagnostics in one catalog commit', f.catalog().playthroughs.filter(row => row.ext.pmpDshTavern.archivedAt).map(row => row.id).join(',') === 'corrupt,unreadable,moved,no-session' && f.state.writes === 1)
+  check('archive uses diagnostics without strict cleanup inspection', f.state.inspections === 0)
+  check('healthy run and healthy opening draft remain visible', f.catalog().playthroughs.filter(row => !row.ext.pmpDshTavern.archivedAt).map(row => row.id).join(',') === 'healthy,draft')
+  check('archive reports counts and keeps the action usable', host.textContent.includes('Archived 4; preserved 2; failed 0.') && !host.querySelector('button').disabled)
+  check('archive refreshes diagnostics before selecting targets and after writing', f.state.refreshes === 2)
+  check('archive retains catalog extension metadata', f.catalog().ext.thirdParty === 'keep')
+  f = fixture(); setClientUiSettings({ locale: 'zh-CN' }); mount(); await tick(); await click()
+  check('Chinese action and counts are translated', host.textContent.includes('一键归档失效周目') && host.textContent.includes('已归档 4，已保留 2，失败 0'))
   setClientUiSettings({ locale: 'en' })
+  for (const phase of ['pending', 'error']) {
+    f = fixture()
+    const ready = f.controller.getSnapshot
+    f.controller.getSnapshot = () => ({ ...ready(), availabilityReady: false })
+    mount(); await tick()
+    check(`archive action is disabled while mirror status is ${phase}`, host.querySelector('button').disabled && !host.textContent.includes('Archived 0'))
+    f.controller.getSnapshot = ready
+    mount(); await tick()
+    check(`archive action enables after ${phase} mirror becomes ready`, !host.querySelector('button').disabled)
+  }
   let finish
-  const obsolete = { ...client, getCatalog: async () => ({ playthroughs: [rows[0]] }), inspectPlaythrough: () => new Promise(resolve => { finish = resolve }) }
-  const count = archived.length
-  mount(obsolete); await tick(); await click()
-  check('pending check disables repeat clicks', host.querySelector('button').disabled)
-  mount(obsolete, { ...workspace, rootPath: '/other' }); await tick()
-  await act(async () => { finish({ status: 'invalid', workspaceScope }); await tick() })
-  check('workspace switch discards old check and does not archive old IDs', archived.length === count && !host.textContent.includes('Archived 1'))
-  mount({ ...client, inspectPlaythrough: async () => ({ status: 'invalid', workspaceScope: 'different' }) }); await tick(); await click()
-  check('server workspace changes stop the caller before mutation', archived.length === count && host.textContent.includes('Could not complete the check'))
-  mount({ ...client, getCatalog: async () => { throw new Error('old host') } }); await tick(); await click()
-  check('unavailable Host leaves an actionable retry and no successful result', host.textContent.includes('Could not complete the check') && !host.querySelector('button').disabled)
-  mount(obsolete); await tick(); await click()
-  const beforeUnmount = refreshed
+  f = fixture()
+  f.controller.refresh = () => new Promise(resolve => { finish = resolve })
+  mount(); await tick(); await click()
+  check('pending diagnostics refresh disables repeat clicks', host.querySelector('button').disabled)
+  mount(f, { ...workspace, rootPath: '/other' }); await tick()
+  await act(async () => { finish(); await tick() })
+  check('workspace switch discards old diagnostics and does not archive old IDs', f.state.writes === 0 && !host.textContent.includes('Archived 4'))
+  f = fixture()
+  f.controller.getSnapshot = () => ({ availabilityReady: true, resources: null, error: { code: 'PLAY_WORKSPACE_READ_FAILED' }, issues: [{ kind: 'workspace' }] })
+  mount(); await tick(); await click()
+  check('unknown workspace failure refuses archive and explains retry', f.state.writes === 0 && host.textContent.includes('Could not complete the check'))
+  f = fixture()
+  f.controller.getSnapshot = () => ({ ...fixture().controller.getSnapshot(), resources: { workspace: { ...workspace, rootPath: '/other' } } })
+  mount(); await tick(); await click()
+  check('workspace change during refreshed diagnostics prevents any catalog write', f.state.writes === 0)
+  f = fixture()
+  f.controller.refresh = () => new Promise(resolve => { finish = resolve })
+  mount(); await tick(); await click()
   flushSync(() => root.unmount())
-  await act(async () => { finish({ status: 'invalid', workspaceScope }); await tick() })
-  check('unmount discards old completion without archiving or refreshing', archived.length === count && refreshed === beforeUnmount)
+  await act(async () => { finish(); await tick() })
+  check('unmount discards pending diagnostics without archiving', f.state.writes === 0)
 }
 run().catch(error => check(`runtime error: ${error.stack}`, false)).finally(() => {
   const output = document.createElement('pre'); output.id = 'results'; output.textContent = JSON.stringify(results); document.body.append(output)

@@ -70,19 +70,6 @@ export function createPlayApiHandler({
   route('/playthroughs/:id/availability', maintenanceService !== undefined, {
     GET: quiet(async ({ id, res }) => sendJson(res, 200, { ok: true, ...await maintenanceService.inspect(safeDecodeId(id, 'playthrough id')) })),
   })
-  route('/playthroughs/:id/archive-invalid', maintenanceService !== undefined, {
-    POST: mutation('playthrough.archive-invalid', async ({ id, req, res, operation }) => {
-      const playthroughId = safeDecodeId(id, 'playthrough id')
-      operation.identify({ playthroughId })
-      const body = await readBoundedJson(req, 1024)
-      if (body === null || typeof body !== 'object' || Array.isArray(body)
-        || Object.keys(body).some(key => key !== 'expectedWorkspaceScope')
-        || (body.expectedWorkspaceScope !== undefined && typeof body.expectedWorkspaceScope !== 'string')) {
-        throw httpError(400, 'archive-invalid accepts only an optional expectedWorkspaceScope string', 'PLAY_MAINTENANCE_INPUT_INVALID')
-      }
-      return sendJson(res, 200, { ok: true, ...await maintenanceService.archiveInvalid(playthroughId, { operation, expectedWorkspaceScope: body.expectedWorkspaceScope }) })
-    }),
-  })
   route('/playthroughs/:id/relink-character', typeof resolveCharacter === 'function' && typeof relinkPlaythrough === 'function', {
     POST: mutation('playthrough.character.relink', async ({ req, res, id, operation }) => {
       const playthroughId = safeDecodeId(id, 'playthrough id')

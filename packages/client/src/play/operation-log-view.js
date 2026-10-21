@@ -6,7 +6,6 @@ const operations = new Set([
   'session.branch', 'session.user-message', 'session.import-context.bind',
   'session.import-context.unbind', 'playthrough.session.detach',
   'playthrough.character.relink', 'plugin.start', 'plugin.stop', 'rp.policy', 'trace.record',
-  'playthrough.archive-invalid',
 ])
 const checkpoints = new Set([
   'session.created', 'session.selection.copied', 'session.import-context.bound',

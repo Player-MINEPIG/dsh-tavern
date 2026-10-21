@@ -101,11 +101,12 @@ export function createLivePlayClient({
     return parsed
   }
 
-  async function putJsonFile(path, value, normalize, label) {
+  async function putJsonFile(path, value, normalize, label, { expectedWorkspaceScope } = {}) {
     const normalized = normalize(value, label)
     const body = {
       content: JSON.stringify(normalized),
       expectedRevision: expectedRevision(path),
+      ...(expectedWorkspaceScope === undefined ? {} : { expectedWorkspaceScope }),
     }
     try {
       const response = await v2('PUT', `/workspace/files${pathQuery(path)}`, body)
@@ -198,6 +199,9 @@ export function createLivePlayClient({
       if (options !== null && typeof options === 'object' && Object.hasOwn(options, 'expectedRevision')) {
         body.expectedRevision = options.expectedRevision
       }
+      if (options !== null && typeof options === 'object' && Object.hasOwn(options, 'expectedWorkspaceScope')) {
+        body.expectedWorkspaceScope = options.expectedWorkspaceScope
+      }
       return v2('PUT', `/workspace/files${pathQuery(path)}`, body)
     },
 
@@ -207,10 +211,6 @@ export function createLivePlayClient({
 
     inspectPlaythrough(playthroughId) {
       return v2('GET', `/playthroughs/${encodeURIComponent(playthroughId)}/availability`)
-    },
-
-    archiveInvalidPlaythrough(playthroughId, { expectedWorkspaceScope } = {}) {
-      return v2('POST', `/playthroughs/${encodeURIComponent(playthroughId)}/archive-invalid`, { expectedWorkspaceScope })
     },
 
     putCatalog(catalog) {
@@ -229,7 +229,7 @@ export function createLivePlayClient({
             throw error
           }
         },
-        putFresh: value => putJsonFile('catalog.json', value, normalizeCatalog, 'catalog'),
+        putFresh: value => putJsonFile('catalog.json', value, normalizeCatalog, 'catalog', options),
         mutator,
         options,
       })

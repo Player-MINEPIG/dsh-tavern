@@ -1,5 +1,5 @@
 import { parseCatalogJson, parseTimelineJson, validatePlayDocument } from './timeline.js'
-import { isPlaythroughArchived, withPlaythroughArchive } from './playthrough-state.js'
+import { isPlaythroughArchived } from './playthrough-state.js'
 
 const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
 
@@ -29,11 +29,10 @@ export function referencedPlaythroughSessions(playthrough, timeline) {
 }
 
 export class PlayMaintenanceService {
-  constructor({ workspaceStore, inspectSession, isDraftProtected = () => true, now = () => new Date().toISOString() }) {
+  constructor({ workspaceStore, inspectSession, isDraftProtected = () => true }) {
     this.workspaceStore = workspaceStore
     this.inspectSession = inspectSession
     this.isDraftProtected = isDraftProtected
-    this.now = now
   }
 
   async assess(id, { signal, expectedWorkspaceScope, includeArchived = false } = {}) {
@@ -100,15 +99,4 @@ export class PlayMaintenanceService {
     return apply(assessment.evidence)
   }
 
-  archiveInvalid(id, { operation, ...options } = {}) {
-    return this.withInvalid(id, ({ catalog, file, playthrough, sessionIds }) => {
-      const updated = withPlaythroughArchive(playthrough, this.now())
-      const next = { ...catalog, playthroughs: catalog.playthroughs.map(row => row.id === id ? updated : row) }
-      this.workspaceStore.writeFile('catalog.json', JSON.stringify(next, null, 2), {
-        validate: validatePlayDocument, expectedRevision: file.revision, expectedRevisionPresent: true,
-      })
-      operation?.checkpoint('playthrough.catalog.updated', { playthroughId: id })
-      return { id, status: 'archived', sessionIds }
-    }, options)
-  }
 }

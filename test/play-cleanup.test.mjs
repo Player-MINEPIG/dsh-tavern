@@ -54,9 +54,19 @@ test('cleanup protects live sessions and can clean already archived invalid runs
     throw Object.assign(new Error('missing'), { code: 'PLAY_SESSION_NOT_FOUND' })
   })
   assert.equal((await f.cleanup.clean(f.rows[1].id)).status, 'available')
-  await f.maintenance.archiveInvalid(f.rows[0].id)
+  const file = f.store.readFile('catalog.json'), catalog = JSON.parse(file.content)
+  catalog.playthroughs[0].ext.pmpDshTavern.archivedAt = '2026-10-21T00:00:00.000Z'
+  f.store.writeFile('catalog.json', JSON.stringify(catalog), { expectedRevision: file.revision, expectedRevisionPresent: true })
   assert.equal((await f.cleanup.clean(f.rows[0].id)).status, 'cleaned')
   assert.equal(f.catalog().playthroughs.length, 1)
+})
+
+test('cleanup still preserves corrupt or unreadable sessions even when their runs can be archived', async t => {
+  const f = await fixture(t, async () => { throw Object.assign(new Error('corrupt'), { code: 'SESSION_QUERY_CORRUPT_SESSION' }) })
+  const before = f.store.readFile('catalog.json').content
+  assert.equal((await f.cleanup.clean(f.rows[0].id)).status, 'unavailable')
+  assert.equal(f.store.readFile('catalog.json').content, before)
+  assert.deepEqual(f.cleanup.list(), [])
 })
 
 test('cleanup rejects shared directories and symlinks before removing a row', async t => {

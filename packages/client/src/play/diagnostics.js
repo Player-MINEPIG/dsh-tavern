@@ -73,7 +73,7 @@ export function WorkspaceDiagnosticsPanel({ client, controller, playthroughId = 
       h('button', { type: 'button', className: 'dtv-close', onClick: close, 'aria-label': uiMessage('common.close') }, '×'),
     ),
     h('div', { className: 'dtv-body' },
-      h(InvalidPlaythroughArchive, { client, controller, workspace: workspace.current }),
+      h(InvalidPlaythroughArchive, { client, controller, workspace: workspace.current, availabilityReady: snapshot.availabilityReady }),
       h(OperationLogsPanel, { client }),
       h('p', { className: 'dtv-note' }, uiMessage('diagnostics.scope')),
       snapshot.resources?.workspace?.rootPath ? h('p', { className: 'dtv-note' }, rawText(snapshot.resources.workspace.rootPath)) : null,
@@ -103,7 +103,7 @@ export function WorkspaceDiagnosticsPanel({ client, controller, playthroughId = 
   )
 }
 
-export function InvalidPlaythroughArchive({ client, controller, workspace }) {
+export function InvalidPlaythroughArchive({ client, controller, workspace, availabilityReady = false }) {
   const [busy, setBusy] = useState(false)
   const [report, setReport] = useState(null)
   const [failed, setFailed] = useState(false)
@@ -119,7 +119,7 @@ export function InvalidPlaythroughArchive({ client, controller, workspace }) {
     const isCurrent = () => generation.current === request
     setBusy(true); setReport(null); setFailed(false)
     try {
-      const result = await archiveInvalidPlaythroughs(client, { isCurrent })
+      const result = await archiveInvalidPlaythroughs(client, { controller, isCurrent, expectedWorkspaceScope: scope })
       if (!isCurrent()) return
       if (result === null) setFailed(true)
       else setReport(result)
@@ -127,10 +127,10 @@ export function InvalidPlaythroughArchive({ client, controller, workspace }) {
     } catch { if (isCurrent()) setFailed(true) }
     finally { if (isCurrent()) setBusy(false) }
   }
-  if (!client?.inspectPlaythrough || !client?.archiveInvalidPlaythrough) return null
+  if (!client?.getWorkspace || !controller?.getSnapshot) return null
   return h('div', { className: 'dtv-diagnostic-card' },
     h('p', null, uiMessage('diagnostics.archiveInvalidHint')),
-    h('button', { type: 'button', className: 'dtv-button', disabled: busy || workspace?.selected !== true,
+    h('button', { type: 'button', className: 'dtv-button', disabled: busy || !availabilityReady || workspace?.selected !== true,
       onClick: archive }, uiMessage(busy ? 'diagnostics.archiveInvalidBusy' : 'diagnostics.archiveInvalid')),
     report ? h('p', { role: 'status' }, uiMessage('diagnostics.archiveInvalidResult', report)) : null,
     failed ? h('p', { role: 'status' }, uiMessage('diagnostics.archiveInvalidFailed')) : null,

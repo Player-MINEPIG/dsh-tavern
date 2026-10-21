@@ -299,7 +299,15 @@ export class PlayWorkspaceStore {
     return managed ? this.withTargetGuard(posix, operation) : operation()
   }
 
-  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false } = {}) {
+  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false, expectedWorkspaceScope } = {}) {
+    const checkWorkspace = () => {
+      if (expectedWorkspaceScope === undefined) return
+      if (typeof expectedWorkspaceScope !== 'string') throw httpError(400, 'expectedWorkspaceScope must be a string', 'PLAY_WORKSPACE_SCOPE_INVALID')
+      if (JSON.stringify([this.binding.workspaceId, this.binding.rootPath]) !== expectedWorkspaceScope) {
+        throw httpError(409, 'play workspace changed', 'PLAY_WORKSPACE_CHANGED')
+      }
+    }
+    checkWorkspace()
     const root = requireRoot(this.binding)
     if (typeof content !== 'string') throw httpError(400, 'content must be a string', 'PLAY_FILE_INVALID')
     if (Buffer.byteLength(content) > MAX_FILE_BYTES) {
@@ -351,6 +359,7 @@ export class PlayWorkspaceStore {
         closeSync(descriptor)
         descriptor = null
         if (typeof this.beforeRename === 'function') this.beforeRename({ absolute, parent })
+        checkWorkspace()
         const verifiedParent = parentSegments.length === 0
           ? assertSafeRoot(root)
           : resolvePlayPath(root, posixPlayPath(parentSegments), { mustExist: true })
@@ -424,6 +433,7 @@ export function createWorkspaceApiHandler(store, { validateFile, coordinates } =
           validate: validateFile,
           expectedRevision: body?.expectedRevision,
           expectedRevisionPresent: managed && Object.hasOwn(body ?? {}, 'expectedRevision'),
+          expectedWorkspaceScope: body?.expectedWorkspaceScope,
         })
         operation?.checkpoint('workspace.file.written')
         return sendJson(res, 200, result)

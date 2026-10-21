@@ -1,8 +1,7 @@
 export default Object.freeze({
   "diagnostics.archiveInvalid": "一键归档失效周目",
-  "diagnostics.logsOperation.playthrough.archive-invalid": "一键归档失效周目",
   "diagnostics.archiveInvalidBusy": "正在检查并归档…",
-  "diagnostics.archiveInvalidHint": "仅当周目引用的全部 DSH 会话均确认不存在时归档。空草稿和无法确定的结果会保留，可在归档箱恢复。",
+  "diagnostics.archiveInvalidHint": "归档诊断中无法正常打开的全部周目，包括时间线缺失、损坏、无法读取及无可用会话的情况，可在归档箱恢复。",
   "diagnostics.archiveInvalidResult": "已归档 {archived}，已保留 {preserved}，失败 {failed}。",
   "diagnostics.archiveInvalidFailed": "未能完成检查，请刷新后重试。",
   "play.draft.sendFailed": "发送失败：{message}",
