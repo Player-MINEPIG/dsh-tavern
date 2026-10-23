@@ -32574,9 +32574,12 @@ Array.prototype.indexOf;
 var arrayLastIndexOf = unapply(Array.prototype.lastIndexOf);
 var arrayPop = unapply(Array.prototype.pop);
 var arrayPush = unapply(Array.prototype.push);
-Array.prototype.slice;
+var arraySlice = unapply(Array.prototype.slice);
 var arraySplice = unapply(Array.prototype.splice);
 var arrayIsArray = Array.isArray;
+var setCreate = unconstruct(Set);
+var setAdd = unapply(Set.prototype.add);
+var setHas = unapply(Set.prototype.has);
 var stringToLowerCase = unapply(String.prototype.toLowerCase);
 var stringToString = unapply(String.prototype.toString);
 var stringMatch = unapply(String.prototype.match);
@@ -32682,6 +32685,14 @@ function lookupGetter(object, prop) {
     return null;
   }
   return fallbackValue;
+}
+function lookupAccessor(object, prop) {
+  while (object !== null) {
+    const desc = getOwnPropertyDescriptor(object, prop);
+    if (desc) return desc.get ? unapply(desc.get) : null;
+    object = getPrototypeOf(object);
+  }
+  return null;
 }
 function isRegex(value) {
   try {
@@ -33367,7 +33378,7 @@ var NODE_TYPE = {
   documentFragment: 11,
   notation: 12
 };
-var LITERAL_TEXT_ELEMENT_NAMES = [
+var LITERAL_TEXT_ELEMENTS = freeze2(addToSet({}, [
   "style",
   "script",
   "xmp",
@@ -33376,15 +33387,7 @@ var LITERAL_TEXT_ELEMENT_NAMES = [
   "noframes",
   "plaintext",
   "noscript"
-];
-var LITERAL_TEXT_ELEMENTS = freeze2(addToSet({}, LITERAL_TEXT_ELEMENT_NAMES));
-var LITERAL_TEXT_CLOSE = (function() {
-  const map2 = {};
-  arrayForEach(LITERAL_TEXT_ELEMENT_NAMES, (name3) => {
-    map2[name3] = seal(new RegExp("</" + name3 + "(?=[\\t\\n\\f\\r />])", "i"));
-  });
-  return freeze2(map2);
-})();
+]));
 var getGlobal = function getGlobal2() {
   return typeof window === "undefined" ? null : window;
 };
@@ -33431,7 +33434,7 @@ var _resolveObjectOption = function _resolveObjectOption2(cfg, key2, makeFallbac
 function createDOMPurify() {
   let window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
   const DOMPurify = (root) => createDOMPurify(root);
-  DOMPurify.version = "3.4.16";
+  DOMPurify.version = "3.4.17";
   DOMPurify.removed = [];
   if (!window2 || !window2.document || window2.document.nodeType !== NODE_TYPE.document || !window2.Element) {
     DOMPurify.isSupported = false;
@@ -33462,6 +33465,10 @@ function createDOMPurify() {
   };
   const _readNodeName = function _readNodeName2(node) {
     return getNodeName ? getNodeName(node) : node.nodeName;
+  };
+  const getNamespaceURI = lookupAccessor(ElementPrototype, "namespaceURI");
+  const _readNamespaceURI = function _readNamespaceURI2(element) {
+    return getNamespaceURI ? getNamespaceURI(element) : element.namespaceURI;
   };
   if (typeof HTMLTemplateElement === "function") {
     const template = document2.createElement("template");
@@ -33576,6 +33583,7 @@ function createDOMPurify() {
   const SANITIZE_NAMED_PROPS_PREFIX = "user-content-";
   let KEEP_CONTENT = true;
   let IN_PLACE = false;
+  let IN_PLACE_VISITED = null;
   let USE_PROFILES = {};
   let FORBID_CONTENTS = null;
   const DEFAULT_FORBID_CONTENTS = addToSet({}, [
@@ -33814,18 +33822,23 @@ function createDOMPurify() {
     return !ALL_MATHML_TAGS[tagName] && (COMMON_SVG_AND_HTML_ELEMENTS[tagName] || !ALL_SVG_TAGS[tagName]);
   };
   const _checkValidNamespace = function _checkValidNamespace2(element) {
-    let parent = getParentNode(element);
-    if (!parent || !parent.tagName) parent = {
-      namespaceURI: NAMESPACE,
-      tagName: "template"
-    };
-    const tagName = stringToLowerCase(element.tagName);
-    const parentTagName = stringToLowerCase(parent.tagName);
-    if (!ALLOWED_NAMESPACES[element.namespaceURI]) return false;
-    if (element.namespaceURI === SVG_NAMESPACE) return _checkSvgNamespace(tagName, parent, parentTagName);
-    if (element.namespaceURI === MATHML_NAMESPACE) return _checkMathMlNamespace(tagName, parent, parentTagName);
-    if (element.namespaceURI === HTML_NAMESPACE) return _checkHtmlNamespace(tagName, parent, parentTagName);
-    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && ALLOWED_NAMESPACES[element.namespaceURI]) return true;
+    const elementNamespace = _readNamespaceURI(element);
+    const tagName = stringToLowerCase(_readNodeName(element));
+    const parentNode = getParentNode(element);
+    let parent;
+    let parentTagName;
+    if (parentNode && _readNodeType(parentNode) === NODE_TYPE.element) {
+      parent = { namespaceURI: _readNamespaceURI(parentNode) };
+      parentTagName = stringToLowerCase(_readNodeName(parentNode));
+    } else {
+      parent = { namespaceURI: NAMESPACE };
+      parentTagName = "template";
+    }
+    if (!ALLOWED_NAMESPACES[elementNamespace]) return false;
+    if (elementNamespace === SVG_NAMESPACE) return _checkSvgNamespace(tagName, parent, parentTagName);
+    if (elementNamespace === MATHML_NAMESPACE) return _checkMathMlNamespace(tagName, parent, parentTagName);
+    if (elementNamespace === HTML_NAMESPACE) return _checkHtmlNamespace(tagName, parent, parentTagName);
+    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && ALLOWED_NAMESPACES[elementNamespace]) return true;
     return false;
   };
   const _forceRemove = function _forceRemove2(node) {
@@ -33850,19 +33863,13 @@ function createDOMPurify() {
   const _neutralizeRoot = function _neutralizeRoot2(root) {
     _neutralizeSubtree(root);
     const childNodes = getChildNodes(root);
-    if (childNodes) {
-      const snapshot = [];
-      arrayForEach(childNodes, (child) => {
-        arrayPush(snapshot, child);
-      });
-      arrayForEach(snapshot, (child) => {
-        try {
-          remove(child);
-        } catch (_2) {
-        }
-      });
-    }
-    const attributes = getAttributes(root);
+    if (childNodes) arrayForEach(arraySlice(childNodes), (child) => {
+      try {
+        remove(child);
+      } catch (_2) {
+      }
+    });
+    const attributes = _readNodeType(root) === NODE_TYPE.element ? getAttributes(root) : null;
     if (attributes) for (let i3 = attributes.length - 1; i3 >= 0; --i3) {
       const attribute = attributes[i3];
       const name3 = attribute && attribute.name;
@@ -33909,14 +33916,93 @@ function createDOMPurify() {
       _stripAttributeNode(element, attribute, name3);
     }
   };
-  const _neutralizeSubtree = function _neutralizeSubtree2(root) {
+  const _walkTree = function _walkTree2(root, visit3) {
+    let intoShadow = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : false;
     const stack = [root];
     while (stack.length > 0) {
       const node = stack.pop();
-      if (_readNodeType(node) === NODE_TYPE.element) _stripDisallowedAttributes(node);
+      if (visit3(node) === false) continue;
+      if (intoShadow && _readNodeType(node) === NODE_TYPE.element) {
+        const shadowRoot = getShadowRoot(node);
+        if (_isDocumentFragment(shadowRoot)) stack.push(shadowRoot);
+      }
       const childNodes = getChildNodes(node);
       if (childNodes) for (let i3 = childNodes.length - 1; i3 >= 0; --i3) stack.push(childNodes[i3]);
     }
+  };
+  const _neutralizeSubtree = function _neutralizeSubtree2(root) {
+    _walkTree(root, (node) => {
+      if (_readNodeType(node) === NODE_TYPE.element) _stripDisallowedAttributes(node);
+    });
+  };
+  const _collectLiveNodes = function _collectLiveNodes2(root) {
+    const nodes = [];
+    _walkTree(root, (node) => {
+      nodes.push(node);
+    }, true);
+    return nodes;
+  };
+  const _neutralizeEscapedElements = function _neutralizeEscapedElements2(root, before) {
+    const reachable = setCreate();
+    arrayForEach(_collectLiveNodes(root), (node) => {
+      if (_readNodeType(node) === NODE_TYPE.element) setAdd(reachable, node);
+    });
+    arrayForEach(before, (node) => {
+      if (_readNodeType(node) === NODE_TYPE.element && !setHas(reachable, node)) _stripDisallowedAttributes(node);
+    });
+  };
+  const _neutralizeDiscarded = function _neutralizeDiscarded2(root, before) {
+    let rootRemoved = false;
+    arrayForEach(DOMPurify.removed, (entry) => {
+      if (entry.element) {
+        rootRemoved = rootRemoved || entry.element === root;
+        _neutralizeSubtree(entry.element);
+      }
+    });
+    _neutralizeEscapedElements(root, before);
+    return rootRemoved;
+  };
+  const MAX_UNVISITED_ROUNDS = 8;
+  const _sanitizeUnvisitedNodes = function _sanitizeUnvisitedNodes2(root, before) {
+    const visited = IN_PLACE_VISITED;
+    let original = null;
+    const getOriginal = () => {
+      if (!original) {
+        original = setCreate();
+        arrayForEach(before, (beforeNode) => {
+          setAdd(original, beforeNode);
+        });
+      }
+      return original;
+    };
+    for (let round = 0; ; round++) {
+      const live = _collectLiveNodes(root);
+      const containers = [root];
+      let pending2 = false;
+      arrayForEach(live, (node) => {
+        if (_readNodeType(node) === NODE_TYPE.documentFragment) arrayPush(containers, node);
+        else if (!pending2 && !setHas(visited, node)) pending2 = setHas(getOriginal(), node);
+      });
+      if (!pending2) return;
+      if (round >= MAX_UNVISITED_ROUNDS) throw typeErrorCreate("the tree kept changing during in-place sanitization; refusing to return it");
+      arrayForEach(containers, (container, index) => {
+        _sanitizeUnvisitedIn(container, index > 0, root, getOriginal());
+      });
+    }
+  };
+  const _sanitizeUnvisitedIn = function _sanitizeUnvisitedIn2(container, inShadow, root, original) {
+    const iterator = _createNodeIterator(container);
+    let node;
+    while (node = iterator.nextNode()) {
+      if (!setHas(original, node) || setHas(IN_PLACE_VISITED, node)) continue;
+      if (inShadow) _executeHooks(hooks.uponSanitizeShadowNode, node, null);
+      _sanitizeElements(node, root);
+      _sanitizeAttributes(node, root);
+      if (_isDocumentFragment(node.content)) _sanitizeShadowDOM2(node.content);
+    }
+  };
+  const _markVisited = function _markVisited2(node) {
+    if (IN_PLACE_VISITED) setAdd(IN_PLACE_VISITED, node);
   };
   const _isPatchLinkageAttribute = function _isPatchLinkageAttribute2(lcName, lcTag) {
     if (!SAFE_FOR_XML) return false;
@@ -33925,16 +34011,14 @@ function createDOMPurify() {
   };
   const _neutralizePatchLinkage = function _neutralizePatchLinkage2(root) {
     if (!SAFE_FOR_XML) return;
-    const stack = [root];
-    while (stack.length > 0) {
-      const node = stack.pop();
+    _walkTree(root, (node) => {
       const nodeType = _readNodeType(node);
       if (nodeType === NODE_TYPE.processingInstruction || nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, node.data)) {
         try {
           remove(node);
         } catch (_2) {
         }
-        continue;
+        return false;
       }
       if (nodeType === NODE_TYPE.element) {
         const element = node;
@@ -33945,9 +34029,8 @@ function createDOMPurify() {
         } catch (_2) {
         }
       }
-      const childNodes = getChildNodes(node);
-      if (childNodes) for (let i3 = childNodes.length - 1; i3 >= 0; --i3) stack.push(childNodes[i3]);
-    }
+      return true;
+    });
   };
   const _initDocument = function _initDocument2(dirty) {
     let doc = null;
@@ -33987,6 +34070,13 @@ function createDOMPurify() {
   };
   const _scrubTemplateExpressions2 = function _scrubTemplateExpressions(node) {
     var _node$querySelectorAl;
+    _scrubOwnCharacterData(node);
+    const templates = (_node$querySelectorAl = node.querySelectorAll) === null || _node$querySelectorAl === void 0 ? void 0 : _node$querySelectorAl.call(node, "template");
+    if (templates) arrayForEach(templates, (tmpl) => {
+      if (_isDocumentFragment(tmpl.content)) _scrubTemplateExpressions2(tmpl.content);
+    });
+  };
+  const _scrubOwnCharacterData = function _scrubOwnCharacterData2(node) {
     node.normalize();
     const doc = getOwnerDocument ? getOwnerDocument(node) : node.ownerDocument;
     const walker = createNodeIterator.call(doc || node, node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_CDATA_SECTION | NodeFilter.SHOW_PROCESSING_INSTRUCTION, null);
@@ -33995,10 +34085,6 @@ function createDOMPurify() {
       currentNode.data = _stripTemplateExpressions(currentNode.data);
       currentNode = walker.nextNode();
     }
-    const templates = (_node$querySelectorAl = node.querySelectorAll) === null || _node$querySelectorAl === void 0 ? void 0 : _node$querySelectorAl.call(node, "template");
-    if (templates) arrayForEach(templates, (tmpl) => {
-      if (_isDocumentFragment(tmpl.content)) _scrubTemplateExpressions2(tmpl.content);
-    });
   };
   const _isClobbered = function _isClobbered2(element) {
     const realTagName = getNodeName ? getNodeName(element) : null;
@@ -34030,7 +34116,7 @@ function createDOMPurify() {
   }
   const _isUnsafeNode = function _isUnsafeNode2(currentNode, tagName) {
     if (SAFE_FOR_XML && currentNode.hasChildNodes() && !_isNode(currentNode.firstElementChild) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.textContent) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.innerHTML)) return true;
-    if (SAFE_FOR_XML && currentNode.namespaceURI === HTML_NAMESPACE && LITERAL_TEXT_ELEMENTS[tagName] && (_isNode(currentNode.firstElementChild) || typeof currentNode.textContent === "string" && regExpTest(LITERAL_TEXT_CLOSE[tagName], currentNode.textContent))) return true;
+    if (SAFE_FOR_XML && LITERAL_TEXT_ELEMENTS[tagName] && _readNodeType(currentNode) === NODE_TYPE.element && _readNamespaceURI(currentNode) === HTML_NAMESPACE && (_isNode(currentNode.firstElementChild) || typeof currentNode.textContent === "string" && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.textContent))) return true;
     if (currentNode.nodeType === NODE_TYPE.processingInstruction) return true;
     if (SAFE_FOR_XML && currentNode.nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, currentNode.data)) return true;
     return false;
@@ -34045,7 +34131,7 @@ function createDOMPurify() {
   };
   const _sanitizeDisallowedNode = function _sanitizeDisallowedNode2(currentNode, tagName, root) {
     if (!FORBID_TAGS[tagName] && _isBasicCustomElement(tagName) && _matchesNameCheck(CUSTOM_ELEMENT_HANDLING.tagNameCheck, tagName)) return false;
-    if (KEEP_CONTENT && !FORBID_CONTENTS[tagName]) {
+    if (KEEP_CONTENT && !FORBID_CONTENTS[tagName] && !FORBID_CONTENTS[stringToLowerCase(tagName)]) {
       const parentNode = getParentNode(currentNode);
       const childNodes = getChildNodes(currentNode);
       if (childNodes && parentNode) {
@@ -34069,6 +34155,7 @@ function createDOMPurify() {
     return true;
   };
   const _sanitizeElements = function _sanitizeElements2(currentNode, root) {
+    _markVisited(currentNode);
     _executeHooks(hooks.beforeSanitizeElements, currentNode, null);
     if (_handleHookDetachedNode(currentNode, root)) return true;
     if (_isClobbered(currentNode)) {
@@ -34162,6 +34249,10 @@ function createDOMPurify() {
       return false;
     }
   };
+  const _isUnsafeAttributeValue = function _isUnsafeAttributeValue2(name3, value) {
+    if (SAFE_FOR_XML && regExpTest(/((--!?|])>)|<\/(style|script|title|xmp|textarea|noscript|iframe|noembed|noframes)/i, value)) return true;
+    return stringToLowerCase(name3) === "attributename" && stringMatch(value, "href") !== null;
+  };
   const _sanitizeAttributes = function _sanitizeAttributes2(currentNode, root) {
     _executeHooks(hooks.beforeSanitizeAttributes, currentNode, null);
     if (_handleHookDetachedNode(currentNode, root)) return;
@@ -34195,11 +34286,7 @@ function createDOMPurify() {
         value = SANITIZE_NAMED_PROPS_PREFIX + value;
         recreatedNamedProp = true;
       }
-      if (SAFE_FOR_XML && regExpTest(/((--!?|])>)|<\/(style|script|title|xmp|textarea|noscript|iframe|noembed|noframes)/i, value)) {
-        _removeAttribute(name3, currentNode, attr);
-        continue;
-      }
-      if (lcName === "attributename" && stringMatch(value, "href")) {
+      if (_isUnsafeAttributeValue(name3, value)) {
         _removeAttribute(name3, currentNode, attr);
         continue;
       }
@@ -34242,6 +34329,7 @@ function createDOMPurify() {
         }
       }
     }
+    if (SAFE_FOR_TEMPLATES) _scrubOwnCharacterData(fragment);
     _executeHooks(hooks.afterSanitizeShadowDOM, fragment, null);
   };
   const _sanitizeAttachedShadowRoots = function _sanitizeAttachedShadowRoots2(root) {
@@ -34305,6 +34393,8 @@ function createDOMPurify() {
     if (hooks.uponSanitizeAttribute.length > 0) ALLOWED_ATTR = clone(ALLOWED_ATTR);
     DOMPurify.removed = [];
     const inPlace = IN_PLACE && typeof dirty !== "string" && _isNode(dirty);
+    let inPlaceNodes = [];
+    const outerVisited = IN_PLACE_VISITED;
     if (inPlace) {
       _neutralizePatchLinkage(dirty);
       const nn2 = _readNodeName(dirty);
@@ -34319,12 +34409,8 @@ function createDOMPurify() {
         _neutralizeRoot(dirty);
         throw typeErrorCreate("root node is clobbered and cannot be sanitized in-place");
       }
-      try {
-        _sanitizeAttachedShadowRoots(dirty);
-      } catch (error) {
-        _neutralizeRoot(dirty);
-        throw error;
-      }
+      inPlaceNodes = _collectLiveNodes(dirty);
+      IN_PLACE_VISITED = setCreate();
     } else if (_isNode(dirty)) {
       body2 = _initDocument("<!---->");
       importedNode = body2.ownerDocument.importNode(dirty, true);
@@ -34340,30 +34426,25 @@ function createDOMPurify() {
     if (body2 && FORCE_BODY) _forceRemove(body2.firstChild);
     const walkRoot = inPlace ? dirty : body2;
     try {
+      if (inPlace) _sanitizeAttachedShadowRoots(dirty);
       const nodeIterator = _createNodeIterator(walkRoot);
       while (currentNode = nodeIterator.nextNode()) {
         _sanitizeElements(currentNode, walkRoot);
         _sanitizeAttributes(currentNode, walkRoot);
         if (_isDocumentFragment(currentNode.content)) _sanitizeShadowDOM2(currentNode.content);
       }
+      if (inPlace) _sanitizeUnvisitedNodes(dirty, inPlaceNodes);
     } catch (error) {
       if (inPlace) {
         _neutralizeRoot(dirty);
-        arrayForEach(DOMPurify.removed, (entry) => {
-          if (entry.element) _neutralizeSubtree(entry.element);
-        });
+        _neutralizeDiscarded(dirty, inPlaceNodes);
       }
       throw error;
+    } finally {
+      IN_PLACE_VISITED = outerVisited;
     }
     if (inPlace) {
-      let rootWasRemoved = false;
-      arrayForEach(DOMPurify.removed, (entry) => {
-        if (entry.element) {
-          if (entry.element === dirty) rootWasRemoved = true;
-          _neutralizeSubtree(entry.element);
-        }
-      });
-      if (rootWasRemoved) throw typeErrorCreate("a node selected for removal could not be safely returned; refusing to sanitize in place");
+      if (_neutralizeDiscarded(dirty, inPlaceNodes)) throw typeErrorCreate("a node selected for removal could not be safely returned; refusing to sanitize in place");
       if (SAFE_FOR_TEMPLATES) _scrubTemplateExpressions2(dirty);
       return dirty;
     }
@@ -34400,6 +34481,7 @@ function createDOMPurify() {
     if (!CONFIG) _parseConfig({});
     const lcTag = transformCaseFunc(tag);
     const lcName = transformCaseFunc(attr);
+    if (typeof value === "string" && (_isUnsafeAttributeValue(attr, value) || !ALLOW_SELF_CLOSE_IN_ATTR && regExpTest(SELF_CLOSING_TAG, value))) return false;
     return _isValidAttribute(lcTag, lcName, value);
   };
   DOMPurify.addHook = function(entryPoint, hookFunction) {
@@ -59777,7 +59859,7 @@ async function apply5(ctx) {
 /*! Bundled license information:
 
 dompurify/dist/purify.es.mjs:
-  (*! @license DOMPurify 3.4.16 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.16/LICENSE *)
+  (*! @license DOMPurify 3.4.17 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.17/LICENSE *)
   (*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE *)
 */
 
