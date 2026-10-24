@@ -2,6 +2,9 @@
 
 ## 3.0.5 — DSH 0.2.1 RC compatibility range
 
+- 诊断面板可一键归档无法打开的周目；可选 agent 清理工具先预览，再将 Tavern 周目文件移入可恢复备份，保留 DSH 历史。
+- DOMPurify 更新至 3.4.17。
+- Archive diagnosed unopenable playthroughs from the diagnostics panel. Optional agent maintenance previews changes and moves Tavern playthrough files into recoverable backups, preserving DSH history. Update DOMPurify to 3.4.17.
 - Tavern 与标准 Assembler 1.1.2 接受 `>=0.2.1-rc.2 <0.2.2-0`，保留 rc.2 并验证 rc.3；后续 0.2.1 RC 按策略准入，0.2.2 及其预发布仍拒绝。
 - 旧日志迁移增加经验证的 rc.3 codec；已有 V4 历史和引用无需再次迁移。
 - Accept the 0.2.1 RC series with Standard Assembler 1.1.2, retain rc.2 and verify rc.3. Admit later 0.2.1 RCs by policy while rejecting 0.2.2 and its prereleases. Add verified rc.3 migration codecs without changing existing V4 history or references.
