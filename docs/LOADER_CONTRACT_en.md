@@ -4,7 +4,7 @@
 
 The Tavern bundle entry loads bundled standard Assembler or reuses an independently enabled instance before mounting the service-dependent business loader. Installation order, disabling and removal follow the [integration contract](ASSEMBLER_INTEGRATION_en.md#coexistence-with-standalone-assembler).
 
-This contract covers Tavern **3.0.4**, Assembler **v1.1.1** and DSH **0.2.1-rc.2**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
+This contract covers Tavern **3.0.5**, Assembler **v1.1.2** and DSH **0.2.1-rc.2 / 0.2.1-rc.3**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
 
 ## Goals and ownership
 
@@ -31,7 +31,7 @@ For an applied strategy, `TavernProfileLoader.compile()` resolves resources and 
 
 ## Session policy
 
-The supported runtime is DSH 0.2.1-rc.2 only. The awaited serial `agent/created` listener freezes or restores selection, reconstructs pending input from public own events, then initializes RP and its read-only sandbox before the Agent is exposed for requests. Initialization failure propagates to registration; it is not downgraded to a warning. Forks, resumes, and delegated agents use the same initialization boundary.
+The Host range is `>=0.2.1-rc.2 <0.2.2-0`, verified on rc.2 and rc.3. The awaited serial `agent/created` listener freezes or restores selection, reconstructs pending input from public own events, then initializes RP and its read-only sandbox before the Agent is exposed for requests. Initialization failure propagates to registration; it is not downgraded to a warning. Forks, resumes, and delegated agents use the same initialization boundary.
 
 The durable file is `session-selections.json` under the plugin data directory:
 
@@ -165,7 +165,7 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 
 ## Composition semantics
 
-Applied strategies use Assembler v1.1.1 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.1/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
+Applied strategies use Assembler v1.1.2 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.2/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
 
 ### Preset-only compatibility
 

@@ -2,9 +2,9 @@
 
 [中文](ASSEMBLER_INTEGRATION.md) · [Assembly behavior](REQUEST_ASSEMBLY_en.md) · [Plugin repository](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Advanced is frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, with no commitment to later DSH versions. Current Assembler `1.1.1` and Tavern distribute Standard only, without newer core changes. Advanced semantics below describe legacy configurations and historical records.
+Advanced is frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, with no commitment to later DSH versions. Current Assembler `1.1.2` and Tavern distribute Standard only, without newer core changes. Advanced semantics below describe legacy configurations and historical records.
 
-Tavern depends on `dsh-prompt-assembler` at exact npm version `1.1.1` (matching source tag `v1.1.1`). The assembler owns strategy storage, source registration, the request hook, secure API and installed-plugin configuration entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
+Tavern depends on `dsh-prompt-assembler` at exact npm version `1.1.2` (matching source tag `v1.1.2`). The assembler owns strategy storage, source registration, the request hook, secure API and installed-plugin configuration entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
 
 ## Optional Memory Manager
 
@@ -20,16 +20,16 @@ That Manager release was validated only on DSH `0.2.0-rc.2`; support for the cur
 
 ## Installation and development
 
-Tavern 3.0.4 automatically installs and loads standard `dsh-prompt-assembler` v1.1.1 and automatically loads its Host and browser entries. The optional `dsh-prompt-assembler-core` is not a production dependency. Users only need to install Tavern:
+Tavern 3.0.5 automatically installs and loads standard `dsh-prompt-assembler` v1.1.2 and automatically loads its Host and browser entries. The optional `dsh-prompt-assembler-core` is not a production dependency. Users only need to install Tavern:
 
 ```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.4
+dsh plugin --profile web add pmp-dsh-tavern@3.0.5
 ```
 
-The npm and Release Tavern packages include standard Assembler and need no second package. Source installation can use the fixed tag below; GitHub/Market installs download the published Assembler `1.1.1`:
+The npm and Release Tavern packages include standard Assembler and need no second package. Source installation can use the fixed tag below; GitHub/Market installs download the published Assembler `1.1.2`:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.4
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.5
 ```
 
 ### Coexistence with standalone Assembler
@@ -37,7 +37,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.4
 To use Assembler independently of Tavern, install it in the same profile:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.1
+dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.2
 ```
 
 The composition entry prefers an independently enabled Assembler. Either installation order runs one Host instance and one set of browser entries. Installing standalone later releases the bundled instance before handing over. Disabling or removing standalone restores the bundled instance while Tavern remains enabled. Removing Tavern leaves an independent instance running; disabling or removing both releases all assembly hooks, routes and UI entries.
@@ -46,7 +46,7 @@ Default instances share `<DSH_HOME>/dsh-prompt-assembler/`; switching, updating 
 
 Clone the assembler separately for source development and run `npm ci` and `npm run check` there. Tavern's `npm ci` uses the npm package pinned by its lockfile. To test local changes together, use `npm install --no-save --package-lock=false /path/to/assembler` in a temporary checkout, without committing the temporary path.
 
-Standard strategies execute on stock rc.2 through public sections/context/pre-step. Advanced strategies require the separately packaged core addon and a prepared protocol-1 core. Legacy strategies without a backend remain advanced and fail explicitly when capabilities are absent. Plugin installation never modifies core. See the assembler [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.1/docs/BACKENDS_en.md).
+Standard strategies execute on stock rc.2 through public sections/context/pre-step. Advanced strategies require the separately packaged core addon and a prepared protocol-1 core. Legacy strategies without a backend remain advanced and fail explicitly when capabilities are absent. Plugin installation never modifies core. See the assembler [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.2/docs/BACKENDS_en.md).
 
 ## Tavern's integration seam
 
@@ -68,7 +68,7 @@ Tavern has one `tavern.text` entry: restricted EJS, content references, then ST 
 
 ## GitHub dependency representation
 
-The dependency graph is Tavern → standard assembler, while Manager remains optional. The frozen addon peers only with standard 1.1.0. No submodule is needed. The source manifest pins npm version `1.1.1`, and the lockfile pins the published package and integrity. GitHub/Market installations download this dependency from npm through the package manager and require that version to be published. The source manifest declares no `bundleDependencies`, because GitHub archives have no `node_modules`. Only prebuilt packaging declares this dependency bundled and includes the selected Assembler package inside the Tavern tgz; the additional Assembler tgz is for optional standalone use. Installing only Tavern loads the Host service through its composition entry. Public-directory submissions, tags, releases and npm publishing remain separate actions.
+The dependency graph is Tavern → standard assembler, while Manager remains optional. The frozen addon peers only with standard 1.1.0. No submodule is needed. The source manifest pins npm version `1.1.2`, and the lockfile pins the published package and integrity. GitHub/Market installations download this dependency from npm through the package manager and require that version to be published. The source manifest declares no `bundleDependencies`, because GitHub archives have no `node_modules`. Only prebuilt packaging declares this dependency bundled and includes the selected Assembler package inside the Tavern tgz; the additional Assembler tgz is for optional standalone use. Installing only Tavern loads the Host service through its composition entry. Public-directory submissions, tags, releases and npm publishing remain separate actions.
 
 [API surfaces](API_SURFACES_en.md) · [Tavern architecture](assets/architecture/tavern.en.html) · [Combined architecture](assets/architecture/ecosystem.en.html).
 

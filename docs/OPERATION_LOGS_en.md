@@ -4,7 +4,7 @@
 
 ## Stable surfaces and ownership
 
-Tavern owns this contract. It describes operations and confirmed outcomes, without exposing DSH execution steps. Public DSH extension points are versioned too: the backend target is DSH `0.2.1-rc.2`; this is not a promise of compatibility with future DSH versions.
+Tavern owns this contract. It describes operations and confirmed outcomes, without exposing DSH execution steps. Public DSH extension points are versioned too: the backend target is DSH `0.2.1-rc.2` / `0.2.1-rc.3`; this is not a promise of compatibility with future DSH versions.
 
 | Layer | Contract / owner | Expected effect of a DSH upgrade |
 | --- | --- | --- |

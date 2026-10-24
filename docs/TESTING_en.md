@@ -4,10 +4,12 @@
 
 This guide explains how to verify the current implementation; it does not record acceptance results for a particular release. Select checks by change scope, then add integration evidence for the affected DSH interfaces.
 
-<a id="backend-compatibility"></a>
-## 3.0.4 compatibility
+Run admission and standard Host checks against both rc.2 and rc.3 dependency roots. Future RC and final-release values in range tests exercise policy, not those runtimes. Web acceptance also covers opening and unpinning RP / Trace entries folded into More in narrow windows, session switching, returning to blank drafts and restoration after removal.
 
-Tavern 3.0.4 targets official [DSH 0.2.1-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2) (`687f282e8625c6b8d11ff58211a90524be2e4317`). Required runtime peers are Cordis `4.0.5` and DSH crypto `0.2.1-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
+<a id="backend-compatibility"></a>
+## 3.0.5 compatibility
+
+Tavern 3.0.5 and Standard Assembler 1.1.2 admit Hosts in `>=0.2.1-rc.2 <0.2.2-0`. Exercised official versions are [rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2) (`687f282e8625c6b8d11ff58211a90524be2e4317`) and [rc.3](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3) (`1f81c047fc48fa190a683e469daa699857e9afe8`). Required peers are Cordis `4.0.5` and DSH crypto in the same range. Later 0.2.1 RCs and the final release are admitted by policy, not a claim of prior validation; reassess 0.2.2 and its prereleases.
 
 Backend scope covers plugin admission, public Session/Workspace controllers, prompt assembly and parameter fallback, V4 history and historical reference migration, Trace, and the [operation log contract](OPERATION_LOGS_en.md). Existing V4 references need no new conversion. The migration codec allowlist is separate from runtime support; see [migration](DSH_0.1.7_MIGRATION_en.md).
 
@@ -17,7 +19,7 @@ Frontend, backend and operation logs must be verified together. Run the presenta
 
 ## Environment and commands
 
-Standalone Tavern tests require Node.js `>=20`; the target DSH `0.2.1-rc.2` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
+Standalone Tavern tests require Node.js `>=20`; the target DSH `0.2.1-rc.2` / `0.2.1-rc.3` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
 
 Run `npm ci --legacy-peer-deps` at the repository root to install locked dependencies, then run these commands. [package.json](../package.json) is the command definition source. Development dependencies explicitly include official `@deepseek-ai/dsh-llm` `0.2.1-rc.2` for Assembler tests; the target DSH supplies that peer at plugin runtime.
 
@@ -87,7 +89,7 @@ For this compatibility boundary, additionally check all five resources through c
 
 ## Single-package install and Assembler lifecycle
 
-Run `node --test test/companion.test.mjs test/tavern-bundle.test.mjs` for Tavern alone and independent Assembler enabled first, later, or simultaneously. Check single ownership, routes and request callbacks, removal recovery, and durable selections. Install only the published Tavern package in a temporary DSH_HOME, start the target Web Host, and confirm both APIs work, exactly one DT launcher and one Assembler configuration entry under Plugins → Installed plugins appear, and the assembly editor opens. Then install independent Assembler v1.1.1, restart, and repeat. Remove independent Assembler and Tavern separately, checking the remaining component and shared selections. Do not perform these removal checks in real user profiles.
+Run `node --test test/companion.test.mjs test/tavern-bundle.test.mjs` for Tavern alone and independent Assembler enabled first, later, or simultaneously. Check single ownership, routes and request callbacks, removal recovery, and durable selections. Install only the published Tavern package in a temporary DSH_HOME, start the target Web Host, and confirm both APIs work, exactly one DT launcher and one Assembler configuration entry under Plugins → Installed plugins appear, and the assembly editor opens. Then install independent Assembler v1.1.2, restart, and repeat. Remove independent Assembler and Tavern separately, checking the remaining component and shared selections. Do not perform these removal checks in real user profiles.
 
 ## Host and browser checks
 

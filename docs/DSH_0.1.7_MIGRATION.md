@@ -1,12 +1,12 @@
-# DSH 0.2.1-rc.2 兼容与历史坐标升级
+# DSH 0.2.1 兼容与历史坐标升级
 
 [English](DSH_0.1.7_MIGRATION_en.md)
 
-当前支持的 Host 为 DSH **0.2.1-rc.2**，其 Session 当前写入格式为 V4。不支持旧 DSH 运行时。历史格式读取与升级属于数据兼容路径，不代表承诺旧运行时可用。Node 使用目标 Host 要求的 `^22.19.0 || >=24.0.0`。
+当前支持的 Host 为 DSH **0.2.1-rc.2 / 0.2.1-rc.3**，其 Session 当前写入格式为 V4。不支持旧 DSH 运行时。历史格式读取与升级属于数据兼容路径，不代表承诺旧运行时可用。Node 使用目标 Host 要求的 `^22.19.0 || >=24.0.0`。
 
 DSH durable history 保持权威。Tavern 使用公开生命周期、Session 与 controller 接口，卸载后原生 DSH 与原会话仍可使用。升级为单向；保留旧日志和备份用于保护原始数据，不提供 Tavern 回滚工具，不支持 V4 的旧 Host 无法读取 V4 新写入。
 
-从 DSH 0.1.7 升级至 0.2.1-rc.2 时，已使用 V4 且 Tavern 引用已标记 V4 的数据不需要再次转换。离线迁移工具保留对 0.1.7-alpha.1、0.1.7-alpha.2、0.1.7-rc.1、0.2.1-rc.2、0.2.1-rc.2 官方格式库的支持，不接受其他未验证版本；这不扩大当前 Host 运行支持范围。
+从旧 DSH 升级至 0.2.1 rc.2 / rc.3 时，已使用 V4 且 Tavern 引用已标记 V4 的数据不需要再次转换。离线迁移工具仅接受已验证的 0.1.7-alpha.1、0.1.7-alpha.2、0.1.7-rc.1、0.2.0-rc.2、0.2.1-rc.2 和 0.2.1-rc.3 格式库；此白名单独立于 Host 准入范围，不自动接受未来 RC。
 
 ## 当前坐标与 Trace
 
@@ -50,7 +50,7 @@ DSH 负责迁移日志内其拥有的引用，不负责 Tavern 外部 JSON。Tav
 }
 ```
 
-`dshRoot` 必须能解析 **0.1.7-alpha.1、0.1.7-alpha.2、0.1.7-rc.1、0.2.0-rc.2 或 0.2.1-rc.2** 的官方 format/catalog 包，包括 `@deepseek-ai/dsh-session-format-v3-to-v4`；它不是 DSH_HOME。source 可为 V0、V1、V2 或 V3，target 必须为 V4。支持普通 JSONL 与多追加帧 `.zstd` 文件；格式由头部而非文件名确定。
+`dshRoot` 必须能解析 **0.1.7-alpha.1、0.1.7-alpha.2、0.1.7-rc.1、0.2.0-rc.2、0.2.1-rc.2 或 0.2.1-rc.3** 的官方 format/catalog 包，包括 `@deepseek-ai/dsh-session-format-v3-to-v4`；它不是 DSH_HOME。source 可为 V0、V1、V2 或 V3，target 必须为 V4。支持普通 JSONL 与多追加帧 `.zstd` 文件；格式由头部而非文件名确定。
 
 每对日志必须提供 `children`：完整的可用、已保留直接 subagent 子会话日志路径列表；没有可用子日志时显式填 `[]`。命令通过官方读取器提取子会话事实，检查直接父会话归属与子身份唯一性，并拒绝冲突证据。不会从工具参数推断缺失 descriptor 或子身份。应提供与已验证后继相符的保留子日志代；descriptor 后续变化可能使后继不匹配。
 
