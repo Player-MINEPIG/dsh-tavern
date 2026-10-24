@@ -61,7 +61,7 @@ export function createWorkspaceDiagnostics(client, {
     const saved = JSON.parse(storage?.getItem(DISMISSED_KEY) ?? '[]')
     if (Array.isArray(saved)) dismissed = new Set(saved.filter(item => typeof item === 'string').slice(-MAX_DISMISSED))
   } catch { /* Storage availability must not block diagnostics. */ }
-  let snapshot = { resources: null, issues: [], loading: true, error: null, showSummary: false }
+  let snapshot = { resources: null, issues: [], loading: true, error: null, showSummary: false, availabilityReady: false }
   let generation = 0
   let disposed = false
   let sessionAvailability = null
@@ -72,7 +72,7 @@ export function createWorkspaceDiagnostics(client, {
     try { storage?.setItem(DISMISSED_KEY, JSON.stringify([...dismissed])) } catch { /* Optional UI preference. */ }
   }
   const commit = next => {
-    snapshot = { ...next, showSummary: next.issues.some(issue => !dismissed.has(issue.key)) }
+    snapshot = { ...next, availabilityReady: sessionAvailabilityReady(sessionAvailability), showSummary: next.issues.some(issue => !dismissed.has(issue.key)) }
     for (const listener of listeners) listener()
   }
   const reconcile = resources => {
@@ -118,6 +118,7 @@ export function createWorkspaceDiagnostics(client, {
       if (disposed) return
       sessionAvailability = next
       if (!snapshot.loading && snapshot.resources !== null) reconcile(snapshot.resources)
+      else commit(snapshot)
     },
     async refresh() {
       if (disposed) return

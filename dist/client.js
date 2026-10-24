@@ -17941,6 +17941,11 @@ function isSupportedUiLocale(value) {
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
+  "diagnostics.archiveInvalid": "\u4E00\u952E\u5F52\u6863\u5931\u6548\u5468\u76EE",
+  "diagnostics.archiveInvalidBusy": "\u6B63\u5728\u68C0\u67E5\u5E76\u5F52\u6863\u2026",
+  "diagnostics.archiveInvalidHint": "\u5F52\u6863\u8BCA\u65AD\u4E2D\u65E0\u6CD5\u6B63\u5E38\u6253\u5F00\u7684\u5168\u90E8\u5468\u76EE\uFF0C\u5305\u62EC\u65F6\u95F4\u7EBF\u7F3A\u5931\u3001\u635F\u574F\u3001\u65E0\u6CD5\u8BFB\u53D6\u53CA\u65E0\u53EF\u7528\u4F1A\u8BDD\u7684\u60C5\u51B5\uFF0C\u53EF\u5728\u5F52\u6863\u7BB1\u6062\u590D\u3002",
+  "diagnostics.archiveInvalidResult": "\u5DF2\u5F52\u6863 {archived}\uFF0C\u5DF2\u4FDD\u7559 {preserved}\uFF0C\u5931\u8D25 {failed}\u3002",
+  "diagnostics.archiveInvalidFailed": "\u672A\u80FD\u5B8C\u6210\u68C0\u67E5\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u3002",
   "play.draft.sendFailed": "\u53D1\u9001\u5931\u8D25\uFF1A{message}",
   "play.draft.bind": "\u5E94\u7528\u5230\u5F53\u524D\u5F00\u573A\u5468\u76EE",
   "play.draft.unbind": "\u89E3\u9664\u5F53\u524D\u5F00\u573A\u9009\u62E9",
@@ -19074,6 +19079,11 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
+  "diagnostics.archiveInvalid": "Archive invalid playthroughs",
+  "diagnostics.archiveInvalidBusy": "Checking and archiving\u2026",
+  "diagnostics.archiveInvalidHint": "Archive all playthroughs that diagnostics reports as unable to open, including missing, corrupt, or unreadable timelines and unavailable sessions. Restore them from the archive list.",
+  "diagnostics.archiveInvalidResult": "Archived {archived}; preserved {preserved}; failed {failed}.",
+  "diagnostics.archiveInvalidFailed": "Could not complete the check. Refresh and try again.",
   "play.draft.sendFailed": "Could not send: {message}",
   "play.draft.bind": "Apply to this opening playthrough",
   "play.draft.unbind": "Clear this opening selection",
@@ -21776,6 +21786,19 @@ async function recoverCompletedSwipe(client, pending2) {
 // packages/play/src/playthrough-state.js
 function isPlaythroughArchived(playthrough) {
   return typeof playthrough?.ext?.pmpDshTavern?.archivedAt === "string";
+}
+function withPlaythroughArchive(playthrough, archivedAt) {
+  if (isPlaythroughArchived(playthrough) === (archivedAt !== null)) return playthrough;
+  const known = { ...playthrough.ext?.pmpDshTavern };
+  if (archivedAt === null) delete known.archivedAt;
+  else known.archivedAt = archivedAt;
+  const ext = { ...playthrough.ext };
+  if (Object.keys(known).length === 0) delete ext.pmpDshTavern;
+  else ext.pmpDshTavern = known;
+  const updated = { ...playthrough };
+  if (Object.keys(ext).length === 0) delete updated.ext;
+  else updated.ext = ext;
+  return updated;
 }
 function isArchiveTimestamp(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
@@ -32551,9 +32574,12 @@ Array.prototype.indexOf;
 var arrayLastIndexOf = unapply(Array.prototype.lastIndexOf);
 var arrayPop = unapply(Array.prototype.pop);
 var arrayPush = unapply(Array.prototype.push);
-Array.prototype.slice;
+var arraySlice = unapply(Array.prototype.slice);
 var arraySplice = unapply(Array.prototype.splice);
 var arrayIsArray = Array.isArray;
+var setCreate = unconstruct(Set);
+var setAdd = unapply(Set.prototype.add);
+var setHas = unapply(Set.prototype.has);
 var stringToLowerCase = unapply(String.prototype.toLowerCase);
 var stringToString = unapply(String.prototype.toString);
 var stringMatch = unapply(String.prototype.match);
@@ -32659,6 +32685,14 @@ function lookupGetter(object, prop) {
     return null;
   }
   return fallbackValue;
+}
+function lookupAccessor(object, prop) {
+  while (object !== null) {
+    const desc = getOwnPropertyDescriptor(object, prop);
+    if (desc) return desc.get ? unapply(desc.get) : null;
+    object = getPrototypeOf(object);
+  }
+  return null;
 }
 function isRegex(value) {
   try {
@@ -33344,7 +33378,7 @@ var NODE_TYPE = {
   documentFragment: 11,
   notation: 12
 };
-var LITERAL_TEXT_ELEMENT_NAMES = [
+var LITERAL_TEXT_ELEMENTS = freeze2(addToSet({}, [
   "style",
   "script",
   "xmp",
@@ -33353,15 +33387,7 @@ var LITERAL_TEXT_ELEMENT_NAMES = [
   "noframes",
   "plaintext",
   "noscript"
-];
-var LITERAL_TEXT_ELEMENTS = freeze2(addToSet({}, LITERAL_TEXT_ELEMENT_NAMES));
-var LITERAL_TEXT_CLOSE = (function() {
-  const map2 = {};
-  arrayForEach(LITERAL_TEXT_ELEMENT_NAMES, (name3) => {
-    map2[name3] = seal(new RegExp("</" + name3 + "(?=[\\t\\n\\f\\r />])", "i"));
-  });
-  return freeze2(map2);
-})();
+]));
 var getGlobal = function getGlobal2() {
   return typeof window === "undefined" ? null : window;
 };
@@ -33408,7 +33434,7 @@ var _resolveObjectOption = function _resolveObjectOption2(cfg, key2, makeFallbac
 function createDOMPurify() {
   let window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
   const DOMPurify = (root) => createDOMPurify(root);
-  DOMPurify.version = "3.4.16";
+  DOMPurify.version = "3.4.17";
   DOMPurify.removed = [];
   if (!window2 || !window2.document || window2.document.nodeType !== NODE_TYPE.document || !window2.Element) {
     DOMPurify.isSupported = false;
@@ -33439,6 +33465,10 @@ function createDOMPurify() {
   };
   const _readNodeName = function _readNodeName2(node) {
     return getNodeName ? getNodeName(node) : node.nodeName;
+  };
+  const getNamespaceURI = lookupAccessor(ElementPrototype, "namespaceURI");
+  const _readNamespaceURI = function _readNamespaceURI2(element) {
+    return getNamespaceURI ? getNamespaceURI(element) : element.namespaceURI;
   };
   if (typeof HTMLTemplateElement === "function") {
     const template = document2.createElement("template");
@@ -33553,6 +33583,7 @@ function createDOMPurify() {
   const SANITIZE_NAMED_PROPS_PREFIX = "user-content-";
   let KEEP_CONTENT = true;
   let IN_PLACE = false;
+  let IN_PLACE_VISITED = null;
   let USE_PROFILES = {};
   let FORBID_CONTENTS = null;
   const DEFAULT_FORBID_CONTENTS = addToSet({}, [
@@ -33791,18 +33822,23 @@ function createDOMPurify() {
     return !ALL_MATHML_TAGS[tagName] && (COMMON_SVG_AND_HTML_ELEMENTS[tagName] || !ALL_SVG_TAGS[tagName]);
   };
   const _checkValidNamespace = function _checkValidNamespace2(element) {
-    let parent = getParentNode(element);
-    if (!parent || !parent.tagName) parent = {
-      namespaceURI: NAMESPACE,
-      tagName: "template"
-    };
-    const tagName = stringToLowerCase(element.tagName);
-    const parentTagName = stringToLowerCase(parent.tagName);
-    if (!ALLOWED_NAMESPACES[element.namespaceURI]) return false;
-    if (element.namespaceURI === SVG_NAMESPACE) return _checkSvgNamespace(tagName, parent, parentTagName);
-    if (element.namespaceURI === MATHML_NAMESPACE) return _checkMathMlNamespace(tagName, parent, parentTagName);
-    if (element.namespaceURI === HTML_NAMESPACE) return _checkHtmlNamespace(tagName, parent, parentTagName);
-    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && ALLOWED_NAMESPACES[element.namespaceURI]) return true;
+    const elementNamespace = _readNamespaceURI(element);
+    const tagName = stringToLowerCase(_readNodeName(element));
+    const parentNode = getParentNode(element);
+    let parent;
+    let parentTagName;
+    if (parentNode && _readNodeType(parentNode) === NODE_TYPE.element) {
+      parent = { namespaceURI: _readNamespaceURI(parentNode) };
+      parentTagName = stringToLowerCase(_readNodeName(parentNode));
+    } else {
+      parent = { namespaceURI: NAMESPACE };
+      parentTagName = "template";
+    }
+    if (!ALLOWED_NAMESPACES[elementNamespace]) return false;
+    if (elementNamespace === SVG_NAMESPACE) return _checkSvgNamespace(tagName, parent, parentTagName);
+    if (elementNamespace === MATHML_NAMESPACE) return _checkMathMlNamespace(tagName, parent, parentTagName);
+    if (elementNamespace === HTML_NAMESPACE) return _checkHtmlNamespace(tagName, parent, parentTagName);
+    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && ALLOWED_NAMESPACES[elementNamespace]) return true;
     return false;
   };
   const _forceRemove = function _forceRemove2(node) {
@@ -33827,19 +33863,13 @@ function createDOMPurify() {
   const _neutralizeRoot = function _neutralizeRoot2(root) {
     _neutralizeSubtree(root);
     const childNodes = getChildNodes(root);
-    if (childNodes) {
-      const snapshot = [];
-      arrayForEach(childNodes, (child) => {
-        arrayPush(snapshot, child);
-      });
-      arrayForEach(snapshot, (child) => {
-        try {
-          remove(child);
-        } catch (_2) {
-        }
-      });
-    }
-    const attributes = getAttributes(root);
+    if (childNodes) arrayForEach(arraySlice(childNodes), (child) => {
+      try {
+        remove(child);
+      } catch (_2) {
+      }
+    });
+    const attributes = _readNodeType(root) === NODE_TYPE.element ? getAttributes(root) : null;
     if (attributes) for (let i3 = attributes.length - 1; i3 >= 0; --i3) {
       const attribute = attributes[i3];
       const name3 = attribute && attribute.name;
@@ -33886,14 +33916,93 @@ function createDOMPurify() {
       _stripAttributeNode(element, attribute, name3);
     }
   };
-  const _neutralizeSubtree = function _neutralizeSubtree2(root) {
+  const _walkTree = function _walkTree2(root, visit3) {
+    let intoShadow = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : false;
     const stack = [root];
     while (stack.length > 0) {
       const node = stack.pop();
-      if (_readNodeType(node) === NODE_TYPE.element) _stripDisallowedAttributes(node);
+      if (visit3(node) === false) continue;
+      if (intoShadow && _readNodeType(node) === NODE_TYPE.element) {
+        const shadowRoot = getShadowRoot(node);
+        if (_isDocumentFragment(shadowRoot)) stack.push(shadowRoot);
+      }
       const childNodes = getChildNodes(node);
       if (childNodes) for (let i3 = childNodes.length - 1; i3 >= 0; --i3) stack.push(childNodes[i3]);
     }
+  };
+  const _neutralizeSubtree = function _neutralizeSubtree2(root) {
+    _walkTree(root, (node) => {
+      if (_readNodeType(node) === NODE_TYPE.element) _stripDisallowedAttributes(node);
+    });
+  };
+  const _collectLiveNodes = function _collectLiveNodes2(root) {
+    const nodes = [];
+    _walkTree(root, (node) => {
+      nodes.push(node);
+    }, true);
+    return nodes;
+  };
+  const _neutralizeEscapedElements = function _neutralizeEscapedElements2(root, before) {
+    const reachable = setCreate();
+    arrayForEach(_collectLiveNodes(root), (node) => {
+      if (_readNodeType(node) === NODE_TYPE.element) setAdd(reachable, node);
+    });
+    arrayForEach(before, (node) => {
+      if (_readNodeType(node) === NODE_TYPE.element && !setHas(reachable, node)) _stripDisallowedAttributes(node);
+    });
+  };
+  const _neutralizeDiscarded = function _neutralizeDiscarded2(root, before) {
+    let rootRemoved = false;
+    arrayForEach(DOMPurify.removed, (entry) => {
+      if (entry.element) {
+        rootRemoved = rootRemoved || entry.element === root;
+        _neutralizeSubtree(entry.element);
+      }
+    });
+    _neutralizeEscapedElements(root, before);
+    return rootRemoved;
+  };
+  const MAX_UNVISITED_ROUNDS = 8;
+  const _sanitizeUnvisitedNodes = function _sanitizeUnvisitedNodes2(root, before) {
+    const visited = IN_PLACE_VISITED;
+    let original = null;
+    const getOriginal = () => {
+      if (!original) {
+        original = setCreate();
+        arrayForEach(before, (beforeNode) => {
+          setAdd(original, beforeNode);
+        });
+      }
+      return original;
+    };
+    for (let round = 0; ; round++) {
+      const live = _collectLiveNodes(root);
+      const containers = [root];
+      let pending2 = false;
+      arrayForEach(live, (node) => {
+        if (_readNodeType(node) === NODE_TYPE.documentFragment) arrayPush(containers, node);
+        else if (!pending2 && !setHas(visited, node)) pending2 = setHas(getOriginal(), node);
+      });
+      if (!pending2) return;
+      if (round >= MAX_UNVISITED_ROUNDS) throw typeErrorCreate("the tree kept changing during in-place sanitization; refusing to return it");
+      arrayForEach(containers, (container, index) => {
+        _sanitizeUnvisitedIn(container, index > 0, root, getOriginal());
+      });
+    }
+  };
+  const _sanitizeUnvisitedIn = function _sanitizeUnvisitedIn2(container, inShadow, root, original) {
+    const iterator = _createNodeIterator(container);
+    let node;
+    while (node = iterator.nextNode()) {
+      if (!setHas(original, node) || setHas(IN_PLACE_VISITED, node)) continue;
+      if (inShadow) _executeHooks(hooks.uponSanitizeShadowNode, node, null);
+      _sanitizeElements(node, root);
+      _sanitizeAttributes(node, root);
+      if (_isDocumentFragment(node.content)) _sanitizeShadowDOM2(node.content);
+    }
+  };
+  const _markVisited = function _markVisited2(node) {
+    if (IN_PLACE_VISITED) setAdd(IN_PLACE_VISITED, node);
   };
   const _isPatchLinkageAttribute = function _isPatchLinkageAttribute2(lcName, lcTag) {
     if (!SAFE_FOR_XML) return false;
@@ -33902,16 +34011,14 @@ function createDOMPurify() {
   };
   const _neutralizePatchLinkage = function _neutralizePatchLinkage2(root) {
     if (!SAFE_FOR_XML) return;
-    const stack = [root];
-    while (stack.length > 0) {
-      const node = stack.pop();
+    _walkTree(root, (node) => {
       const nodeType = _readNodeType(node);
       if (nodeType === NODE_TYPE.processingInstruction || nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, node.data)) {
         try {
           remove(node);
         } catch (_2) {
         }
-        continue;
+        return false;
       }
       if (nodeType === NODE_TYPE.element) {
         const element = node;
@@ -33922,9 +34029,8 @@ function createDOMPurify() {
         } catch (_2) {
         }
       }
-      const childNodes = getChildNodes(node);
-      if (childNodes) for (let i3 = childNodes.length - 1; i3 >= 0; --i3) stack.push(childNodes[i3]);
-    }
+      return true;
+    });
   };
   const _initDocument = function _initDocument2(dirty) {
     let doc = null;
@@ -33964,6 +34070,13 @@ function createDOMPurify() {
   };
   const _scrubTemplateExpressions2 = function _scrubTemplateExpressions(node) {
     var _node$querySelectorAl;
+    _scrubOwnCharacterData(node);
+    const templates = (_node$querySelectorAl = node.querySelectorAll) === null || _node$querySelectorAl === void 0 ? void 0 : _node$querySelectorAl.call(node, "template");
+    if (templates) arrayForEach(templates, (tmpl) => {
+      if (_isDocumentFragment(tmpl.content)) _scrubTemplateExpressions2(tmpl.content);
+    });
+  };
+  const _scrubOwnCharacterData = function _scrubOwnCharacterData2(node) {
     node.normalize();
     const doc = getOwnerDocument ? getOwnerDocument(node) : node.ownerDocument;
     const walker = createNodeIterator.call(doc || node, node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_CDATA_SECTION | NodeFilter.SHOW_PROCESSING_INSTRUCTION, null);
@@ -33972,10 +34085,6 @@ function createDOMPurify() {
       currentNode.data = _stripTemplateExpressions(currentNode.data);
       currentNode = walker.nextNode();
     }
-    const templates = (_node$querySelectorAl = node.querySelectorAll) === null || _node$querySelectorAl === void 0 ? void 0 : _node$querySelectorAl.call(node, "template");
-    if (templates) arrayForEach(templates, (tmpl) => {
-      if (_isDocumentFragment(tmpl.content)) _scrubTemplateExpressions2(tmpl.content);
-    });
   };
   const _isClobbered = function _isClobbered2(element) {
     const realTagName = getNodeName ? getNodeName(element) : null;
@@ -34007,7 +34116,7 @@ function createDOMPurify() {
   }
   const _isUnsafeNode = function _isUnsafeNode2(currentNode, tagName) {
     if (SAFE_FOR_XML && currentNode.hasChildNodes() && !_isNode(currentNode.firstElementChild) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.textContent) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.innerHTML)) return true;
-    if (SAFE_FOR_XML && currentNode.namespaceURI === HTML_NAMESPACE && LITERAL_TEXT_ELEMENTS[tagName] && (_isNode(currentNode.firstElementChild) || typeof currentNode.textContent === "string" && regExpTest(LITERAL_TEXT_CLOSE[tagName], currentNode.textContent))) return true;
+    if (SAFE_FOR_XML && LITERAL_TEXT_ELEMENTS[tagName] && _readNodeType(currentNode) === NODE_TYPE.element && _readNamespaceURI(currentNode) === HTML_NAMESPACE && (_isNode(currentNode.firstElementChild) || typeof currentNode.textContent === "string" && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.textContent))) return true;
     if (currentNode.nodeType === NODE_TYPE.processingInstruction) return true;
     if (SAFE_FOR_XML && currentNode.nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, currentNode.data)) return true;
     return false;
@@ -34022,7 +34131,7 @@ function createDOMPurify() {
   };
   const _sanitizeDisallowedNode = function _sanitizeDisallowedNode2(currentNode, tagName, root) {
     if (!FORBID_TAGS[tagName] && _isBasicCustomElement(tagName) && _matchesNameCheck(CUSTOM_ELEMENT_HANDLING.tagNameCheck, tagName)) return false;
-    if (KEEP_CONTENT && !FORBID_CONTENTS[tagName]) {
+    if (KEEP_CONTENT && !FORBID_CONTENTS[tagName] && !FORBID_CONTENTS[stringToLowerCase(tagName)]) {
       const parentNode = getParentNode(currentNode);
       const childNodes = getChildNodes(currentNode);
       if (childNodes && parentNode) {
@@ -34046,6 +34155,7 @@ function createDOMPurify() {
     return true;
   };
   const _sanitizeElements = function _sanitizeElements2(currentNode, root) {
+    _markVisited(currentNode);
     _executeHooks(hooks.beforeSanitizeElements, currentNode, null);
     if (_handleHookDetachedNode(currentNode, root)) return true;
     if (_isClobbered(currentNode)) {
@@ -34139,6 +34249,10 @@ function createDOMPurify() {
       return false;
     }
   };
+  const _isUnsafeAttributeValue = function _isUnsafeAttributeValue2(name3, value) {
+    if (SAFE_FOR_XML && regExpTest(/((--!?|])>)|<\/(style|script|title|xmp|textarea|noscript|iframe|noembed|noframes)/i, value)) return true;
+    return stringToLowerCase(name3) === "attributename" && stringMatch(value, "href") !== null;
+  };
   const _sanitizeAttributes = function _sanitizeAttributes2(currentNode, root) {
     _executeHooks(hooks.beforeSanitizeAttributes, currentNode, null);
     if (_handleHookDetachedNode(currentNode, root)) return;
@@ -34172,11 +34286,7 @@ function createDOMPurify() {
         value = SANITIZE_NAMED_PROPS_PREFIX + value;
         recreatedNamedProp = true;
       }
-      if (SAFE_FOR_XML && regExpTest(/((--!?|])>)|<\/(style|script|title|xmp|textarea|noscript|iframe|noembed|noframes)/i, value)) {
-        _removeAttribute(name3, currentNode, attr);
-        continue;
-      }
-      if (lcName === "attributename" && stringMatch(value, "href")) {
+      if (_isUnsafeAttributeValue(name3, value)) {
         _removeAttribute(name3, currentNode, attr);
         continue;
       }
@@ -34219,6 +34329,7 @@ function createDOMPurify() {
         }
       }
     }
+    if (SAFE_FOR_TEMPLATES) _scrubOwnCharacterData(fragment);
     _executeHooks(hooks.afterSanitizeShadowDOM, fragment, null);
   };
   const _sanitizeAttachedShadowRoots = function _sanitizeAttachedShadowRoots2(root) {
@@ -34282,6 +34393,8 @@ function createDOMPurify() {
     if (hooks.uponSanitizeAttribute.length > 0) ALLOWED_ATTR = clone(ALLOWED_ATTR);
     DOMPurify.removed = [];
     const inPlace = IN_PLACE && typeof dirty !== "string" && _isNode(dirty);
+    let inPlaceNodes = [];
+    const outerVisited = IN_PLACE_VISITED;
     if (inPlace) {
       _neutralizePatchLinkage(dirty);
       const nn2 = _readNodeName(dirty);
@@ -34296,12 +34409,8 @@ function createDOMPurify() {
         _neutralizeRoot(dirty);
         throw typeErrorCreate("root node is clobbered and cannot be sanitized in-place");
       }
-      try {
-        _sanitizeAttachedShadowRoots(dirty);
-      } catch (error) {
-        _neutralizeRoot(dirty);
-        throw error;
-      }
+      inPlaceNodes = _collectLiveNodes(dirty);
+      IN_PLACE_VISITED = setCreate();
     } else if (_isNode(dirty)) {
       body2 = _initDocument("<!---->");
       importedNode = body2.ownerDocument.importNode(dirty, true);
@@ -34317,30 +34426,25 @@ function createDOMPurify() {
     if (body2 && FORCE_BODY) _forceRemove(body2.firstChild);
     const walkRoot = inPlace ? dirty : body2;
     try {
+      if (inPlace) _sanitizeAttachedShadowRoots(dirty);
       const nodeIterator = _createNodeIterator(walkRoot);
       while (currentNode = nodeIterator.nextNode()) {
         _sanitizeElements(currentNode, walkRoot);
         _sanitizeAttributes(currentNode, walkRoot);
         if (_isDocumentFragment(currentNode.content)) _sanitizeShadowDOM2(currentNode.content);
       }
+      if (inPlace) _sanitizeUnvisitedNodes(dirty, inPlaceNodes);
     } catch (error) {
       if (inPlace) {
         _neutralizeRoot(dirty);
-        arrayForEach(DOMPurify.removed, (entry) => {
-          if (entry.element) _neutralizeSubtree(entry.element);
-        });
+        _neutralizeDiscarded(dirty, inPlaceNodes);
       }
       throw error;
+    } finally {
+      IN_PLACE_VISITED = outerVisited;
     }
     if (inPlace) {
-      let rootWasRemoved = false;
-      arrayForEach(DOMPurify.removed, (entry) => {
-        if (entry.element) {
-          if (entry.element === dirty) rootWasRemoved = true;
-          _neutralizeSubtree(entry.element);
-        }
-      });
-      if (rootWasRemoved) throw typeErrorCreate("a node selected for removal could not be safely returned; refusing to sanitize in place");
+      if (_neutralizeDiscarded(dirty, inPlaceNodes)) throw typeErrorCreate("a node selected for removal could not be safely returned; refusing to sanitize in place");
       if (SAFE_FOR_TEMPLATES) _scrubTemplateExpressions2(dirty);
       return dirty;
     }
@@ -34377,6 +34481,7 @@ function createDOMPurify() {
     if (!CONFIG) _parseConfig({});
     const lcTag = transformCaseFunc(tag);
     const lcName = transformCaseFunc(attr);
+    if (typeof value === "string" && (_isUnsafeAttributeValue(attr, value) || !ALLOW_SELF_CLOSE_IN_ATTR && regExpTest(SELF_CLOSING_TAG, value))) return false;
     return _isValidAttribute(lcTag, lcName, value);
   };
   DOMPurify.addHook = function(entryPoint, hookFunction) {
@@ -54917,7 +55022,7 @@ function createWorkspaceDiagnostics(client, {
     if (Array.isArray(saved)) dismissed = new Set(saved.filter((item) => typeof item === "string").slice(-MAX_DISMISSED));
   } catch {
   }
-  let snapshot = { resources: null, issues: [], loading: true, error: null, showSummary: false };
+  let snapshot = { resources: null, issues: [], loading: true, error: null, showSummary: false, availabilityReady: false };
   let generation = 0;
   let disposed = false;
   let sessionAvailability = null;
@@ -54931,7 +55036,7 @@ function createWorkspaceDiagnostics(client, {
     }
   };
   const commit = (next) => {
-    snapshot = { ...next, showSummary: next.issues.some((issue) => !dismissed.has(issue.key)) };
+    snapshot = { ...next, availabilityReady: sessionAvailabilityReady(sessionAvailability), showSummary: next.issues.some((issue) => !dismissed.has(issue.key)) };
     for (const listener of listeners) listener();
   };
   const reconcile = (resources) => {
@@ -54978,6 +55083,7 @@ function createWorkspaceDiagnostics(client, {
       if (disposed) return;
       sessionAvailability = next;
       if (!snapshot.loading && snapshot.resources !== null) reconcile(snapshot.resources);
+      else commit(snapshot);
     },
     async refresh() {
       if (disposed) return;
@@ -55089,6 +55195,53 @@ function operationLocator(row) {
   return JSON.stringify(locator, null, 2);
 }
 
+// packages/client/src/play/maintenance.js
+async function archiveInvalidPlaythroughs(client, {
+  controller: controller2,
+  expectedWorkspaceScope,
+  isCurrent = () => true,
+  now = () => /* @__PURE__ */ new Date()
+} = {}) {
+  const scope = expectedWorkspaceScope ?? workspaceDiagnosticScope(await client.getWorkspace());
+  await controller2.refresh();
+  if (!isCurrent()) return null;
+  const snapshot = controller2.getSnapshot();
+  if (snapshot.loading || snapshot.error || snapshot.availabilityReady !== true || snapshot.resources?.workspace?.selected !== true || workspaceDiagnosticScope(snapshot.resources.workspace) !== scope || snapshot.issues.some((issue) => issue.kind === "workspace")) return null;
+  const targets = /* @__PURE__ */ new Map();
+  for (const issue of snapshot.issues) {
+    const row = issue.playthrough;
+    if (issue.kind === "timeline" && typeof row?.id === "string" && typeof row.path === "string" && snapshot.resources.catalog.playthroughs.some((item) => item.id === row.id && item.path === row.path) && !isPlaythroughArchived(row)) targets.set(row.id, row.path);
+  }
+  if (targets.size === 0) return { archived: 0, preserved: snapshot.resources.catalog.playthroughs.filter((row) => !isPlaythroughArchived(row)).length, failed: 0 };
+  const archivedAt = now().toISOString();
+  let report;
+  await updateCatalog(client, async (current4) => {
+    const workspace = await client.getWorkspace();
+    if (!isCurrent() || controller2.getSnapshot().availabilityReady !== true || workspaceDiagnosticScope(workspace) !== scope || workspaceDiagnosticScope(controller2.getSnapshot().resources?.workspace) !== scope) {
+      throw new Error("PLAY_ARCHIVE_SCOPE_CHANGED");
+    }
+    report = { archived: 0, preserved: 0, failed: 0 };
+    const remaining = new Set(targets.keys());
+    const playthroughs = current4.playthroughs.map((row) => {
+      if (targets.has(row.id)) {
+        if (targets.get(row.id) !== row.path) return row;
+        remaining.delete(row.id);
+        if (!isPlaythroughArchived(row)) {
+          report.archived++;
+          return withPlaythroughArchive(row, archivedAt);
+        }
+        report.preserved++;
+        return row;
+      }
+      if (!isPlaythroughArchived(row)) report.preserved++;
+      return row;
+    });
+    report.failed = remaining.size;
+    return { ...current4, playthroughs };
+  }, { expectedWorkspaceScope: scope });
+  return isCurrent() ? report : null;
+}
+
 // packages/client/src/play/diagnostics.js
 var h27 = createLocalizedElement(import_react32.createElement);
 var diagnosticsCss = `
@@ -55143,6 +55296,8 @@ function explanation(issue) {
 function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroughId = null, showAll, close: close2 }) {
   const snapshot = (0, import_react32.useSyncExternalStore)(controller2.subscribe, controller2.getSnapshot);
   const [copyStatus, setCopyStatus] = (0, import_react32.useState)(null);
+  const workspace = (0, import_react32.useRef)(null);
+  if (snapshot.resources?.workspace) workspace.current = snapshot.resources.workspace;
   const issues = playthroughId === null ? snapshot.issues : snapshot.issues.filter((issue) => issue.kind === "workspace" || issue.playthroughId === playthroughId);
   const copy2 = async (selected) => {
     try {
@@ -55164,6 +55319,7 @@ function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroug
     h27(
       "div",
       { className: "dtv-body" },
+      h27(InvalidPlaythroughArchive, { client, controller: controller2, workspace: workspace.current, availabilityReady: snapshot.availabilityReady }),
       h27(OperationLogsPanel, { client }),
       h27("p", { className: "dtv-note" }, uiMessage("diagnostics.scope")),
       snapshot.resources?.workspace?.rootPath ? h27("p", { className: "dtv-note" }, rawText(snapshot.resources.workspace.rootPath)) : null,
@@ -55198,6 +55354,54 @@ function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroug
         );
       })
     )
+  );
+}
+function InvalidPlaythroughArchive({ client, controller: controller2, workspace, availabilityReady = false }) {
+  const [busy2, setBusy] = (0, import_react32.useState)(false);
+  const [report, setReport] = (0, import_react32.useState)(null);
+  const [failed, setFailed] = (0, import_react32.useState)(false);
+  const generation = (0, import_react32.useRef)(0);
+  const scope = workspaceDiagnosticScope(workspace);
+  (0, import_react32.useEffect)(() => {
+    generation.current++;
+    setBusy(false);
+    setReport(null);
+    setFailed(false);
+    return () => {
+      generation.current++;
+    };
+  }, [client, scope]);
+  const archive = async () => {
+    const request2 = ++generation.current;
+    const isCurrent = () => generation.current === request2;
+    setBusy(true);
+    setReport(null);
+    setFailed(false);
+    try {
+      const result = await archiveInvalidPlaythroughs(client, { controller: controller2, isCurrent, expectedWorkspaceScope: scope });
+      if (!isCurrent()) return;
+      if (result === null) setFailed(true);
+      else setReport(result);
+      await controller2.refresh();
+    } catch {
+      if (isCurrent()) setFailed(true);
+    } finally {
+      if (isCurrent()) setBusy(false);
+    }
+  };
+  if (!client?.getWorkspace || !controller2?.getSnapshot) return null;
+  return h27(
+    "div",
+    { className: "dtv-diagnostic-card" },
+    h27("p", null, uiMessage("diagnostics.archiveInvalidHint")),
+    h27("button", {
+      type: "button",
+      className: "dtv-button",
+      disabled: busy2 || !availabilityReady || workspace?.selected !== true,
+      onClick: archive
+    }, uiMessage(busy2 ? "diagnostics.archiveInvalidBusy" : "diagnostics.archiveInvalid")),
+    report ? h27("p", { role: "status" }, uiMessage("diagnostics.archiveInvalidResult", report)) : null,
+    failed ? h27("p", { role: "status" }, uiMessage("diagnostics.archiveInvalidFailed")) : null
   );
 }
 function OperationLogsPanel({ client }) {
@@ -55598,16 +55802,8 @@ async function setPlaythroughArchived(client, playthrough, archived, { now = () 
     const index = current4.playthroughs.findIndex((item) => item.id === playthrough.id && item.path === playthrough.path);
     if (index < 0) throw new Error("play.archive.missing");
     const fresh = current4.playthroughs[index];
-    if (isPlaythroughArchived(fresh) === archived) return current4;
-    const known = { ...fresh.ext?.pmpDshTavern };
-    if (archived) known.archivedAt = archivedAt;
-    else delete known.archivedAt;
-    const ext = { ...fresh.ext };
-    if (Object.keys(known).length === 0) delete ext.pmpDshTavern;
-    else ext.pmpDshTavern = known;
-    const updated = { ...fresh };
-    if (Object.keys(ext).length === 0) delete updated.ext;
-    else updated.ext = ext;
+    const updated = withPlaythroughArchive(fresh, archivedAt);
+    if (updated === fresh) return current4;
     const playthroughs = [...current4.playthroughs];
     playthroughs[index] = updated;
     return { ...current4, playthroughs };
@@ -57713,11 +57909,12 @@ function createLivePlayClient({
     managedRevisions.set(path3, revision);
     return parsed;
   }
-  async function putJsonFile(path3, value, normalize, label) {
+  async function putJsonFile(path3, value, normalize, label, { expectedWorkspaceScope } = {}) {
     const normalized = normalize(value, label);
     const body2 = {
       content: JSON.stringify(normalized),
-      expectedRevision: expectedRevision(path3)
+      expectedRevision: expectedRevision(path3),
+      ...expectedWorkspaceScope === void 0 ? {} : { expectedWorkspaceScope }
     };
     try {
       const response = await v2("PUT", `/workspace/files${pathQuery(path3)}`, body2);
@@ -57797,10 +57994,16 @@ function createLivePlayClient({
       if (options !== null && typeof options === "object" && Object.hasOwn(options, "expectedRevision")) {
         body2.expectedRevision = options.expectedRevision;
       }
+      if (options !== null && typeof options === "object" && Object.hasOwn(options, "expectedWorkspaceScope")) {
+        body2.expectedWorkspaceScope = options.expectedWorkspaceScope;
+      }
       return v2("PUT", `/workspace/files${pathQuery(path3)}`, body2);
     },
     getCatalog() {
       return getJsonFile("catalog.json", normalizeCatalog, "catalog");
+    },
+    inspectPlaythrough(playthroughId) {
+      return v2("GET", `/playthroughs/${encodeURIComponent(playthroughId)}/availability`);
     },
     putCatalog(catalog2) {
       return putJsonFile("catalog.json", catalog2, normalizeCatalog, "catalog");
@@ -57817,7 +58020,7 @@ function createLivePlayClient({
             throw error;
           }
         },
-        putFresh: (value) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog"),
+        putFresh: (value) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog", options),
         mutator,
         options
       });
@@ -59656,7 +59859,7 @@ async function apply5(ctx) {
 /*! Bundled license information:
 
 dompurify/dist/purify.es.mjs:
-  (*! @license DOMPurify 3.4.16 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.16/LICENSE *)
+  (*! @license DOMPurify 3.4.17 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.17/LICENSE *)
   (*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE *)
 */
 

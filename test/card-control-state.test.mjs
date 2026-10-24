@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import vm from 'node:vm'
+import {EventEmitter,once} from 'node:events'
 import {parseHTML} from 'linkedom'
 import * as DOM from 'linkedom/worker'
 import {VIRTUAL_DOM_BOOTSTRAP} from '../packages/client/src/play/virtual-dom-runtime.js'
@@ -8,8 +9,8 @@ import {projectCardControlState,cardControlEventChecked} from '../packages/clien
 import {createCardScopedStorage,CARD_STORAGE_RUNTIME} from '../packages/client/src/play/card-scoped-storage.js'
 import {readFileSync} from 'node:fs'
 
-test('a guest veto of a native toggle emits a correcting view even when its snapshot is unchanged',async()=>{
- const guest=vm.createContext({__TavernDOM:DOM}),messages=[]
+test('a guest veto of a native toggle emits a correcting view even when its snapshot is unchanged',async t=>{
+ const guest=vm.createContext({__TavernDOM:DOM}),messages=[],events=new EventEmitter()
  const interpreter={setProp:(_,key,value)=>guest[key]=value,newFunction:(_,fn)=>fn,newAsyncifiedFunction:()=>()=>{},getString:value=>value,newString:value=>value,typeof:value=>typeof value,evalCodeAsync:async code=>{const value=vm.runInContext(code,guest);return{value:{raw:value,dispose(){}}}}}
  interpreter.typeof=handle=>typeof handle.raw;interpreter.getString=handle=>typeof handle==='string'?handle:handle.raw
  interpreter.newFunction=(_,fn)=>Object.assign(fn,{dispose(){}});interpreter.newAsyncifiedFunction=()=>Object.assign(()=>{},{dispose(){}})
@@ -17,17 +18,19 @@ test('a guest veto of a native toggle emits a correcting view even when its snap
  const source=readFileSync(new URL('../packages/client/src/play/card-worker.js',import.meta.url),'utf8').replace(/^import[^\n]*\n/gm,'')
  const limits=source.includes('DEPENDENCY_LIMITS')?(await import('../packages/client/src/play/rendering-limits.js')).DEPENDENCY_LIMITS:undefined
  const photo=source.includes('CARD_PHOTO_RUNTIME')?(await import('../packages/client/src/play/card-photo-runtime.js')).CARD_PHOTO_RUNTIME:''
- const worker=vm.createContext({DEPENDENCY_LIMITS:limits,CARD_PHOTO_RUNTIME:photo,createAsyncJobDrain:()=>async()=>{},newQuickJSAsyncWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP,TAVERN_VIRTUAL_DOM_SOURCE:'',TAVERN_QUICKJS_VERSION:'fixture',crypto:globalThis.crypto,TextEncoder,performance,self:{postMessage:value=>messages.push(value),close(){}},setTimeout,clearTimeout})
+ const worker=vm.createContext({DEPENDENCY_LIMITS:limits,CARD_PHOTO_RUNTIME:photo,createAsyncJobDrain:()=>async()=>{},newQuickJSAsyncWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP,TAVERN_VIRTUAL_DOM_SOURCE:'',TAVERN_QUICKJS_VERSION:'fixture',crypto:globalThis.crypto,TextEncoder,performance,self:{postMessage:value=>{messages.push(value);events.emit(value.kind,value.kind==='error'?Error(value.value):value)},close(){}},setTimeout,clearTimeout})
  vm.runInContext(source,worker)
+ t.after(()=>worker.self.onmessage({data:{kind:'dispose',nonce:'fixture'}}))
+ const ready=once(events,'ready',{signal:AbortSignal.timeout(5000)})
  worker.self.onmessage({data:{kind:'init',nonce:'fixture',html:'<input type="checkbox" id="veto">',runs:[{code:"document.getElementById('veto').addEventListener('click',event=>{event.target.checked=false})"}]}})
- for(let count=0;count<80&&!messages.some(message=>message.kind==='ready');count++)await new Promise(resolve=>setImmediate(resolve))
+ await ready
  assert.ok(messages.some(message=>message.kind==='ready'),JSON.stringify(messages))
  const before=messages.filter(message=>message.kind==='view');assert.equal(before.length,1)
  const target=JSON.parse(before[0].value).controls[0].id
+ const idle=once(events,'idle',{signal:AbortSignal.timeout(5000)})
  worker.self.onmessage({data:{kind:'event',nonce:'fixture',taskId:'native',controlSequence:1,value:{type:'click',target,checked:true}}})
- for(let count=0;count<40&&messages.filter(message=>message.kind==='view').length<2;count++)await new Promise(resolve=>setImmediate(resolve))
+ await idle
  const after=messages.filter(message=>message.kind==='view');assert.equal(after.length,2);assert.equal(after[1].value,before[0].value);assert.equal(after[1].controlSequence,1)
- worker.self.onmessage({data:{kind:'dispose',nonce:'fixture'}})
 })
 
 test('live radio and checkbox state survives virtual HTML snapshots without changing their defaults',()=>{

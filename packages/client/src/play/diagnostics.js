@@ -1,8 +1,9 @@
 import { createElement, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { createLocalizedElement, rawText, uiMessage } from '../i18n.js'
 import { playthroughDisplayTitle } from './title.js'
-import { workspaceDiagnosticReport } from './diagnostics-state.js'
+import { workspaceDiagnosticReport, workspaceDiagnosticScope } from './diagnostics-state.js'
 import { operationLabel, operationResult, operationObjects, operationPageJsonl, operationLocator } from './operation-log-view.js'
+import { archiveInvalidPlaythroughs } from './maintenance.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -57,6 +58,8 @@ function explanation(issue) {
 export function WorkspaceDiagnosticsPanel({ client, controller, playthroughId = null, showAll, close }) {
   const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
   const [copyStatus, setCopyStatus] = useState(null)
+  const workspace = useRef(null)
+  if (snapshot.resources?.workspace) workspace.current = snapshot.resources.workspace
   const issues = playthroughId === null ? snapshot.issues : snapshot.issues.filter(issue => issue.kind === 'workspace' || issue.playthroughId === playthroughId)
   const copy = async selected => {
     try {
@@ -70,6 +73,7 @@ export function WorkspaceDiagnosticsPanel({ client, controller, playthroughId = 
       h('button', { type: 'button', className: 'dtv-close', onClick: close, 'aria-label': uiMessage('common.close') }, '×'),
     ),
     h('div', { className: 'dtv-body' },
+      h(InvalidPlaythroughArchive, { client, controller, workspace: workspace.current, availabilityReady: snapshot.availabilityReady }),
       h(OperationLogsPanel, { client }),
       h('p', { className: 'dtv-note' }, uiMessage('diagnostics.scope')),
       snapshot.resources?.workspace?.rootPath ? h('p', { className: 'dtv-note' }, rawText(snapshot.resources.workspace.rootPath)) : null,
@@ -96,6 +100,40 @@ export function WorkspaceDiagnosticsPanel({ client, controller, playthroughId = 
         )
       }),
     ),
+  )
+}
+
+export function InvalidPlaythroughArchive({ client, controller, workspace, availabilityReady = false }) {
+  const [busy, setBusy] = useState(false)
+  const [report, setReport] = useState(null)
+  const [failed, setFailed] = useState(false)
+  const generation = useRef(0)
+  const scope = workspaceDiagnosticScope(workspace)
+  useEffect(() => {
+    generation.current++
+    setBusy(false); setReport(null); setFailed(false)
+    return () => { generation.current++ }
+  }, [client, scope])
+  const archive = async () => {
+    const request = ++generation.current
+    const isCurrent = () => generation.current === request
+    setBusy(true); setReport(null); setFailed(false)
+    try {
+      const result = await archiveInvalidPlaythroughs(client, { controller, isCurrent, expectedWorkspaceScope: scope })
+      if (!isCurrent()) return
+      if (result === null) setFailed(true)
+      else setReport(result)
+      await controller.refresh()
+    } catch { if (isCurrent()) setFailed(true) }
+    finally { if (isCurrent()) setBusy(false) }
+  }
+  if (!client?.getWorkspace || !controller?.getSnapshot) return null
+  return h('div', { className: 'dtv-diagnostic-card' },
+    h('p', null, uiMessage('diagnostics.archiveInvalidHint')),
+    h('button', { type: 'button', className: 'dtv-button', disabled: busy || !availabilityReady || workspace?.selected !== true,
+      onClick: archive }, uiMessage(busy ? 'diagnostics.archiveInvalidBusy' : 'diagnostics.archiveInvalid')),
+    report ? h('p', { role: 'status' }, uiMessage('diagnostics.archiveInvalidResult', report)) : null,
+    failed ? h('p', { role: 'status' }, uiMessage('diagnostics.archiveInvalidFailed')) : null,
   )
 }
 

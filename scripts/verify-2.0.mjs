@@ -35,6 +35,9 @@ const groups = [
   {
     name: 'P0 catalog/timeline validation, CAS, focus and path hardening',
     files: [
+      'test/play-maintenance.test.mjs',
+      'test/play-cleanup.test.mjs',
+      'test/maintenance-tools-host.test.mjs',
       'test/play-timeline.test.mjs',
       'test/play-workspace.test.mjs',
       'test/play-client-cas.test.mjs',

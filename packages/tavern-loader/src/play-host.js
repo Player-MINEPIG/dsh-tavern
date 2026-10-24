@@ -44,6 +44,10 @@ export function createPlayHost({
   drafts,
 } = {}) {
   return {
+    async inspectSession(sessionId) {
+      try { return await callController('session.inspect', sessionController, 'inspect', sessionId) }
+      catch (error) { throw mapHostError(error) }
+    },
     async coordinates(sessionId) {
       return sessionCoordinates(await callController('session.inspect', sessionController, 'inspect', sessionId))
     },

@@ -1,4 +1,9 @@
 export default Object.freeze({
+  "diagnostics.archiveInvalid": "Archive invalid playthroughs",
+  "diagnostics.archiveInvalidBusy": "Checking and archiving…",
+  "diagnostics.archiveInvalidHint": "Archive all playthroughs that diagnostics reports as unable to open, including missing, corrupt, or unreadable timelines and unavailable sessions. Restore them from the archive list.",
+  "diagnostics.archiveInvalidResult": "Archived {archived}; preserved {preserved}; failed {failed}.",
+  "diagnostics.archiveInvalidFailed": "Could not complete the check. Refresh and try again.",
   "play.draft.sendFailed": "Could not send: {message}",
   "play.draft.bind": "Apply to this opening playthrough",
   "play.draft.unbind": "Clear this opening selection",

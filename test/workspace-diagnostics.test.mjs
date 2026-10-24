@@ -271,7 +271,7 @@ test('pending checks hide previous workspace data without resolving its dismisse
   result = pending.promise
   const refresh = diagnostics.refresh()
   assert.deepEqual(diagnostics.getSnapshot(), {
-    resources: null, issues: [], loading: true, error: null, showSummary: false,
+    resources: null, issues: [], loading: true, error: null, showSummary: false, availabilityReady: false,
   })
   pending.resolve(resources())
   await refresh
