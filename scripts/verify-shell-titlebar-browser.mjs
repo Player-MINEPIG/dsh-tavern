@@ -24,16 +24,7 @@ const css=${JSON.stringify(css)};
 const results=[],check=(name,pass,detail)=>results.push({name,pass:Boolean(pass),detail});
 const layer=document.querySelector('.dtv-layer'),native=document.querySelector('.fixture-native');
 let closed=0,nativeClicks=0;native.onclick=()=>nativeClicks++;
-for(const mode of [
- {name:'web',height:0,host:0,wco:0},
- {name:'Windows',height:40,host:40,wco:40},
- {name:'host clearance without WCO',height:40,host:40,wco:0},
- {name:'fullscreen',height:0,host:0,wco:0,fullscreen:true},
- {name:'restored with stale fullscreen marker',height:40,host:0,wco:40,fullscreen:true},
- {name:'restored taller native controls',height:58,host:0,wco:58,fullscreen:true},
- {name:'native controls exceed host clearance',height:58,host:40,wco:58},
- {name:'restored synchronized host',height:40,host:40,wco:40},
-]){
+function verify(mode){
  // A regular browser tab has no native WCO; substitute its measured CSS env input.
  document.querySelector('#tavern-css').textContent=css.replaceAll('env(titlebar-area-height,0px)',mode.wco+'px');
  document.documentElement.toggleAttribute('data-fullscreen',Boolean(mode.fullscreen));
@@ -53,9 +44,36 @@ for(const mode of [
   }
  }
 }
-const report=document.createElement('pre');report.id='results';report.textContent=JSON.stringify(results);document.body.append(report);
+for(const mode of [
+ {name:'web',height:0,host:0,wco:0},
+ {name:'Windows',height:40,host:40,wco:40},
+ {name:'host clearance without WCO',height:40,host:40,wco:0},
+ {name:'fullscreen',height:0,host:0,wco:0,fullscreen:true},
+ {name:'restored with stale fullscreen marker',height:40,host:0,wco:40,fullscreen:true},
+ {name:'restored taller native controls',height:58,host:0,wco:58,fullscreen:true},
+ {name:'native controls exceed host clearance',height:58,host:40,wco:58},
+ {name:'restored synchronized host',height:40,host:40,wco:40},
+])verify(mode);
+const details=document.createElement('details');details.innerHTML='<summary>All checks</summary>';document.body.append(details);
+const report=document.createElement('pre');report.id='results';report.textContent=JSON.stringify(results);details.append(report);
+const summary=document.createElement('p');document.body.append(summary);
+const summarize=()=>{const failed=results.filter(result=>!result.pass);summary.textContent=(results.length-failed.length)+' passed, '+failed.length+' failed';report.textContent=JSON.stringify(results);return failed};summarize();
+const start=document.createElement('button');start.textContent='Verify actual fullscreen';start.style.cssText='position:fixed;bottom:0;left:0;z-index:1000';document.body.append(start);
+const painted=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+start.onclick=async()=>{
+ try{
+  await document.documentElement.requestFullscreen();await painted();
+  check('actual fullscreen selector matches',document.documentElement.matches(':fullscreen'));
+  verify({name:'actual fullscreen with stale Host and WCO',height:0,host:40,wco:40});
+  await document.exitFullscreen();await painted();
+  check('fullscreen selector cleared after exit',!document.documentElement.matches(':fullscreen'));
+  verify({name:'exit fullscreen with stale Host marker',height:40,host:0,wco:40,fullscreen:true});
+ }catch(error){check('fullscreen API completed',false,String(error))}
+ const failed=summarize();start.textContent='Fullscreen complete: '+failed.length+' failed';
+};
 </script>`
   writeFileSync(join(directory, 'index.html'), fixture)
+  if (process.env.TITLEBAR_FIXTURE_PATH) writeFileSync(process.env.TITLEBAR_FIXTURE_PATH, fixture)
   const result = spawnSync(browser, ['--headless', '--disable-gpu', '--disable-extensions', '--disable-background-networking', '--no-first-run', '--window-size=1024,768', `--user-data-dir=${join(directory, 'profile')}`, '--dump-dom', '--virtual-time-budget=1000', `file://${join(directory, 'index.html')}`], { encoding: 'utf8', timeout: 30000 })
   const raw = result.stdout?.match(/<pre id="results">([\s\S]*?)<\/pre>/)?.[1]
   assert.ok(raw, result.stderr || 'Browser did not produce a titlebar report')

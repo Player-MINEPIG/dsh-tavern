@@ -97,6 +97,8 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 
 桌面标题栏回归运行 `node scripts/verify-shell-titlebar-browser.mjs`。真实 Chrome 检查四类面板在三档 UI 缩放、Web、不同窗口标题栏高度和全屏切换下的布局与关闭命中。Host chrome 与 WCO env 独立输入，覆盖退出全屏后 Host 仍为零、原生按钮已恢复的状态，并检查整个关闭按钮在原生区域下方。普通浏览器没有桌面 WCO，检查通过替换 CSS env 输入和模拟原生按钮区完成，不能替代 Windows Electron 的原生窗口验收。桌面需依次验证最大化、全屏、退出全屏、恢复普通窗口，并记录实际 env 高度；各档缩放均用原生鼠标点击关闭按钮，确认面板关闭、DSH 窗口保持显示，全屏没有多余顶部留白。
 
+需要真实 DOM 全屏回归时，设置 `TITLEBAR_FIXTURE_PATH` 导出 HTML，在活动浏览器标签页打开并点击「Verify actual fullscreen」。页面使用 Fullscreen API，保持 Host 与模拟 WCO 高度为 40px，检查 `:fullscreen` 生效时面板顶边为零；退出后保留过期 `data-fullscreen` 标记，检查 40px 避让恢复。仅设置该标记不能代表实际全屏。自动 headless 检查不包含这个需要用户手势的步骤。
+
 使用已获授权的独立测试 profile、工作区副本和目标 DSH 版本，安装步骤见 [安装文档](INSTALLATION.md)。更新运行中 Host 的后端文件后，重启 Host 才会加载新代码。
 
 以下 opt-in smoke 只读取 v2 `GET /chrome` 和 `GET /workspace`，确认运行中 Host 返回的模式与工作区信息；不覆盖写操作、Remote 传输或界面生命周期。将 URL 替换为测试 Host 地址。
