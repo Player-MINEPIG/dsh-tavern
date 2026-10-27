@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const browser = process.env.CHROME_PATH ?? [
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/chromium', '/usr/bin/google-chrome',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/chromium',
 ].find(existsSync)
 assert.ok(browser, 'Set CHROME_PATH to a Chrome/Chromium executable')
 const sources = ['packages/client/src/index.js', 'packages/character/src/client.js', 'packages/world-book-library/src/client.js', 'packages/user/src/client.js']
