@@ -44,6 +44,14 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 
 用同一个 `DSH_HOME` 启动 DSH，再按[开发验证指南](TESTING.md)检查。只升级 CLI 不会更新 profile 中的插件，请记录验收源码 revision。脚本规范化 macOS/Linux/Windows 路径，Windows 通过 npm PowerShell shim 以参数数组调用。只安装仓库根包，不单独安装内部 packages。安装／启动的 peer 准入无需版本例外。
 
+### 安装入口与依赖随包安装
+
+DSH 的 CLI、Web 和桌面插件管理共用 `pnpm add` 安装路径。CLI 可以安装 npm 包、Git 来源或本地／远程 tgz。自定义 Market 根据索引中的来源选择 `包名@版本` 或固定 commit 的 Git URL，不会自动选择仓库的 GitHub Release 附件。具体映射见 [DSH 的 Market 实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts)。
+
+Git 来源没有 `node_modules`，因此源码必须把 Assembler 放在普通 `dependencies` 中，并固定为已发布的 npm 版本；不能在源码中把不存在的依赖声明为 bundled。预构建 npm 包／tgz 才由 `pack:with-assembler` 同时写入 `bundleDependencies` 和实际依赖文件。发布 Tavern 源码前先确认其精确 Assembler 版本可从目标 registry 下载；本地 tgz 能安装，不代表尚未发布的依赖也能通过 Git 安装。
+
+验证时使用 DSH 的 `nodeLinker: hoisted`、`autoInstallPeers: false` 配置，只安装 Tavern。分别检查无 `node_modules` 的源码包和预构建 tgz，从已安装 Tavern 所在目录解析 `dsh-prompt-assembler/plugin`，再启动 Host 确认 Tavern 与 Assembler 服务可用。不要只检查 profile 顶层是否存在同名目录。
+
 ### DSH 提供官方运行依赖
 
 当前 `package.json` 把 `@deepseek-ai/dsh-util-crypto` 的 `0.2.1-rc.2` 与 `@deepseek-ai/cordis` 的 `4.0.5` 声明为必需 `peerDependencies`，由 DSH 运行时提供，避免插件安装第二份。源码构建和测试使用 `devDependencies` 中固定的 `0.2.1-rc.2` crypto 包。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供，不随 Tavern 打包。

@@ -44,6 +44,14 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 
 Start DSH with that same `DSH_HOME`, then follow [developer verification](TESTING_en.md). A CLI upgrade alone does not update the plugin in a profile. Record the tested source revision. The scripts normalize macOS/Linux/Windows paths; Windows uses the npm PowerShell shim with an argument array. Install only the repository root, not its internal packages. Installation/startup peer admission requires no compatibility exemption.
 
+### Installation channels and dependency delivery
+
+DSH CLI, Web and desktop plugin management share a `pnpm add` installation path. The CLI accepts npm packages, Git sources, and local or remote tarballs. Custom Market entries select `name@version` or a Git URL pinned to a commit; they do not automatically select GitHub Release assets. See the [DSH Market implementation](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts).
+
+Git sources have no `node_modules`, so the source manifest must declare Assembler as a regular dependency pinned to a published npm version. It must not declare absent files as bundled dependencies. Only prebuilt npm packages and tarballs use `pack:with-assembler` to add both `bundleDependencies` and the actual files. Before publishing Tavern source, confirm its exact Assembler version is downloadable from the target registry. A working local tarball does not establish that an unpublished dependency can be installed through Git.
+
+Validate with DSH's `nodeLinker: hoisted` and `autoInstallPeers: false`, installing only Tavern. Check a source package without `node_modules` and a prebuilt tarball separately. Resolve `dsh-prompt-assembler/plugin` from the installed Tavern package, then start the Host and confirm both services work. A directory at the profile's top level alone is insufficient evidence.
+
 ### DSH provides the runtime peers
 
 The current `package.json` declares `@deepseek-ai/dsh-util-crypto` at `>=0.2.1-rc.2 <0.2.2-0` and `@deepseek-ai/cordis` at `4.0.5` as required `peerDependencies` supplied by the DSH runtime, so the plugin does not install a second copy. Source builds and tests use the `0.2.1-rc.2` crypto package pinned in `devDependencies`. Browser contracts are declared in `dsh.client.inject`, supplied by DSH, and not bundled into Tavern.

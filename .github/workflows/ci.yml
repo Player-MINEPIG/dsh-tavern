@@ -53,5 +53,7 @@ jobs:
         run: npm run verify:2.0
       - name: Require the tracked browser bundle to be current
         run: git diff --exit-code -- dist/client.js
+      - name: Verify panel close buttons outside desktop window controls
+        run: node scripts/verify-shell-titlebar-browser.mjs
       - name: Audit production dependencies
         run: npm audit --omit=dev

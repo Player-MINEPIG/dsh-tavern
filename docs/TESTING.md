@@ -93,6 +93,10 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 
 ## Host 与浏览器检查
 
+开场白回归运行 `DSH_TAVERN_PROMPT_COMPAT_ROOT=<目标官方依赖目录> node --test test/native-greeting-host.test.mjs`，使用与候选包相同的 Assembler。它验证两种标准策略、主／备选开场白、宏展开、实际首轮请求、后续轮次停止注入，以及恢复会话后读取历史 Trace。使用离线 provider，不调用真实模型。
+
+桌面标题栏回归运行 `node scripts/verify-shell-titlebar-browser.mjs`。真实 Chrome 检查四类面板在三档 UI 缩放、Web、不同窗口标题栏高度和全屏切换下的布局与关闭命中。该检查使用模拟原生按钮区，不能替代 Windows Electron 的原生窗口验收。
+
 使用已获授权的独立测试 profile、工作区副本和目标 DSH 版本，安装步骤见 [安装文档](INSTALLATION.md)。更新运行中 Host 的后端文件后，重启 Host 才会加载新代码。
 
 以下 opt-in smoke 只读取 v2 `GET /chrome` 和 `GET /workspace`，确认运行中 Host 返回的模式与工作区信息；不覆盖写操作、Remote 传输或界面生命周期。将 URL 替换为测试 Host 地址。

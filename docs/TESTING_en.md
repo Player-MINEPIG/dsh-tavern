@@ -93,6 +93,10 @@ Run `node --test test/companion.test.mjs test/tavern-bundle.test.mjs` for Tavern
 
 ## Host and browser checks
 
+Run `DSH_TAVERN_PROMPT_COMPAT_ROOT=<official dependency directory> node --test test/native-greeting-host.test.mjs` with the same Assembler as the candidate package. It checks both standard layouts, primary and alternate greetings, macros, the actual first request, later-turn gating, and historical Trace after restoring a session. The provider is offline.
+
+Run `node scripts/verify-shell-titlebar-browser.mjs` to check four panel types at three UI scales across Web, different window-titlebar heights, and fullscreen transitions in Chrome. It verifies layout and close-button hit testing with a simulated native control region. Actual Windows Electron acceptance remains separate.
+
 Use an authorized, isolated test profile, a workspace copy, and the target DSH version; see [installation](INSTALLATION_en.md). After replacing backend files in a running Host, restart it to load the new code.
 
 This opt-in smoke only reads v2 `GET /chrome` and `GET /workspace`, checking mode and workspace information from a running Host. It does not cover writes, Remote transport, or UI lifecycle. Replace the URL with the test Host address.
