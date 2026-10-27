@@ -6,7 +6,7 @@ Tavern 的 DSH bundle 使用 `packages/tavern-loader/src/host.js`（也导出为
 
 bundle patch 使用包内相对文件路径声明 Host。DSH 锚定该路径，再通过所属软件包的 manifest 发现浏览器 bundle；软件包子路径说明符不参与官方客户端发现。
 
-当前合同面向 Tavern **4.0.0**、Assembler **v1.1.3** 与 DSH **0.2.1-rc.2 / 0.2.1-rc.3**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
+当前合同面向 Tavern **3.0.6**、Assembler **v1.1.3** 与 DSH **0.2.1-rc.2 / 0.2.1-rc.3**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
 
 ## 目标与所有权
 

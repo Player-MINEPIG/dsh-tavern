@@ -2,7 +2,7 @@
 
 [中文](ASSEMBLER_INTEGRATION.md) · [Assembly behavior](REQUEST_ASSEMBLY_en.md) · [Plugin repository](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Tavern 4.0.0 requires independently installed and enabled Standard Assembler 1.1.3. Its required peer range is `~1.1.3`. Assembler owns strategy storage, source registration, request hooks, the secure API and independent configuration entry. It has no package dependency on Tavern or Memory Manager. Tavern and other plugins consume the same public service without owning private copies.
+Tavern 3.0.6 requires independently installed and enabled Standard Assembler 1.1.3. Its required peer range is `~1.1.3`. Assembler owns strategy storage, source registration, request hooks, the secure API and independent configuration entry. It has no package dependency on Tavern or Memory Manager. Tavern and other plugins consume the same public service without owning private copies.
 
 The Assembler repository owns `adapters/tavern` and `adapters/memory-manager`, which consume providers' public read-only services. Sources retain ownership of their data, parsing and permissions. DSH durable history remains authoritative. Third parties can fork the repository or contribute adapter changes.
 
@@ -14,12 +14,12 @@ Install and enable Assembler in the same DSH profile before Tavern. GUI **Plugin
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v4.0.0/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.0.6/pmp-dsh-tavern-4.0.0.tgz
 ```
 
 Install both prebuilt packages separately. They do not require publishing or downloading npm Assembler 1.1.3. Tavern no longer carries Assembler or installs it when the peer is missing. The target DSH uses `autoInstallPeers: false`; package registration and bundle activation are different operations. Reload or restart when requested by the GUI, then check both components' startup.
 
-When upgrading from 3.0.5 or a bundled candidate, default Assembler storage stays at `<DSH_HOME>/dsh-prompt-assembler/`. Retain Tavern data, strategies and session selections without rewriting history. Move an old custom `assemblerStorageDir` to independent Assembler's `storageDir` and remove the field from Tavern configuration. Version 4.0.0 rejects that obsolete field. Copy security settings previously forwarded to Assembler into its own `security`; retain Tavern `security` settings needed by Tavern. See the complete [upgrade procedure](INSTALLATION_en.md#upgrade-to-4).
+When upgrading from 3.0.5 or a bundled candidate, default Assembler storage stays at `<DSH_HOME>/dsh-prompt-assembler/`. Retain Tavern data, strategies and session selections without rewriting history. Move an old custom `assemblerStorageDir` to independent Assembler's `storageDir` and remove the field from Tavern configuration. Version 3.0.6 rejects that obsolete field. Copy security settings previously forwarded to Assembler into its own `security`; retain Tavern `security` settings needed by Tavern. See the complete [upgrade procedure](INSTALLATION_en.md#upgrade-to-3-0-6).
 
 ## Shared services and lifecycle
 

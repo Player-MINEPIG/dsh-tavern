@@ -6,7 +6,7 @@ The Tavern DSH bundle uses `packages/tavern-loader/src/host.js` (also exported a
 
 The bundle patch declares the Host file relative to its package. DSH anchors that path and discovers the browser bundle from the enclosing package manifest; a package subpath specifier would not participate in official client discovery.
 
-This contract covers Tavern **4.0.0**, Assembler **v1.1.3** and DSH **0.2.1-rc.2 / 0.2.1-rc.3**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
+This contract covers Tavern **3.0.6**, Assembler **v1.1.3** and DSH **0.2.1-rc.2 / 0.2.1-rc.3**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
 
 ## Goals and ownership
 

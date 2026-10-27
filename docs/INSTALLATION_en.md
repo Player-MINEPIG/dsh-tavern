@@ -2,7 +2,7 @@
 
 [中文](INSTALLATION.md)
 
-Tavern 4.0.0 requires independently installed and enabled Assembler 1.1.3. The two components ship separately. Tavern neither carries a private Assembler package nor downloads or starts one. Its required peer range is `~1.1.3`. See [integration](ASSEMBLER_INTEGRATION_en.md) for service ownership and optional Memory Manager.
+Tavern 3.0.6 requires independently installed and enabled Assembler 1.1.3. The two components ship separately. Tavern neither carries a private Assembler package nor downloads or starts one. Its required peer range is `~1.1.3`. See [integration](ASSEMBLER_INTEGRATION_en.md) for service ownership and optional Memory Manager.
 
 [Request assembly](REQUEST_ASSEMBLY_en.md) covers layout CRUD, application, preview, recorded request references and legacy advanced configuration reads. Current targets are DSH **0.2.1-rc.2 / 0.2.1-rc.3**, requiring Node `^22.19.0 || >=24.0.0`. Tavern embeds its frontend in DSH Web and Desktop, without an additional standalone Web UI.
 
@@ -21,7 +21,7 @@ Initialize the target DSH profile first. In GUI **Plugins → Add plugin**, past
 2. Tavern 4.0.0.
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v4.0.0/pmp-dsh-tavern-4.0.0.tgz
+   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.0.6/pmp-dsh-tavern-4.0.0.tgz
    ```
 
 Reload or restart the Host when the GUI requests it. If independent Assembler is already installed, check its version and enabled state. Registering a package in the profile does not establish that its bundle is enabled.
@@ -30,7 +30,7 @@ Before CLI installation or updates, stop the target Host. Put the target DSH on 
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v4.0.0/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.0.6/pmp-dsh-tavern-4.0.0.tgz
 ```
 
 These are prebuilt Release attachments. They do not require downloading Assembler 1.1.3 from npm. DSH runtime dependencies and Tavern's other regular dependencies retain their own installation mechanisms.
@@ -39,16 +39,16 @@ Market's "installed, effective after restart" means the package is registered, n
 
 Current releases support Standard strategies on stock core only. Advanced remains frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2, without a commitment to later adaptation. Plugin installation never patches DSH core.
 
-<a id="upgrade-to-4"></a>
-## Upgrade from 3.x or a bundled candidate to 4.0.0
+<a id="upgrade-to-3-0-6"></a>
+## Upgrade from a bundled Assembler version to 3.0.6
 
 1. Stop the target Host. Back up Tavern storage, Assembler storage, the RP workspace and corresponding DSH data.
 2. Install independent Assembler 1.1.3 in the same profile and select its bundle as enabled.
 3. Keep the default Assembler storage at `<DSH_HOME>/dsh-prompt-assembler/`. Do not delete that directory or replace it with an empty copy.
-4. If old Tavern configuration contains `assemblerStorageDir`, move that value to independent Assembler's `storageDir`, then remove the old Tavern field. Tavern 4.0.0 rejects the obsolete field rather than silently opening another strategy store. Keep Tavern's own `storageDir` unchanged.
+4. If old Tavern configuration contains `assemblerStorageDir`, move that value to independent Assembler's `storageDir`, then remove the old Tavern field. Tavern 3.0.6 rejects the obsolete field rather than silently opening another strategy store. Keep Tavern's own `storageDir` unchanged.
 5. Old Tavern `security` settings were also forwarded to Assembler. Copy the settings still needed for the assembly API into independent Assembler's `security`. Retain Tavern `security` settings that protect Tavern's own API.
 6. Remove the old Tavern package while retaining its data directories. In GUI use **Uninstall pmp-dsh-tavern**; in CLI run `dsh plugin --profile web remove pmp-dsh-tavern`. Do not clear Tavern, Assembler or DSH data.
-7. Reinstall Tavern using the 4.0.0 attachment URL above, confirm both bundles are enabled, and start the Host. Check character cards, strategies, session selections and Trace, then follow [runtime verification](TESTING_en.md).
+7. Reinstall Tavern using the 3.0.6 attachment URL above, confirm both bundles are enabled, and start the Host. Check character cards, strategies, session selections and Trace, then follow [runtime verification](TESTING_en.md).
 
 pnpm can retain files from the formerly bundled Assembler during an overwrite, causing SDK resolution to find 1.1.2. This upgrade from a bundled version requires removing and reinstalling the Tavern package; an overwrite alone does not reliably clear that copy.
 
@@ -84,7 +84,7 @@ If restart still produces `ERR_MODULE_NOT_FOUND`, check the target DSH version, 
 Use an isolated test profile initialized by the target DSH. Install and enable independent Assembler there first. Tavern's development lockfile pins a reviewed GitHub source archive and integrity. It does not require Assembler 1.1.3 to be published to npm.
 
 ```sh
-git clone --branch v4.0.0 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.0.6 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
