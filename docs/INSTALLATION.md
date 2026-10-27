@@ -46,9 +46,11 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 
 ### 安装入口与依赖随包安装
 
-DSH 的 CLI、Web 和桌面插件管理共用 `pnpm add` 安装路径。CLI 可以安装 npm 包、Git 来源或本地／远程 tgz。自定义 Market 根据索引中的来源选择 `包名@版本` 或固定 commit 的 Git URL，不会自动选择仓库的 GitHub Release 附件。具体映射见 [DSH 的 Market 实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts)。
+DSH 的 CLI、Web 和桌面插件管理共用 `pnpm add` 安装路径。GUI 的「添加插件」接受 npm 包名、GitHub 仓库地址或本地目录路径，经 `pluginManager.installBundle` 执行安装并启用；参见 [GUI 调用](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/client/ui-plugin-manager/src/client/manager-store.ts)与[共享安装实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/index.ts)。CLI 还可以安装本地／远程 tgz。自定义 Market 根据索引中的来源选择 `包名@版本` 或固定 commit 的 Git URL，不会自动选择仓库的 GitHub Release 附件。具体映射见 [DSH 的 Market 实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts)。
 
-Git 来源没有 `node_modules`，因此源码必须把 Assembler 放在普通 `dependencies` 中，并固定为已发布的 npm 版本；不能在源码中把不存在的依赖声明为 bundled。预构建 npm 包／tgz 才由 `pack:with-assembler` 同时写入 `bundleDependencies` 和实际依赖文件。发布 Tavern 源码前先确认其精确 Assembler 版本可从目标 registry 下载；本地 tgz 能安装，不代表尚未发布的依赖也能通过 Git 安装。
+普通源码分支不跟踪 `node_modules`，因此源码必须把 Assembler 放在普通 `dependencies` 中，并固定为已发布的 npm 版本；不能把不存在的依赖声明为 bundled。预构建 npm 包／tgz 由 `pack:with-assembler` 同时写入 `bundleDependencies` 和实际依赖文件。发布 Tavern 源码前先确认其精确 Assembler 版本可从目标 registry 下载；本地 tgz 能安装，不代表尚未发布的依赖也能通过 Git 安装。
+
+验收尚未发布的依赖时，可生成独立的预构建 Git 分支：包含已构建 Tavern、实际跟踪的 `node_modules/dsh-prompt-assembler` 文件、精确依赖版本和 `bundleDependencies`，移除构建脚本与开发依赖。GUI 填入该分支的完整 commit 地址，安装时无需另行发布 Assembler。不能只把普通源码分支的依赖改成 Git 子依赖；目标 pnpm 默认会拒绝该来源。验收须从 GUI 安装并核实实际加载版本，不以命令行或合成安装测试代替。
 
 验证时使用 DSH 的 `nodeLinker: hoisted`、`autoInstallPeers: false` 配置，只安装 Tavern。分别检查无 `node_modules` 的源码包和预构建 tgz，从已安装 Tavern 所在目录解析 `dsh-prompt-assembler/plugin`，再启动 Host 确认 Tavern 与 Assembler 服务可用。不要只检查 profile 顶层是否存在同名目录。
 

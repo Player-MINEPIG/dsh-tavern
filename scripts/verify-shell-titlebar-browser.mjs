@@ -17,14 +17,27 @@ const css = sources.map(path => {
 }).join('\n')
 const directory = mkdtempSync(join(tmpdir(), 'tavern-titlebar-'))
 try {
-  const fixture = `<!doctype html><meta charset="utf-8"><style>${css}
+  const fixture = `<!doctype html><meta charset="utf-8"><style id="tavern-css"></style><style>
 html,body{height:100%;margin:0}.fixture-overlay{position:absolute;inset:0;pointer-events:none}.fixture-native{position:absolute;top:0;right:0;width:138px;z-index:100;pointer-events:auto}
 </style><body><div class="fixture-overlay"><div class="dtv-layer"></div></div><div class="fixture-native"></div><script>
+const css=${JSON.stringify(css)};
 const results=[],check=(name,pass,detail)=>results.push({name,pass:Boolean(pass),detail});
 const layer=document.querySelector('.dtv-layer'),native=document.querySelector('.fixture-native');
 let closed=0,nativeClicks=0;native.onclick=()=>nativeClicks++;
-for(const mode of [{name:'web',height:0},{name:'Windows',height:40},{name:'taller titlebar',height:58},{name:'fullscreen',height:0}]){
- document.documentElement.style.setProperty('--dsh-frame-chrome-top',mode.height+'px');native.style.height=mode.height+'px';
+for(const mode of [
+ {name:'web',height:0,host:0,wco:0},
+ {name:'Windows',height:40,host:40,wco:40},
+ {name:'host clearance without WCO',height:40,host:40,wco:0},
+ {name:'fullscreen',height:0,host:0,wco:0,fullscreen:true},
+ {name:'restored with stale fullscreen marker',height:40,host:0,wco:40,fullscreen:true},
+ {name:'restored taller native controls',height:58,host:0,wco:58,fullscreen:true},
+ {name:'native controls exceed host clearance',height:58,host:40,wco:58},
+ {name:'restored synchronized host',height:40,host:40,wco:40},
+]){
+ // A regular browser tab has no native WCO; substitute its measured CSS env input.
+ document.querySelector('#tavern-css').textContent=css.replaceAll('env(titlebar-area-height,0px)',mode.wco+'px');
+ document.documentElement.toggleAttribute('data-fullscreen',Boolean(mode.fullscreen));
+ document.documentElement.style.setProperty('--dsh-frame-chrome-top',mode.host+'px');native.style.height=mode.height+'px';
  for(const scale of [.75,1,1.5]){
   layer.style.setProperty('--dtv-ui-scale',scale);
   for(const prefix of ['dtv','dcc','dwb','dtu']){
@@ -32,8 +45,9 @@ for(const mode of [{name:'web',height:0},{name:'Windows',height:40},{name:'talle
    panel.innerHTML='<div class="'+prefix+'-header"><div class="'+prefix+'-title">Panel</div><button class="'+prefix+'-close">✕</button></div>';
    const button=panel.querySelector('button');button.onclick=()=>{closed++;panel.remove()};layer.append(panel);
    const bounds=button.getBoundingClientRect(),frame=panel.getBoundingClientRect();
-   const hit=document.elementFromPoint(bounds.x+bounds.width/2,bounds.y+bounds.height/2),before=closed,beforeNative=nativeClicks;
+   const hit=document.elementFromPoint(bounds.x+bounds.width/2,bounds.y+Math.min(4,bounds.height/4)),before=closed,beforeNative=nativeClicks;
    check(mode.name+' scale '+scale+' '+prefix+' panel respects titlebar and bottom edge',Math.abs(frame.top-mode.height)<1&&Math.abs(frame.bottom-innerHeight)<1,{top:frame.top,bottom:frame.bottom});
+   check(mode.name+' scale '+scale+' '+prefix+' whole close stays below native controls',bounds.top>=mode.height-1,{top:bounds.top,nativeHeight:mode.height});
    check(mode.name+' scale '+scale+' '+prefix+' close receives pointer',hit===button,{top:bounds.top,bottom:bounds.bottom});
    hit?.click();check(mode.name+' scale '+scale+' '+prefix+' closes panel only',closed===before+1&&nativeClicks===beforeNative);panel.remove();
   }
