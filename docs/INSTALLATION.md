@@ -21,7 +21,7 @@ Host 与 DSH crypto peer 范围均为 `>=0.2.1-rc.2 <0.2.2-0`。范围内后续�
 2. Tavern 3.1.5。
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
    ```
 
 按 GUI 提示重载或重启 Host。已安装独立 Assembler 时，先核对版本和启用状态。仅将包登记到 profile 不代表其 bundle 已启用。
@@ -30,7 +30,7 @@ Host 与 DSH crypto peer 范围均为 `>=0.2.1-rc.2 <0.2.2-0`。范围内后续�
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
 ```
 
 这里安装的是预构建 Release 附件，不要求从 npm 下载 Assembler 1.1.3。DSH 的其他运行依赖与 Tavern 的普通依赖仍按各自的安装机制提供。

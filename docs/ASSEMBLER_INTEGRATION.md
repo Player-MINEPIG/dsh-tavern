@@ -14,7 +14,7 @@ Tavern 3.1.5 需要独立安装并启用标准 Assembler 1.1.3。必需 peer 范
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
 ```
 
 两个预构建包分别安装，不需要发布或下载 npm Assembler 1.1.3。Tavern 不再携带 Assembler，也不会因 peer 缺失而自动安装它。目标 DSH 使用 `autoInstallPeers: false`，包登记与 bundle 启用是不同操作。按 GUI 提示重载或重启，再核对两个组件的启动结果。

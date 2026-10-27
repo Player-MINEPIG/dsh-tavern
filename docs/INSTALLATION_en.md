@@ -18,10 +18,10 @@ Initialize the target DSH profile first. In GUI **Plugins → Add plugin**, past
    https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
    ```
 
-2. Tavern 4.0.0.
+2. Tavern 3.1.5.
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
    ```
 
 Reload or restart the Host when the GUI requests it. If independent Assembler is already installed, check its version and enabled state. Registering a package in the profile does not establish that its bundle is enabled.
@@ -30,7 +30,7 @@ Before CLI installation or updates, stop the target Host. Put the target DSH on 
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
 ```
 
 These are prebuilt Release attachments. They do not require downloading Assembler 1.1.3 from npm. DSH runtime dependencies and Tavern's other regular dependencies retain their own installation mechanisms.

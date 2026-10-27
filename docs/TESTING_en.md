@@ -91,7 +91,7 @@ For this compatibility boundary, additionally check all five resources through c
 
 Run `node --test test/tavern-bundle.test.mjs` and `npm test` to verify that Tavern only consumes the independent service and creates no Host or standalone-client copy. Package contents and lifecycle are separate boundaries and need separate checks. Run `DSH_TAVERN_PROMPT_COMPAT_ROOT=<official dependency directory> node --test test/host-client-discovery.test.mjs` to verify that the declared Host file is anchored by the official patch loader and advertises Tavern in the official browser module graph.
 
-Use a temporary profile outside the development checkout, retaining DSH's `nodeLinker: hoisted` and `autoInstallPeers: false`. Produce two separate tarballs with `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler`. Install and enable Assembler 1.1.3 before Tavern 4.0.0. Check that Tavern declares no `bundleDependencies`, regular Assembler subdependency or nested Assembler files. Verify the development source archive and lockfile through clean `npm ci --legacy-peer-deps`; do not rely on npm version 1.1.3 being available.
+Use a temporary profile outside the development checkout, retaining DSH's `nodeLinker: hoisted` and `autoInstallPeers: false`. Produce two separate tarballs with `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler`. Install and enable Assembler 1.1.3 before Tavern 3.1.5. Check that Tavern declares no `bundleDependencies`, regular Assembler subdependency or nested Assembler files. Verify the development source archive and lockfile through clean `npm ci --legacy-peer-deps`; do not rely on npm version 1.1.3 being available.
 
 Run these checks against both rc.2 and rc.3:
 

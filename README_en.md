@@ -58,13 +58,13 @@ Promo video: [Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/) (see t
 
 ### 0. Install
 
-Use DSH `0.2.1-rc.2` / `0.2.1-rc.3`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. In GUI **Plugins → Add plugin**, paste the [Assembler 1.1.3 tarball](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz) attachment URL, install it, and enable it. Then install and enable [Tavern 3.1.5](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz). Restart the Host when the GUI requests it. A Release webpage is not an installation address.
+Use DSH `0.2.1-rc.2` / `0.2.1-rc.3`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. In GUI **Plugins → Add plugin**, paste the [Assembler 1.1.3 tarball](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz) attachment URL, install it, and enable it. Then install and enable [Tavern 3.1.5](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz). Restart the Host when the GUI requests it. A Release webpage is not an installation address.
 
 For CLI installation, stop the target Host and install both components in this order:
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
 ```
 
 Tavern requires Assembler `~1.1.3` and does not download or start it automatically. If Assembler is already installed independently, check its version and enabled state. Standard uses public DSH interfaces. Advanced remains frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2. See [integration](docs/ASSEMBLER_INTEGRATION_en.md).

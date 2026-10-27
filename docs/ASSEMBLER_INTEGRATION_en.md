@@ -14,7 +14,7 @@ Install and enable Assembler in the same DSH profile before Tavern. GUI **Plugin
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
 ```
 
 Install both prebuilt packages separately. They do not require publishing or downloading npm Assembler 1.1.3. Tavern no longer carries Assembler or installs it when the peer is missing. The target DSH uses `autoInstallPeers: false`; package registration and bundle activation are different operations. Reload or restart when requested by the GUI, then check both components' startup.

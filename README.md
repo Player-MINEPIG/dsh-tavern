@@ -56,13 +56,13 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-请使用 DSH `0.2.1-rc.2` / `0.2.1-rc.3`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile。在 GUI 的“插件 → 添加插件”中，先粘贴 [Assembler 1.1.3 安装包](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz)的附件直链，安装并启用；再安装并启用 [Tavern 3.1.5](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz)。按界面提示重启 Host。不要把 Release 网页地址当成安装地址。
+请使用 DSH `0.2.1-rc.2` / `0.2.1-rc.3`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile。在 GUI 的“插件 → 添加插件”中，先粘贴 [Assembler 1.1.3 安装包](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz)的附件直链，安装并启用；再安装并启用 [Tavern 3.1.5](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz)。按界面提示重启 Host。不要把 Release 网页地址当成安装地址。
 
 命令行安装前停止目标 Host，按同一顺序安装两个组件：
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
 ```
 
 Tavern 要求 Assembler `~1.1.3`，不会自动下载或启动它。已有独立 Assembler 时先核对版本与启用状态。标准版通过 DSH 公开接口运行；进阶扩展冻结于 Assembler 1.1.0 / DSH 0.2.0-rc.2，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。
