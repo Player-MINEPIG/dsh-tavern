@@ -2,7 +2,7 @@
 
 [中文](RP_SECURE_MODE.md)
 
-This page describes Tavern 3.0.6's RP tool-interception boundary on target DSH `0.2.1-rc.2` / `0.2.1-rc.3`.
+This page describes Tavern 3.1.5's RP tool-interception boundary on target DSH `0.2.1-rc.2` / `0.2.1-rc.3`.
 
 RP is a session overlay, not a DSH agent preset. When it is on, this plugin intercepts high-risk tool calls before dispatch, pins a read-only file sandbox, and cancels the current turn. Changing the chat-bar permission chip cannot lift these limits. Turn it off with the RP switch on the character card, or with `/rp off`. Whether binding a character card enters RP automatically is controlled by **Follow character into RP** in UI settings; it is on by default.
 

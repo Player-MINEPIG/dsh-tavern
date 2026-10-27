@@ -1,17 +1,17 @@
 # Changelog
 
-## 3.0.6
+## 3.1.5
 
-- Assembler 改为独立共享的必需组件，Tavern 声明 `~1.1.3` peer，不再内嵌、自动启动或接管其 Host 与独立客户端。先安装并启用 Assembler 1.1.3，再安装 Tavern 3.0.6。移除 Tavern 保留独立 Assembler 及其其他消费者。
+- Assembler 改为独立共享的必需组件，Tavern 声明 `~1.1.3` peer，不再内嵌、自动启动或接管其 Host 与独立客户端。先安装并启用 Assembler 1.1.3，再安装 Tavern 3.1.5。移除 Tavern 保留独立 Assembler 及其其他消费者。
 - 新增可检查依赖的 `pmp-dsh-tavern/host` 加载入口，保留根包与 `./loader` 的公共导出。校验实际 Assembler 服务版本和能力，缺失或不兼容时提供安装诊断，不创建私有 fallback。
-- 从内嵌版本升级时，保留数据并先卸载旧 Tavern 软件包，再重新安装 3.0.6，避免 pnpm 残留旧副本。升级保留默认 Assembler 数据目录、策略、会话选择及已有 V4 历史。旧自定义 `assemblerStorageDir` 须移到独立 Assembler 的 `storageDir` 后从 Tavern 删除；原先转发的装配 API 安全设置复制到 Assembler 的 `security`，Tavern 自身安全设置保留。
+- 从内嵌版本升级时，保留数据并先卸载旧 Tavern 软件包，再重新安装 3.1.5，避免 pnpm 残留旧副本。升级保留默认 Assembler 数据目录、策略、会话选择及已有 V4 历史。旧自定义 `assemblerStorageDir` 须移到独立 Assembler 的 `storageDir` 后从 Tavern 删除；原先转发的装配 API 安全设置复制到 Assembler 的 `security`，Tavern 自身安全设置保留。
 - Assembler 1.1.3 修复标准 `native-slots` 与 `native-roles` 的首轮角色开场白引用，保留主／备选选择、宏与 Trace 来源，不伪造 assistant 历史；后续轮次不重复注入。
 - Windows 桌面面板避让取 Host chrome 与 WCO 实际高度的最大值，覆盖退出全屏后状态不同步的情况。实际 DOM 全屏使用 `:fullscreen` 将顶部避让清零，消除留白；退出后恢复避让，关闭按钮不与原生窗口按钮重叠。
 - GitHub Release 分别交付预构建 Tavern 与 Assembler tgz，GUI 使用附件直链安装。`pack:release` 替换内嵌打包流程；开发 SDK 由 lockfile 固定到 GitHub 源码归档，不要求发布 npm Assembler 1.1.3。目标 DSH 仍为 0.2.1-rc.2 / 0.2.1-rc.3，进阶扩展保持冻结。
 
 - Require independent shared Assembler as a `~1.1.3` peer. Tavern no longer carries, starts or takes over its Host or standalone client. Install and enable Assembler 1.1.3 before Tavern 4.0.0. Removing Tavern retains independent Assembler and its other consumers.
 - Add dependency-aware `pmp-dsh-tavern/host` loading while preserving public root and `./loader` exports. Validate the actual Assembler service version and capabilities, report missing or incompatible dependencies, and create no private fallback.
-- When upgrading from a bundled version, retain data, remove the old Tavern package and reinstall 3.0.6 to clear pnpm leftovers. Preserve default Assembler storage, strategies, session selections and existing V4 history. Move old custom `assemblerStorageDir` into independent Assembler's `storageDir` before removing the Tavern field. Copy formerly forwarded assembly API security settings to Assembler's `security`, retaining Tavern's own settings.
+- When upgrading from a bundled version, retain data, remove the old Tavern package and reinstall 3.1.5 to clear pnpm leftovers. Preserve default Assembler storage, strategies, session selections and existing V4 history. Move old custom `assemblerStorageDir` into independent Assembler's `storageDir` before removing the Tavern field. Copy formerly forwarded assembly API security settings to Assembler's `security`, retaining Tavern's own settings.
 - Assembler 1.1.3 restores first-turn character greeting references in Standard `native-slots` and `native-roles`. Retain primary/alternate selection, macros and Trace provenance without forging assistant history or reinjecting on later turns.
 - Keep Windows desktop panel close buttons outside native window controls using the greater of Host chrome and WCO heights after fullscreen exit. Actual DOM fullscreen clears the inset through `:fullscreen`; exit restores clearance without a blank strip or native-control overlap.
 - Ship separate prebuilt Tavern and Assembler tarballs as GitHub Release attachments for GUI URL installation. Replace bundled packaging with `pack:release`; pin the development SDK to a GitHub source archive through the lockfile without publishing npm Assembler 1.1.3. Retain DSH 0.2.1-rc.2 / 0.2.1-rc.3 targets and the frozen Advanced boundary.

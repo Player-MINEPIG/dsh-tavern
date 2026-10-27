@@ -2,7 +2,7 @@
 
 [English](ASSEMBLER_INTEGRATION_en.md) · [装配行为](REQUEST_ASSEMBLY.md) · [独立插件仓库](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Tavern 3.0.6 需要独立安装并启用标准 Assembler 1.1.3。必需 peer 范围为 `~1.1.3`。Assembler 拥有策略存储、来源注册、请求钩子、安全 API 和独立配置入口，不依赖 Tavern 或 Memory Manager。Tavern 及其他插件消费同一个公共服务，不各自托管副本。
+Tavern 3.1.5 需要独立安装并启用标准 Assembler 1.1.3。必需 peer 范围为 `~1.1.3`。Assembler 拥有策略存储、来源注册、请求钩子、安全 API 和独立配置入口，不依赖 Tavern 或 Memory Manager。Tavern 及其他插件消费同一个公共服务，不各自托管副本。
 
 `adapters/tavern` 与 `adapters/memory-manager` 位于 Assembler 仓库，消费来源公开的只读服务。来源继续拥有数据、解析语法和权限，DSH durable history 是历史的权威记录。第三方可 fork 或向该仓库提交适配改动。
 
@@ -14,12 +14,12 @@ Tavern 3.0.6 需要独立安装并启用标准 Assembler 1.1.3。必需 peer 范
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.0.6/pmp-dsh-tavern-4.0.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-4.0.0.tgz
 ```
 
 两个预构建包分别安装，不需要发布或下载 npm Assembler 1.1.3。Tavern 不再携带 Assembler，也不会因 peer 缺失而自动安装它。目标 DSH 使用 `autoInstallPeers: false`，包登记与 bundle 启用是不同操作。按 GUI 提示重载或重启，再核对两个组件的启动结果。
 
-从 3.0.5 或内嵌候选升级时，默认 Assembler 存储继续使用 `<DSH_HOME>/dsh-prompt-assembler/`。保留 Tavern 数据、策略和会话选择，不重写历史。旧自定义 `assemblerStorageDir` 要移到独立 Assembler 的 `storageDir` 并从 Tavern 配置删除；3.0.6 拒绝该旧字段。原先转发的安全设置应另复制到 Assembler 的 `security`，Tavern 自身需要的 `security` 保留。完整顺序见[升级步骤](INSTALLATION.md#upgrade-to-3-0-6)。
+从 3.0.5 或内嵌候选升级时，默认 Assembler 存储继续使用 `<DSH_HOME>/dsh-prompt-assembler/`。保留 Tavern 数据、策略和会话选择，不重写历史。旧自定义 `assemblerStorageDir` 要移到独立 Assembler 的 `storageDir` 并从 Tavern 配置删除；3.1.5 拒绝该旧字段。原先转发的安全设置应另复制到 Assembler 的 `security`，Tavern 自身需要的 `security` 保留。完整顺序见[升级步骤](INSTALLATION.md#upgrade-to-3-1-5)。
 
 ## 共享服务与生命周期
 
