@@ -7,9 +7,9 @@
 分别使用 rc.2 和 rc.3 依赖根验证准入与标准 Host 行为。范围测试中的未来 RC 和正式版只检查版本策略，不表示已实际运行该版本。Web 验收额外检查窄窗口中 RP / Trace 被收进“更多”后的打开与取消固定、会话切换、空白草稿返回和卸载恢复。
 
 <a id="backend-compatibility"></a>
-## 3.0.5 兼容范围
+## 4.0.0 兼容范围
 
-Tavern 3.0.5 与标准 Assembler 1.1.2 的 Host 准入范围为 `>=0.2.1-rc.2 <0.2.2-0`。实际验证版本为官方 [rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2)（`687f282e8625c6b8d11ff58211a90524be2e4317`）和 [rc.3](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3)（`1f81c047fc48fa190a683e469daa699857e9afe8`）。必需 peer 为 Cordis `4.0.5` 与同范围的 DSH crypto。后续 0.2.1 RC 和正式版按策略准入，不表示已经逐版验收；0.2.2 及其预发布需重新评估。
+Tavern 4.0.0 与独立标准 Assembler 1.1.3 的 Host 准入范围为 `>=0.2.1-rc.2 <0.2.2-0`。目标官方运行时为 [rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2)（`687f282e8625c6b8d11ff58211a90524be2e4317`）和 [rc.3](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3)（`1f81c047fc48fa190a683e469daa699857e9afe8`）。必需 peers 为 Cordis `4.0.5`、同范围的 DSH crypto 与 Assembler `~1.1.3`。Assembler 作为独立 profile 组件安装并启用。后续 0.2.1 RC 和正式版按策略准入，不表示已经逐版验收；0.2.2 及其预发布需重新评估。
 
 后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
 
@@ -21,7 +21,7 @@ Tavern 3.0.5 与标准 Assembler 1.1.2 的 Host 准入范围为 `>=0.2.1-rc.2 <0
 
 Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
-在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖显式包含 Assembler 测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.1-rc.2`；插件运行时由目标 DSH 提供该 peer。
+在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖通过 lockfile 固定 Assembler 的 GitHub 源码归档，并包含测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.1-rc.2`。插件运行时由目标 DSH 提供官方 peer，独立 Assembler 则由用户安装并启用。
 
 | 改动范围 | 检查 |
 | --- | --- |
@@ -87,9 +87,22 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 
 针对当前兼容边界，还需在隔离 Host 中检查：五类资源各自的创建、导入、导出、编辑；模板未保存时 Esc/切换面板保护；同一时刻保留多个会话，分别切换 RP、原生和 Trace；临时读失败恢复后保持有效绑定。采样测试使用显式参数拒绝、已输出内容、取消、鉴权错误，核对有限重试及 Trace 的 requested/effective/fallbacks。迁移应覆盖 V3 中断插入和 child catalog、旧格式链、备份冲突与重复执行。
 
-## 单包安装与 Assembler 生命周期
+## 独立 Assembler 与安装边界
 
-运行 `node --test test/companion.test.mjs test/tavern-bundle.test.mjs`，覆盖仅 Tavern、独立 Assembler 先启用、后启用及同时启用，检查单实例、路由与请求回调、卸载恢复和持久选择。在临时 DSH_HOME 中只安装 Tavern 的发布包，启动目标 Web Host，确认 Tavern 与 Assembler API 均可用，DT 入口与“插件 → 已安装插件”中的装配配置入口各只有一个，装配编辑器可打开。再安装独立 Assembler v1.1.2，重启并重复检查；分别卸载独立 Assembler 和 Tavern，确认剩余组件与共享选择正常。不要在真实用户 profile 中执行这些卸载检查。
+运行 `node --test test/tavern-bundle.test.mjs` 与 `npm test`，验证 Tavern 只消费独立服务，不创建 Host 或独立客户端副本。包内容与 lifecycle 是两个边界，分别检查。运行 `DSH_TAVERN_PROMPT_COMPAT_ROOT=<官方依赖目录> node --test test/host-client-discovery.test.mjs`，检查官方 patch loader 锚定声明的 Host 文件，并在官方浏览器模块图中发现 Tavern。
+
+使用开发 checkout 之外的临时 profile，保留 DSH 的 `nodeLinker: hoisted` 与 `autoInstallPeers: false`。通过 `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler` 生成两个独立 tgz，先安装并启用 Assembler 1.1.3，再安装 Tavern 4.0.0。检查 Tavern 包没有 `bundleDependencies`、普通 Assembler 子依赖或嵌套 Assembler 文件。开发依赖的源码归档与 lockfile 也要通过干净的 `npm ci --legacy-peer-deps` 验证，不能依赖 npm 上存在 1.1.3。
+
+在 rc.2 与 rc.3 分别执行以下检查：
+
+1. 只装 Tavern，确认缺失 Assembler 的提示可操作，且没有私有 Assembler 被创建。再检查 Assembler 已安装但未启用，以及实际服务低于必需版本的情况。
+2. 依次和同时启用两个 bundle。确认最终只有一个 Assembler 运行实例、一组装配 API 与一个独立配置入口。第三个消费者、Tavern 和独立 Assembler 应读取同一服务与策略库。
+3. 比较 Host 实际服务 `version`、Tavern SDK 解析地址和独立包版本。不以包导入成功、目录存在或安装命令退出成功代替服务验证。SDK 兼容但服务版本不兼容时仍须明确拒绝。
+4. 打开独立装配器与 Tavern 编辑器，保存并应用策略，核对刷新同步、未保存草稿、会话切换与关闭。Tavern 的客户端不得注册第二个独立 Assembler 配置入口或 overlay。
+5. 停用、重新启用和卸载 Tavern。独立 Assembler、第三个消费者、已保存策略与会话选择应保留；Tavern 来源和 provider 应释放。再停用或卸载 Assembler，确认消费者停止，不恢复私有副本。
+6. 从 3.0.5 或内嵌候选升级。保留默认 Assembler 目录，另以自定义 `assemblerStorageDir` 和原先转发的安全配置验证[升级步骤](INSTALLATION.md#upgrade-to-4)。旧字段必须在写入新资源前被拒绝；移到独立配置并删除旧字段后，原策略和选择仍可读取。
+
+真实 GUI 另分别使用最终 Release 附件直链与固定 Git 提交地址安装，记录输入、profile/lock 解析来源及实际加载版本。Release 网页地址应被拒绝，仓库安装不应自行选择附件。安装前停止 CLI 目标 Host；GUI 按自己的重载或重启提示操作。保留升级前副本，不在真实用户 profile 中执行卸载试验。
 
 ## Host 与浏览器检查
 

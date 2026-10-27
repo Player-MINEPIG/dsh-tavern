@@ -4,9 +4,9 @@
 
 本文的进阶协议路径是冻结的 Assembler `1.1.0` / DSH `0.2.0-rc.2` 历史合同。当前目标 DSH 仅验收标准版公开扩展点，新版不提供核心改动或后续进阶适配承诺。
 
-Tavern **3.0.5** 接入独立 Assembler **v1.1.2**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
+Tavern **4.0.0** 接入独立 Assembler **v1.1.3**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
 
-本文描述 Tavern 3.0.5 在 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 上的当前消息合同：DSH
+本文描述 Tavern 4.0.0 在 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
 `system/message` 进入有效消息 surface，`request/header` 保留 config/tools；Trace schema 4
 只持久化 metadata 与官方 Session 引用，并由 [v3 API](PROMPT_API_V3.md) 按需验证正文。
@@ -141,7 +141,7 @@ Assembler 的已安装插件配置入口与 Tavern 内嵌面板共享策略库�
 
 标准“预设身份优先”在原生投递区域内保留受支持的原角色；“预设插槽优先”围绕原生历史/输入边界适配预设控制的内容，并在预览标出调整。system 贡献走官方 sections；user 贡献走 context 或接纳的 pre-step 投递，**会进入 durable history**。移除来源停止后续贡献，旧 user 正文仍属于历史。原生历史、输入和工具事务保持受保护的内部顺序。
 
-进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.2/docs/BACKENDS.md)。
+进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS.md)。
 
 未应用策略时，兼容渲染器才把 Tavern profile 展开为 system parts。其 role/depth 近似只适用于该路径，不能用来描述当前标准或进阶策略。
 

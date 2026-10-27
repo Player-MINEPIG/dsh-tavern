@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "3.0.5",
+  "version": "4.0.0",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/bundle.js",
@@ -25,7 +25,8 @@
     "./opening-worldbook": "./packages/opening-worldbook/index.js",
     "./opening-worldbook/manifest": "./packages/opening-worldbook/manifest.js",
     "./scope-catalog": "./packages/scope-catalog/index.js",
-    "./history-policy": "./packages/history-policy/index.js"
+    "./history-policy": "./packages/history-policy/index.js",
+    "./host": "./packages/tavern-loader/src/host.js"
   },
   "files": [
     "screenshots.json",
@@ -111,7 +112,7 @@
     "pack:check": "npm pack --dry-run --cache .npm-cache",
     "plugin:install": "node scripts/install.mjs",
     "plugin:uninstall": "node scripts/uninstall.mjs",
-    "pack:with-assembler": "node scripts/pack-with-assembler.mjs"
+    "pack:release": "node scripts/pack-release.mjs"
   },
   "engines": {
     "node": ">=20",
@@ -123,11 +124,13 @@
     "@deepseek-ai/dsh-util-crypto": "0.2.1-rc.2",
     "esbuild": "^0.28.2",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "dsh-prompt-assembler": "https://codeload.github.com/Player-MINEPIG/dsh-prompt-assembler/tar.gz/68b6533c968156a27904bc633c7a3d5e2125df88"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.5",
-    "@deepseek-ai/dsh-util-crypto": ">=0.2.1-rc.2 <0.2.2-0"
+    "@deepseek-ai/dsh-util-crypto": ">=0.2.1-rc.2 <0.2.2-0",
+    "dsh-prompt-assembler": "~1.1.3"
   },
   "license": "MIT",
   "repository": {
@@ -144,7 +147,6 @@
     "acorn": "8.15.0",
     "acorn-jsx": "5.3.2",
     "dompurify": "3.4.17",
-    "dsh-prompt-assembler": "1.1.2",
     "json5": "2.2.3",
     "katex": "0.18.2",
     "linkedom": "0.18.12",

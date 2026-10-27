@@ -18,7 +18,7 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 
 ## 目标 Host 与持久数据边界
 
-3.0.5 的 Host 与 DSH crypto 兼容范围为 `>=0.2.1-rc.2 <0.2.2-0`，Cordis 为 4.0.5；已验证 rc.2 与 rc.3，不支持范围外的 Host。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
+4.0.0 的 Host 与 DSH crypto 兼容范围为 `>=0.2.1-rc.2 <0.2.2-0`，Cordis 为 4.0.5；目标运行环境为 rc.2 与 rc.3，不支持范围外的 Host；运行时验收要求见[验证清单](TESTING.md)。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
 
 DSH V4 拥有 system/user/assistant/tool 历史与 producer source，包括 `runtime-context` snapshot 和原生 tool-role result。准备顺序为装配 → pre-step → request/config 准备 → 接纳消息写入 → request header 与冻结消息 → stream。Trace 捕获官方正文/错误引用及生效参数，不建立第二份历史。[单向坐标升级](DSH_0.1.7_MIGRATION.md) 使用已验证的官方迁移阶段，保留全部升级前插件备份，不改写 DSH 日志。V3 之前的 header-body Trace 引用明确拒绝转换，不提供回滚工具。
 
@@ -40,13 +40,13 @@ Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过
 
 ## 前端产品范围
 
-3.0.5 继续使用 DSH Web/Desktop 的公开扩展承载第一方 RP 前端，不另做独立 Web UI。导航、输入框和会话生命周期仍由 DSH 管理；Tavern 维护资源面板、RP 展示和诊断。第三方仍可通过现有可组合 API 开发自己的客户端。此决策不改变权威历史、原生会话或卸载行为，无需数据迁移。
+4.0.0 继续使用 DSH Web/Desktop 的公开扩展承载第一方 RP 前端，不另做独立 Web UI。导航、输入框和会话生命周期仍由 DSH 管理；Tavern 维护资源面板、RP 展示和诊断。第三方仍可通过现有可组合 API 开发自己的客户端。此决策不改变权威历史、原生会话或卸载行为，无需数据迁移。
 
 公式渲染位于 `packages/client/src/play/math.js`，通过 Marked 公开 tokenizer/renderer 扩展接入共用富文本路径。KaTeX 只生成 MathML，随后与 HTML 一并净化；公式布局样式限定在 Tavern 内容与既有样式隔离边界内。RP、开场白和静态 HTML 导出复用此路径，不增加 Host seam、网络服务、全局渲染脚本、设置存储或消息副本。语法和安全界限见[显示合同](CONVERSATION_PRESENTATION.md#数学公式)。
 
 ## 决策结论
 
-Tavern 是包含内部资源层的独立 DSH 插件，单向依赖另行启用的 `dsh-prompt-assembler` Host bundle。Memory Manager 为可选扩展。assembler 中的 adapter 读取来源公开服务，不读取来源私有文件。
+Tavern 是包含内部资源层的独立 DSH 插件，单向依赖另行启用的 `dsh-prompt-assembler` Host bundle。必需 peer 为 `~1.1.3`；共享 `dshPromptAssembler.version` 标识实际运行的服务版本。Host 入口不启动 Assembler，Tavern 前端也不启动独立 Assembler 客户端；内嵌策略面板复用 SDK 并访问共享 API。Memory Manager 为可选扩展。assembler 中的 adapter 读取来源公开服务，不读取来源私有文件。
 
 ```text
 SillyTavern JSON
@@ -81,9 +81,9 @@ packages/tavern-loader ◄── DSH session/event（PendingInputProjection）
 DSH system prompt + agent request
 ```
 
-依赖只能向下：`tavern-loader → play/preset/character/user/world-book-library/world-book/tavern-trace → tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、user、world-book-library 和 `play` 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。`tavern-trace` 接受 loader 传入的普通 snapshot/session event 数据，但不导入 DSH、不 append Session；它只拥有最小化审计格式、有界插件存储、只读 API 和浏览器 view。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
+依赖只能向下：`tavern-loader → play/preset/character/user/world-book-library/world-book/tavern-trace → tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、user、world-book-library 和 `play` 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；DSH bundle 的 `packages/tavern-loader/src/host.js`（也导出为 `pmp-dsh-tavern/host`） 入口负责依赖准入，再挂载 loader；loader 是业务层中依赖 DSH 运行时的边界。根包与 `./loader` 的公共 SDK 导出保留。`tavern-trace` 接受 loader 传入的普通 snapshot/session event 数据，但不导入 DSH、不 append Session；它只拥有最小化审计格式、有界插件存储、只读 API 和浏览器 view。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
 
-loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过 DSH 的 `dshHomePath()` 把它设为 `<DSH_HOME>/pmp-dsh-tavern/`，不直接占用由 `dsh-storage-json` 管理的 `<DSH_HOME>/storages/`，也不把用户内容留在可被 pnpm 替换的 `node_modules` 内。显式 `storageDir` 仍具有最高优先级。旧版包内 `data/` 只在目标为空时通过同父目录临时副本迁移并原子发布；源副本保留，非空目标不覆盖。该目录保存 Tavern 资源、设置和绑定；DSH durable session 与所选 RP workspace 继续由各自 Host 合同拥有。
+loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过 DSH 的 `dshHomePath()` 把它设为 `<DSH_HOME>/pmp-dsh-tavern/`，不直接占用由 `dsh-storage-json` 管理的 `<DSH_HOME>/storages/`，也不把用户内容留在可被 pnpm 替换的 `node_modules` 内。显式 `storageDir` 仍具有最高优先级。旧版包内 `data/` 只在目标为空时通过同父目录临时副本迁移并原子发布；源副本保留，非空目标不覆盖。独立 Assembler 默认使用 `<DSH_HOME>/dsh-prompt-assembler/`。旧 Tavern 配置中的 `assemblerStorageDir` 会在写入数据前被拒绝；将值移到独立 Assembler 的 `storageDir` 后删除旧字段。Tavern 的 `security` 仍用于自身 API；原先转发给 Assembler 的适用设置还需复制到独立 Assembler 的 `security`，见[升级步骤](INSTALLATION.md#upgrade-to-4)。Tavern 目录保存 Tavern 资源、设置和绑定；DSH durable session 与所选 RP workspace 继续由各自 Host 合同拥有。
 
 ## 各层职责
 

@@ -2,9 +2,11 @@
 
 [English](LOADER_CONTRACT_en.md)
 
-Tavern 的 bundle 入口先加载随包标准 Assembler，或复用独立启用的实例，再挂载依赖该服务的业务 loader。两种安装顺序、停用与卸载遵循[接入说明](ASSEMBLER_INTEGRATION.md#与独立-assembler-共存)。
+Tavern 的 DSH bundle 使用 `packages/tavern-loader/src/host.js`（也导出为 `pmp-dsh-tavern/host`） 入口，依赖另行安装并启用的 Assembler `~1.1.3`。入口检查软件包版本及共享 `dshPromptAssembler.version`，通过后才挂载业务 loader；它不启动或恢复 Assembler 实例。安装、停用与卸载遵循[接入说明](ASSEMBLER_INTEGRATION.md#共享服务与生命周期)。
 
-当前合同面向 Tavern **3.0.5**、Assembler **v1.1.2** 与 DSH **0.2.1-rc.2 / 0.2.1-rc.3**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
+bundle patch 使用包内相对文件路径声明 Host。DSH 锚定该路径，再通过所属软件包的 manifest 发现浏览器 bundle；软件包子路径说明符不参与官方客户端发现。
+
+当前合同面向 Tavern **4.0.0**、Assembler **v1.1.3** 与 DSH **0.2.1-rc.2 / 0.2.1-rc.3**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
 
 ## 目标与所有权
 
@@ -165,7 +167,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ## Composition semantics
 
-已应用策略使用 Assembler v1.1.2 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.2/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
+已应用策略使用 Assembler v1.1.3 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
 
 ### Preset-only compatibility
 

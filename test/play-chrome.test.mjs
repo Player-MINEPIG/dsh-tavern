@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
@@ -82,7 +83,7 @@ test('GET /v2/chrome does not require JSON and POST /chrome is absent', async ()
   }
 })
 
-test('chrome play and RP lock do not rewrite each other', () => {
+test('chrome play and RP lock do not rewrite each other', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-chrome-rp-'))
   const ctx = {
     systemPrompt: { section: () => {} },
@@ -94,7 +95,7 @@ test('chrome play and RP lock do not rewrite each other', () => {
     logger: { info: () => {} },
   }
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     store.sessionSelections.set('session-a', { rp: { active: true, source: 'command' } })
     store.chromeStore.set({ mode: 'play' })
     assert.equal(store.sessionSelections.get('session-a').rp.active, true)

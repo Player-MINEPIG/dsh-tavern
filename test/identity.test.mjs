@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
@@ -68,7 +69,8 @@ test('official runtime peers declare the RC range and retain the development bas
     '@deepseek-ai/cordis': '4.0.5',
     '@deepseek-ai/dsh-util-crypto': '>=0.2.1-rc.2 <0.2.2-0',
   }
-  assert.deepEqual(packageJson.peerDependencies, peers)
+  assert.deepEqual(packageJson.peerDependencies, { ...peers, 'dsh-prompt-assembler': '~1.1.3' })
+  assert.equal(packageJson.peerDependenciesMeta?.['dsh-prompt-assembler']?.optional, undefined)
   for (const name of Object.keys(peers)) {
     assert.equal(packageJson.devDependencies[name], name === '@deepseek-ai/cordis' ? '4.0.5' : '0.2.1-rc.2')
     assert.equal(packageJson.peerDependenciesMeta?.[name]?.optional, undefined)
@@ -90,7 +92,7 @@ test('legacy /dsh-tavern/api resource paths are not served', async () => {
   }
 })
 
-test('Host registers the unversioned API root so v1 and v2 share one prefix', () => {
+test('Host registers the unversioned API root so v1 and v2 share one prefix', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-identity-prefix-'))
   const routes = []
   const ctx = {
@@ -103,7 +105,7 @@ test('Host registers the unversioned API root so v1 and v2 share one prefix', ()
     logger: { info: () => {} },
   }
   try {
-    apply(ctx, { storageDir: directory })
+    apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     assert.deepEqual(routes.map(route => route.path), [API_ROOT])
   } finally {
     rmSync(directory, { recursive: true, force: true })

@@ -2,9 +2,11 @@
 
 [中文](LOADER_CONTRACT.md)
 
-The Tavern bundle entry loads bundled standard Assembler or reuses an independently enabled instance before mounting the service-dependent business loader. Installation order, disabling and removal follow the [integration contract](ASSEMBLER_INTEGRATION_en.md#coexistence-with-standalone-assembler).
+The Tavern DSH bundle uses `packages/tavern-loader/src/host.js` (also exported as `pmp-dsh-tavern/host`) and requires separately installed and enabled Assembler `~1.1.3`. The entry checks the package version and shared `dshPromptAssembler.version` before mounting the business loader; it does not start or restore an Assembler instance. Installation, disabling and removal follow the [integration contract](ASSEMBLER_INTEGRATION_en.md#shared-services-and-lifecycle).
 
-This contract covers Tavern **3.0.5**, Assembler **v1.1.2** and DSH **0.2.1-rc.2 / 0.2.1-rc.3**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
+The bundle patch declares the Host file relative to its package. DSH anchors that path and discovers the browser bundle from the enclosing package manifest; a package subpath specifier would not participate in official client discovery.
+
+This contract covers Tavern **4.0.0**, Assembler **v1.1.3** and DSH **0.2.1-rc.2 / 0.2.1-rc.3**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
 
 ## Goals and ownership
 
@@ -165,7 +167,7 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 
 ## Composition semantics
 
-Applied strategies use Assembler v1.1.2 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.2/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
+Applied strategies use Assembler v1.1.3 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
 
 ### Preset-only compatibility
 

@@ -4,7 +4,7 @@
 
 当前版本仅支持标准版公开接口。进阶扩展冻结在 Assembler `1.1.0` / DSH `0.2.0-rc.2`，不承诺后续 DSH 适配；下文进阶合同保留用于旧配置与历史记录。
 
-标准版新增“预设身份优先”和“预设插槽优先”。前者保留预设条目的 system/user，按原生投递区域排序；后者识别历史/输入引用，将历史前内容适配为 system、历史后内容适配为 user，通过 pre-step 夹住历史或本步输入。预览逐条标注角色调整，没有引用时退回身份优先。user 贡献会进入历史；原生块内部顺序保持不变。选择策略后需显式应用，既有会话不自动迁移。详见 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.2/docs/BACKENDS.md)。
+标准版新增“预设身份优先”和“预设插槽优先”。前者保留预设条目的 system/user，按原生投递区域排序；后者识别历史/输入引用，将历史前内容适配为 system、历史后内容适配为 user，通过 pre-step 夹住历史或本步输入。预览逐条标注角色调整，没有引用时退回身份优先。user 贡献会进入历史；原生块内部顺序保持不变。选择策略后需显式应用，既有会话不自动迁移。详见 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS.md)。
 
 标准 assembler 通过 stock rc.2 的公开 sections/context/pre-step 接口工作，Tavern 正常依赖它；Manager 可选。可选 core addon 保留已验证的协议 1 进阶后端。两种后端共享策略、来源与 UI，旧策略缺 backend 仍为 core。明确 session 选择（含 null）不随灵珠/魔丸视图变化；独立新会话无默认，新 Tavern 开场默认标准预设插槽优先，安装 addon 不改变默认方案。
 
@@ -99,7 +99,7 @@ flowchart TD
 
 ## 核心扩展和安装边界
 
-当前源码自动加载标准 Assembler，通过 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 的公开接口运行，不再提供核心准备命令。进阶准备与切换工具仅适用于冻结的 Assembler `1.1.0` / DSH `0.2.0-rc.2`，不承诺后续版本适配。旧环境的安装与恢复 stock 核心见 [v1.1.0 安装文档](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION.md)。升级前先在旧环境恢复 stock，勿将旧准备产物复制到新版 DSH。
+先另行安装并启用标准 Assembler `~1.1.3`，Tavern 再消费其共享服务。标准版通过 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 的公开接口运行，不再提供核心准备命令。进阶准备与切换工具仅适用于冻结的 Assembler `1.1.0` / DSH `0.2.0-rc.2`，不承诺后续版本适配。旧环境的安装与恢复 stock 核心见 [v1.1.0 安装文档](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION.md)。升级前先在旧环境恢复 stock，勿将旧准备产物复制到新版 DSH。
 
 历史协议 `agent/assemble-request(payload,next)` 使用 Cordis waterfall；payload 含 `agent/turn/step/messages/tools/config/signal`，结果为 `{messages,metadata}`，metadata 为 JSON。无监听器时透传原生消息。核心先持久化结果再冻结、发送，配套 invariant 同时验证消息快照与原生 config/tools。`agentLoop.requestAssemblyVersion === 1` 是明确的能力探测。
 

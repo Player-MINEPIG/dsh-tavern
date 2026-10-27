@@ -1,3 +1,4 @@
+import { requireSharedAssembler } from './assembler-compatibility.js'
 import {createRenderingCache} from '../../rendering-cache/store.js'
 import {createRenderingCacheHandler,isRenderingCachePath} from '../../rendering-cache/http.js'
 import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
@@ -82,14 +83,9 @@ import {
   rpModeConstants,
 } from './rp-mode.js'
 import { prepareStorageDir } from './storage-location.js'
-import { AssemblyPresetStore } from '../../request-assembler/store.js'
-import { RequestAssembler } from '../../request-assembler/runtime.js'
 import { registerTavernSources, BUILTINS as ASSEMBLY_BUILTINS, NATIVE_BUILTINS as NATIVE_ASSEMBLY_BUILTINS, diagnoseTavernAssembly } from 'dsh-prompt-assembler/adapters/tavern'
-import { createDefaultRegistry } from '../../request-assembler/builtin-sources.js'
 import { createMemorySources, installMemorySources } from '../../memory-sources/index.js'
 import { OpeningWorldBookService, OPENING_WORLD_BOOK_SERVICE, createOpeningWorldBookHandler, isOpeningWorldBookPath } from '../../opening-worldbook/index.js'
-import { connectMemoryManager } from 'dsh-prompt-assembler/adapters/memory-manager'
-import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
 import { createScopeCatalog, installScopeCatalog } from '../../scope-catalog/index.js'
 import { createSessionReadContext } from '../../request-assembler/session-read-context.js'
 import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
@@ -299,6 +295,7 @@ export function createResourceWorldBookBindingPolicy(
 }
 
 export function apply(ctx, config = {}) {
+  const sharedAssembler = requireSharedAssembler(ctx.get('dshPromptAssembler'), config)
   const parameterFallback = new PresetParameterFallback()
   const { path: storageDir } = prepareStorageDir({
     storageDir: config.storageDir,
@@ -421,11 +418,8 @@ export function apply(ctx, config = {}) {
     maxQueuedCharacters: config.pendingInput?.maxQueuedCharacters,
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
-  const sharedAssembler = ctx.get('dshPromptAssembler')
-  // Standalone plugin owns runtime/store; direct library callers retain the
-  // old embedding contract when no plugin service is supplied.
-  const assemblyPresets = sharedAssembler?.store ?? new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
-  sharedAssembler?.migrateLegacy(storageDir)
+  const assemblyPresets = sharedAssembler.store
+  sharedAssembler.migrateLegacy(storageDir)
   const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [], withSessionRead,
     getSession: sessionReads.getSession, getMvu: () => draftPreview.current() ? draftMvu : ctx.get('tavernMvu'),
     resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
@@ -448,19 +442,15 @@ export function apply(ctx, config = {}) {
         selectionRevision: `${selections.selectionRevision(sessionId)}:${openingWorldBooks.revision()}` }
     } })
   const sourceOptions = { worldbookPolicy: (context, output) => memorySources.worldBooks.filter(context, output), worldbookValidateResolved: memorySources.worldBooks.validateResolved }
-  const registry = sharedAssembler?.registry ?? createDefaultRegistry(sourceOptions)
-  const requestAssembler = sharedAssembler?.runtime ?? new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry, sessionReads })
-  if (sharedAssembler) {
-    ctx.effect(() => registerTavernSources(registry, sourceOptions))
-    ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly: diagnoseTavernAssembly,
+  const registry = sharedAssembler.registry
+  const requestAssembler = sharedAssembler.runtime
+  ctx.effect(() => registerTavernSources(registry, sourceOptions))
+  ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly: diagnoseTavernAssembly,
       validateResult: (result, agent) => { const nativeContext = runtime.assembledFor(agent)?.memoryContext; if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext); memorySources.validateAssembly(result.metadata?.assembly) } }))
-  }
   installMemorySources(ctx, memorySources, registry)
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
-  if (!sharedAssembler) ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
   ctx.provide('tavernRequestSources', requestAssembler.registry) // Protocol-1 compatibility alias.
-  if (!sharedAssembler && typeof ctx.inject === 'function') connectMemoryManager(ctx, requestAssembler.registry)
   const renderingCacheApi=createRenderingCacheHandler(createRenderingCache(storageDir),{getConnection:()=>ctx.get('connection')})
   const renderingAuthority=createRenderingAuthority()
   ctx.provide('tavernRenderingAuthority',renderingAuthority)
@@ -492,7 +482,7 @@ export function apply(ctx, config = {}) {
   ctx.on('agent/assemble-request', async (payload, next) => {
     requestContexts.set(payload.agent, payload)
     try {
-      const result = await (sharedAssembler ? next() : requestAssembler.execute(payload, next))
+      const result = await next()
       const nativeContext = runtime.assembledFor(payload.agent)?.memoryContext
       if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext)
       memorySources.validateAssembly(result.metadata?.assembly)
@@ -689,9 +679,7 @@ export function apply(ctx, config = {}) {
     } catch (error) {
       recordFailure('rp.policy', error, { sessionId: payload.agent?.id })
     }
-    return !sharedAssembler && requestAssembler.available() && requestAssembler.startsSeries(payload.agent)
-      ? { ...decision, startsRequestSeries: true }
-      : decision
+    return decision
   })
 
   registerRpCommands(ctx, rpMode)

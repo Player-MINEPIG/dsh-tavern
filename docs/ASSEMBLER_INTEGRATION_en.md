@@ -2,9 +2,60 @@
 
 [中文](ASSEMBLER_INTEGRATION.md) · [Assembly behavior](REQUEST_ASSEMBLY_en.md) · [Plugin repository](https://github.com/Player-MINEPIG/dsh-prompt-assembler)
 
-Advanced is frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, with no commitment to later DSH versions. Current Assembler `1.1.2` and Tavern distribute Standard only, without newer core changes. Advanced semantics below describe legacy configurations and historical records.
+Tavern 4.0.0 requires independently installed and enabled Standard Assembler 1.1.3. Its required peer range is `~1.1.3`. Assembler owns strategy storage, source registration, request hooks, the secure API and independent configuration entry. It has no package dependency on Tavern or Memory Manager. Tavern and other plugins consume the same public service without owning private copies.
 
-Tavern depends on `dsh-prompt-assembler` at exact npm version `1.1.2` (matching source tag `v1.1.2`). The assembler owns strategy storage, source registration, the request hook, secure API and installed-plugin configuration entry, without package dependencies on Tavern or Memory Manager. Its repository owns the Tavern/Manager adapters, which consume public read-only services. Third parties can fork it or submit adapter PRs. Sources retain data, parsing and permission ownership; DSH durable history remains authoritative.
+The Assembler repository owns `adapters/tavern` and `adapters/memory-manager`, which consume providers' public read-only services. Sources retain ownership of their data, parsing and permissions. DSH durable history remains authoritative. Third parties can fork the repository or contribute adapter changes.
+
+Advanced remains frozen at Assembler `1.1.0` / DSH `0.2.0-rc.2`, without a commitment to later adaptation. Current releases distribute Standard only and contain no newer core changes. Advanced semantics below explain legacy configurations and historical records.
+
+## Installation and upgrade
+
+Install and enable Assembler in the same DSH profile before Tavern. GUI **Plugins → Add plugin** accepts the two Release attachment URLs below. Stop the target Host before CLI operations:
+
+```sh
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v4.0.0/pmp-dsh-tavern-4.0.0.tgz
+```
+
+Install both prebuilt packages separately. They do not require publishing or downloading npm Assembler 1.1.3. Tavern no longer carries Assembler or installs it when the peer is missing. The target DSH uses `autoInstallPeers: false`; package registration and bundle activation are different operations. Reload or restart when requested by the GUI, then check both components' startup.
+
+When upgrading from 3.0.5 or a bundled candidate, default Assembler storage stays at `<DSH_HOME>/dsh-prompt-assembler/`. Retain Tavern data, strategies and session selections without rewriting history. Move an old custom `assemblerStorageDir` to independent Assembler's `storageDir` and remove the field from Tavern configuration. Version 4.0.0 rejects that obsolete field. Copy security settings previously forwarded to Assembler into its own `security`; retain Tavern `security` settings needed by Tavern. See the complete [upgrade procedure](INSTALLATION_en.md#upgrade-to-4).
+
+## Shared services and lifecycle
+
+The public `dshPromptAssembler` service exposes its actual running `version`, strategy store, source registry and assembly runtime. Tavern checks the service version and required capabilities before supplying resources through `attachTavern`. An SDK import does not establish that the service is running, or that the SDK and runtime came from the same package copy.
+
+Tavern's DSH bundle uses the dependency-safe `packages/tavern-loader/src/host.js` (also exported as `pmp-dsh-tavern/host`) entry. Public SDK exports at the root and `./loader` remain available. Missing, disabled or incompatible independent Assembler never triggers a private Tavern instance. Tavern mounts its dependent runtime when the service is enabled. Disabling that service stops its consumers.
+
+Removing Tavern unregisters only its sources, resource provider and UI. Independent Assembler strategies, entry, native DSH sources and other consumers remain available. Disable dependent plugins before removing Assembler. Tavern does not restore a formerly bundled copy. Default persistent storage and strategy files are retained; independent Assembler configuration owns custom storage paths.
+
+Other plugins use the same public service and declare a compatible peer when importing the SDK. A source plugin can own its registration lifecycle as follows:
+
+```js
+export const inject = ['dshPromptAssembler']
+export function apply(ctx) {
+	const stop = ctx.dshPromptAssembler.registry.register(source)
+	ctx.effect(() => stop)
+}
+```
+
+Do not depend on another plugin's nested `node_modules` path or substitute SDK-class `instanceof` for service protocol checks. Different physical copies can have different module identities even when their versions match.
+
+## Tavern's integration seam
+
+Tavern consumes the shared Assembler store, registry and runtime. `attachTavern` supplies read-only resources, session leases, presets and final policy checks. Standard contributes official sections/context and accepted pre-step messages. Only the historical advanced addon owns protocol-1 request replacement. Standard Trace verifies durable system/context and complete native request references; legacy advanced Trace references one request/assembly per request. Tavern retains resource editing, restricted EJS and MVU commits.
+
+Tavern no longer creates a local Assembler fallback. The legacy `tavernRequestSources` name still references the shared registry. Public resource APIs, assembly forwarding APIs and root SDK exports remain available. Missing source modules report diagnostics without recreating resources or rewriting native history.
+
+The UI uses Assembler's `/dsh-prompt-assembler/api/v1/assembly-presets`, secure fetch and read-only actual-request endpoint. Legacy Tavern assembly-presets routes still forward to the same store/runtime. Current records use owner `dsh-prompt-assembler`; prior `pmp-dsh-tavern` records remain readable. Legacy migration only merges missing entries and preserves the original file. New applications bind by session ID and take precedence over old play/native scopes, including after reinstalling Tavern.
+
+Assembler owns **Plugins → Installed plugins → dsh-prompt-assembler → Configure current session**. Tavern's embedded assembly panel retains the reusable frontend SDK and edits the same strategy library and session binding through public APIs. Tavern starts no additional standalone Assembler client. The last successful application determines future request snapshots. Editing a draft or saving a strategy leaves the applied snapshot unchanged. Both panels use the Assembler refresh event to synchronize applied state while preserving their own unsaved drafts.
+
+## Modules and text parsers
+
+The module menu lists only sources supplying current independent content. Dispersed content remains usable through the provider's `parseText(context, rule)` and `inputMode:'text'`. Both modes share placement, depth, role and snapshot behavior.
+
+Tavern has one `tavern.text` entry, applying restricted EJS, content references and ST macros in order. Referenced bodies never execute EJS again. DSH `dsh.text` uses native variable interpolation. Third-party sources retain their own parser/renderer. Each module describes fields, origin, editing support and the editing location. Preview exposes resource identity and bodies.
 
 ## Optional Memory Manager
 
@@ -18,60 +69,16 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 
 That Manager release was validated only on DSH `0.2.0-rc.2`; support for the current target requires separate validation. Configure generic resource retrieval in Manager and select `memory-manager.resources` in an assembler strategy to provide those resources to the model; this path requires a Host supporting request-assembly protocol 1. Native DSH Skill calls and Tavern’s source-owned world-book, MVU and template contributions use their own paths. See the v1.0.0 [installation guide](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/INSTALLATION_en.md), [usage guide](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/USAGE_en.md) and [assembler integration](https://github.com/Player-MINEPIG/dsh-memory-manager/blob/v1.0.0/docs/ASSEMBLER_en.md).
 
-## Installation and development
+## Source development and separate packaging
 
-Tavern 3.0.5 automatically installs and loads standard `dsh-prompt-assembler` v1.1.2 and automatically loads its Host and browser entries. The optional `dsh-prompt-assembler-core` is not a production dependency. Users only need to install Tavern:
+The production installation graph has independent Assembler and Tavern as two direct profile dependencies. Tavern declares compatibility through `peerDependencies`; it neither uses a GitHub URL as a regular subdependency nor declares `bundleDependencies`. The target pnpm restricts Git/URL subdependencies by default. Installing both directly does not require relaxing that policy.
 
-```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.5
-```
-
-The npm and Release Tavern packages include standard Assembler and need no second package. Source installation can use the fixed tag below; GitHub/Market installs download the published Assembler `1.1.2`:
+Development and builds use the Assembler source archive pinned by the lockfile. `npm ci --legacy-peer-deps` installs the reviewed revision and integrity without requiring npm version 1.1.3. For independent Assembler development, check out its matching source and run its `npm ci` and `npm run check`. To test local changes together, use `npm install --no-save --package-lock=false --legacy-peer-deps /path/to/assembler` in a temporary checkout, without committing the temporary path.
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v3.0.5
+npm run pack:release -- --assembler node_modules/dsh-prompt-assembler
 ```
 
-### Coexistence with standalone Assembler
-
-To use Assembler independently of Tavern, install it in the same profile:
-
-```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-prompt-assembler#v1.1.2
-```
-
-The composition entry prefers an independently enabled Assembler. Either installation order runs one Host instance and one set of browser entries. Installing standalone later releases the bundled instance before handing over. Disabling or removing standalone restores the bundled instance while Tavern remains enabled. Removing Tavern leaves an independent instance running; disabling or removing both releases all assembly hooks, routes and UI entries.
-
-Default instances share `<DSH_HOME>/dsh-prompt-assembler/`; switching, updating or restarting does not delete strategies or session selections. If standalone uses a custom storage directory, configure Tavern's `assemblerStorageDir` to the same path to share existing settings. npm dependencies alone do not automatically activate DSH bundles: Tavern's composition entry handles loading, while its business loader retains the `dshPromptAssembler` service dependency.
-
-Clone the assembler separately for source development and run `npm ci` and `npm run check` there. Tavern's `npm ci` uses the npm package pinned by its lockfile. To test local changes together, use `npm install --no-save --package-lock=false /path/to/assembler` in a temporary checkout, without committing the temporary path.
-
-Standard strategies execute on stock rc.2 through public sections/context/pre-step. Advanced strategies require the separately packaged core addon and a prepared protocol-1 core. Legacy strategies without a backend remain advanced and fail explicitly when capabilities are absent. Plugin installation never modifies core. See the assembler [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.2/docs/BACKENDS_en.md).
-
-## Tavern's integration seam
-
-Tavern shares the assembler store, registry and runtime, supplying read-only resources, session leases, both preset backends and final policy checks through `attachTavern`. Standard contributes official sections/context and accepted pre-step messages; only the optional addon owns protocol-1 request replacement. Standard Trace verifies durable system/context and complete native request references; advanced Trace references one request/assembly per request. Tavern retains resources, restricted EJS, MVU commits and Trace presentation. Legacy `tavernRequestSources` and package exports continue forwarding.
-
-The UI uses the assembler's `/dsh-prompt-assembler/api/v1/assembly-presets`, secure fetch and read-only actual-request endpoint. Legacy Tavern assembly-presets routes still forward to the same store/runtime, and Trace continues resolving recorded requests from DSH. Current records use owner `dsh-prompt-assembler`; prior `pmp-dsh-tavern` records remain readable. Legacy migration only merges missing entries and preserves the original file. New applications bind by session ID and take precedence over old play/native scope, including after reinstalling Tavern.
-
-With only Tavern installed, its installed-package detail page owns the configuration button; an enabled standalone Assembler owns the button on its own package page.
-
-The standalone Plugins → Installed plugins → dsh-prompt-assembler → Configure current session entry and embedded Tavern panel share the strategy library and session binding, with no plugin priority. The last successful application determines the snapshot for future requests. Editing a draft or saving a strategy leaves the applied snapshot unchanged. Both panels use the assembler refresh event to synchronize applied status while preserving their own unsaved drafts.
-
-Removing Tavern unregisters its sources and read provider. The assembler entry, strategies and native DSH text remain usable. Missing source modules report diagnostics without rebuilding absent resources or rewriting native history. The Manager adapter consumes public services; native assembly does not require Manager installation.
-
-## Modules and text parsers
-
-The module menu lists only sources supplying current independent content. Dispersed content remains usable through the provider's `parseText(context, rule)` and `inputMode:'text'`; both modes share placement, depth, role and snapshot behavior.
-
-Tavern has one `tavern.text` entry: restricted EJS, content references, then ST macros. Referenced bodies never execute EJS again. DSH `dsh.text` uses native variable interpolation; third-party sources retain their own parser/renderer. Each module describes fields, origin, editing support and the editing location. Preview exposes resource identity and actual bodies.
-
-## GitHub dependency representation
-
-The dependency graph is Tavern → standard assembler, while Manager remains optional. The frozen addon peers only with standard 1.1.0. No submodule is needed. The source manifest pins npm version `1.1.2`, and the lockfile pins the published package and integrity. GitHub/Market installations download this dependency from npm through the package manager and require that version to be published. The source manifest declares no `bundleDependencies`, because GitHub archives have no `node_modules`. Only prebuilt packaging declares this dependency bundled and includes the selected Assembler package inside the Tavern tgz; the additional Assembler tgz is for optional standalone use. Installing only Tavern loads the Host service through its composition entry. Public-directory submissions, tags, releases and npm publishing remain separate actions.
+The command rebuilds both clients and writes separate Assembler and Tavern tarballs. Tavern compiles the reviewed frontend SDK into its editor, but its package contains no second Assembler package or Host. Prepare development dependencies for both source directories before building. See [v1.1.0 installation and rollback](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION_en.md) for the frozen advanced version. Standard backend behavior and legacy advanced diagnostics are described in [Assembler 1.1.3 backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS_en.md).
 
 [API surfaces](API_SURFACES_en.md) · [Tavern architecture](assets/architecture/tavern.en.html) · [Combined architecture](assets/architecture/ecosystem.en.html).
-
-Pack Standard Assembler and Tavern with `npm run pack:with-assembler`. `--with-core` is rejected; receipts keep `optionalCoreIncluded:false`. Tavern carries Standard Assembler, and the standalone Standard package is optional. See [v1.1.0 installation and rollback](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION_en.md) for the frozen advanced version.
-
-The packaging command rebuilds both clients first and embeds the assembler source being packaged (including a directory selected with `--assembler`) into Tavern. This keeps the embedded panel and backend strategy formats aligned. Install build dependencies in both source directories before running it.

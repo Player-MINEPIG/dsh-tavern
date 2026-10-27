@@ -2,82 +2,113 @@
 
 [English](INSTALLATION_en.md)
 
-Tavern 3.0.5 携带标准 Assembler v1.1.2，只需安装并启用 Tavern，服务加载与可选 Memory Manager v1.0.0 见[接入说明](ASSEMBLER_INTEGRATION.md)。旧完整说明保留在对应 Git tag。
+Tavern 4.0.0 需要独立安装并启用 Assembler 1.1.3。两个组件分别交付，Tavern 不内嵌 Assembler，不自动下载或启动它。必需 peer 范围为 `~1.1.3`。服务分工与可选 Memory Manager 见[接入说明](ASSEMBLER_INTEGRATION.md)。
 
-装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+装配规则的 CRUD、应用、预览、实际请求引用与旧进阶配置读取见[请求装配器](REQUEST_ASSEMBLY.md)。当前支持 DSH **0.2.1-rc.2 / 0.2.1-rc.3**，要求 Node `^22.19.0 || >=24.0.0`。Tavern 前端嵌入 DSH Web 与桌面端，不提供额外独立 Web UI。
 
-当前 Tavern 源码支持 DSH **0.2.1-rc.2 / 0.2.1-rc.3**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
+Host 与 DSH crypto peer 范围均为 `>=0.2.1-rc.2 <0.2.2-0`。范围内后续版本按策略准入，不代表逐版运行验收。旧完整说明保留在对应 Git tag。
 
-Host 与 DSH crypto peer 的范围均为 `>=0.2.1-rc.2 <0.2.2-0`，实际验证 rc.2 与 rc.3。
-保留备份；旧外部引用按[坐标迁移指南](DSH_0.1.7_MIGRATION.md)处理，已完成迁移的 V4 引用无需再次转换，不提供回退工具。安装前将目标 DSH 放在 `PATH` 并初始化所需 profile。
+## 安装两个独立组件
 
-## 安装当前源码
+先初始化目标 DSH profile。在 GUI 的“插件 → 添加插件”中，按以下顺序粘贴附件直链，分别安装并启用：
 
-更新当前源码会自动安装并加载标准 Assembler，已启用的独立实例优先。原 Tavern 资源、设置、原生会话、timeline 与 Trace 保留；loader 启动时把旧策略存储中缺少的条目合并到 assembler，并保留旧文件。历史坐标升级另按迁移指南处理，已验证的 DSH 目标为 `0.2.1-rc.2` / `0.2.1-rc.3`。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
+1. Assembler 1.1.3。
 
-停止目标 Host 后，安装 Tavern 3.0.5 即可自动加载标准 Assembler v1.1.2。新版仅支持 stock core 标准策略。进阶扩展冻结在 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配。插件安装不会修改核心：
+   ```text
+   https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
+   ```
+
+2. Tavern 4.0.0。
+
+   ```text
+   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v4.0.0/pmp-dsh-tavern-4.0.0.tgz
+   ```
+
+按 GUI 提示重载或重启 Host。已安装独立 Assembler 时，先核对版本和启用状态。仅将包登记到 profile 不代表其 bundle 已启用。
+
+命令行安装或更新前，停止目标 Host。将目标 DSH 放在 `PATH`，在同一 profile 依次运行：
 
 ```sh
-dsh plugin --profile web add pmp-dsh-tavern@3.0.5
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v4.0.0/pmp-dsh-tavern-4.0.0.tgz
 ```
 
-Market 的「已安装，重启后生效」表示软件包已登记；含配置／表达式的 bundle 需要重启加载，该提示本身不证明插件已成功启动。3.0.1 的 GitHub／Market 安装可能缺少 Assembler 并出现 `failed to import`；停止 Host 后，在同一 profile 更新到 3.0.5，再重启即可，无需卸载或删除数据。GitHub 安装从 npm 下载固定的 Assembler `1.1.2`；npm Tavern 包和 Release 中的预构建 tgz 已携带该依赖。
+这里安装的是预构建 Release 附件，不要求从 npm 下载 Assembler 1.1.3。DSH 的其他运行依赖与 Tavern 的普通依赖仍按各自的安装机制提供。
 
-可选的资源查看与管理使用 [Memory Manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0)。该版本仅验证 DSH 0.2.0-rc.2，当前目标的支持需另行验证；通用资源装配要求见[接入说明](ASSEMBLER_INTEGRATION.md#可选-memory-manager)：
+Market 的“已安装，重启后生效”表示软件包已登记，不证明插件已成功启动。重启后确认独立 Assembler 与 Tavern 均运行，分别打开装配配置和 DT 面板。若显示缺少或不兼容的 Assembler，先安装并启用符合范围的独立组件，再按 Host 提示重载或重启。不要用版本例外代替缺失依赖。
 
-```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
-```
+新版仅支持 stock core 标准策略。进阶扩展冻结在 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配。插件安装不会修改 DSH 核心。
+
+<a id="upgrade-to-4"></a>
+## 从 3.x 或内嵌候选升级到 4.0.0
+
+1. 停止目标 Host。备份 Tavern 持久目录、Assembler 持久目录、RP 工作区和对应 DSH 数据。
+2. 在同一 profile 安装独立 Assembler 1.1.3，并将其 bundle 设为启用。
+3. 默认 Assembler 存储继续使用 `<DSH_HOME>/dsh-prompt-assembler/`。不要删除该目录或复制一份空目录覆盖它。
+4. 若旧 Tavern 配置含 `assemblerStorageDir`，将原值移到独立 Assembler 的 `storageDir`，再删除旧 Tavern 字段。Tavern 4.0.0 拒绝该旧字段，不会忽略它后打开另一份策略库。保留 Tavern 自己的 `storageDir`。
+5. 旧 Tavern `security` 曾同时转发给 Assembler。将需要继续作用于装配 API 的设置复制到独立 Assembler 的 `security`。保留 Tavern `security` 中适用于 Tavern 自身 API 的设置。
+6. 卸载旧 Tavern 软件包，保留数据目录。GUI 使用“卸载 pmp-dsh-tavern”；CLI 使用 `dsh plugin --profile web remove pmp-dsh-tavern`。不要清除 Tavern、Assembler 或 DSH 的数据。
+7. 使用上面的 4.0.0 附件直链重新安装 Tavern，确认两个 bundle 均启用后启动 Host。核对角色卡、策略、会话选择与 Trace，再执行[运行时验证](TESTING.md)。
+
+pnpm 覆盖安装可能保留旧包内嵌的 Assembler 文件，导致解析到 1.1.2。此次从内嵌版本升级必须先卸载旧 Tavern 软件包再重新安装；单独覆盖更新不保证清除旧副本。
+
+默认配置不含旧自定义字段时，无需手工修改存储路径。Tavern 启动后仍将旧策略存储中缺少的条目合并到独立 Assembler，保留旧文件。安装与本次升级不重写 DSH 会话历史。旧外部引用另按[坐标迁移指南](DSH_0.1.7_MIGRATION.md)处理；已有 V4 引用无需再次转换，不提供回退工具。
+
+数学公式默认启用，不需要另装 KaTeX、字体或渲染插件。显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版，见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
+
+### 安装入口与地址格式
+
+DSH 的 CLI、Web 与桌面插件管理共用 `pnpm add` 安装路径。GUI 的“添加插件”接受 npm 包名、GitHub 仓库地址、本地绝对目录和 `.tgz` / `.tar.gz` 安装包地址，经 `pluginManager.installBundle` 执行安装与启用。参见 [GUI 调用](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/client/ui-plugin-manager/src/client/manager-store.ts)、[地址解析](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/install-spec.ts)与[共享安装实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/index.ts)。
+
+- 仓库地址可以带 `#tag` 或 `#commit`。它安装该 Git 提交中的包，不会寻找 GitHub Release 附件。
+- `releases/download/标签/包名.tgz` 是预构建附件直链，可以作为安装地址。
+- `releases/tag/标签` 是 Release 网页，不能作为安装地址。
+- GitHub 自动生成的源码 `.tar.gz` 可被识别为归档，但不等于预构建安装包。当前 GUI 不接受源码 `.zip`。
+
+自定义 Market 根据索引选择 `包名@版本` 或固定 commit 的 Git URL，不会自动选择 Release 附件，见 [Market 实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts)。
+
+Tavern 通过 `peerDependencies` 声明共享 Assembler。DSH profile 使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false`，因此 peer 声明不会自动安装 Assembler。将它作为 profile 的直接依赖独立安装，不把 GitHub 地址放入 Tavern 的普通子依赖。源码与预构建 Tavern 包均不声明 `bundleDependencies`，包内没有第二份 Assembler。其他依赖 Assembler 的插件也应复用公共服务，并声明自己的兼容范围。
+
+### DSH 提供官方运行依赖
+
+`@deepseek-ai/dsh-util-crypto` 与 `@deepseek-ai/cordis` 是 DSH 提供的必需 peers，避免安装第二份。前者范围为 `>=0.2.1-rc.2 <0.2.2-0`，后者为 `4.0.5`。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供。
+
+静态 `pnpm peers check` 不识别 DSH 的运行时解析机制，可能报告这些官方 peers 缺失。Assembler 则是用户必须独立安装的第三方组件，不能把它的缺失也当成可忽略警告。应核实 Host 实际解析的组件版本并检查启动结果。不要依赖 profile 顶层是否存在同名目录，也不要把普通 Node 进程的包查找结果作为唯一依据。
+
+重启后仍出现 `ERR_MODULE_NOT_FOUND` 时，核对目标 DSH、安装完整性与实际解析路径。不要为消除警告把必需 peer 标成 optional。DSH 准入依据 `engines.dsh`，未声明时才依据 DSH peers；版本准入不等于运行时验收。
 
 <a id="source-candidate"></a>
 <a id="source-installation"></a>
-### 从源码安装和验收
+### 从源码安装和打包
 
-使用目标 DSH 初始化的独立测试 profile/home。`npm ci` 使用 lockfile 固定的 npm 包和完整性；标准 Assembler `1.1.2` 已发布。下面的安装器构建并安装已检出的版本。需要预构建包时，运行 `npm run pack:with-assembler -- --assembler node_modules/dsh-prompt-assembler`，或下载 [v3.0.5 Release](https://github.com/Player-MINEPIG/dsh-tavern/releases/tag/v3.0.5) 的 Tavern tgz：
+使用目标 DSH 初始化的独立测试 profile。先在该 profile 安装并启用独立 Assembler。Tavern 开发依赖由 lockfile 固定到经过审查的 GitHub 源码归档和完整性，不依赖 Assembler 1.1.3 已发布到 npm。
 
 ```sh
-git clone --branch v3.0.5 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v4.0.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 ```
 
-用同一个 `DSH_HOME` 启动 DSH，再按[开发验证指南](TESTING.md)检查。只升级 CLI 不会更新 profile 中的插件，请记录验收源码 revision。脚本规范化 macOS/Linux/Windows 路径，Windows 通过 npm PowerShell shim 以参数数组调用。只安装仓库根包，不单独安装内部 packages。安装／启动的 peer 准入无需版本例外。
+用同一个 `DSH_HOME` 启动 DSH，再按[开发验证指南](TESTING.md)检查，并记录验收源码 revision。只升级 CLI 不会更新 profile 中的插件。脚本规范化 macOS、Linux 与 Windows 路径；Windows 通过 npm PowerShell shim 以参数数组调用。只安装仓库根包，不分别安装内部 packages；不需要兼容性例外。
 
-### 安装入口与依赖随包安装
+生成两个独立预构建安装包：
 
-DSH 的 CLI、Web 和桌面插件管理共用 `pnpm add` 安装路径。GUI 的「添加插件」接受 npm 包名、GitHub 仓库地址或本地目录路径，经 `pluginManager.installBundle` 执行安装并启用；参见 [GUI 调用](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/client/ui-plugin-manager/src/client/manager-store.ts)与[共享安装实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/index.ts)。CLI 还可以安装本地／远程 tgz。自定义 Market 根据索引中的来源选择 `包名@版本` 或固定 commit 的 Git URL，不会自动选择仓库的 GitHub Release 附件。具体映射见 [DSH 的 Market 实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts)。
-
-普通源码分支不跟踪 `node_modules`，因此源码必须把 Assembler 放在普通 `dependencies` 中，并固定为已发布的 npm 版本；不能把不存在的依赖声明为 bundled。预构建 npm 包／tgz 由 `pack:with-assembler` 同时写入 `bundleDependencies` 和实际依赖文件。发布 Tavern 源码前先确认其精确 Assembler 版本可从目标 registry 下载；本地 tgz 能安装，不代表尚未发布的依赖也能通过 Git 安装。
-
-验收尚未发布的依赖时，可生成独立的预构建 Git 分支：包含已构建 Tavern、实际跟踪的 `node_modules/dsh-prompt-assembler` 文件、精确依赖版本和 `bundleDependencies`，移除构建脚本与开发依赖。GUI 填入该分支的完整 commit 地址，安装时无需另行发布 Assembler。不能只把普通源码分支的依赖改成 Git 子依赖；目标 pnpm 默认会拒绝该来源。验收须从 GUI 安装并核实实际加载版本，不以命令行或合成安装测试代替。
-
-验证时使用 DSH 的 `nodeLinker: hoisted`、`autoInstallPeers: false` 配置，只安装 Tavern。分别检查无 `node_modules` 的源码包和预构建 tgz，从已安装 Tavern 所在目录解析 `dsh-prompt-assembler/plugin`，再启动 Host 确认 Tavern 与 Assembler 服务可用。不要只检查 profile 顶层是否存在同名目录。
-
-### DSH 提供官方运行依赖
-
-当前 `package.json` 把 `@deepseek-ai/dsh-util-crypto` 的 `0.2.1-rc.2` 与 `@deepseek-ai/cordis` 的 `4.0.5` 声明为必需 `peerDependencies`，由 DSH 运行时提供，避免插件安装第二份。源码构建和测试使用 `devDependencies` 中固定的 `0.2.1-rc.2` crypto 包。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供，不随 Tavern 打包。
-
-DSH profile 使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false`；启动时由 DSH 的 profile 包解析层提供安装目录中的官方依赖。因此 `dsh plugin add` 或 `pnpm peers check` 可能报告这两个包缺失：该静态检查不识别 DSH 的运行时解析机制。不要依赖 `<DSH_HOME>/profiles/node_modules` 链接是否存在，也不要用未启动 DSH 的独立 Node 进程作为唯一判断依据；应核实 Host 实际解析的版本并检查插件能否启动。
-
-若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为已验证的 `0.2.1-rc.2` 或 `0.2.1-rc.3`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。DSH 的安装与启动检查优先依据 `engines.dsh`；未声明时才依据 DSH peers；通过该检查不等于所有 Host 行为均已验证，仍需核对目标版本和运行时验收结果。
-
-### 数据与源码安装
-
-首次启动时，Tavern 会在 `<DSH_HOME>/pmp-dsh-tavern/` 自动创建持久目录，不要求用户选择内部存储位置。普通 `dsh plugin remove` 只移除 profile 中的软件包，保留该目录，但不会调用项目的备份逻辑或创建卸载前快照；需要快照时请按下文检出仓库并使用 `npm run plugin:uninstall`。
-
-从源码开发、从旧版包内 `data/` 安全迁移，或准备使用下文的备份卸载流程时，先检出仓库并安装一次依赖：
-
-```text
-npm install --cache .npm-cache
-npm run plugin:install
+```sh
+npm run pack:release -- --assembler node_modules/dsh-prompt-assembler
 ```
 
-安装器会构建 `dist/client.js`，不经过 shell 调用 `dsh plugin ... add`，并打印重启提醒。审查前请重启当前正在运行的 `dsh web`。
+命令重建两个前端并输出独立的 Tavern 与 Assembler tgz。Tavern 的编辑器会编入复用的前端 SDK，但不会加载另一个 Assembler Host 或独立客户端实例。输出 Tavern 包不得含 `node_modules/dsh-prompt-assembler`。安装验收必须使用最终 tgz 或实际发布附件，不能用源码目录的依赖替代。
 
-更新已有安装前，先停止目标 `dsh web`。持久目录位于软件包之外，重复安装不会触碰它。为支持仍使用旧版包内 `data/` 的安装，脚本还会在 remove/add 前把该旧目录暂存到 `<DSH_HOME>/backups/pmp-dsh-tavern/pending-refresh-<profile>/`，add 成功后恢复到新包；新 Host 首次启动时，若外部目录为空，就通过同目录临时副本把旧数据原子发布到 `<DSH_HOME>/pmp-dsh-tavern/`，写入迁移标记并保留旧副本。若外部目录已有数据则绝不覆盖，只记录告警。若 remove/add 失败，错误信息会打印 pending 路径；下一次运行安装器会修复中断的依赖注册并继续恢复。恢复尚未完成时，不要删除该目录。
+### 数据与源码安装器
 
-刷新仍会把当前 worktree 声明的 `files` 条目物化为独立副本，以规避 pnpm 的旧目录快照和硬链接混合版本问题；它不触碰 pnpm 管理的嵌套 `node_modules`，并在替换文件前确认安装目标仍位于所选 profile。省略 `--store-dir` 时，更新器读取该 profile 的 `node_modules/.modules.yaml` 中已记录的 store，以避免 `ERR_PNPM_UNEXPECTED_STORE`。
+Tavern 首次启动自动创建 `<DSH_HOME>/pmp-dsh-tavern/`。普通 `dsh plugin remove` 保留该目录，但不创建卸载前快照。需要快照时，按上文检出仓库后使用下文卸载脚本。
+
+项目安装器只更新 Tavern。它构建 `dist/client.js`，以参数数组调用 `dsh plugin ... add`，再提示重启。运行前必须在目标 profile 独立安装并启用 Assembler。开发依赖安装使用 `npm ci --legacy-peer-deps`。
+
+刷新会将 worktree 声明的 `files` 物化为独立副本，避免 pnpm 旧快照或硬链接混合版本。更新器不会触碰 pnpm 管理的嵌套 `node_modules`，并确认替换目标位于所选 profile。未指定 `--store-dir` 时，它沿用 `.modules.yaml` 记录的 store。
+
+从包内旧 `data/` 升级时，先停止 Host。安装器在 remove/add 前暂存旧目录到 `<DSH_HOME>/backups/pmp-dsh-tavern/pending-refresh-<profile>/`，成功后恢复到新包。新 Host 首次启动时，若外部目录为空，将旧数据复制到同目录临时副本后原子发布，保留旧副本。已有外部目录绝不覆盖。失败时按安装器输出修复中断恢复；未完成前不要删除 pending 目录。
 
 常用参数：
 
@@ -89,13 +120,7 @@ node scripts/install.mjs --store-dir /absolute/pnpm/store
 node scripts/install.mjs --dry-run
 ```
 
-传参数时请直接用 `node` 形式，以免不同 npm 版本和 PowerShell 在 `npm run` 之后转发参数不一致。
-
-Windows 路径可按本机写法传入，例如：
-
-```text
-node scripts/install.mjs --dsh-home .\test-envs\review
-```
+传参数时使用直接 `node` 形式，避免 npm 与 PowerShell 的参数转发差异。Windows 路径可以按本机写法传入，例如 `node scripts/install.mjs --dsh-home .\test-envs\review`。
 
 ## 发布验收
 
@@ -111,6 +136,8 @@ npm run verify:2.0
 这些命令不能替代 [目标 Host 与浏览器的运行时验证](TESTING.md)。
 
 ## 卸载
+
+卸载 Tavern 保留独立 Assembler 及其数据。其他消费者可继续使用该服务。卸载 Assembler 前，先停用依赖它的插件；Tavern 不会补建私有实例。
 
 不建议在 RP 工作区内通过 DSH 原生“新建会话”创建普通对话；请使用单独的工作区。DSH 可能复用同工作区中尚未开始对话的空会话，即使它已配置 Tavern 角色卡或标题。卸载 Tavern 不会自动清除会话标题、per-session 资源选择或工作区内的周目记录，因此重装后可能重新显示旧角色绑定与归类。
 

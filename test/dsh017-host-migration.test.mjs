@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -22,12 +23,12 @@ test('V4 unversioned and stale coordinates refuse even without a historical syst
   requireCoordinates(4, coordinates)
 })
 
-test('agent/created initializes inherited selections, pending input and RP guard before the first request; failures propagate', () => {
+test('agent/created initializes inherited selections, pending input and RP guard before the first request; failures propagate', t => {
   const directory = mkdtempSync(join(tmpdir(), 'tavern-created-'))
   const listeners = new Map()
   try {
-    const store = apply({ systemPrompt: { section() {} }, on: (name, listener) => listeners.set(name, listener),
-      get() {}, emit() {}, effect() {}, provide(name, value) { this[name] = value }, logger: { info() {} } }, { storageDir: directory })
+    const store = apply(withIndependentAssembler({ systemPrompt: { section() {} }, on: (name, listener) => listeners.set(name, listener),
+      get() {}, emit() {}, effect() {}, provide(name, value) { this[name] = value }, logger: { info() {} } }, directory, t), { storageDir: directory })
     store.characterStore.create({ id: 'c', name: 'Character' })
     store.sessionSelections.set('parent', { characterCardId: 'c' })
     const log = []

@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -143,7 +144,7 @@ test('projection keeps sessions isolated and enforces message and character scan
   assert.equal(secondActivation.metadata.pendingMessageCount, 1)
 })
 
-test('a single first agent step matches claimed input before profile assembly and traces that exact step', async () => {
+test('a single first agent step matches claimed input before profile assembly and traces that exact step', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-pending-first-step-'))
   const sections = []
   const listeners = new Map()
@@ -159,7 +160,7 @@ test('a single first agent step matches claimed input before profile assembly an
   const value = session('first-step')
   const agent = { id: value.id, session: value }
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     store.worldBookStore.import(JSON.stringify({
       name: 'Early activation',
       entries: { one: { uid: 1, key: ['clocktower'], content: 'EARLY_LORE', order: 100, position: 0 } },

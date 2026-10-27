@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
@@ -91,11 +92,11 @@ test('greeting reference is limited to the first real user turn', () => {
   assert.equal(greetingReferenceAppliesToAgent(withMessages([user, context, user])), false)
 })
 
-test('unified loader injects a selected character and its triggered embedded world book', () => {
+test('unified loader injects a selected character and its triggered embedded world book', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-integration-'))
   const { ctx, sections } = host()
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     const character = store.characterStore.import(syntheticCard(), { id: 'synthetic-keeper' })
     store.sessionSelections.set('session-a', {
       characterCardId: character.id,
@@ -121,10 +122,10 @@ test('unified loader injects a selected character and its triggered embedded wor
   }
 })
 
-test('new and imported cards with no nickname keep the name in runtime macro contexts', () => {
+test('new and imported cards with no nickname keep the name in runtime macro contexts', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-name-fallback-'))
   try {
-    const store = apply(host().ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(host().ctx, directory, t), { storageDir: directory })
     const created = store.characterStore.create({ id: 'created', name: 'New Keeper' })
     const imported = store.characterStore.import(syntheticCard(), { id: 'imported' })
     for (const card of [created, imported]) {
@@ -138,7 +139,7 @@ test('new and imported cards with no nickname keep the name in runtime macro con
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })
 
-test('legacy character selections migrate once into the loader session policy', () => {
+test('legacy character selections migrate once into the loader session policy', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-migration-'))
   try {
     const legacy = new CharacterStore(directory)
@@ -149,20 +150,20 @@ test('legacy character selections migrate once into the loader session policy', 
     })
 
     const { ctx } = host()
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     assert.equal(store.sessionSelections.get('legacy-session').characterCardId, 'legacy-card')
     assert.equal(store.sessionSelections.get('legacy-session').character.preferCharacterSystemPrompt, false)
     assert.equal(store.characterStore.selection('legacy-session'), null)
 
     store.sessionSelections.set('legacy-session', { characterCardId: null, character: {} })
-    const restarted = apply(host().ctx, { storageDir: directory })
+    const restarted = apply(withIndependentAssembler(host().ctx, directory, t), { storageDir: directory })
     assert.equal(restarted.sessionSelections.get('legacy-session').characterCardId, null)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
 })
 
-test('Host registers one broad API prefix after the optional webServer becomes available', () => {
+test('Host registers one broad API prefix after the optional webServer becomes available', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-routes-'))
   const routes = []
   const webServer = { register: route => { routes.push(route); return () => {} } }
@@ -173,7 +174,7 @@ test('Host registers one broad API prefix after the optional webServer becomes a
   }
   ctx.effect = install => install()
   try {
-    apply(ctx, { storageDir: directory })
+    apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     assert.deepEqual(routes, [])
     assert.equal(typeof activateWebServer, 'function')
     activateWebServer({ webServer })
@@ -183,11 +184,11 @@ test('Host registers one broad API prefix after the optional webServer becomes a
   }
 })
 
-test('embedded world-book scanning bounds the durable-history input', () => {
+test('embedded world-book scanning bounds the durable-history input', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-scan-limit-'))
   const { ctx } = host()
   try {
-    const store = apply(ctx, { storageDir: directory, worldBook: { maxScanCharacters: 32 } })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory, worldBook: { maxScanCharacters: 32 } })
     const character = store.characterStore.import(syntheticCard(), { id: 'bounded-card' })
     store.sessionSelections.set('bounded-session', { characterCardId: character.id })
     const active = store.profileLoader.compile({ agent: agent('bounded-session', `${'x'.repeat(64)}clocktower`) })
@@ -198,11 +199,11 @@ test('embedded world-book scanning bounds the durable-history input', () => {
   }
 })
 
-test('standalone world books are isolated per session and merge with embedded books through one adapter', () => {
+test('standalone world books are isolated per session and merge with embedded books through one adapter', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-standalone-books-'))
   const { ctx } = host()
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     const character = store.characterStore.import(syntheticCard(), { id: 'library-character' })
     store.worldBookStore.import(JSON.stringify({
       name: 'Alpha Book',
@@ -254,11 +255,11 @@ test('standalone world books are isolated per session and merge with embedded bo
   }
 })
 
-test('selected users add their books through loader policy, deduplicate explicit books, and preserve session isolation', () => {
+test('selected users add their books through loader policy, deduplicate explicit books, and preserve session isolation', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-book-integration-'))
   const { ctx } = host()
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     store.userStore.create({ id: 'reader-a', name: 'Reader A', description: '' })
     store.userStore.create({ id: 'reader-b', name: 'Reader B', description: '' })
     for (const [id, name, content] of [
@@ -321,11 +322,11 @@ test('selected users add their books through loader policy, deduplicate explicit
   }
 })
 
-test('real loader isolates users by session, refreshes switches immediately, restores, unbinds, and cleans deletion', () => {
+test('real loader isolates users by session, refreshes switches immediately, restores, unbinds, and cleans deletion', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-integration-'))
   const firstHost = host()
   try {
-    const store = apply(firstHost.ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(firstHost.ctx, directory, t), { storageDir: directory })
     store.userStore.create({ id: 'reader-one', name: 'Reader One', description: 'One description.' })
     store.userStore.create({ id: 'reader-two', name: 'Reader Two', description: 'Two description.' })
     store.sessionSelections.set('session-one', { userId: 'reader-one' })
@@ -341,7 +342,7 @@ test('real loader isolates users by session, refreshes switches immediately, res
     assert.doesNotMatch(switched, /One description\./)
 
     const restartedHost = host()
-    const restarted = apply(restartedHost.ctx, { storageDir: directory })
+    const restarted = apply(withIndependentAssembler(restartedHost.ctx, directory, t), { storageDir: directory })
     assert.equal(restarted.sessionSelections.get('session-one').userId, 'reader-two')
     assert.match(restartedHost.sections[0].text({ agent: agent('session-one') }), /Two description\./)
 
@@ -357,11 +358,11 @@ test('real loader isolates users by session, refreshes switches immediately, res
   }
 })
 
-test('real loader user snapshot stays stable and contains one authoritative Tavern profile contribution', () => {
+test('real loader user snapshot stays stable and contains one authoritative Tavern profile contribution', t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-snapshot-'))
   const { ctx, sections } = host()
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     store.userStore.create({ id: 'snapshot-user', name: 'Snapshot Reader', description: 'Synthetic snapshot description for {{user}}.' })
     store.sessionSelections.set('snapshot-session', { userId: 'snapshot-user' })
     const snapshot = store.profileLoader.compile({ agent: agent('snapshot-session') })

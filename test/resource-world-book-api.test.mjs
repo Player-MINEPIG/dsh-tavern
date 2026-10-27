@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Readable } from 'node:stream'
@@ -53,11 +54,11 @@ function agent(id) {
   return { id, session: { deriveMessages: () => [] } }
 }
 
-test('v1 preset and character relation APIs compose standalone books without modifying ST documents', async () => {
+test('v1 preset and character relation APIs compose standalone books without modifying ST documents', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-resource-world-book-api-'))
   const fixture = host()
   try {
-    const store = apply(fixture.ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(fixture.ctx, directory, t), { storageDir: directory })
     const preset = store.create({ id: 'preset-a', name: 'Preset A' })
     const character = store.characterStore.create({ id: 'character-a', name: 'Character A' })
     for (const id of ['session-book', 'shared-book', 'preset-book', 'character-book']) {

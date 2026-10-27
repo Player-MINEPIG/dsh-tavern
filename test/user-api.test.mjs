@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Readable } from 'node:stream'
@@ -71,7 +72,7 @@ test('user API performs CRUD, isolates session bindings, unbinds, and clears del
   }
 })
 
-test('root Tavern API dispatcher exposes user routes through the single secured prefix', async () => {
+test('root Tavern API dispatcher exposes user routes through the single secured prefix', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-root-api-'))
   let route
   const ctx = {
@@ -84,7 +85,7 @@ test('root Tavern API dispatcher exposes user routes through the single secured 
     logger: { info: () => {} },
   }
   try {
-    const rootStore = apply(ctx, { storageDir: directory })
+    const rootStore = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     rootStore.userStore.create({ id: 'root-user', name: 'Root User', description: 'Root route.' })
     rootStore.worldBookStore.create({ id: 'root-book', name: 'Root Book' })
     const result = await invoke(route.handler, {

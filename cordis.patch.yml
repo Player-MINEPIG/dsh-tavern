@@ -1,7 +1,6 @@
 # Mount the host half. The browser half is discovered through package.json.
 - insert:
     - id: pmp-dsh-tavern
-      name: 'pmp-dsh-tavern'
+      name: './packages/tavern-loader/src/host.js'
       config:
         storageDir: !!js dshHomePath('pmp-dsh-tavern')
-        assemblerStorageDir: !!js dshHomePath('dsh-prompt-assembler')

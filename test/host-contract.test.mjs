@@ -1,3 +1,4 @@
+import { withIndependentAssembler } from './helpers/independent-assembler.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -5,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { apply, PROFILE_SECTION } from '../packages/tavern-loader/src/index.js'
 
-test('selected preset enters system prompt and model call config seams', async () => {
+test('selected preset enters system prompt and model call config seams', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-'))
   const sections = []
   const listeners = new Map()
@@ -21,7 +22,7 @@ test('selected preset enters system prompt and model call config seams', async (
   }
 
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     const preset = store.create({ id: 'active', name: 'Active preset' })
     store.update(preset.id, {
       sampling: { temperature: 0.25, maxTokens: 1024, reasoningEffort: 'low' },
@@ -46,7 +47,7 @@ test('selected preset enters system prompt and model call config seams', async (
   }
 })
 
-test('replace mode removes other system sections but preserves request capabilities', async () => {
+test('replace mode removes other system sections but preserves request capabilities', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-replace-'))
   const sections = []
   const listeners = new Map()
@@ -61,7 +62,7 @@ test('replace mode removes other system sections but preserves request capabilit
   }
 
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     const preset = store.create({ id: 'replace', name: 'Replacement preset' })
     store.update(preset.id, {
       systemPromptMode: 'replace',
@@ -91,7 +92,7 @@ test('replace mode removes other system sections but preserves request capabilit
   }
 })
 
-test('Host resolves profile and call config from the requesting agent session', async () => {
+test('Host resolves profile and call config from the requesting agent session', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-sessions-'))
   const sections = []
   const listeners = new Map()
@@ -107,7 +108,7 @@ test('Host resolves profile and call config from the requesting agent session', 
   const agent = (id) => ({ id, session: { header: {}, deriveMessages: () => [] } })
 
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     const first = store.create({ id: 'first', name: 'First' })
     const second = store.create({ id: 'second', name: 'Second' })
     store.update(first.id, {
@@ -132,7 +133,7 @@ test('Host resolves profile and call config from the requesting agent session', 
   }
 })
 
-test('selected user keeps DSH agent identity and contributes ordered named Tavern sections', async () => {
+test('selected user keeps DSH agent identity and contributes ordered named Tavern sections', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-user-'))
   const sections = []
   const listeners = new Map()
@@ -147,7 +148,7 @@ test('selected user keeps DSH agent identity and contributes ordered named Taver
   }
   const selectedAgent = { id: 'user-session', session: { header: {}, deriveMessages: () => [] } }
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     store.userStore.create({ id: 'host-user', name: 'Host Reader', description: 'Host user description.' })
     store.sessionSelections.set('user-session', { userId: 'host-user' })
     const context = { agent: selectedAgent }
@@ -165,7 +166,7 @@ test('selected user keeps DSH agent identity and contributes ordered named Taver
   }
 })
 
-test('Host traces the exact assembled snapshot even if selection changes before agent/request', async () => {
+test('Host traces the exact assembled snapshot even if selection changes before agent/request', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-trace-snapshot-'))
   const sections = []
   const listeners = new Map()
@@ -191,7 +192,7 @@ test('Host traces the exact assembled snapshot even if selection changes before 
   const agent = { id: 'session-traced', session }
 
   try {
-    const store = apply(ctx, { storageDir: directory })
+    const store = apply(withIndependentAssembler(ctx, directory, t), { storageDir: directory })
     const assembled = store.create({ id: 'assembled', name: 'Assembled preset' })
     const later = store.create({ id: 'later', name: 'Later preset' })
     store.update(assembled.id, {
