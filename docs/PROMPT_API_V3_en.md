@@ -1,11 +1,11 @@
 # Prompt assembly Trace and primitive API v3
 
-Contract version: Tavern **3.1.5**, targeting DSH **0.2.1-rc.2 / 0.2.1-rc.3**.
+Contract version: Tavern **3.2.0**, targeting DSH **0.2.2-rc.1**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Verification](TESTING_en.md)
 
 Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
-DSH 0.2.1-rc.2 refreshes registered runtime facts during request admission. Trace contexts use the official durable snapshot observed in the actual request, preserving literal text and context clearing. Earlier assembly text and current resources do not fill historical gaps.
+DSH 0.2.2-rc.1 refreshes registered runtime facts during request admission. Trace contexts use the official durable snapshot observed in the actual request, preserving literal text and context clearing. Earlier assembly text and current resources do not fill historical gaps.
 
 ## Purpose and compatibility
 
@@ -148,7 +148,7 @@ schema 4 detail read, body recovery reports `available`, `partially-available`, 
 
 `parameters.requested` records the preset overrides proposed for the request. `parameters.effective` records values observed at the actual `llm/stream` boundary after DSH/adapter defaults; a request that fails before that boundary does not prove effective delivery. `parameters.attempt` identifies the parameter-policy attempt, separately from the Trace attempt and official stream identity.
 
-Each `parameters.fallbacks` entry contains `parameter`, `stage` (`preflight` or `provider`), `reason: "parameter-rejected"`, `code`, and optional `status`. These are bounded metadata, not provider response bodies. Unsupported preset reasoning effort is omitted during preflight for the adapter default. Eligible explicit provider parameter rejection before output may omit an active preset override once per field, at most four runtime retries. Cancellation, any output, and unrelated errors do not trigger Tavern retry. The stored preset is unchanged; missing diagnostics on older records are not reconstructed from current configuration.
+Reasoning effort belongs to the native DSH model selection and is no longer editable in presets. Imported `reasoningEffort` values remain for round-trip compatibility and never override that selection. Trace retains requested/effective values and reports unapplied preset effort with `stage: "selection"`, `reason: "native-model-selection"`, and `code: "DSH_MODEL_SELECTION_OWNS_EFFORT"`. Existing `agent/request` integration still applies `temperature`, `maxTokens` and `stop`; only explicit rejection of Tavern-owned controls permits bounded fallback, never after output, cancellation or unrelated errors.
 
 ### Failure details
 

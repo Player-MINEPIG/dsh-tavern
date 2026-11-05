@@ -90,7 +90,6 @@ export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConv
   const [savedDraft, setSavedDraft] = useState(null)
   const [selection, setSelection] = useState(null)
   const [binding, setBinding] = useState(null)
-  const [rp, setRp] = useState({ active: false })
   const [busy, setBusy] = useState(false)
   const [detachPrompt, setDetachPrompt] = useState(null)
   const [status, setStatus] = useState({ error: false, key: 'common.loading' })
@@ -141,17 +140,13 @@ export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConv
     const generation = ++refreshGeneration.current
     const list = await api('/characters')
     let currentSelection = null
-    let currentRp = { active: false }
     if (bindingTarget || sessionId) {
       const selected = await api(`/character-selection?sessionId=${encodeURIComponent(sessionId)}`)
       currentSelection = selected.selection
-      const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
-      currentRp = rpData.rp ?? { active: false }
     }
     if (generation !== refreshGeneration.current) return
     setCatalog(list)
     setSelection(currentSelection)
-    setRp(currentRp)
     const id = preferredId ?? currentSelection?.characterCardId ?? list.characters[0]?.id ?? null
     if (id === null) {
       applyCharacter(null, null)
@@ -268,8 +263,6 @@ export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConv
     } else {
       setSelection(data.selection)
       setBinding(data.selection)
-      const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
-      setRp(rpData.rp ?? { active: false })
     }
     announceTavernRefresh()
   }, [detail?.id, refresh, sessionId, bindingTarget])
@@ -307,16 +300,6 @@ export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConv
       setDetachPrompt(null)
     }, detachPrompt.action === 'unbind' ? 'character.status.unbound' : 'character.status.bound')
   }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run])
-
-  const toggleRp = useCallback(() => run(async () => {
-    if (!canBind) throw uiError('character.error.needSession')
-    const data = await api('/rp-mode', {
-      method: 'PUT',
-      body: JSON.stringify({ sessionId, active: rp.active !== true }),
-    })
-    setRp(data.rp ?? { active: rp.active !== true })
-    announceTavernRefresh()
-  }, 'character.status.rpUpdated'), [rp.active, run, sessionId, bindingTarget])
 
   const remove = useCallback(() => run(async () => {
     if (detail === null || !window.confirm(unwrapText(uiMessage('character.confirmDelete', { name: detail.name })))) return
@@ -436,16 +419,7 @@ export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConv
         }, ...greetings.map((item) => h('option', { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
         h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterSystemPrompt: event.target.checked } })) }), h('span', null, uiMessage('character.preferSystem'))),
         h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterPostHistory: event.target.checked } })) }), h('span', null, uiMessage('character.preferPostHistory'))),
-        h('label', { className: 'dcc-check' },
-          h('input', {
-            type: 'checkbox',
-            checked: rp.active === true,
-            disabled: busy || !canBind || Boolean(bindingTarget),
-            onChange: toggleRp,
-          }),
-          h('span', null, uiMessage('character.rpMode')),
-        ),
-        h('p', { className: 'dcc-note' }, uiMessage('character.rpMode.help')),
+        h('p', { className: 'dcc-note' }, uiMessage('rp.permission.settingsHint')),
         h('p', { className: 'dcc-note' }, uiMessage('character.moduleNote')),
         h('details', { className: 'dcc-detail', open: true },
           h('summary', null, uiMessage('character.field.firstMessage')),

@@ -8,7 +8,7 @@ Current assembly sources use shared `dshPromptSources` protocol 1; legacy `taver
 
 Request layout CRUD, application, preview, recorded request references and the optional advanced core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
 
-Contract: current Tavern source (package version in package.json), compatible with `>=0.2.1-rc.2 <0.2.2-0`, verified on rc.2 and rc.3.
+Contract: current Tavern source (package version in package.json), compatible with `>=0.2.2-rc.1 <0.2.3-0`, targeting 0.2.2-rc.1.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -24,11 +24,11 @@ message coordinates, branch inputs, and unmigrated timeline references.
 <a id="impact-on-third-party-consumers-in-240"></a>
 ## Impact on third-party consumers in the current version
 
-The current contract targets DSH `0.2.1-rc.2` / `0.2.1-rc.3`, including the optional Host services and session opening world-book routes below. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their existing contracts.
+The current contract targets DSH `0.2.2-rc.1`, including the optional Host services and session opening world-book routes below. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their existing contracts.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
-The runtime range is `>=0.2.1-rc.2 <0.2.2-0`. Later 0.2.1 RCs and the final release are admitted by policy; reassess 0.2.2 and its prereleases.
+The runtime range is `>=0.2.2-rc.1 <0.2.3-0`. Later 0.2.2 RCs and the final release are admitted by policy; reassess 0.2.3 and its prereleases.
 
 | Integration | Impact and consumer requirements |
 | --- | --- |
@@ -36,7 +36,7 @@ The runtime range is `>=0.2.1-rc.2 <0.2.2-0`. Later 0.2.1 RCs and the final rele
 | Template creation and updates | Existing `{ name, sourceSessionId }` creation remains. POST/PATCH now reject unknown top-level fields: do not send back a full response containing IDs or timestamps. `selection` and `sourceSessionId` are mutually exclusive; explicit `selection` replaces the whole configuration rather than merging a partial patch |
 | Historical messages, timelines and branches | Current `sessionFormatVersion` is 4. Read, store and submit coordinates with their source format version. Missing or mismatched V4 reference versions return `409 PLAY_COORDINATES_MIGRATION_REQUIRED`. Do not merely relabel old integers or assume a constant offset |
 | Third-party stored references | The Tavern upgrade tool only processes the files listed in the migration guide; it does not scan third-party databases or caches. Invalidate old caches and reread upgraded data; external references that must be retained need separate migration backed by official log evidence |
-| Preset parameters | `reasoningEffort` can contain additional or provider-specific values; do not hard-code the old enum. Omitting it in PATCH preserves the stored value; null clears the override. Explicitly unsupported Tavern sampling overrides may fall back, so stored preset values do not establish actual request parameters |
+| Preset parameters | `reasoningEffort` can contain additional or provider-specific values; do not hard-code the old enum. Omitting it in PATCH preserves the stored value; null clears the stored value. This field is retained only for round-trip compatibility; actual effort always comes from the DSH model selection. Explicitly unsupported Tavern sampling overrides may fall back, so stored preset values do not establish actual request parameters |
 | Trace consumers | v3 can add optional `parameters` (requested/effective/fallbacks/attempt); v1 audit can add `sessionFormatVersion`. Older records may omit them. Tolerate additional fields, use actual parameter diagnostics and handle unavailable historical body/failure references after migration |
 | Third-party frontends embedded in DSH | Tavern's `pmpDshTavernChrome` contract remains. Plugins calling DSH directly must replace `sessions.open` with `uiWorkspace.openSession`, inject that service, and adapt session directory and per-session lifecycle handling. Pure Tavern HTTP consumers are unaffected by those UI service signature changes |
 
@@ -177,7 +177,7 @@ Archive is list visibility, not detachment, session lifecycle, or disk cleanup. 
 
 ### One-click archive and cleanup inspection
 
-`availability` returns `{ ok:true, id, status, reason?, sessionIds, workspaceScope }`. `status` is `invalid`, `available`, `empty`, `protected`, or `unavailable`. `invalid` requires at least one reference and confirmation through public `sessionController.inspect()` that every catalog root, timeline head, variant, and saved branch head is missing. Native archive, a different workspace, read failures, and corruption do not establish absence. Drafts, empty reference sets, and incomplete checks are preserved. Archived runs return `protected`.
+`availability` returns `{ ok:true, id, status, reason?, sessionIds, workspaceScope }`. `status` is `invalid`, `available`, `empty`, `protected`, or `unavailable`. `invalid` requires at least one reference and confirmation through public `sessionQuery.observeSession()` that every catalog root, timeline head, variant, and saved branch head is missing. Native archive, a different workspace, read failures, and corruption do not establish absence. Drafts, empty reference sets, and incomplete checks are preserved. Archived runs return `protected`.
 
 One-click archive uses current-workspace diagnostics to include every run that cannot normally open, including missing or corrupt timelines, session read failures, or no available sessions. The client refreshes diagnostics, then writes archive markers for those exact run IDs and paths in one existing catalog revision/CAS update. Other rows are preserved. Healthy runs and healthy unstarted drafts stay visible. Unready session or workspace mirrors and workspace-level read failures prevent archive. The archive box restores runs without moving files or changing DSH sessions.
 
@@ -365,7 +365,7 @@ real-write or browser two-tab notification checks.
 
 The client entry always shows `DT`. Left-click immediately expands or collapses the menu. Rapid repeated clicks repeat that default. Double-click has no special effect. Right-click switches frontend display mode. Menu buttons say **Switch to custom frontend mode** / **Switch to DSH native mode**. Current state may show **Current: Mowan** / **Current: DSH native**. The tooltip is always **Switch frontend display mode**. The menu stays mounted; content fades in after the 220ms expand.
 
-The `PUT /workspace` directory must already exist (`workspaceController.create` also does not mkdir). `POST /workspace/dirs` is created by `PlayWorkspaceStore` inside the bound root for character/playthrough subdirectories. It does not invoke the global directory picker, so native/browse Hosts both work. The path jail rejects `..`, absolute paths, symlinks that point outside the root, and file conflicts. files/dirs return 409 when no root is selected. Do not use archive to tuck sessions away. The `user-message` body is not a full prompt. The loader's Play Host adapter explicitly calls `sessionController.create()`, `rename()`, `fork()`, `prompt()`, `inspect()`, and `page()`. One history read pins its first inclusive `throughSeq` across every page. `PUT /workspace` calls `workspaceController.create()`. Fork of an open turn maps to HTTP 409.
+The `PUT /workspace` directory must already exist (`workspaceController.create` also does not mkdir). `POST /workspace/dirs` is created by `PlayWorkspaceStore` inside the bound root for character/playthrough subdirectories. It does not invoke the global directory picker, so native/browse Hosts both work. The path jail rejects `..`, absolute paths, symlinks that point outside the root, and file conflicts. files/dirs return 409 when no root is selected. Do not use archive to tuck sessions away. The `user-message` body is not a full prompt. The loader's Play Host adapter explicitly calls `sessionController.create()`, `rename()`, `fork()`, `prompt()` and `page()`; reads use `sessionQuery.observeSession()`. One history read pins its first inclusive `throughSeq` across every page. `PUT /workspace` calls `workspaceController.create()`. Fork of an open turn maps to HTTP 409.
 
 ## v1 bundled UI contract
 
@@ -510,7 +510,7 @@ and `sandboxBefore` of null / `read-only` / `workspace-write` / `danger-full-acc
 limited to 120 characters and 480 UTF-8 bytes. Explicit edits and imports reject invalid fields instead
 of silently dropping them; existing diagnostics check resource availability separately.
 
-Preset `sampling.reasoningEffort` supports `off`, `low`, `medium`, `high`, `xhigh`, and `max`.
+Reasoning effort belongs to the native DSH model selection and is no longer editable in presets. Imported `reasoningEffort` values remain for round-trip compatibility and never override that selection. Trace retains requested/effective values and reports unapplied preset effort with `stage: "selection"`, `reason: "native-model-selection"`, and `code: "DSH_MODEL_SELECTION_OWNS_EFFORT"`. Existing `agent/request` integration still applies `temperature`, `maxTokens` and `stop`; only explicit rejection of Tavern-owned controls permits bounded fallback, never after output, cancellation or unrelated errors.
 Import/save/export also preserve other provider effort IDs that contain at most 100 characters,
 are not whitespace-only, and contain no control characters. The editor displays and preserves such
 values even when they are absent from its common choices. Omitting the field during update preserves
@@ -672,7 +672,9 @@ Production code uses the Tavern-owned event contract; low-level `createOperation
 
 ### Sessionless opening drafts
 
-Under the v2 Play base, `POST /drafts` saves `{ characterId, source?, selection?, assemblyPresetId? }` without a DSH Session. `GET /drafts/:id` returns `{ draft, playthrough }`. `PUT /drafts/:id` requires `expectedRevision` and accepts selection, assemblyPresetId, variables, importContextRef, or resetVariables. It never changes the character identity. `POST /drafts/:id/preview` accepts `{ expectedRevision, preset? }` and reads this opening draft's current resources, variables and caller-supplied assembly rules; omitted preset uses the draft snapshot. It returns `{ ok, preview }` with `scope:'opening-draft'`, `draftId`, `draftRevision` and `pendingInputsIncluded:false`. It creates no native Session, writes no history and calls no model. Configuration changes or first-send preparation return 409.
+Under the v2 Play base, `POST /drafts` saves `{ characterId, source?, selection?, assemblyPresetId? }` without a DSH Session. `GET /drafts/:id` returns `{ draft, playthrough }`. `PUT /drafts/:id` requires `expectedRevision` and accepts selection, assemblyPresetId, variables, importContextRef, resetVariables, modelSelection, or permissionPreset. It never changes the character identity. `POST /drafts/:id/preview` accepts `{ expectedRevision, preset? }` and reads this opening draft's current resources, variables and caller-supplied assembly rules; omitted preset uses the draft snapshot. It returns `{ ok, preview }` with `scope:'opening-draft'`, `draftId`, `draftRevision` and `pendingInputsIncluded:false`. It creates no native Session, writes no history and calls no model. Configuration changes or first-send preparation return 409.
+
+`modelSelection` is `{ provider, model, reasoningEffort? }` or null (DSH default). `permissionPreset` is a native DSH permission id or `tavern-rp`; null/omitted means RP secure mode. Choices only save the draft and apply through public DSH APIs during materialization; unavailable models or permissions reject preparation. `PUT /rp-mode` additionally accepts `{ sessionId, active:false, permissionPreset }` to apply native permissions at the same execution boundary as leaving RP; `pendingPermissionPreset` reports a queued choice.
 
 `POST /drafts/:id/materialize` takes `{ expectedRevision, operationId, text }`, prepares one durably reserved Session and returns `{ sessionId, requestId, accepted }`; it does not send a model request. Call the existing `/sessions/:id/user-message` with the same text and requestId unless already accepted. `POST /drafts/:id/cancel` either releases a cleared unbound blank and restores the draft with `draft.lastInput` retained for reopening, or stops an already admitted real Session while preserving history. Draft scope for MVU is `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`, with no sessionId. Card write grants require the exact current selection token and ready source execution.
 
@@ -691,7 +693,7 @@ Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_e
 
 ## Browser chrome mode service
 
-The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.2.1-rc.2` / `0.2.1-rc.3` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
+The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.2.2-rc.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
 
 Public face:
 

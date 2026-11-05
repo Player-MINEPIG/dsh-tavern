@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 const manifest = createRequire(import.meta.url)('../../../package.json')
 
 export const ASSEMBLER_RANGE = manifest.peerDependencies['dsh-prompt-assembler']
-export const ASSEMBLER_INSTALL_URL = 'https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz'
+export const ASSEMBLER_INSTALL_URL = 'https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz'
 
 export function requireAssemblerVersion(version, subject) {
   const expected = /^~(\d+)\.(\d+)\.(\d+)$/.exec(ASSEMBLER_RANGE)

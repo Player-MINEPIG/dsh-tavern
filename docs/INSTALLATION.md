@@ -2,26 +2,26 @@
 
 [English](INSTALLATION_en.md)
 
-Tavern 3.1.5 需要独立安装并启用 Assembler 1.1.3。两个组件分别交付，Tavern 不内嵌 Assembler，不自动下载或启动它。必需 peer 范围为 `~1.1.3`。服务分工与可选 Memory Manager 见[接入说明](ASSEMBLER_INTEGRATION.md)。
+Tavern 3.2.0 需要独立安装并启用 Assembler 1.2.0。两个组件分别交付，Tavern 不内嵌 Assembler，不自动下载或启动它。必需 peer 范围为 `~1.2.0`。服务分工与可选 Memory Manager 见[接入说明](ASSEMBLER_INTEGRATION.md)。
 
-装配规则的 CRUD、应用、预览、实际请求引用与旧进阶配置读取见[请求装配器](REQUEST_ASSEMBLY.md)。当前支持 DSH **0.2.1-rc.2 / 0.2.1-rc.3**，要求 Node `^22.19.0 || >=24.0.0`。Tavern 前端嵌入 DSH Web 与桌面端，不提供额外独立 Web UI。
+装配规则的 CRUD、应用、预览、实际请求引用与旧进阶配置读取见[请求装配器](REQUEST_ASSEMBLY.md)。当前支持 DSH **0.2.2-rc.1**，要求 Node `>=24.9.0`。Tavern 前端嵌入 DSH Web 与桌面端，不提供额外独立 Web UI。
 
-Host 与 DSH crypto peer 范围均为 `>=0.2.1-rc.2 <0.2.2-0`。范围内后续版本按策略准入，不代表逐版运行验收。旧完整说明保留在对应 Git tag。
+Host 与 DSH crypto peer 范围均为 `>=0.2.2-rc.1 <0.2.3-0`。范围内后续版本按策略准入，不代表逐版运行验收。旧完整说明保留在对应 Git tag。
 
 ## 安装两个独立组件
 
 先初始化目标 DSH profile。在 GUI 的“插件 → 添加插件”中，按以下顺序粘贴附件直链，分别安装并启用：
 
-1. Assembler 1.1.3。
+1. Assembler 1.2.0。
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
+   https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
    ```
 
-2. Tavern 3.1.5。
+2. Tavern 3.2.0。
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
+   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
    ```
 
 按 GUI 提示重载或重启 Host。已安装独立 Assembler 时，先核对版本和启用状态。仅将包登记到 profile 不代表其 bundle 已启用。
@@ -29,26 +29,30 @@ Host 与 DSH crypto peer 范围均为 `>=0.2.1-rc.2 <0.2.2-0`。范围内后续�
 命令行安装或更新前，停止目标 Host。将目标 DSH 放在 `PATH`，在同一 profile 依次运行：
 
 ```sh
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
 ```
 
-这里安装的是预构建 Release 附件，不要求从 npm 下载 Assembler 1.1.3。DSH 的其他运行依赖与 Tavern 的普通依赖仍按各自的安装机制提供。
+这里安装的是预构建 Release 附件，不要求从 npm 下载 Assembler 1.2.0。DSH 的其他运行依赖与 Tavern 的普通依赖仍按各自的安装机制提供。
 
 Market 的“已安装，重启后生效”表示软件包已登记，不证明插件已成功启动。重启后确认独立 Assembler 与 Tavern 均运行，分别打开装配配置和 DT 面板。若显示缺少或不兼容的 Assembler，先安装并启用符合范围的独立组件，再按 Host 提示重载或重启。不要用版本例外代替缺失依赖。
 
 新版仅支持 stock core 标准策略。进阶扩展冻结在 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配。插件安装不会修改 DSH 核心。
 
-<a id="upgrade-to-3-1-5"></a>
-## 从内嵌 Assembler 的版本升级到 3.1.5
+<a id="upgrade-to-3-2-0"></a>
+## 升级到 3.2.0
+
+从 3.1.5 升级：备份数据并停止 Host，按上述安装顺序更新独立 Assembler 至 1.2.0，再更新 Tavern 至 3.2.0。保留原数据目录，确认两个 bundle 均启用后重启。
+
+### 从内嵌 Assembler 的旧版本升级
 
 1. 停止目标 Host。备份 Tavern 持久目录、Assembler 持久目录、RP 工作区和对应 DSH 数据。
-2. 在同一 profile 安装独立 Assembler 1.1.3，并将其 bundle 设为启用。
+2. 在同一 profile 安装独立 Assembler 1.2.0，并将其 bundle 设为启用。
 3. 默认 Assembler 存储继续使用 `<DSH_HOME>/dsh-prompt-assembler/`。不要删除该目录或复制一份空目录覆盖它。
-4. 若旧 Tavern 配置含 `assemblerStorageDir`，将原值移到独立 Assembler 的 `storageDir`，再删除旧 Tavern 字段。Tavern 3.1.5 拒绝该旧字段，不会忽略它后打开另一份策略库。保留 Tavern 自己的 `storageDir`。
+4. 若旧 Tavern 配置含 `assemblerStorageDir`，将原值移到独立 Assembler 的 `storageDir`，再删除旧 Tavern 字段。Tavern 3.2.0 拒绝该旧字段，不会忽略它后打开另一份策略库。保留 Tavern 自己的 `storageDir`。
 5. 旧 Tavern `security` 曾同时转发给 Assembler。将需要继续作用于装配 API 的设置复制到独立 Assembler 的 `security`。保留 Tavern `security` 中适用于 Tavern 自身 API 的设置。
 6. 卸载旧 Tavern 软件包，保留数据目录。GUI 使用“卸载 pmp-dsh-tavern”；CLI 使用 `dsh plugin --profile web remove pmp-dsh-tavern`。不要清除 Tavern、Assembler 或 DSH 的数据。
-7. 使用上面的 3.1.5 附件直链重新安装 Tavern，确认两个 bundle 均启用后启动 Host。核对角色卡、策略、会话选择与 Trace，再执行[运行时验证](TESTING.md)。
+7. 使用上面的 3.2.0 附件直链重新安装 Tavern，确认两个 bundle 均启用后启动 Host。核对角色卡、策略、会话选择与 Trace，再执行[运行时验证](TESTING.md)。
 
 pnpm 覆盖安装可能保留旧包内嵌的 Assembler 文件，导致解析到 1.1.2。此次从内嵌版本升级必须先卸载旧 Tavern 软件包再重新安装；单独覆盖更新不保证清除旧副本。
 
@@ -58,20 +62,20 @@ pnpm 覆盖安装可能保留旧包内嵌的 Assembler 文件，导致解析到 
 
 ### 安装入口与地址格式
 
-DSH 的 CLI、Web 与桌面插件管理共用 `pnpm add` 安装路径。GUI 的“添加插件”接受 npm 包名、GitHub 仓库地址、本地绝对目录和 `.tgz` / `.tar.gz` 安装包地址，经 `pluginManager.installBundle` 执行安装与启用。参见 [GUI 调用](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/client/ui-plugin-manager/src/client/manager-store.ts)、[地址解析](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/install-spec.ts)与[共享安装实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/index.ts)。
+DSH 的 CLI、Web 与桌面插件管理共用 `pnpm add` 安装路径。GUI 的“添加插件”接受 npm 包名、GitHub 仓库地址、本地绝对目录和 `.tgz` / `.tar.gz` 安装包地址，经 `pluginManager.installBundle` 执行安装与启用。参见 [GUI 调用](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/client/ui-plugin-manager/src/client/manager-store.ts)、[地址解析](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/boot/plugin-manager/src/install-spec.ts)与[共享安装实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/boot/plugin-manager/src/index.ts)。
 
 - 仓库地址可以带 `#tag` 或 `#commit`。它安装该 Git 提交中的包，不会寻找 GitHub Release 附件。
 - `releases/download/标签/包名.tgz` 是预构建附件直链，可以作为安装地址。
 - `releases/tag/标签` 是 Release 网页，不能作为安装地址。
 - GitHub 自动生成的源码 `.tar.gz` 可被识别为归档，但不等于预构建安装包。当前 GUI 不接受源码 `.zip`。
 
-自定义 Market 根据索引选择 `包名@版本` 或固定 commit 的 Git URL，不会自动选择 Release 附件，见 [Market 实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts)。
+自定义 Market 根据索引选择 `包名@版本` 或固定 commit 的 Git URL，不会自动选择 Release 附件，见 [Market 实现](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/util/plugin-market-index/src/index.ts)。
 
 Tavern 通过 `peerDependencies` 声明共享 Assembler。DSH profile 使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false`，因此 peer 声明不会自动安装 Assembler。将它作为 profile 的直接依赖独立安装，不把 GitHub 地址放入 Tavern 的普通子依赖。源码与预构建 Tavern 包均不声明 `bundleDependencies`，包内没有第二份 Assembler。其他依赖 Assembler 的插件也应复用公共服务，并声明自己的兼容范围。
 
 ### DSH 提供官方运行依赖
 
-`@deepseek-ai/dsh-util-crypto` 与 `@deepseek-ai/cordis` 是 DSH 提供的必需 peers，避免安装第二份。前者范围为 `>=0.2.1-rc.2 <0.2.2-0`，后者为 `4.0.5`。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供。
+`@deepseek-ai/dsh-util-crypto` 与 `@deepseek-ai/cordis` 是 DSH 提供的必需 peers，避免安装第二份。前者范围为 `>=0.2.2-rc.1 <0.2.3-0`，后者为 `4.1.0`。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供。
 
 静态 `pnpm peers check` 不识别 DSH 的运行时解析机制，可能报告这些官方 peers 缺失。Assembler 则是用户必须独立安装的第三方组件，不能把它的缺失也当成可忽略警告。应核实 Host 实际解析的组件版本并检查启动结果。不要依赖 profile 顶层是否存在同名目录，也不要把普通 Node 进程的包查找结果作为唯一依据。
 
@@ -81,10 +85,10 @@ Tavern 通过 `peerDependencies` 声明共享 Assembler。DSH profile 使用 `no
 <a id="source-installation"></a>
 ### 从源码安装和打包
 
-使用目标 DSH 初始化的独立测试 profile。先在该 profile 安装并启用独立 Assembler。Tavern 开发依赖由 lockfile 固定到经过审查的 GitHub 源码归档和完整性，不依赖 Assembler 1.1.3 已发布到 npm。
+使用目标 DSH 初始化的独立测试 profile。先在该 profile 安装并启用独立 Assembler。Tavern 开发依赖由 lockfile 固定到经过审查的 GitHub Release 安装包和完整性，不依赖 Assembler 1.2.0 已发布到 npm。
 
 ```sh
-git clone --branch v3.1.5 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.2.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

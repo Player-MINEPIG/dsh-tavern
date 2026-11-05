@@ -31,7 +31,7 @@ test('MVU card retry, generation revocation and accepted close preserve the righ
   renderingWriteRequests:{register:options=>{let disposed=false;return{getGrant:()=>grantPending?new Promise(resolve=>{resolveGrant=resolve}):Promise.resolve({grantId:'grant'}),dispose(){if(disposed)return;disposed=true;revokes++;options.onRevoke()}}}},
   createVirtualCardRuntime:(_data,options)=>{handlers=options;return{dispose(){vmDisposals++},notifyVariables(){}}},
  }
- const Card=new Function('dependencies',`const {${Object.keys(dependencies).filter(key=>key!=='default').join(',')}}=dependencies;${component};return InteractiveCard`)(dependencies)
+ const Card=new Function('dependencies',`const {${Object.keys(dependencies).filter(key=>key!=='default'&&/^[A-Za-z_$][\w$]*$/.test(key)).join(',')}}=dependencies;${component};return InteractiveCard`)(dependencies)
  const render=busy=>React.createElement('div',null,React.createElement(Card,{source:'neutral source',enabled:true,scopeKey:'neutral scope',context:{},createBinding,writeScope:scope,writesBlocked:busy}))
  const load=async()=>{
   const frame=document.querySelector('iframe'),doc=parseHTML('<!doctype html><html><head></head><body><button>Neutral choice</button></body></html>').document
@@ -81,7 +81,7 @@ test('dependency failures appear as dismissible notices before iframe load, incl
  let available=false
  const inert={html:'<p>Static opening</p>',scripts:[],unsupported:['appearance.unsupportedModule']}
  const dependencies={...React,h:React.createElement,renderingTrust:{revision:()=>0,subscribe:()=>()=>{}},prepareCardDocument:()=>{if(!available)throw Error('Module dependencies unavailable');return{...inert,unsupported:[],runs:[{code:'fixture'}]}},cardDocument:()=>inert,cleanCardHtml:html=>html,CARD_CSP:'',translate:key=>key,useCardDiagnostics:()=>false,CardDiagnosticNotice,IdentityActionProposal:()=>null}
- const Card=new Function('dependencies',`const {${Object.keys(dependencies).filter(key=>key!=='default').join(',')}}=dependencies;${component};return InteractiveCard`)(dependencies)
+ const Card=new Function('dependencies',`const {${Object.keys(dependencies).filter(key=>key!=='default'&&/^[A-Za-z_$][\w$]*$/.test(key)).join(',')}}=dependencies;${component};return InteractiveCard`)(dependencies)
  const container=document.getElementById('root')
  await React.act(()=>root.render(React.createElement(Card,{source:'neutral module',enabled:true,scopeKey:'opening',context:{}})))
  assert.match(container.querySelector('[role=alert]').textContent,/Module dependencies unavailable/)

@@ -2,26 +2,26 @@
 
 [中文](INSTALLATION.md)
 
-Tavern 3.1.5 requires independently installed and enabled Assembler 1.1.3. The two components ship separately. Tavern neither carries a private Assembler package nor downloads or starts one. Its required peer range is `~1.1.3`. See [integration](ASSEMBLER_INTEGRATION_en.md) for service ownership and optional Memory Manager.
+Tavern 3.2.0 requires independently installed and enabled Assembler 1.2.0. The two components ship separately. Tavern neither carries a private Assembler package nor downloads or starts one. Its required peer range is `~1.2.0`. See [integration](ASSEMBLER_INTEGRATION_en.md) for service ownership and optional Memory Manager.
 
-[Request assembly](REQUEST_ASSEMBLY_en.md) covers layout CRUD, application, preview, recorded request references and legacy advanced configuration reads. Current targets are DSH **0.2.1-rc.2 / 0.2.1-rc.3**, requiring Node `^22.19.0 || >=24.0.0`. Tavern embeds its frontend in DSH Web and Desktop, without an additional standalone Web UI.
+[Request assembly](REQUEST_ASSEMBLY_en.md) covers layout CRUD, application, preview, recorded request references and legacy advanced configuration reads. Current targets are DSH **0.2.2-rc.1**, requiring Node `>=24.9.0`. Tavern embeds its frontend in DSH Web and Desktop, without an additional standalone Web UI.
 
-Host and DSH crypto peer ranges are `>=0.2.1-rc.2 <0.2.2-0`. Later versions in that range are admitted by policy, not a claim of individual runtime acceptance. Older full documentation remains at its Git tag.
+Host and DSH crypto peer ranges are `>=0.2.2-rc.1 <0.2.3-0`. Later versions in that range are admitted by policy, not a claim of individual runtime acceptance. Older full documentation remains at its Git tag.
 
 ## Install both independent components
 
 Initialize the target DSH profile first. In GUI **Plugins → Add plugin**, paste these attachment URLs in order, installing and enabling each component:
 
-1. Assembler 1.1.3.
+1. Assembler 1.2.0.
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
+   https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
    ```
 
-2. Tavern 3.1.5.
+2. Tavern 3.2.0.
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
+   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
    ```
 
 Reload or restart the Host when the GUI requests it. If independent Assembler is already installed, check its version and enabled state. Registering a package in the profile does not establish that its bundle is enabled.
@@ -29,26 +29,30 @@ Reload or restart the Host when the GUI requests it. If independent Assembler is
 Before CLI installation or updates, stop the target Host. Put the target DSH on `PATH` and run both commands for the same profile:
 
 ```sh
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
 ```
 
-These are prebuilt Release attachments. They do not require downloading Assembler 1.1.3 from npm. DSH runtime dependencies and Tavern's other regular dependencies retain their own installation mechanisms.
+These are prebuilt Release attachments. They do not require downloading Assembler 1.2.0 from npm. DSH runtime dependencies and Tavern's other regular dependencies retain their own installation mechanisms.
 
 Market's "installed, effective after restart" means the package is registered, not that its plugins started. After restart, confirm that independent Assembler and Tavern both run, then open the assembly configuration and DT panel. If Assembler is missing or incompatible, install and enable a supported independent version, then reload or restart as directed by the Host. A version exemption cannot supply a missing dependency.
 
 Current releases support Standard strategies on stock core only. Advanced remains frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2, without a commitment to later adaptation. Plugin installation never patches DSH core.
 
-<a id="upgrade-to-3-1-5"></a>
-## Upgrade from a bundled Assembler version to 3.1.5
+<a id="upgrade-to-3-2-0"></a>
+## Upgrade to 3.2.0
+
+From 3.1.5: back up data and stop the Host, update independent Assembler to 1.2.0, then Tavern to 3.2.0 using the commands above. Keep existing storage directories and restart with both bundles enabled.
+
+### Upgrade from a bundled Assembler version
 
 1. Stop the target Host. Back up Tavern storage, Assembler storage, the RP workspace and corresponding DSH data.
-2. Install independent Assembler 1.1.3 in the same profile and select its bundle as enabled.
+2. Install independent Assembler 1.2.0 in the same profile and select its bundle as enabled.
 3. Keep the default Assembler storage at `<DSH_HOME>/dsh-prompt-assembler/`. Do not delete that directory or replace it with an empty copy.
-4. If old Tavern configuration contains `assemblerStorageDir`, move that value to independent Assembler's `storageDir`, then remove the old Tavern field. Tavern 3.1.5 rejects the obsolete field rather than silently opening another strategy store. Keep Tavern's own `storageDir` unchanged.
+4. If old Tavern configuration contains `assemblerStorageDir`, move that value to independent Assembler's `storageDir`, then remove the old Tavern field. Tavern 3.2.0 rejects the obsolete field rather than silently opening another strategy store. Keep Tavern's own `storageDir` unchanged.
 5. Old Tavern `security` settings were also forwarded to Assembler. Copy the settings still needed for the assembly API into independent Assembler's `security`. Retain Tavern `security` settings that protect Tavern's own API.
 6. Remove the old Tavern package while retaining its data directories. In GUI use **Uninstall pmp-dsh-tavern**; in CLI run `dsh plugin --profile web remove pmp-dsh-tavern`. Do not clear Tavern, Assembler or DSH data.
-7. Reinstall Tavern using the 3.1.5 attachment URL above, confirm both bundles are enabled, and start the Host. Check character cards, strategies, session selections and Trace, then follow [runtime verification](TESTING_en.md).
+7. Reinstall Tavern using the 3.2.0 attachment URL above, confirm both bundles are enabled, and start the Host. Check character cards, strategies, session selections and Trace, then follow [runtime verification](TESTING_en.md).
 
 pnpm can retain files from the formerly bundled Assembler during an overwrite, causing SDK resolution to find 1.1.2. This upgrade from a bundled version requires removing and reinstalling the Tavern package; an overwrite alone does not reliably clear that copy.
 
@@ -58,20 +62,20 @@ Math is enabled by default and needs no additional KaTeX, font or renderer insta
 
 ### Installation channels and address formats
 
-DSH CLI, Web and desktop plugin management share a `pnpm add` installation path. The GUI Add plugin form accepts an npm package name, GitHub repository address, absolute local directory, or `.tgz` / `.tar.gz` package address. It installs and enables the bundle through `pluginManager.installBundle`. See the [GUI call](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/client/ui-plugin-manager/src/client/manager-store.ts), [address parser](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/install-spec.ts) and [shared installer](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/boot/plugin-manager/src/index.ts).
+DSH CLI, Web and desktop plugin management share a `pnpm add` installation path. The GUI Add plugin form accepts an npm package name, GitHub repository address, absolute local directory, or `.tgz` / `.tar.gz` package address. It installs and enables the bundle through `pluginManager.installBundle`. See the [GUI call](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/client/ui-plugin-manager/src/client/manager-store.ts), [address parser](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/boot/plugin-manager/src/install-spec.ts) and [shared installer](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/boot/plugin-manager/src/index.ts).
 
 - A repository address can include `#tag` or `#commit`. It installs the package at that Git revision without looking for GitHub Release attachments.
 - `releases/download/tag/package.tgz` is a prebuilt attachment URL accepted for installation.
 - `releases/tag/tag` is a Release webpage, not an installation address.
 - GitHub's generated source `.tar.gz` can be recognized as an archive, but is not a prebuilt package. The current GUI does not accept source `.zip` archives.
 
-Custom Market entries select `name@version` or a Git URL pinned to a commit. They do not automatically choose Release assets. See the [Market implementation](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.3/packages/util/plugin-market-index/src/index.ts).
+Custom Market entries select `name@version` or a Git URL pinned to a commit. They do not automatically choose Release assets. See the [Market implementation](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/util/plugin-market-index/src/index.ts).
 
 Tavern declares shared Assembler through `peerDependencies`. DSH profiles use `nodeLinker: hoisted` and `autoInstallPeers: false`, so that peer declaration does not install Assembler. Install Assembler as a direct profile dependency instead of putting a GitHub address in Tavern's regular subdependencies. Neither source nor prebuilt Tavern declares `bundleDependencies` or contains a second Assembler package. Other Assembler consumers should also use public services and declare their compatible range.
 
 ### DSH provides the official runtime peers
 
-Required peers `@deepseek-ai/dsh-util-crypto` and `@deepseek-ai/cordis` come from DSH instead of installing another copy. Their ranges are `>=0.2.1-rc.2 <0.2.2-0` and `4.0.5`, respectively. Browser contracts are declared through `dsh.client.inject` and supplied by DSH.
+Required peers `@deepseek-ai/dsh-util-crypto` and `@deepseek-ai/cordis` come from DSH instead of installing another copy. Their ranges are `>=0.2.2-rc.1 <0.2.3-0` and `4.1.0`, respectively. Browser contracts are declared through `dsh.client.inject` and supplied by DSH.
 
 Static `pnpm peers check` does not recognize DSH runtime resolution and can report these official peers missing. Assembler is a separate third-party component that the user must install. Do not treat its absence as the same ignorable warning. Verify actual Host resolution and startup. A directory at profile top level or package lookup by ordinary Node alone is insufficient evidence.
 
@@ -81,10 +85,10 @@ If restart still produces `ERR_MODULE_NOT_FOUND`, check the target DSH version, 
 <a id="source-installation"></a>
 ### Install and package source
 
-Use an isolated test profile initialized by the target DSH. Install and enable independent Assembler there first. Tavern's development lockfile pins a reviewed GitHub source archive and integrity. It does not require Assembler 1.1.3 to be published to npm.
+Use an isolated test profile initialized by the target DSH. Install and enable independent Assembler there first. Tavern's development lockfile pins a reviewed GitHub Release package and integrity. It does not require Assembler 1.2.0 to be published to npm.
 
 ```sh
-git clone --branch v3.1.5 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.2.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

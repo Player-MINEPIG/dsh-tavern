@@ -1,4 +1,6 @@
-import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
+import { createSessionReader } from 'dsh-prompt-assembler/session-reader'
+import { NATIVE_BUILTINS } from 'dsh-prompt-assembler/adapters/tavern'
+const MODULE_ORDER = NATIVE_BUILTINS[0]
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -23,17 +25,18 @@ test('official SessionController creates fresh state beside an initialized legac
     ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
     await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
     await ctx.plugin(await load('@deepseek-ai/dsh-session-persistence-jsonl'), { root: join(directory, 'sessions') })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
-    await ctx.plugin((await load('@deepseek-ai/dsh-typert-registry')).default)
-    await ctx.plugin((await load('@deepseek-ai/dsh-api-remote-access')).default)
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
+    await ctx.plugin(((await load('@deepseek-ai/dsh-typert-registry')).default ?? await load('@deepseek-ai/dsh-typert-registry')))
+    await ctx.plugin(((await load('@deepseek-ai/dsh-api-remote-access')).default ?? await load('@deepseek-ai/dsh-api-remote-access')))
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'instance-test', model: 'test' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
     await ctx.plugin((await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine)
     ctx.provide('attachments', { imageLimits: { maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } }); ctx.provide('fs', {})
     if (!ctx.get('workspaceRegistry')) ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-gateway')).TypertGatewayService, {})
     await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
-    await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
+    await ctx.plugin(((await load('@deepseek-ai/dsh-permission-presets')).default ?? await load('@deepseek-ai/dsh-permission-presets')), { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
       async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic state instance' }] }
       async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
@@ -60,7 +63,7 @@ test('official SessionController creates fresh state beside an initialized legac
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: join(directory, 'tavern'), mvu: { resources: [{ id: 'mvu:template', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }] } }) } })
     ctx.on('agent/error', e => failures.push(e.error))
     const service = ctx.get('tavernMvu')
-    const host = createPlayHost({ sessionController: ctx.sessionController }, { selections: store.sessionSelections, stateSeeds: () => service, onSelectionCopied: (id, from) => store.assemblyPresets.copySelection(from, id) })
+    const host = createPlayHost({ sessionController: ctx.sessionController, inspectSession: createSessionReader(ctx) }, { selections: store.sessionSelections, stateSeeds: () => service, onSelectionCopied: (id, from) => store.assemblyPresets.copySelection(from, id) })
     const root = await host.createSession({ cwd: directory }), rootId = root.sessionId
     const row = async id => (await service.list({ scope: { sessionId: id } })).find(r => r.templateId === 'mvu:template')
     await service.flush()
@@ -80,8 +83,8 @@ test('official SessionController creates fresh state beside an initialized legac
       return ctx.agents.get(id).session.snapshotEvents().findLast(e => e.type === 'assistant/message').seq
     }
     const reply = await turn(rootId); assert.equal((await row(rootId)).content.stat_data.hp, 69)
-    const rootRecord = ctx.sessions.get(rootId).snapshotEvents().findLast(e => e.type === 'request/assembly')
-    assert(rootRecord.data.metadata.assembly.nodes.some(n => n.source?.resourceId === initial.id))
+    const rootRecord = store.requestAssembler.nativePlans.get(ctx.agents.get(rootId)).logical
+    assert(rootRecord.nodes.some(n => n.source?.resourceId === initial.id))
     const child = await host.forkSession({ sessionId: rootId, atSeq: reply, sessionFormatVersion: 4 })
     await host.copySelection(rootId, child.sessionId); await service.flush()
     assert.equal((await row(child.sessionId)).content.stat_data.hp, 69)
@@ -126,7 +129,7 @@ test('official SessionController creates fresh state beside an initialized legac
       assert.equal((await row(id)).content.stat_data.hp,40)
     }
     for (const id of [rootId, child.sessionId, swipe.sessionId, laterSwipe.sessionId]) {
-      const current = await row(id), assembly = ctx.sessions.get(id).snapshotEvents().findLast(e => e.type === 'request/assembly').data.metadata.assembly
+      const current = await row(id), assembly = store.requestAssembler.nativePlans.get(ctx.agents.get(id)).logical
       assert(assembly.nodes.some(n => n.source?.resourceId === current.id))
       await ctx.sessions.flush(ctx.sessions.get(id))
     }
@@ -147,7 +150,7 @@ test('official SessionController creates fresh state beside an initialized legac
     assert.equal(cardState.content.stat_data.hp, 99)
     assert.equal(cardState.managementMode, 'native')
     assert.notEqual(cardState.id, cardTemplateId)
-    const restored = new MvuService({ storageDir: join(directory, 'tavern'), inspect: id => ctx.sessionController.inspect(id) })
+    const restored = new MvuService({ storageDir: join(directory, 'tavern'), inspect: createSessionReader(ctx) })
     assert.equal((await restored.read({ id: (await row(child.sessionId)).id, scope: { sessionId: child.sessionId } })).content.stat_data.hp, 68)
     restored.dispose()
     assert.equal(readFileSync(legacyPath, 'utf8'), legacyBytes)

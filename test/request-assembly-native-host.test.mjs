@@ -23,7 +23,7 @@ for (const inHistory of [false, true]) test(`stock rc.2 standard Tavern + option
   try {
     for (const id of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(id, {})
     await ctx.plugin(SystemPrompt, { includeHarnessIdentity: false, personaPrefix: 'OFFICIAL' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`dsh-${name}`)).default ?? await load(`dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     ctx.on('agent/error', e => errors.push(e.error))
     ctx.tools.register({ name: 'probe', description: 'Offline probe', parameters: { type: 'object', properties: {} }, output: { schema: { type: 'string' }, render: (_, value) => [{ type: 'text', text: value }] }, execute: async () => 'TOOL RESULT' })
     class Provider extends llm.LlmAdapter {

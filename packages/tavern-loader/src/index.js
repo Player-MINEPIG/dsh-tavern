@@ -1,3 +1,4 @@
+import { createSessionReader } from 'dsh-prompt-assembler/session-reader'
 import { requireSharedAssembler } from './assembler-compatibility.js'
 import {createRenderingCache} from '../../rendering-cache/store.js'
 import {createRenderingCacheHandler,isRenderingCachePath} from '../../rendering-cache/http.js'
@@ -327,6 +328,7 @@ export function apply(ctx, config = {}) {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
+  const inspectSession = createSessionReader(ctx)
   const sessionReads = createSessionReadContext(id => ctx.get('sessions')?.get?.(id))
   const withSessionRead = async ({ sessionId, signal } = {}, callback) => {
     signal?.throwIfAborted()
@@ -334,7 +336,7 @@ export function apply(ctx, config = {}) {
     const sessions = ctx.get('sessions'), controller = ctx.get('sessionController')
     if (!sessions || !controller) throw Object.assign(new Error('Session reader is not ready'), { code: 'SESSION_READER_NOT_READY' })
     let record
-    try { record = await controller.inspect(sessionId) }
+    try { record = await inspectSession(sessionId, signal) }
     catch (error) {
       if (error.code === 'session/not-found' || error.constructor?.name === 'ApiSessionNotFound') throw Object.assign(new Error('Session does not exist'), { code: 'SESSION_NOT_FOUND' })
       throw error
@@ -376,6 +378,7 @@ export function apply(ctx, config = {}) {
       recordFailure('rp.policy', error, { sessionId })
     }
   }
+  rpMode.permissions = () => ctx.get('permissionPresets')
   let importContexts = null
   let playthroughDrafts
   const draftPreview = createDraftPreviewContext()
@@ -388,7 +391,7 @@ export function apply(ctx, config = {}) {
       checkCurrent: () => !signal?.aborted && draftPreview.current() === record && playthroughDrafts.record(record.id).revision === record.revision }
   } }
   const playHost = createPlayHost({
-    sessionController: ctx.get('sessionController'),
+    sessionController: ctx.get('sessionController'), inspectSession,
     workspaceController: ctx.get('workspaceController'),
     directoryPickerController: ctx.get('directoryPickerController'),
     sessions: ctx.get('sessions'),
@@ -478,16 +481,11 @@ export function apply(ctx, config = {}) {
     if (selected) requestAssembler.requireAvailable(selected)
     return Boolean(selected)
   }
-  const requestContexts = new WeakMap()
-  ctx.on('agent/assemble-request', async (payload, next) => {
-    requestContexts.set(payload.agent, payload)
-    try {
-      const result = await next()
-      const nativeContext = runtime.assembledFor(payload.agent)?.memoryContext
-      if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext)
-      memorySources.validateAssembly(result.metadata?.assembly)
-      return result
-    } finally { requestContexts.delete(payload.agent) }
+  ctx.on('system-prompt/assemble', async (_assembly, context, next) => {
+    const result = await next()
+    const nativeContext = runtime.assembledFor(context.agent)?.memoryContext
+    if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext)
+    return result
   })
   runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
@@ -495,7 +493,7 @@ export function apply(ctx, config = {}) {
   if (traceStore.resetOversizedFile) {
     recordFailure('trace.record', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
-  const nativeRequests = createNativeRequestReader({ assemblies: assemblyStore, sessionController: ctx.get('sessionController'), sessions: () => ctx.get('sessions'),
+  const nativeRequests = createNativeRequestReader({ assemblies: assemblyStore, sessionController: { inspect: inspectSession }, sessions: () => ctx.get('sessions'),
     resolveSourceName(source) {
       if (source.plugin !== 'pmp-dsh-tavern' || source.module !== 'preset' || !source.resourceId || !source.field) return null
       const matches = store.get(source.resourceId).prompts.filter(prompt => prompt.identifier === source.field)
@@ -569,14 +567,18 @@ export function apply(ctx, config = {}) {
     worldBooks: worldBookStore,
   })
   playthroughDrafts = new PlaythroughDrafts({ storageDir, workspace: playWorkspaceStore, characters: characterStore, configurations: sessionConfigurations, selections, assembly: assemblyPresets, mvu,
-    controller: ctx.get('sessionController'), workspaces: ctx.get('workspaceController'), agents: ctx.get('agents'), renderingAuthority, reconcileRp: reconcileRpAfterSelection,
+    controller: ctx.get('sessionController'), inspect: inspectSession, workspaces: ctx.get('workspaceController'), agents: ctx.get('agents'), renderingAuthority, reconcileRp: reconcileRpAfterSelection,
     releaseRp: sessionId => rpMode.setBySessionId(sessionId, false, { followSuppressed: true }),
     previewAssembly: (record, preset) => draftPreview.run(record, () => {
-      const model = ctx.get('agentDefaultModel')?.currentSelection?.()
+      const model = record.modelSelection ?? ctx.get('agentDefaultModel')?.currentSelection?.()
       return requestAssembler.preview({ preset, nativeVariables: { cwd: record.rootPath, ...(model?.provider ? { provider: model.provider } : {}), ...(model?.model ? { model: model.model } : {}) } })
     }),
     onError: error => recordFailure('playthrough.draft', error) })
   playthroughDrafts.importContexts = importContexts
+  playthroughDrafts.applyPermission = (sessionId, preset) => {
+    if (preset === 'tavern-rp') rpMode.setBySessionId(sessionId, true)
+    else rpMode.setBySessionId(sessionId, false, { followSuppressed: true, permissionPreset: preset })
+  }
   const playMaintenance = new PlayMaintenanceService({
     workspaceStore: playWorkspaceStore,
     inspectSession: sessionId => playHost.inspectSession(sessionId),
@@ -703,9 +705,13 @@ export function apply(ctx, config = {}) {
   })
 
   ctx.on('llm/stream', async function* (options, next) {
-    const agent = ctx.get('agents')?.get?.(options.sessionId)
-    if (agent) traceSafely(() => assemblyRecorder.parameters(options.sessionId, parameterFallback.snapshot(agent, options)))
-    traceSafely(() => assemblyRecorder.request(options, agent?.session, requestAssembler.observeNativeRequest(options, agent?.session)))
+    if (options.purpose === undefined) {
+      const agent = ctx.get('agents')?.get?.(options.sessionId)
+      traceSafely(() => {
+        const captured = assemblyRecorder.request(options, agent?.session, requestAssembler.observeNativeRequest(options, agent?.session))
+        if (captured && agent) assemblyRecorder.parameters(options.sessionId, parameterFallback.snapshot(agent, options))
+      })
+    }
     yield* next()
   })
   ctx.effect(() => () => traceSafely(() => assemblyRecorder.dispose()))
@@ -740,10 +746,9 @@ export function apply(ctx, config = {}) {
     const snapshot = runtime.forAssembleContext(context)
     let contributions = snapshot.sections
     if (!context.tavernAssemblyPreview && !runtime.requestAssemblyEnabled(snapshot.audit.sessionId) && assembly.sections.some(section => section.name === PROFILE_SECTION && section.text === snapshot.registeredProfileText)) {
-      const request = context.agent && requestContexts.get(context.agent)
       const turn = context.agent?.session?.snapshotEvents?.().findLast(event => event.type === 'turn/start')?.data.turn
       const sourceContext = { sessionId: snapshot.audit.sessionId, assets: snapshot.assemblyInput, preview: context.tavernAssemblyPreview === true,
-        turn: request?.turn ?? turn ?? null, step: request?.step ?? null, signal: request?.signal ?? context.signal }
+        turn: turn ?? null, step: null, signal: context.signal }
       const loreEntries = await memorySources.worldBooks.prepareNative(sourceContext)
       const compiled = compileTavernProfile({ ...snapshot.assemblyInput, loreEntries })
       const literalEntries = new Set(loreEntries.filter(entry => entry.literalMacros).map(entry => entry.id))
@@ -780,7 +785,7 @@ export function apply(ctx, config = {}) {
 
   const registerHttpApi = webCtx => {
     const mvuApi = createMvuApi(mvu, { drafts: playthroughDrafts })
-    const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), readActual: id => nativeRequests.readActual(id), notify: notifyChange })
+    const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: inspectSession, readActual: id => nativeRequests.readActual(id), notify: notifyChange })
     const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore, requestAssembler,
       readBodies: nativeRequests.readBodies })
     const presetApi = createPresetApiHandler(
@@ -870,9 +875,14 @@ export function apply(ctx, config = {}) {
     })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {
-      beforeChange: ({ sessionId, active }) => {
-        notifyChange()
+      beforeChange: async ({ sessionId, active }) => {
         if (typeof sessionId !== 'string' || typeof active !== 'boolean') return
+        const agents = ctx.get('agents')
+        if (!agents?.get(sessionId)) {
+          const resolved = await agents?.resolveAgent(sessionId)
+          if (!resolved || 'error' in resolved) throw resolved?.error ?? new Error('Native session is unavailable')
+        }
+        notifyChange()
       },
     })
     const openingWorldBookApi = createOpeningWorldBookHandler(openingWorldBooks, { getConnection: () => ctx.get('connection') })

@@ -28,9 +28,9 @@ test('real AgentLoop failure references preserve attempt identity and cold-read 
       try {
         for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) root.provide(name, {})
         await root.plugin(SystemPrompt, { personaPrefix: 'SYNTHETIC_ONLY' })
-        for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) {
+        for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) {
           const module = await load(`@deepseek-ai/dsh-${name}`)
-          await root.plugin(module.default, name === 'agent-loop' ? { agents: [] } : {})
+          await root.plugin(module.default ?? module, name === 'agent-loop' ? { agents: [] } : {})
         }
         class Adapter extends llm.LlmAdapter {
           async *stream() {

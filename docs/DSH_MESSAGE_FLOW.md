@@ -4,9 +4,9 @@
 
 本文的进阶协议路径是冻结的 Assembler `1.1.0` / DSH `0.2.0-rc.2` 历史合同。当前目标 DSH 仅验收标准版公开扩展点，新版不提供核心改动或后续进阶适配承诺。
 
-Tavern **3.1.5** 接入独立 Assembler **v1.1.3**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
+Tavern **3.2.0** 接入独立 Assembler **v1.2.0**。Tavern 解析资源并拥有来源权限；Assembler 拥有策略、渲染与排列；DSH 拥有会话与 Provider 调用。标准策略使用公开 sections/context/pre-step；只有另行安装的 core addon 启用协议 1 请求投影。未应用策略时的 loader 渲染器是保留的兼容路径，不是默认 RP 策略。见[接入说明](ASSEMBLER_INTEGRATION.md)与[Host/资源合同](LOADER_CONTRACT.md)。
 
-本文描述 Tavern 3.1.5 在 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 上的当前消息合同：DSH
+本文描述 Tavern 3.2.0 在 DSH `0.2.2-rc.1` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
 `system/message` 进入有效消息 surface，`request/header` 保留 config/tools；Trace schema 4
 只持久化 metadata 与官方 Session 引用，并由 [v3 API](PROMPT_API_V3.md) 按需验证正文。
@@ -20,7 +20,7 @@ Tavern Host adapter 显式调用 session/workspace/directory-picker controllers�
 
 ## 1. DSH 原生 flow
 
-在 stock rc.2 / rc.3 上，未接入 Tavern 或装配策略时，DSH `0.2.1-rc.2` / `0.2.1-rc.3` 的普通 agent step 按以下顺序工作：
+在 stock 0.2.2-rc.1 上，未接入 Tavern 或装配策略时，DSH `0.2.2-rc.1` 的普通 agent step 按以下顺序工作：
 
 ```text
 用户提交
@@ -79,7 +79,7 @@ PreparedLlmCall.stream(request) 到达 llm/stream
   assembly 之前得到本次 batch。
 - DSH 完成 system assembly 后才调用公开的 `agent/pre-step`。该 hook 能看见 claimed
   messages，但不能回写已经冻结的装配。
-- DSH 0.2.1-rc.2 在 `agent/request` 之后刷新 runtime context。`working-directory:current` 是必需的字面事实；原生变量不再提供 `cwd`，Assembler 为既有文本策略通过公开 workingDirectory 服务补齐它。Trace 以实际请求对应的持久快照核验刷新后的内容，包括上下文清除。
+- DSH 0.2.2-rc.1 在 `agent/request` 之后刷新 runtime context。`working-directory:current` 是必需的字面事实；原生变量不再提供 `cwd`，Assembler 为既有文本策略通过公开 workingDirectory 服务补齐它。Trace 以实际请求对应的持久快照核验刷新后的内容，包括上下文清除。
 - `Session.deriveMessages()` 从当前有效 message surface 投影 system、context、user、
   assistant 与 tool 内容；turn/step 边界和流式 chunk 不会重复成为模型消息。
 - `agent/request` 只负责 call config，不生成历史，也不能替换已冻结的 system assembly。
@@ -141,7 +141,7 @@ Assembler 的已安装插件配置入口与 Tavern 内嵌面板共享策略库�
 
 标准“预设身份优先”在原生投递区域内保留受支持的原角色；“预设插槽优先”围绕原生历史/输入边界适配预设控制的内容，并在预览标出调整。system 贡献走官方 sections；user 贡献走 context 或接纳的 pre-step 投递，**会进入 durable history**。移除来源停止后续贡献，旧 user 正文仍属于历史。原生历史、输入和工具事务保持受保护的内部顺序。
 
-进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS.md)。
+进阶策略同时要求 core addon 与协议 1 Host，按受支持的 role/depth/retention 规则投影冻结请求，并记录官方 `request/assembly`；request-only 正文不会伪造为持久聊天消息。缺后端能力时明确失败。精确行为与限制见[请求装配](REQUEST_ASSEMBLY.md)和 [Assembler 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.2.0/docs/BACKENDS.md)。
 
 未应用策略时，兼容渲染器才把 Tavern profile 展开为 system parts。其 role/depth 近似只适用于该路径，不能用来描述当前标准或进阶策略。
 
@@ -160,7 +160,7 @@ Assembler 的已安装插件配置入口与 Tavern 内嵌面板共享策略库�
 | `tools.guard` | Tavern 在 DSH 权限/沙箱之上叠加 RP 限制 | 拒绝高风险执行，改变提示词布局不会移除执行层约束 |
 | Web API / 公开 client slots | Tavern 与 Assembler 分别提供资源、策略控制与检查入口 | UI/预览不发起 Provider 调用 |
 
-preset 降级仅在尚无输出且未取消时，省略被明确拒绝的生效 preset 覆盖（`temperature`、`maxTokens`、`reasoningEffort` 或 `stop`）。每字段至多一次，原生重试至多四次。预检不支持的 effort 使用 adapter 默认，不猜别名。认证、额度和无关网络错误不触发此降级。原 preset 保持原文，Trace 记录请求值、生效值与省略原因。
+推理强度由 DSH 原生模型选择控制；预设编辑器不再允许修改。旧预设的 `reasoningEffort` 仅为导入／导出兼容保留，不覆盖模型选择。Trace 保留 requested/effective，并以 `stage: "selection"`、`reason: "native-model-selection"`、`code: "DSH_MODEL_SELECTION_OWNS_EFFORT"` 标记未应用的预设值。`temperature`、`maxTokens` 与 `stop` 继续通过现有 `agent/request` 接口应用；明确参数拒绝时仅对 Tavern 自己的覆盖执行有限回退，输出开始、取消或无关错误均不重试。
 
 外部记录仍是首次请求的 untrusted 只读上下文；greeting 是开场参考，不伪造 assistant 回复；creator notes 不发送。各来源渲染、RP 限制、受限 MVU 与模板语义仍归来源，布局不覆盖其权限。
 

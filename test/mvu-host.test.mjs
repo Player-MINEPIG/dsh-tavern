@@ -1,4 +1,5 @@
-import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
+import { NATIVE_BUILTINS } from 'dsh-prompt-assembler/adapters/tavern'
+const MODULE_ORDER = NATIVE_BUILTINS[0]
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -14,38 +15,10 @@ import { MvuService } from '../packages/mvu-adapter/src/index.js'
 const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT ?? process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 
 function assertMvuRequestContribution(request, session, resourceId, expectedState) {
-  const recorded = session.snapshotEvents().findLast(event => event.type === 'request/assembly')
-  assert.equal(recorded.data.metadata.owner, 'dsh-prompt-assembler')
-  assert.deepEqual(recorded.data.messages, request.messages)
-  const assembly = recorded.data.metadata.assembly
-  const matches = assembly.nodes.filter(node => node.source?.sourceId === 'tavern.mvu/state' && node.source.resourceId === resourceId)
-  assert.equal(matches.length, 1)
-  const node = matches[0]
   const expectedText = `${JSON.stringify(expectedState)}\nReturn variable changes as <JSONPatch>[{"op":"replace","path":"/field","value":0}]</JSONPatch>. Use delta for numeric changes. Output literal values only.`
-  assert.equal(node.text, expectedText)
-  assert.equal(node.inputMessageIds.length, 1)
-  const [inputId] = node.inputMessageIds
-  const snapshots = assembly.systemProjection.messages.filter(snapshot => snapshot.contributorIds.includes(inputId))
-  assert.equal(snapshots.length, 1)
-  const [snapshot] = snapshots
-  assert.equal(snapshot.inputIds.filter(id => id === inputId).length, 1)
-  assert.equal(snapshot.contributorIds.filter(id => id === inputId).length, 1)
-  assert.deepEqual(node.requestMessageIds, [snapshot.messageId])
-  assert.equal(node.start, snapshot.index)
-  assert.equal(node.count, 1)
-  assert.equal(request.messages.filter(message => message.id === snapshot.messageId).length, 1)
-  const carrier = request.messages[snapshot.index]
-  assert.equal(carrier.id, snapshot.messageId)
-  assert.equal(carrier.role, 'system')
-  // Reconstruct the complete carrier from ordered logical contributors, rather
-  // than accepting an MVU substring in an unrelated or duplicated message.
-  const contributors = snapshot.contributorIds.map(id => {
-    const owners = assembly.nodes.filter(candidate => candidate.inputMessageIds.includes(id))
-    assert.equal(owners.length, 1)
-    return owners[0].text
-  })
-  assert.deepEqual(carrier.content, [{ type: 'text', text: contributors.filter(Boolean).join('\n\n') }])
-  assert.equal(carrier.content[0].text.split(expectedText).length - 1, 1)
+  const systemText = request.messages.filter(message => message.role === 'system').flatMap(message => message.content.filter(block => block.type === 'text').map(block => block.text)).join('\n')
+  assert.equal(systemText.split(expectedText).length - 1, 1, `exactly one current contribution for ${resourceId}`)
+  assert.equal(session.snapshotEvents().some(event => event.type === 'request/assembly'), false)
 }
 test('real DSH AgentLoop final replies, fork seed, restart snapshots and native unload', { skip: !runtimeRoot, timeout: 20000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
@@ -58,7 +31,7 @@ test('real DSH AgentLoop final replies, fork seed, restart snapshots and native 
   try {
     for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     let broken = false
     class Adapter extends llm.LlmAdapter {
       // This fixture selects a trailing MVU system source, which requires a capable route.
@@ -95,7 +68,6 @@ test('real DSH AgentLoop final replies, fork seed, restart snapshots and native 
     const first = await service.read({ id: 'mvu:host', scope: { sessionId: agent.id } })
     assert.equal(first.content.stat_data.hp, 95)
     assertMvuRequestContribution(requests[0], agent.session, 'mvu:host', { hp: 100 })
-    assert.ok(facts.some(f => f.phase === 'applied' && f.detail === 'dsh-request-observed' && f.revision === 0), JSON.stringify(agent.session.snapshotEvents().findLast(e => e.type === 'request/assembly')))
     assert.ok(facts.some(f => f.phase === 'applied' && f.detail === 'state-committed' && f.revision === 1))
     const boundary = agent.session.snapshotEvents().findLast(e => e.type === 'assistant/message').seq
     const child = ctx.sessions.fork(agent.session, boundary, 'mvu-child')
@@ -128,18 +100,19 @@ test('real Host empty greeting binding writes state used by the first model requ
     ctx.provide('directoryPickerController', {})
     ctx.provide('workspaceController', { create: async () => ({ workspace: { workspaceId: 'synthetic-workspace' } }) })
     await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     // Use the official controller and permission-preset creation path, not agents.create alone.
-    await ctx.plugin((await load('@deepseek-ai/dsh-typert-registry')).default)
-    await ctx.plugin((await load('@deepseek-ai/dsh-api-remote-access')).default)
+    await ctx.plugin(((await load('@deepseek-ai/dsh-typert-registry')).default ?? await load('@deepseek-ai/dsh-typert-registry')))
+    await ctx.plugin(((await load('@deepseek-ai/dsh-api-remote-access')).default ?? await load('@deepseek-ai/dsh-api-remote-access')))
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'initial-test', model: 'test' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
     await ctx.plugin((await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine)
     ctx.provide('attachments', { imageLimits: { maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } }); ctx.provide('fs', {})
     if (!ctx.get('workspaceRegistry')) ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-gateway')).TypertGatewayService, {})
     await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
-    await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
+    await ctx.plugin(((await load('@deepseek-ai/dsh-permission-presets')).default ?? await load('@deepseek-ai/dsh-permission-presets')), { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
       // This fixture selects a trailing MVU system source, which requires a capable route.
       async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic test' }] }
@@ -200,7 +173,6 @@ test('real Host empty greeting binding writes state used by the first model requ
     assert.equal((await completed).data.reason.kind, 'completed')
     await service.flush()
     assertMvuRequestContribution(requests[0], agent.session, 'mvu:opening', { hp: 7 })
-    assert.ok(facts.some(f => f.phase === 'applied' && f.detail === 'dsh-request-observed' && f.revision === 1))
     assert.equal((await service.read({ id: 'mvu:opening', scope: { sessionId: agent.id } })).content.stat_data.hp, 6)
     await assert.rejects(service.createCardBinding({ scope, sourceIdentity, grantId }), { code: 'MVU_READ_ONLY' })
     await assert.rejects(service.cardWrite({ capability: binding.capability, operation: 'patch', value: [], expectedRevision: 2, operationId: 'late', cause: 'script' }), { code: 'MVU_READ_ONLY' })
@@ -222,19 +194,20 @@ test('official persisted empty session resumes through resolveAgent, while resum
     ctx.provide('workspaceController', { create: async () => ({ workspace: { workspaceId: 'synthetic-workspace' } }) })
     await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
     await ctx.plugin(await load('@deepseek-ai/dsh-session-persistence-jsonl'), { root: join(directory, 'sessions') })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
-    await ctx.plugin((await load('@deepseek-ai/dsh-typert-registry')).default)
-    await ctx.plugin((await load('@deepseek-ai/dsh-api-remote-access')).default)
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
+    await ctx.plugin(((await load('@deepseek-ai/dsh-typert-registry')).default ?? await load('@deepseek-ai/dsh-typert-registry')))
+    await ctx.plugin(((await load('@deepseek-ai/dsh-api-remote-access')).default ?? await load('@deepseek-ai/dsh-api-remote-access')))
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'resume-test', model: 'test' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
     await ctx.plugin((await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine)
     ctx.provide('attachments', { imageLimits: { maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } }); ctx.provide('fs', {})
     if (!ctx.get('workspaceRegistry')) ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-gateway')).TypertGatewayService, {})
     await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
-    await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
+    await ctx.plugin(((await load('@deepseek-ai/dsh-permission-presets')).default ?? await load('@deepseek-ai/dsh-permission-presets')), { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
-      async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic resume' }] }
+      async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic resume' }, { provider, id: 'changed', name: 'Synthetic changed' }] }
       async resolveModel(provider, id) { return { provider, id, name: id } }
       async *stream() {
         yield { type: 'block-start', index: 0, blockType: 'text' }
@@ -285,7 +258,7 @@ test('official persisted empty session resumes through resolveAgent, while resum
     const { grantId } = second.ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, downloaded: true, enabled: true })
     second.service.registerUsage(() => ({ enabled: true, checkCurrent: () => true }))
     const oldBinding = await second.service.createCardBinding({ scope, sourceIdentity, grantId })
-    await second.ctx.sessionController.selectModel({ sessionId, provider: 'resume-test', model: 'test' })
+    await second.ctx.sessionController.selectModel({ sessionId, provider: 'resume-test', model: 'changed' })
     await assert.rejects(second.service.cardWrite({ capability: oldBinding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'stale-selection', cause: 'user-interaction' }), { code: 'MVU_READ_ONLY' })
     const binding = await second.service.createCardBinding({ scope, sourceIdentity, grantId })
     const request = { capability: binding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'resumed-opening', cause: 'user-interaction' }

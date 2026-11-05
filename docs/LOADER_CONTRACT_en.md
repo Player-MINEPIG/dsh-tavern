@@ -2,11 +2,11 @@
 
 [中文](LOADER_CONTRACT.md)
 
-The Tavern DSH bundle uses `packages/tavern-loader/src/host.js` (also exported as `pmp-dsh-tavern/host`) and requires separately installed and enabled Assembler `~1.1.3`. The entry checks the package version and shared `dshPromptAssembler.version` before mounting the business loader; it does not start or restore an Assembler instance. Installation, disabling and removal follow the [integration contract](ASSEMBLER_INTEGRATION_en.md#shared-services-and-lifecycle).
+The Tavern DSH bundle uses `packages/tavern-loader/src/host.js` (also exported as `pmp-dsh-tavern/host`) and requires separately installed and enabled Assembler `~1.2.0`. The entry checks the package version and shared `dshPromptAssembler.version` before mounting the business loader; it does not start or restore an Assembler instance. Installation, disabling and removal follow the [integration contract](ASSEMBLER_INTEGRATION_en.md#shared-services-and-lifecycle).
 
 The bundle patch declares the Host file relative to its package. DSH anchors that path and discovers the browser bundle from the enclosing package manifest; a package subpath specifier would not participate in official client discovery.
 
-This contract covers Tavern **3.1.5**, Assembler **v1.1.3** and DSH **0.2.1-rc.2 / 0.2.1-rc.3**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
+This contract covers Tavern **3.2.0**, Assembler **v1.2.0** and DSH **0.2.2-rc.1**. The retained filename reflects the `tavern-loader` module, which still owns resource resolution and Host integration. It no longer describes a single loader owning final request assembly. See [Assembler integration](ASSEMBLER_INTEGRATION_en.md), [request assembly](REQUEST_ASSEMBLY_en.md) and [message flow](DSH_MESSAGE_FLOW_en.md) for strategy and backend behavior.
 
 ## Goals and ownership
 
@@ -33,7 +33,7 @@ For an applied strategy, `TavernProfileLoader.compile()` resolves resources and 
 
 ## Session policy
 
-The Host range is `>=0.2.1-rc.2 <0.2.2-0`, verified on rc.2 and rc.3. The awaited serial `agent/created` listener freezes or restores selection, reconstructs pending input from public own events, then initializes RP and its read-only sandbox before the Agent is exposed for requests. Initialization failure propagates to registration; it is not downgraded to a warning. Forks, resumes, and delegated agents use the same initialization boundary.
+The Host range is `>=0.2.2-rc.1 <0.2.3-0`, targeting 0.2.2-rc.1. The awaited serial `agent/created` listener freezes or restores selection, reconstructs pending input from public own events, then initializes RP and its read-only sandbox before the Agent is exposed for requests. Initialization failure propagates to registration; it is not downgraded to a warning. Forks, resumes, and delegated agents use the same initialization boundary.
 
 The durable file is `session-selections.json` under the plugin data directory:
 
@@ -167,7 +167,7 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 
 ## Composition semantics
 
-Applied strategies use Assembler v1.1.3 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
+Applied strategies use Assembler v1.2.0 sources and placement algorithms. Standard preserves or adapts roles within native delivery boundaries; advanced supports its explicit request-only projection contract. Consult [request assembly](REQUEST_ASSEMBLY_en.md) and [backend rules](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.2.0/docs/BACKENDS_en.md). The subsections below describe **only the retained no-strategy compatibility renderer**, not the default RP assembly strategy.
 
 ### Preset-only compatibility
 
@@ -203,9 +203,8 @@ Each character field, user description, and lore position is consumed at most on
 
 ## Preset parameter admission and fallback
 
-Preset sampling remains stored as authored. At `agent/request`, the Host merges supported preset overrides and uses public `llm.resolveCallConfig` for preflight. Unsupported preset reasoning effort is omitted so the adapter can supply its default; no alternative effort name is guessed.
+Reasoning effort belongs to the native DSH model selection and is no longer editable in presets. Imported `reasoningEffort` values remain for round-trip compatibility and never override that selection. Trace retains requested/effective values and reports unapplied preset effort with `stage: "selection"`, `reason: "native-model-selection"`, and `code: "DSH_MODEL_SELECTION_OWNS_EFFORT"`. Existing `agent/request` integration still applies `temperature`, `maxTokens` and `stop`; only explicit rejection of Tavern-owned controls permits bounded fallback, never after output, cancellation or unrelated errors.
 
-After an explicit invalid/unsupported parameter rejection, `agent/request-error` may request a native DSH retry only before any output and while not aborted. It omits only an active preset override among `temperature`, `maxTokens`, `reasoningEffort`, and `stop`, each at most once, with at most four runtime retries. Other plugins' parameters and unrelated authentication, quota, or network errors are not fallback candidates. The prepared request is not mutated and its middleware continuation is not replayed. Trace records requested/effective parameter maps and each omission; effective values come from the actual `llm/stream` boundary after DSH defaults.
 
 ## Audit boundary
 
@@ -213,7 +212,7 @@ After an explicit invalid/unsupported parameter rejection, `agent/request-error`
 
 Assembler records the chosen strategy and source/placement metadata. Tavern Trace combines that metadata with resource decisions and verified official-history references; it does not persist another source-body or message-history copy. Standard actual requests are reconstructed from the recorded native request references; advanced requests reference DSH's `request/assembly`. The latest-only actual endpoint and current preview cannot reconstruct an older request.
 
-In V4, `system/message` and runtime-context `user/message` own standard prompt bodies; `request/header` owns final tools/config. Advanced `request/assembly` freezes the sent array without replacing durable history. Coordinate compatibility and explicit offline upgrades are covered by [migration](DSH_0.1.7_MIGRATION_en.md); supported current Host remains rc.2.
+In V4, `system/message` and runtime-context `user/message` own standard prompt bodies; `request/header` owns final tools/config. Advanced `request/assembly` freezes the sent array without replacing durable history. Coordinate compatibility and explicit offline upgrades are covered by [migration](DSH_0.1.7_MIGRATION_en.md); supported current Host is 0.2.2-rc.1.
 
 ## Adapter integration invariants
 

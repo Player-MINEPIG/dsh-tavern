@@ -22,8 +22,8 @@ test('native and ST assembly accept official request preparation with world-book
     for (const id of ['sessionController', 'directoryPickerController']) ctx.provide(id, {})
     ctx.provide('workspaceController', { create: async ({ path }) => ({ workspace: { workspaceId: 'play', path }, created: true }) })
     await ctx.plugin(SystemPrompt, { personaPrefix: 'NATIVE' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
-    await ctx.plugin((await load('@deepseek-ai/dsh-session-title')).default, { fallbackMaxWords: 8, fallbackMaxBytes: 80, maxTitleBytes: 160 })
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
+    await ctx.plugin(((await load('@deepseek-ai/dsh-session-title')).default ?? await load('@deepseek-ai/dsh-session-title')), { fallbackMaxWords: 8, fallbackMaxBytes: 80, maxTitleBytes: 160 })
     ctx.on('agent/error', e => errors.push(e.error))
     class Provider extends llm.LlmAdapter {
       async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }

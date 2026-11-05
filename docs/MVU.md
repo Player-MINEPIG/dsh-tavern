@@ -35,6 +35,9 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 
 正常 fork 在调用官方创建操作前冻结具体来源实例、versionKey、revision 与内容 hash，之后原子安装子实例。子实例继承当时完整 variables/schema 和可验证的只读历史，不重放祖先更新或 schema transform。reply swipe 继承被重生成回复的持久请求前 checkpoint，包含当时开场配置；后续父状态变化不改变种子。首轮 swipe 使用新空会话；后续 swipe 分别绑定历史截断坐标 `prefixEndEventId` 和被替换回复坐标 `atEventId`，保留官方历史前缀，以目标 checkpoint 作为 current，排除之后的编辑。普通 fork 仍继承截断坐标的状态。新实例不继承 manager 策略、grant、capability 或 operationId。子实例保留来源的已存模式；实际管理方仍由当前注册决定，管理器注册期间缺失许可会拒绝执行。Host 首请求等待初始化及 checkpoint 完成；缺失 seed 或 checkpoint 拒绝继续。
 
+DSH 0.2.2 的普通分支不再使用 `parentSession` 表示来源。种子安装以 `isSeeded`、来源会话身份及完整继承前缀匹配验证来源；缺失种子或前缀不符时拒绝初始化。
+
+
 已停止且没有助手正文的人类请求通过 request-retry 绑定持久用户事件及 aborted 回合，冻结该轮不可变 checkpoint（包括开场配置）；之后的手动编辑不改变重试基线。首轮创建独立空会话，后续轮保留前一回复的历史前缀。不会为已取消请求伪造回复版本。
 
 新状态写入 `mvu-instances.json`。旧 `mvu-state.json` 保留原字节，只作为带 `MVU_MIGRATION_REQUIRED` 的只读资源，不能更新、复制、提供给模型或作为继承来源。旧共享账本可能已串写，不按 session 自动拆分。绑定旧状态的会话需显式处理；新会话可独立从模板开始。
@@ -185,7 +188,7 @@ v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 
 
 字符串 `regex` 仅接受无 flags、`^...$` 全锚定的有限模式：字面字符、`\d`、字符范围、分组内选择、`?` 和 `{m,n}`（最大 64 次）。模式最多 256 字符、16 层分组及 2048 个自动机状态；建图、声明图冻结和匹配均消耗共享计算预算，不能通过循环复制模式绕过总量限制。匹配使用状态集合，不调用原生 RegExp 匹配。无界重复、通配点、回溯引用、环视均拒绝。解释器函数、schema、参数绑定和 AST 保持不透明，不能作为 JSON 内容读写。原始完整声明仍保存在 schema 描述符中；兼容扩展不重置已有资源、不更换 ID、不自动启用 managed 策略。
 
-`node --test test/mvu-state-instances.test.mjs` 验证独立身份、fork/swipe checkpoint、只读旧账本、重启、取消和提交竞态。以 `DSH_TAVERN_ASSEMBLY_CORE_ROOT` 指向具备请求装配扩展的官方 runtime，运行 `node --test test/mvu-instance-host.test.mjs`，可验证公开 SessionController 的创建/fork、真实 AgentLoop 请求与失败轮次重生成；它只使用临时数据和合成 provider。
+`node --test test/mvu-state-instances.test.mjs` 验证独立身份、fork/swipe checkpoint、只读旧账本、重启、取消和提交竞态。以 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的官方 runtime，运行 `node --test test/mvu-instance-host.test.mjs`，可验证公开 SessionController 的创建/fork、真实 AgentLoop 请求与失败轮次重生成；它只使用临时数据和合成 provider。
 
 `test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。 `test/mvu-history-budget.test.mjs` 另覆盖跨单状态预算的历史集合、保存超限的原子拒绝、冻结种子与冷恢复；设置上述 runtime 后还验证官方 AgentLoop 八轮请求及 detached Session 恢复。
 

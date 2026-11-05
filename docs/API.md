@@ -8,7 +8,7 @@
 
 装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
-合同范围：当前 Tavern 源码（package 版本见 package.json），兼容范围为 `>=0.2.1-rc.2 <0.2.2-0`，已验证 rc.2 与 rc.3。
+合同范围：当前 Tavern 源码（package 版本见 package.json），兼容范围为 `>=0.2.2-rc.1 <0.2.3-0`，已验证 0.2.2-rc.1。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -22,10 +22,10 @@ timeline 的拒绝行为。
 <a id="240-对第三方调用方的影响"></a>
 ## 当前版本对第三方调用方的影响
 
-当前合同面向 DSH `0.2.1-rc.2` / `0.2.1-rc.3`，包含下文的可选 Host 服务与会话开场世界书路由。HTTP 返回的消息仍是原文，第三方客户端自行决定如何渲染。持久操作日志、桌面请求令牌、头像与显示设置沿用原有合同。
+当前合同面向 DSH `0.2.2-rc.1`，包含下文的可选 Host 服务与会话开场世界书路由。HTTP 返回的消息仍是原文，第三方客户端自行决定如何渲染。持久操作日志、桌面请求令牌、头像与显示设置沿用原有合同。
 
 与 `v2.3.2` 相比，API 根路径、v1/v2/v3 版本前缀和既有路由保持；这不代表所有输入、
-历史引用或宿主接入行为完全不变。运行环境范围为 `>=0.2.1-rc.2 <0.2.2-0`；后续 0.2.1 RC 和正式版按策略准入，0.2.2 及其预发布需重新评估。
+历史引用或宿主接入行为完全不变。运行环境范围为 `>=0.2.2-rc.1 <0.2.3-0`；后续 0.2.2 RC 和正式版按策略准入，0.2.3 及其预发布需重新评估。
 
 | 调用方式 | 影响与调用方要求 |
 | --- | --- |
@@ -33,7 +33,7 @@ timeline 的拒绝行为。
 | 模板创建与更新 | 原 `{ name, sourceSessionId }` 创建方式保留；POST/PATCH 现在拒绝未知顶层字段，不能直接回传含 `id`、时间戳等字段的完整响应。`selection` 与 `sourceSessionId` 互斥；显式 `selection` 替换整个配置，不作局部合并 |
 | 历史消息、timeline 与 branch | 当前 `sessionFormatVersion` 为 4；读取、保存和提交坐标时携带同一来源的版本。V4 缺少或不匹配的版本返回 `409 PLAY_COORDINATES_MIGRATION_REQUIRED`。旧整数坐标不能只改版本号，也不能假定统一偏移 |
 | 第三方保存的历史引用 | Tavern 升级工具只处理升级指南列出的文件，不扫描第三方数据库或缓存。调用方需失效旧缓存、重新读取已升级数据；必须保留的外部引用需按官方日志证据另行迁移 |
-| 预设参数 | `reasoningEffort` 可能包含新增或 provider 自定义值，不能硬编码旧枚举；PATCH 省略此字段保留原值，传 null 清除覆盖。明确不支持的 Tavern 采样覆盖可能回退，保存的预设值不保证就是实际请求值 |
+| 预设参数 | `reasoningEffort` 可能包含新增或 provider 自定义值，不能硬编码旧枚举；PATCH 省略此字段保留原值，传 null 清除保存值。该字段仅用于往返兼容，实际推理强度始终取自 DSH 模型选择。明确不支持的 Tavern 采样覆盖可能回退，保存的预设值不保证就是实际请求值 |
 | Trace 消费 | v3 可新增可选 `parameters`（requested/effective/fallbacks/attempt），v1 审计可新增 `sessionFormatVersion`；旧记录可能缺省。消费者应容忍新增字段，使用实际参数诊断并处理迁移后历史正文/失败引用不可用状态 |
 | 嵌入 DSH 的第三方前端 | Tavern `pmpDshTavernChrome` 服务合同保持；直接使用 DSH 的插件需将 `sessions.open` 改为 `uiWorkspace.openSession` 并注入对应服务，适配会话目录与按 session 隔离的生命周期。纯 Tavern HTTP 调用不受这些 UI 服务签名变化影响 |
 
@@ -162,7 +162,7 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 
 ### 一键归档与清理检查
 
-`availability` 返回 `{ ok:true, id, status, reason?, sessionIds, workspaceScope }`。`status` 为 `invalid`、`available`、`empty`、`protected` 或 `unavailable`。`invalid` 要求至少一个引用，且 catalog root、timeline head、全部 variant 与保存的 branch head 都经公开 `sessionController.inspect()` 确认不存在。原生归档、移出工作区、读取失败和损坏均不是缺失证据。草稿、空引用和无法完整检查的记录保留；已归档记录返回 `protected`。
+`availability` 返回 `{ ok:true, id, status, reason?, sessionIds, workspaceScope }`。`status` 为 `invalid`、`available`、`empty`、`protected` 或 `unavailable`。`invalid` 要求至少一个引用，且 catalog root、timeline head、全部 variant 与保存的 branch head 都经公开 `sessionQuery.observeSession()` 确认不存在。原生归档、移出工作区、读取失败和损坏均不是缺失证据。草稿、空引用和无法完整检查的记录保留；已归档记录返回 `protected`。
 
 一键归档按当前工作区诊断结果处理所有无法正常打开的周目，包括 timeline 缺失、损坏、会话读取失败或没有可用会话。客户端先重新检查，再把诊断中指定的周目 ID 与路径通过现有 catalog revision/CAS 一次写入归档标记；其他条目保持不变。健康周目与没有问题的未开始草稿保留。会话与工作区镜像尚未就绪，或工作区级读取失败时，不执行归档。归档箱随时可恢复，不移动文件或改变 DSH 会话。
 
@@ -358,7 +358,7 @@ operation log、chrome service/slot、工作区准入、本地化与发布包边
 
 客户端入口始终显示 `DT`。左键立即展开/收起菜单，快速重复点击重复同一默认行为，双击没有特殊效果；右键单击切换前端显示模式。菜单按钮使用“切换到自定义前端模式 / 切换到 DSH 原生模式”，当前状态可显示“当前：魔丸 / 当前：DSH 原生”；悬浮提示固定为“切换前端显示模式”。菜单始终挂载，容器展开完成（220ms）后内容再淡入。
 
-`PUT /workspace` 的目录必须事先存在（DSH `workspaceController.create` 也不 mkdir）。`POST /workspace/dirs` 由 `PlayWorkspaceStore` 在已绑定根目录内直接创建角色卡 / 周目子目录，不调用全局目录选择器，因此 native/browse Host 都兼容。路径监狱拒绝 `..`、绝对路径、指向根外的符号链接和文件冲突。未选根时 files/dirs 返回 409。不要用 archive 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 由 loader 的 Play Host adapter 显式调用 `sessionController.create()`、`rename()`、`fork()`、`prompt()`、`inspect()` 与 `page()`；一次 history 读取固定首个 inclusive `throughSeq`，并在全部页复用。`PUT /workspace` 调用 `workspaceController.create()`；开放 turn 的 fork 映射为 HTTP 409。
+`PUT /workspace` 的目录必须事先存在（DSH `workspaceController.create` 也不 mkdir）。`POST /workspace/dirs` 由 `PlayWorkspaceStore` 在已绑定根目录内直接创建角色卡 / 周目子目录，不调用全局目录选择器，因此 native/browse Host 都兼容。路径监狱拒绝 `..`、绝对路径、指向根外的符号链接和文件冲突。未选根时 files/dirs 返回 409。不要用 archive 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 由 loader 的 Play Host adapter 显式调用 `sessionController.create()`、`rename()`、`fork()`、`prompt()` 与 `page()`，读取使用 `sessionQuery.observeSession()`；一次 history 读取固定首个 inclusive `throughSeq`，并在全部页复用。`PUT /workspace` 调用 `workspaceController.create()`；开放 turn 的 fork 映射为 HTTP 409。
 
 ## v1 bundled UI 合同
 
@@ -498,7 +498,7 @@ selection 的字段为 `presetId`、`characterCardId`、`userId`（null 或非�
 `read-only` / `workspace-write` / `danger-full-access`。模板名称最多 120 字符且不超过
 480 UTF-8 字节。显式编辑和导入拒绝无效字段，而不是静默丢弃；资源可用性另由现有诊断检查。
 
-预设 `sampling.reasoningEffort` 支持 `off`、`low`、`medium`、`high`、`xhigh`、`max`。
+推理强度由 DSH 原生模型选择控制；预设编辑器不再允许修改。旧预设的 `reasoningEffort` 仅为导入／导出兼容保留，不覆盖模型选择。Trace 保留 requested/effective，并以 `stage: "selection"`、`reason: "native-model-selection"`、`code: "DSH_MODEL_SELECTION_OWNS_EFFORT"` 标记未应用的预设值。`temperature`、`maxTokens` 与 `stop` 继续通过现有 `agent/request` 接口应用；明确参数拒绝时仅对 Tavern 自己的覆盖执行有限回退，输出开始、取消或无关错误均不重试。
 导入/保存/导出还会保留最多 100 字符、非空白且不含控制字符的其他 provider effort ID；
 编辑器可显示并保留该值，不会仅因不在菜单常用值中而清除。更新时省略此字段保留原值，
 显式传入 null（UI 的继承选项）清除 Tavern 覆盖。资源保存成功不表示目标 provider 支持
@@ -637,7 +637,9 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 ### 无会话开场草稿
 
-在 v2 Play 基地址下，`POST /drafts` 保存 `{ characterId, source?, selection?, assemblyPresetId? }`，不创建 DSH 会话。`GET /drafts/:id` 返回 `{ draft, playthrough }`。`PUT /drafts/:id` 要求 `expectedRevision`，接受 selection、assemblyPresetId、variables、importContextRef 或 resetVariables，不允许更换角色身份。 `POST /drafts/:id/preview` 接受 `{ expectedRevision, preset? }`，只读预览此开场草稿的当前资源、变量和调用者的装配规则；省略 preset 时使用草稿快照。返回 `{ ok, preview }`，其中 `scope:'opening-draft'`、`draftId`、`draftRevision`、`pendingInputsIncluded:false`。不创建原生会话、不写历史、不调用模型；配置变化或开始首次发送后返回 409。
+在 v2 Play 基地址下，`POST /drafts` 保存 `{ characterId, source?, selection?, assemblyPresetId? }`，不创建 DSH 会话。`GET /drafts/:id` 返回 `{ draft, playthrough }`。`PUT /drafts/:id` 要求 `expectedRevision`，接受 selection、assemblyPresetId、variables、importContextRef、resetVariables、modelSelection 或 permissionPreset，不允许更换角色身份。 `POST /drafts/:id/preview` 接受 `{ expectedRevision, preset? }`，只读预览此开场草稿的当前资源、变量和调用者的装配规则；省略 preset 时使用草稿快照。返回 `{ ok, preview }`，其中 `scope:'opening-draft'`、`draftId`、`draftRevision`、`pendingInputsIncluded:false`。不创建原生会话、不写历史、不调用模型；配置变化或开始首次发送后返回 409。
+
+`modelSelection` 为 `{ provider, model, reasoningEffort? }` 或 null（DSH 默认）；`permissionPreset` 为 DSH 权限标识或 `tavern-rp`，null/缺省表示 RP 安全模式。选择只保存草稿，materialize 时通过公开 DSH API 应用；不受理失效模型或权限。`PUT /rp-mode` 还接受 `{ sessionId, active:false, permissionPreset }`，在关闭 RP 的同一执行边界应用原生权限；响应中的 `pendingPermissionPreset` 表示待应用选项。
 
 `POST /drafts/:id/materialize` 接受 `{ expectedRevision, operationId, text }`，准备唯一、持久预留的会话并返回 `{ sessionId, requestId, accepted }`，自身不发送模型请求。若尚未受理，调用既有 `/sessions/:id/user-message`，传同一 text 与 requestId。`POST /drafts/:id/cancel` 在未受理时清理绑定、释放无绑定空会话并恢复草稿，`draft.lastInput` 保留该次输入用于重新打开开场；已受理时停止真实会话并保留历史。MVU 草稿 scope 为 `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`，不含 sessionId。卡片写授权仍要求当前精确 selection token 和已就绪来源的执行证明。
 
@@ -672,7 +674,7 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 ## 浏览器端 Chrome 模式服务
 
-Tavern client 通过 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
+Tavern client 通过 DSH `0.2.2-rc.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
 
 公开 face：
 

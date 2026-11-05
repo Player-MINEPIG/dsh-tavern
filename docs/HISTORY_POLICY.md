@@ -55,7 +55,7 @@ MVU 示例按 `sourceKind: model` 筛选助手正文，只匹配从行首开始�
 
 旧预设没有 `historyPolicy` 时，运行时继续使用原有会话设置；编辑器读取并提示这一来源，下次保存预设时一并收录。不会批量改写已有资源。未配置的历史策略默认关闭。assembler 主插件挂载标准清理，可选 core 插件挂载进阶筛选，二者读取已应用策略快照。编辑器及只读预览跟随草稿 backend；真正运行和直接会话 API 的能力仍由已应用 backend 决定。切换进阶版时先恢复标准版仍有效的占位，再筛选请求副本。
 
-历史 API 与装配 API 共用已有安全路由及浏览器/桌面 transport。冷会话通过公共 inspect 和 sessions.prepare 预览，不创建 Agent。Tavern 只提供 MVU 示例和界面嵌入，不复制通用引擎或策略存储。包级 `./history-policy` 导出 Tavern 示例与挂载函数。
+历史 API 与装配 API 共用已有安全路由及浏览器/桌面 transport。冷会话通过公共 sessionQuery.observeSession 和 sessions.prepare 预览，不创建 Agent。Tavern 只提供 MVU 示例和界面嵌入，不复制通用引擎或策略存储。包级 `./history-policy` 导出 Tavern 示例与挂载函数。
 
 实际请求以保存的最终 messages 为准；进阶卡片按 `metadata.historyPolicy` 对布局中的历史正文作显示修正，保留原始布局及事件审计。标准版通过内置替换事件的 `data.historyPolicy/sourceEventSeqs` 追溯。布局先装配，历史策略随后筛选。
 

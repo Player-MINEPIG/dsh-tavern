@@ -32,6 +32,7 @@ async function callSessionCreation(controller, method, request, operation) {
 
 export function createPlayHost({
   sessionController,
+  inspectSession = id => callController('session.inspect', sessionController, 'inspect', id),
   workspaceController,
   directoryPickerController,
   sessions,
@@ -45,11 +46,11 @@ export function createPlayHost({
 } = {}) {
   return {
     async inspectSession(sessionId) {
-      try { return await callController('session.inspect', sessionController, 'inspect', sessionId) }
+      try { return await inspectSession(sessionId) }
       catch (error) { throw mapHostError(error) }
     },
     async coordinates(sessionId) {
-      return sessionCoordinates(await callController('session.inspect', sessionController, 'inspect', sessionId))
+      return sessionCoordinates(await inspectSession(sessionId))
     },
     async createWorkspace({ path }) {
       const value = await callController('workspace.create', workspaceController, 'create', { path })
@@ -152,7 +153,7 @@ export function createPlayHost({
 
     async history({ sessionId, throughSeq: requestedThroughSeq, beforeSeq, maxMessages }) {
       const inspection = requestedThroughSeq === undefined
-        ? await callController('session.inspect', sessionController, 'inspect', sessionId) : null
+        ? await inspectSession(sessionId) : null
       const throughSeq = requestedThroughSeq === undefined
         ? inspection?.events?.at(-1)?.seq ?? -1
         : requestedThroughSeq

@@ -1,3 +1,4 @@
+import { createSessionReader } from 'dsh-prompt-assembler/session-reader'
 import { registerTavernMvuSource } from 'dsh-prompt-assembler/adapters/tavern'
 import { symbols } from '@deepseek-ai/cordis'
 import { timelineHead } from '../../play/src/timeline-tree.js'
@@ -63,7 +64,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
       || scope.selectionToken !== undefined && scope.selectionToken !== view.selectionToken) fail('MVU_READ_ONLY', 'Greeting selection changed')
     return view
   }
-  const inspect = async id => { const session = ctx.get('sessions')?.get?.(id) ?? getPreviewSession?.(id); return session ? { header: session.header, events: session.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
+  const inspect = async id => { const session = ctx.get('sessions')?.get?.(id) ?? getPreviewSession?.(id); return session ? { header: session.header, events: session.snapshotEvents() } : createSessionReader(ctx)(id) }
   const requestMetadata = event => (event.type === 'system/message' && event.data?.message?.role === 'system'
     && Number.isSafeInteger(event.data.turn) && Number.isSafeInteger(event.data.step))
     || (event.type === 'request/context' && typeof event.data?.provider === 'string' && typeof event.data?.model === 'string'
@@ -220,7 +221,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     if (!variant || variant.sessionId !== scope.sessionId || variant.endEventId !== scope.endEventId
       || (scope.sessionFormatVersion != null && scope.sessionFormatVersion !== variant.ext?.pmpDshTavern?.sessionFormatVersion)) fail('MVU_SCOPE', 'Message scope no longer matches durable timeline')
     const live = ctx.get('sessions')?.get?.(scope.sessionId)
-    const inspected = live ? { meta: live.header, events: live.snapshotEvents() } : await ctx.get('sessionController')?.inspect?.(scope.sessionId)
+    const inspected = live ? { meta: live.header, events: live.snapshotEvents() } : await createSessionReader(ctx)(scope.sessionId)
     if (!inspected || (scope.sessionFormatVersion != null && inspected.meta?.version !== scope.sessionFormatVersion)) fail('MVU_SCOPE', 'Durable session unavailable or changed')
     const event = inspected.events.find(e => e.seq === scope.endEventId)
     if (event?.type !== 'assistant/message' || event.data?.interrupted) fail('MVU_SCOPE', 'Snapshot does not point at a final assistant message')

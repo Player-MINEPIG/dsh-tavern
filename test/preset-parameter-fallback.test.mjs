@@ -6,20 +6,17 @@ const invalid = message => ({ code: 'INVALID_REQUEST', status: 400, message })
 const payload = (agent, patch = {}) => ({ agent, turn: 1, step: 1, signal: new AbortController().signal, ...patch })
 const route = { provider: 'test', model: 'model' }
 
-test('unsupported effort withdraws preset override before prepared call, preserving provider default provenance', async () => {
+test('native reasoning selection is preserved and conflicting imported effort is reported without retry', async () => {
   const recovery = new PresetParameterFallback(), agent = {}, seen = []
   const overrides = Object.freeze({ reasoningEffort: 'xhigh', temperature: 0.6 })
-  const llm = { async resolveCallConfig(config) {
-    seen.push({ ...config })
-    if (config.reasoningEffort === 'xhigh') throw { code: 'UNSUPPORTED_REASONING_EFFORT' }
-    return { ...config, reasoningEffort: 'high' }
-  } }
-  const config = await recovery.prepare(payload(agent), { ...route, reasoningEffort: 'xhigh' }, overrides, llm)
-  assert.deepEqual(config, { ...route, temperature: 0.6 })
-  assert.equal(seen.length, 2)
+  const base = { ...route, reasoningEffort: 'low' }
+  const config = await recovery.prepare(payload(agent), base, overrides, { async resolveCallConfig(config) { seen.push(config); return config } })
+  assert.deepEqual(config, { ...base, temperature: 0.6 })
+  assert.equal(seen.length, 1)
   assert.equal(overrides.reasoningEffort, 'xhigh')
-  assert.equal(recovery.snapshot(agent, { ...config, reasoningEffort: 'high' }).effective.reasoningEffort, 'high')
-  assert.equal(recovery.snapshot(agent).fallbacks[0].stage, 'preflight')
+  assert.equal(recovery.snapshot(agent).effective.reasoningEffort, 'low')
+  assert.equal(recovery.snapshot(agent).fallbacks[0].code, 'DSH_MODEL_SELECTION_OWNS_EFFORT')
+  assert.equal(recovery.recover({ ...payload(agent), failure: { code: 'UNSUPPORTED_REASONING_EFFORT' } }), false)
 })
 
 test('explicit provider parameter failures retry by withdrawing overrides from persisted header proposals', async () => {

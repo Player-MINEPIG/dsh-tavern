@@ -5,7 +5,7 @@
 The required independent [request assembler](REQUEST_ASSEMBLY_en.md) owns strategies and source registration. Standard strategies use public sections/context/pre-step; the optional advanced addon supplies protocol-1 request placement. Sessions without an applied strategy retain the compatibility loader path below. DSH retains durable history and provider serialization ownership.
 
 This page explains how Tavern resources enter a model request in SillyTavern,
-TauriTavern, and Tavern 3.1.5, and which mappings are unsupported.
+TauriTavern, and Tavern 3.2.0, and which mappings are unsupported.
 DSH turn/step, Inbox, Session, system-assembly, and request/header order are documented
 in `DSH_MESSAGE_FLOW_en.md`.
 
@@ -48,7 +48,7 @@ dsh has no ST `PromptManager`, marker collection, or arbitrary history-depth ins
 3. The loader projects this claimed batch from public `agent/inbox/spliced`, de-duplicates it with DSH durable user/assistant history by stable message id, and combines them under a bound. The world-info matcher therefore gets this turn's activated entries on the first assembly.
 4. The loader composes static prompts, user name/description, character fields, and activated lore at preset markers into ordered `pmp-dsh-tavern:part:*` system sections.
 5. DSH itself continues to project user input, history, and tool results from Session. The plugin does not copy `chatHistory`.
-6. `temperature`, `maxTokens`, `reasoningEffort`, and `stop` are mapped through `agent/request`. Other ST samplers are stored for now and not claimed as delivered.
+Reasoning effort belongs to the native DSH model selection and is no longer editable in presets. Imported `reasoningEffort` values remain for round-trip compatibility and never override that selection. Trace retains requested/effective values and reports unapplied preset effort with `stage: "selection"`, `reason: "native-model-selection"`, and `code: "DSH_MODEL_SELECTION_OWNS_EFFORT"`. Existing `agent/request` integration still applies `temperature`, `maxTokens` and `stop`; only explicit rejection of Tavern-owned controls permits bounded fallback, never after output, cancellation or unrelated errors.
 
 Code boundaries match this data flow: `tavern-format` only normalizes ST JSON; `preset` only manages persistence/API/UI; `tavern-loader` executes steps 3–5 and is the root plugin entry. Changing the DSH injection strategy later therefore does not require modifying or reinterpreting the ST parser. Full decisions: `ARCHITECTURE_en.md`.
 

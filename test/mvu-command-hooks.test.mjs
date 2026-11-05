@@ -209,7 +209,7 @@ test('official AgentLoop/loader snapshot carries its own user gate through a sin
   t.after(async () => { await ctx.fiber.dispose(); rmSync(storageDir, { recursive: true, force: true }) })
   for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
   await ctx.plugin((await load('@deepseek-ai/dsh-system-prompt')).default, {})
-  for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+  for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
   class Adapter extends llm.LlmAdapter {
     async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
     async *stream() {

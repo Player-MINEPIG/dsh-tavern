@@ -21,7 +21,7 @@ test('stock DSH admission refresh records final literal context and restores its
     ctx.provide('sessionController', { inspect: async id => { const session = ctx.sessions.get(id); return { meta: session.header, events: session.snapshotEvents() } } })
     for (const name of ['workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt, { includeHarnessIdentity: false, personaPrefix: 'HOST' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     assert.equal(ctx.agentLoop.requestAssemblyVersion, undefined)
     ctx.systemPrompt.context({ name: 'refresh:fact', order: 100, required: true, interpolate: false, text: () => current })
     ctx.on('agent/error', e => errors.push(e.error))

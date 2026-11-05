@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, cpSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, cpSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { resolve, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,7 +19,8 @@ const pack = (cwd, args) => JSON.parse(npm(cwd, ['pack', '--ignore-scripts', '--
 const assembly = JSON.parse(readFileSync(join(assembler, 'package.json')))
 if (assembly.name !== 'dsh-prompt-assembler') throw new Error('Expected the independent dsh-prompt-assembler source')
 requireAssemblerVersion(assembly.version, 'Release source')
-npm(assembler, ['run', 'build'])
+if (assembly.scripts?.build) npm(assembler, ['run', 'build'])
+else if (!existsSync(join(assembler, 'dist/client.js'))) throw new Error('Assembler source must be buildable or include its prebuilt client')
 npm(project, ['run', 'build'], { ...process.env, DSH_ASSEMBLER_SOURCE: assembler })
 mkdirSync(output, { recursive: true })
 const stage = mkdtempSync(join(tmpdir(), 'tavern-release-'))

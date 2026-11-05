@@ -345,7 +345,8 @@ test('greeting freezes the edited opening before the first turn and never grants
 test('greeting reads a stored session without starting an Agent and rechecks access after async listing', async t => {
   const f = fixture(t), scope = { ...f.scope, mode: 'greeting' }
   f.ctx.get('sessions').delete('s')
-  f.ctx.provide('sessionController', { inspect: async () => ({ meta: f.session.header, events: [] }), resolveAgent: () => { throw Error('Reading a greeting must not start an Agent') } })
+  f.ctx.provide('sessionQuery', { observeSession: async () => ({ header: f.session.header, events: [], inheritedEventCount: 0, [Symbol.dispose]() {} }) })
+  f.ctx.provide('sessionController', { resolveAgent: () => { throw Error('Reading a greeting must not start an Agent') } })
   assert.equal((await f.service.snapshot(scope)).status, 'available')
   const list = f.service.list.bind(f.service)
   f.service.list = async input => { const rows = await list(input); f.select('other'); return rows }

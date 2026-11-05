@@ -69,14 +69,15 @@ test('official rc.2 cold preview runs AgentLoop variables and SessionController 
   let requests = 0, events = 0, modelReads = 0, prepared, preparedEvents
   try {
     await ctx.plugin(SystemPrompt, { includeHarnessIdentity: false, personaPrefix: '{{provider}}/{{model}} at {{cwd}}' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     await ctx.plugin((await load('@deepseek-ai/dsh-typert-registry')).default)
     await ctx.plugin((await load('@deepseek-ai/dsh-api-remote-access')).default)
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
     ctx.provide('workspaceRegistry', { list: () => [], get: () => undefined, archivedSessionIds: [] })
     const defaults = { provider: 'default', model: 'base' }
     ctx.provide('agentDefaultModel', { currentSelection: () => defaults })
-    new (await load('@deepseek-ai/dsh-api-session-controller')).SessionController(ctx, { nativeOpen: false })
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-gateway')).TypertGatewayService, {})
+    await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
     ctx.on('llm/stream', () => { requests++; throw Error('preview must not send a request') }, { global: true, prepend: true })
     ctx.on('session/event', () => events++)
     // Even adapter preparation/catalog reads are outside preview's contract.

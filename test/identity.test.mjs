@@ -66,13 +66,13 @@ test('plugin identity uses pmp-dsh-tavern with versioned API roots', () => {
 test('official runtime peers declare the RC range and retain the development baseline', () => {
   const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   const peers = {
-    '@deepseek-ai/cordis': '4.0.5',
-    '@deepseek-ai/dsh-util-crypto': '>=0.2.1-rc.2 <0.2.2-0',
+    '@deepseek-ai/cordis': '4.1.0',
+    '@deepseek-ai/dsh-util-crypto': '>=0.2.2-rc.1 <0.2.3-0',
   }
-  assert.deepEqual(packageJson.peerDependencies, { ...peers, 'dsh-prompt-assembler': '~1.1.3' })
+  assert.deepEqual(packageJson.peerDependencies, { ...peers, 'dsh-prompt-assembler': '~1.2.0' })
   assert.equal(packageJson.peerDependenciesMeta?.['dsh-prompt-assembler']?.optional, undefined)
   for (const name of Object.keys(peers)) {
-    assert.equal(packageJson.devDependencies[name], name === '@deepseek-ai/cordis' ? '4.0.5' : '0.2.1-rc.2')
+    assert.equal(packageJson.devDependencies[name], name === '@deepseek-ai/cordis' ? '4.1.0' : '0.2.2-rc.1')
     assert.equal(packageJson.peerDependenciesMeta?.[name]?.optional, undefined)
   }
   for (const field of ['dependencies', 'optionalDependencies']) {

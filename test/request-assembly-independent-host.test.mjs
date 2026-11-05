@@ -17,7 +17,7 @@ test('independent assembler remains mounted after Tavern removal and keeps sessi
   try {
     for (const id of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(id, {})
     await ctx.plugin(SystemPrompt, { personaPrefix: 'NATIVE' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     ctx.on('agent/error', e => errors.push(e.error))
     class Provider extends llm.LlmAdapter {
       async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }

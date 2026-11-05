@@ -24,6 +24,41 @@ function fixture(t, greetingData = {}) {
   return { service, created, sessions, selections, assembly, archived, calls, controller, characters }
 }
 
+test('native opening choices persist without sessions, apply once before RP, and survive cancellation', async t => {
+  const { service, created, sessions, controller } = fixture(t), id = created.draft.id, calls = []
+  const modelSelection = { provider: 'fixture', model: 'reasoner', reasoningEffort: 'low' }
+  controller.selectModel = async value => calls.push(['model', value])
+  service.applyPermission = async (...args) => calls.push(['permission', ...args])
+  service.reconcileRp = () => calls.push(['rp'])
+  const saved = service.update(id, { expectedRevision: 0, modelSelection, permissionPreset: 'read-only' })
+  assert.equal(sessions.size, 0)
+  assert.deepEqual(JSON.parse(readFileSync(service.path)).records[id].modelSelection, modelSelection)
+  assert.throws(() => service.update(id, { expectedRevision: 0, permissionPreset: 'workspace-write' }), { code: 'REVISION_CONFLICT' })
+  assert.throws(() => service.update(id, { expectedRevision: 1, modelSelection: { ...modelSelection, sessionId: 'other' } }), { code: 'PLAY_DRAFT_INVALID' })
+  assert.throws(() => service.update(id, { expectedRevision: 1, permissionPreset: 'read-only\n/anything' }), { code: 'PLAY_DRAFT_INVALID' })
+  const request = { expectedRevision: saved.draft.revision, operationId: 'first', text: 'INPUT' }
+  const prepared = await service.materialize(id, request)
+  assert.deepEqual(calls, [['model', { sessionId: prepared.sessionId, ...modelSelection }], ['permission', prepared.sessionId, 'read-only']])
+  await service.materialize(id, request)
+  assert.equal(calls.filter(([kind]) => kind === 'model').length, 1)
+  assert.throws(() => service.update(id, { expectedRevision: service.record(id).revision, modelSelection: null }), { code: 'PLAY_DRAFT_LOCKED' })
+  const cancelled = await service.cancel(id)
+  assert.deepEqual(cancelled.draft.modelSelection, modelSelection)
+  assert.equal(cancelled.draft.permissionPreset, 'read-only')
+  const cleared = service.update(id, { expectedRevision: cancelled.draft.revision, modelSelection: null, permissionPreset: null })
+  assert.equal(cleared.draft.modelSelection, null)
+})
+
+test('rejected native selection cannot prepare or admit first input', async t => {
+  const { service, created, controller } = fixture(t), id = created.draft.id
+  service.update(id, { expectedRevision: 0, modelSelection: { provider: 'missing', model: 'missing' } })
+  controller.selectModel = async () => { throw Error('model unavailable') }
+  await assert.rejects(service.materialize(id, { expectedRevision: 1, operationId: 'first', text: 'INPUT' }), /model unavailable/)
+  const claim = service.record(id).claim
+  assert.throws(() => service.beforePrompt({ sessionId: claim.sessionId, text: claim.text, requestId: claim.requestId }), { code: 'PLAY_DRAFT_INPUT_CHANGED' })
+  assert.equal((await service.cancel(id)).draft.phase, 'draft')
+})
+
 test('draft MVU grants cannot migrate across openings; edits survive disk reload and conflict safely', async t => {
   const { service, created, sessions } = fixture(t), id = created.draft.id
   assert.equal(sessions.size, 0)

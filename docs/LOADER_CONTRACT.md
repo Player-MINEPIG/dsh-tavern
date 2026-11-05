@@ -2,11 +2,11 @@
 
 [English](LOADER_CONTRACT_en.md)
 
-Tavern 的 DSH bundle 使用 `packages/tavern-loader/src/host.js`（也导出为 `pmp-dsh-tavern/host`） 入口，依赖另行安装并启用的 Assembler `~1.1.3`。入口检查软件包版本及共享 `dshPromptAssembler.version`，通过后才挂载业务 loader；它不启动或恢复 Assembler 实例。安装、停用与卸载遵循[接入说明](ASSEMBLER_INTEGRATION.md#共享服务与生命周期)。
+Tavern 的 DSH bundle 使用 `packages/tavern-loader/src/host.js`（也导出为 `pmp-dsh-tavern/host`） 入口，依赖另行安装并启用的 Assembler `~1.2.0`。入口检查软件包版本及共享 `dshPromptAssembler.version`，通过后才挂载业务 loader；它不启动或恢复 Assembler 实例。安装、停用与卸载遵循[接入说明](ASSEMBLER_INTEGRATION.md#共享服务与生命周期)。
 
 bundle patch 使用包内相对文件路径声明 Host。DSH 锚定该路径，再通过所属软件包的 manifest 发现浏览器 bundle；软件包子路径说明符不参与官方客户端发现。
 
-当前合同面向 Tavern **3.1.5**、Assembler **v1.1.3** 与 DSH **0.2.1-rc.2 / 0.2.1-rc.3**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
+当前合同面向 Tavern **3.2.0**、Assembler **v1.2.0** 与 DSH **0.2.2-rc.1**。保留文件名是因为 `tavern-loader` 模块仍负责资源解析与 Host 接入；本文不再把 loader 描述为最终请求的统一装配器。策略与后端行为见 [Assembler 接入](ASSEMBLER_INTEGRATION.md)、[请求装配](REQUEST_ASSEMBLY.md)和[消息流](DSH_MESSAGE_FLOW.md)。
 
 ## 目标与所有权
 
@@ -33,7 +33,7 @@ loader 通过 `attachTavern` 向共享 store/registry/runtime 提供只读资源
 
 ## Session policy
 
-Host 兼容范围为 `>=0.2.1-rc.2 <0.2.2-0`，已验证 rc.2 与 rc.3。Host 等待串行 `agent/created` listener：先冻结或恢复资源选择，从公开 own events 重建 pending input，再初始化 RP 及只读沙箱，之后才允许 Agent 处理请求。初始化失败向注册过程传播，不降为 warning；fork、resume 与委派 agent 使用同一初始化边界。
+Host 兼容范围为 `>=0.2.2-rc.1 <0.2.3-0`，已验证 0.2.2-rc.1。Host 等待串行 `agent/created` listener：先冻结或恢复资源选择，从公开 own events 重建 pending input，再初始化 RP 及只读沙箱，之后才允许 Agent 处理请求。初始化失败向注册过程传播，不降为 warning；fork、resume 与委派 agent 使用同一初始化边界。
 
 持久文件为插件 data 目录下的 `session-selections.json`：
 
@@ -167,7 +167,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ## Composition semantics
 
-已应用策略使用 Assembler v1.1.3 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.3/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
+已应用策略使用 Assembler v1.2.0 的来源与排列算法。标准后端在原生投递边界内保留或适配角色；进阶后端按其显式合同提供 request-only 投影。详见[请求装配](REQUEST_ASSEMBLY.md)与[后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.2.0/docs/BACKENDS.md)。以下子节**仅描述未应用策略时保留的兼容渲染器**，不是默认 RP 装配策略。
 
 ### Preset-only compatibility
 
@@ -203,9 +203,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ## preset 参数准入与降级
 
-preset 采样字段按作者设置保存。Host 在 `agent/request` 合并受支持的 preset 覆盖，并使用公开 `llm.resolveCallConfig` 预检。不支持的 preset reasoning effort 会被省略，交给 adapter 默认，不猜测其他 effort 名称。
-
-明确的 invalid/unsupported 参数拒绝后，`agent/request-error` 仅在尚无输出且未取消时请求原生 DSH 重试。只省略 `temperature`、`maxTokens`、`reasoningEffort`、`stop` 中生效的 preset 覆盖，每字段至多一次，运行期至多四次重试。其他插件的参数及无关的认证、额度、网络错误不进入此降级。不会修改已准备请求，也不重复调用其 middleware continuation。Trace 记录请求/生效参数映射与每次省略；生效值取自 DSH 默认处理后的实际 `llm/stream` 边界。
+推理强度由 DSH 原生模型选择控制；预设编辑器不再允许修改。旧预设的 `reasoningEffort` 仅为导入／导出兼容保留，不覆盖模型选择。Trace 保留 requested/effective，并以 `stage: "selection"`、`reason: "native-model-selection"`、`code: "DSH_MODEL_SELECTION_OWNS_EFFORT"` 标记未应用的预设值。`temperature`、`maxTokens` 与 `stop` 继续通过现有 `agent/request` 接口应用；明确参数拒绝时仅对 Tavern 自己的覆盖执行有限回退，输出开始、取消或无关错误均不重试。
 
 ## Audit boundary
 
@@ -213,7 +211,7 @@ preset 采样字段按作者设置保存。Host 在 `agent/request` 合并受支
 
 Assembler 记录策略与来源/排列 metadata。Tavern Trace 将其与资源决策及已核验的官方历史引用组合，不另存来源正文或消息历史副本。标准实际请求按已记录的原生请求引用恢复；进阶请求引用 DSH 的 `request/assembly`。latest-only actual 端点与当前预览不能恢复旧请求。
 
-V4 的 `system/message` 与 runtime-context `user/message` 拥有标准提示词正文；`request/header` 拥有最终 tools/config。进阶 `request/assembly` 冻结实际发送数组，不替换 durable history。坐标兼容与显式离线升级见[迁移合同](DSH_0.1.7_MIGRATION.md)，当前支持的 Host 仍为 rc.2。
+V4 的 `system/message` 与 runtime-context `user/message` 拥有标准提示词正文；`request/header` 拥有最终 tools/config。进阶 `request/assembly` 冻结实际发送数组，不替换 durable history。坐标兼容与显式离线升级见[迁移合同](DSH_0.1.7_MIGRATION.md)，当前目标 Host 为 0.2.2-rc.1。
 
 ## Adapter integration invariants
 

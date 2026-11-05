@@ -356,6 +356,8 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
       ? h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.greeting', { index: selection.character.greetingIndex })) : null,
     h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.sampling'), ' ', config === undefined ? unavailable()
       : Object.keys(config).length ? rawText(Object.entries(config).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(' · ')) : uiMessage('trace.v3.noSampling')),
+    record.parameters?.fallbacks?.some(item => item.code === 'DSH_MODEL_SELECTION_OWNS_EFFORT')
+      ? h('p', { className: 'dttrace-note' }, uiMessage('preset.reasoningEffortNative')) : null,
     record.parameters ? h('details', { className: 'dttrace-disclosure' },
       h('summary', null, uiMessage('trace.parameters.title')),
       h('div', { className: 'dttrace-disclosure-body' },

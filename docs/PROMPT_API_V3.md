@@ -1,11 +1,11 @@
 # 提示词装配 Trace 与 v3 元 API
 
-合同版本：Tavern **3.1.5**，目标 DSH **0.2.1-rc.2 / 0.2.1-rc.3**。
+合同版本：Tavern **3.2.0**，目标 DSH **0.2.2-rc.1**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [开发验证](TESTING.md)
 
 装配规则的 CRUD、应用、预览、实际请求引用与可选进阶核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
 
-DSH 0.2.1-rc.2 在请求准入阶段刷新已注册运行上下文。Trace 的 `contexts` 以实际请求中的官方持久快照为准，保留字面文本并处理上下文清除；不使用装配前的旧正文或当前资源补全历史。
+DSH 0.2.2-rc.1 在请求准入阶段刷新已注册运行上下文。Trace 的 `contexts` 以实际请求中的官方持久快照为准，保留字面文本并处理上下文清除；不使用装配前的旧正文或当前资源补全历史。
 
 ## 定位和兼容
 
@@ -135,7 +135,7 @@ const detail = latest
 
 `parameters.requested` 记录为请求提议的 preset 覆盖，`parameters.effective` 记录 DSH/adapter 默认处理后在实际 `llm/stream` 边界观察到的值；到达该边界前失败的请求不能证明已经生效交付。`parameters.attempt` 为参数策略尝试编号，与 Trace attempt 及官方 stream 身份分别解释。
 
-`parameters.fallbacks` 的每项包含 `parameter`、`stage`（`preflight` 或 `provider`）、`reason: "parameter-rejected"`、`code` 以及可选 `status`。它们是有界 metadata，不是 provider 响应正文。不支持的 preset reasoning effort 在预检时省略并交给 adapter 默认。符合条件的明确 provider 参数拒绝可在输出前省略生效 preset 覆盖，每字段至多一次、运行期至多四次重试。取消、任何已输出内容及无关错误不触发 Tavern 重试。原 preset 不变；旧记录缺少诊断时不从当前配置补造。
+推理强度由 DSH 原生模型选择控制；预设编辑器不再允许修改。旧预设的 `reasoningEffort` 仅为导入／导出兼容保留，不覆盖模型选择。Trace 保留 requested/effective，并以 `stage: "selection"`、`reason: "native-model-selection"`、`code: "DSH_MODEL_SELECTION_OWNS_EFFORT"` 标记未应用的预设值。`temperature`、`maxTokens` 与 `stop` 继续通过现有 `agent/request` 接口应用；明确参数拒绝时仅对 Tavern 自己的覆盖执行有限回退，输出开始、取消或无关错误均不重试。
 
 ### 失败详情
 

@@ -25,7 +25,7 @@ for (const largeProfile of [false, true]) test(`default assembly reaches the off
     // In-memory Host services cannot create a real profile/workspace.
     for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt, { personaPrefix: 'OFFICIAL_ONE' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     ctx.on('agent/error', e => errors.push(e.error))
     ctx.on('llm/stream', (request, next) => {
       if (llm.isAgentLoopRequest(request)) {
@@ -113,7 +113,7 @@ test('an empty native head followed by a visible update retains its boundary thr
   try {
     for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt)
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     ctx.on('agent/error', e => errors.push(e.error))
     ctx.on('agent/assemble-request', (payload, next) => { nativeRequests.push(structuredClone(payload.messages)); return next() })
     ctx.on('llm/stream', (request, next) => {
@@ -168,7 +168,7 @@ test('extended core sends the assembled request, records it, restores native his
   try {
     for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt, { personaPrefix: 'OFFICIAL' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     assert.equal(ctx.agentLoop.requestAssemblyVersion, 1)
     // Metadata can legally arrive after assembly without invalidating the frozen request.
     ctx.on('llm/stream', (request, next) => {
@@ -288,7 +288,7 @@ test('public sources run for tool continuations, steering, child requests and se
   try {
     for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt, { personaPrefix: 'OFFICIAL' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     ctx.on('agent/error', e => errors.push(e.error))
     ctx.tools.register({ name: 'probe', description: 'Synthetic probe', parameters: { type: 'object', properties: {} }, output: { schema: { type: 'string' }, render: (_, value) => [{ type: 'text', text: value }] }, execute: async () => 'TOOL RESULT' })
     class Adapter extends llm.LlmAdapter {

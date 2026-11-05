@@ -232,7 +232,7 @@ test('resource mutations announce one shared refresh event consumed by the shell
 
   assert.match(root, /addEventListener\(CLIENT_REFRESH_EVENT, onRefresh\)/)
   assert.ok((preset.match(/announceTavernRefresh\(\)/g)?.length ?? 0) >= 6)
-  assert.ok((character.match(/announceTavernRefresh\(\)/g)?.length ?? 0) >= 7)
+  assert.ok((character.match(/announceTavernRefresh\(\)/g)?.length ?? 0) >= 6)
   assert.match(character, /const applySelectionResult = useCallback[\s\S]*?await refresh\(detail\?\.id\)[\s\S]*?announceTavernRefresh\(\)/)
   assert.match(character, /await hasConversationHistory\(sessionId\)/)
   assert.match(character, /addEventListener\(CLIENT_REFRESH_EVENT, onRefresh\)/)

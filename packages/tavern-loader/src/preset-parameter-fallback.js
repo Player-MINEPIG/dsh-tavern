@@ -56,7 +56,11 @@ export class PresetParameterFallback {
     state.outputStarted = false
     state.attempts++
     state.observedEffective = undefined
-    const config = { ...base, ...requested }
+    const { reasoningEffort: ignoredEffort, ...controls } = requested
+    if (ignoredEffort !== undefined && !state.fallbacks.some(item => item.code === 'DSH_MODEL_SELECTION_OWNS_EFFORT')) {
+      state.fallbacks.push({ parameter: 'reasoningEffort', stage: 'selection', reason: 'native-model-selection', code: 'DSH_MODEL_SELECTION_OWNS_EFFORT' })
+    }
+    const config = { ...base, ...controls }
     for (const key of state.omitted) delete config[key]
     // Public validation runs before DSH binds and logs its one-shot prepared
     // call. Returning the proposal preserves DSH's adapter-default provenance.
@@ -69,7 +73,7 @@ export class PresetParameterFallback {
           // DSH explicitly permits routes implemented by public llm/stream
           // middleware without a registered adapter; preserve that path.
           if (error?.code === 'NO_ADAPTER') break
-          const fields = rejectedPresetParameters(error, config).filter(key => Object.hasOwn(requested, key) && !state.omitted.has(key))
+          const fields = rejectedPresetParameters(error, config).filter(key => key !== 'reasoningEffort' && Object.hasOwn(requested, key) && !state.omitted.has(key))
           if (fields.length === 0) throw error
           this.omit(state, fields, 'preflight', error)
           for (const key of fields) delete config[key]
@@ -102,7 +106,7 @@ export class PresetParameterFallback {
     const state = this.states.get(agent)
     if (!state || signal?.aborted || state.outputStarted || state.retries >= PRESET_PARAMETER_FIELDS.length) return false
     const fields = rejectedPresetParameters(failure, state.effective)
-      .filter(key => Object.hasOwn(state.requested, key) && !state.omitted.has(key))
+      .filter(key => key !== 'reasoningEffort' && Object.hasOwn(state.requested, key) && !state.omitted.has(key))
     if (fields.length === 0) return false
     this.omit(state, fields, 'provider', failure)
     state.retries++

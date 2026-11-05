@@ -23,9 +23,9 @@ test('DSH real AgentLoop: official sections, LLM capture, durable system message
   try {
     for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) root.provide(name, {})
     await root.plugin(SystemPrompt, { personaPrefix: 'HOST_PERSONA' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) {
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) {
       const module = await load(`@deepseek-ai/dsh-${name}`)
-      await root.plugin(module.default, name === 'agent-loop' ? { agents: [] } : {})
+      await root.plugin(module.default ?? module, name === 'agent-loop' ? { agents: [] } : {})
     }
     class SyntheticAdapter extends llm.LlmAdapter {
       async *stream() {
@@ -72,6 +72,13 @@ test('DSH real AgentLoop: official sections, LLM capture, durable system message
     assert.equal(stored.sections.some(part => 'text' in part), false)
     assert.equal(stored.delivery.historyVerified, true)
     assert.equal(stored.sessionRef.sessionFormatVersion, 4)
+    const parameters = structuredClone(stored.parameters)
+    for (const purpose of ['session-title', undefined]) {
+      for await (const _frame of root.llm.stream({ provider: 'synthetic', model: 'test', sessionId: agent.id,
+        purpose, maxTokens: 37, messages: [{ role: 'user', content: [{ type: 'text', text: 'Auxiliary title request' }] }] })) {}
+      assert.deepEqual(store.assemblyStore.get(agent.id, firstSummary.id).parameters, parameters,
+        'same-session auxiliary calls must not overwrite the captured conversation parameters')
+    }
     const first = await readRecord(firstSummary.id)
     assert.equal(first.contentStatus, 'available')
     assert.ok(!first.systemMessages.join('').includes('<st-prompt'))

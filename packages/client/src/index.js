@@ -48,6 +48,7 @@ import {
 } from './state.js'
 import { createChromeClickController } from './play/chrome.js'
 import { installPlaySlotOccupancy } from './play/occupancy.js'
+import { installRpPermission } from './rp-permission.js'
 import { createLivePlayClient } from './play/live.js'
 import { sessionHasConversationHistory } from './play/chat-model.js'
 import { createWorkspaceDiagnostics } from './play/diagnostics-state.js'
@@ -265,16 +266,7 @@ function SettingsPanel({
       }, ...UI_SCALE_OPTIONS.map(scale => h('option', { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
       h('div', { className: 'dtv-setting-value' }, translate('settings.currentScale', { scale: percent })),
       h('p', { className: 'dtv-note' }, translate('settings.scale.help')),
-      h('label', { className: 'dtv-check' },
-        h('input', {
-          type: 'checkbox',
-          checked: settings.rpFollowCharacter !== false,
-          disabled: busy,
-          onChange: event => update({ ...settings, rpFollowCharacter: event.target.checked }),
-        }),
-        h('span', null, translate('settings.rpFollow')),
-      ),
-      h('p', { className: 'dtv-note' }, translate('settings.rpFollow.help')),
+      h('p', { className: 'dtv-note' }, translate('rp.permission.settingsHint')),
       h(Field, { label: translate('settings.rpWorkspace') }, h('select', {
         className: 'dtv-select',
         value: workspaceSetting?.selectedPath ?? '',
@@ -1306,7 +1298,7 @@ function installStyles() {
 }
 
 export const name = PLUGIN_ID
-export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'uiWorkspace']
+export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'uiWorkspace', 'locale', 'remote', 'remote.session', 'remote.permissionPresets']
 export { PanelHeader }
 
 export function apply(ctx, { conversationPhase }) {
@@ -1318,6 +1310,7 @@ export function apply(ctx, { conversationPhase }) {
   installTavernTraceStyles()
   installStyles()
   registerTavernTraceView(ctx)
+  installRpPermission(ctx)
   const playClient = createLivePlayClient()
   let diagnosticStorage
   try { diagnosticStorage = window.sessionStorage } catch { /* Optional dismissal preference. */ }

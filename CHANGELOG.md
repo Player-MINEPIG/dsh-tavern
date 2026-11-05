@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.2.0 — DSH 0.2.2-rc.1 compatibility
+
+- Requires independent Assembler 1.2.0, Cordis 4.1.0 and Node >=24.9.0.
+- Replaces removed SessionController inspection with public session observations for cold history, Trace, MVU and previews; observation leases are released.
+- Reasoning effort follows native DSH model selection. Preset editing is removed; legacy imported values remain inert and Trace explains their omission. Other supported controls retain bounded fallback.
+- Keeps auxiliary title requests from overwriting conversation parameter evidence in Trace.
+- Opening drafts reuse native model/reasoning menus and persist first-send choices. The permission menu adds RP secure mode, enabled by default for new playthroughs; choosing another permission leaves RP at a safe execution boundary. Settings and character-panel switches are removed.
+- Existing V4 sessions and independent Assembler storage remain usable.
+
+适配 DSH 0.2.2-rc.1；配套独立 Assembler 1.2.0。冷会话读取迁移至公开观察接口；推理强度由 DSH 原生控制，预设不再可编辑，Trace 明确显示旧值未应用。开场草稿可选择原生模型与权限；RP 安全模式移到权限菜单，新周目默认开启，可随时切换。
+
 ## 3.1.5
 
 - Assembler 改为独立共享的必需组件，Tavern 声明 `~1.1.3` peer，不再内嵌、自动启动或接管其 Host 与独立客户端。先安装并启用 Assembler 1.1.3，再安装 Tavern 3.1.5。移除 Tavern 保留独立 Assembler 及其其他消费者。

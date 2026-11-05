@@ -40,7 +40,6 @@ test('selected preset enters system prompt and model call config seams', async t
       model: 'model',
       temperature: 0.25,
       maxTokens: 1024,
-      reasoningEffort: 'low',
     })
   } finally {
     rmSync(directory, { recursive: true, force: true })

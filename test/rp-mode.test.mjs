@@ -52,6 +52,32 @@ function fixture(options = {}) {
   return { directory, selections, agents, controller }
 }
 
+test('permission menu leaves RP without auto-reentry, queues during a turn and restores RP on rejection', () => {
+  const { directory, controller, agents, selections } = fixture()
+  try {
+    const agent = createAgent('permission-menu'); agents.set(agent.id, agent)
+    selections.set(agent.id, { characterCardId: 'card' })
+    controller.permissions = () => ({ resolve: name => { if (name === 'missing') throw Error('unknown permission') }, set: (session, name) => { if (name === 'auto') throw Error('auto unavailable'); session.append('sandbox/mode', { mode: name }) } })
+    controller.set(agent, true)
+    assert.throws(() => controller.set(agent, false, { followSuppressed: true, permissionPreset: 'missing' }), /unknown/)
+    assert.equal(controller.isActive(agent), true)
+    assert.throws(() => controller.set(agent, false, { followSuppressed: true, permissionPreset: 'auto' }), /auto unavailable/)
+    assert.equal(controller.isActive(agent), true)
+    controller.set(agent, false, { followSuppressed: true, permissionPreset: 'workspace-write' })
+    controller.onSessionStart(agent)
+    assert.equal(controller.isActive(agent), false)
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'workspace-write')
+    controller.set(agent, true)
+    agent.session.append('turn/start', {})
+    assert.equal(controller.set(agent, false, { followSuppressed: true, permissionPreset: 'read-only' }), 'queued')
+    assert.equal(controller.isActive(agent), true)
+    assert.equal(controller.get(agent).pendingPermissionPreset, 'read-only')
+    controller.onBoundary(agent)
+    assert.equal(controller.isActive(agent), false)
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'read-only')
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})
+
 async function invoke(handler, { method = 'GET', url = '/pmp-dsh-tavern/api/v1/rp-mode?sessionId=session-a', body } = {}) {
   const content = body === undefined ? '' : JSON.stringify(body)
   const req = Readable.from(content === '' ? [] : [Buffer.from(content)])

@@ -16,10 +16,10 @@ test('a source package uses the explicitly installed shared Assembler peer', { s
   assert.equal(manifest.dependencies?.['dsh-prompt-assembler'], undefined)
   assert.equal(manifest.bundleDependencies, undefined)
   assert.equal(manifest.bundledDependencies, undefined)
-  assert.equal(manifest.peerDependencies['dsh-prompt-assembler'], '~1.1.3')
+  assert.equal(manifest.peerDependencies['dsh-prompt-assembler'], '~1.2.0')
   await writeFile(join(source, 'package.json'), JSON.stringify({ name: manifest.name, version: manifest.version, type: 'module', main: 'index.js', peerDependencies: { 'dsh-prompt-assembler': manifest.peerDependencies['dsh-prompt-assembler'] } }))
   await writeFile(join(source, 'index.js'), "export { marker } from 'dsh-prompt-assembler'\n")
-  await writeFile(join(assembler, 'package.json'), JSON.stringify({ name: 'dsh-prompt-assembler', version: '1.1.3', type: 'module', main: 'index.js' }))
+  await writeFile(join(assembler, 'package.json'), JSON.stringify({ name: 'dsh-prompt-assembler', version: '1.2.0', type: 'module', main: 'index.js' }))
   await writeFile(join(assembler, 'index.js'), "export const marker = 'shared dependency'\n")
   await writeFile(join(consumer, 'package.json'), JSON.stringify({ private: true }))
   const npm = (cwd, args) => {

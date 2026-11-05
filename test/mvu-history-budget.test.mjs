@@ -1,4 +1,5 @@
-import { MODULE_ORDER } from './fixtures/assembly-references.mjs'
+import { NATIVE_BUILTINS } from 'dsh-prompt-assembler/adapters/tavern'
+const MODULE_ORDER = NATIVE_BUILTINS[0]
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -160,8 +161,8 @@ test('official AgentLoop eight-turn state history and large assembly bodies surv
   const resources = [{ id: 'mvu:official-template', sessionIds: ['*'], initial: { stat_data: { hp: 100, pad: 'x'.repeat(80 * 1024) } } }]
   t.after(async () => { await ctx.fiber.dispose(); rmSync(storageDir, { recursive: true, force: true }) })
   for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
-  await ctx.plugin(SystemPrompt, { personaPrefix: 'SYNTHETIC\n' + 'n'.repeat(96 * 1024) })
-  for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+  await ctx.plugin(SystemPrompt, { personaPrefix: 'SYNTHETIC\n' + 'n'.repeat(256 * 1024) })
+  for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`@deepseek-ai/dsh-${name}`)).default ?? await load(`@deepseek-ai/dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
   class Adapter extends llm.LlmAdapter {
     async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
     async *stream(request) {
@@ -188,7 +189,7 @@ test('official AgentLoop eight-turn state history and large assembly bodies surv
   assert.equal(row.content.stat_data.hp, 92); assert.equal(history.length, 8)
   assert(Buffer.byteLength(JSON.stringify(history)) > 2 * 1024 * 1024)
   const events = structuredClone(agent.session.snapshotEvents())
-  assert(Buffer.byteLength(JSON.stringify(events)) > 2 * 1024 * 1024)
+  assert(Buffer.byteLength(JSON.stringify(requests)) > 2 * 1024 * 1024, 'large actual request bodies stay outside MVU state budgets')
   const restored = sessions.Session.fromRestore(agent.id, structuredClone(events), agent.session.header, sessions.SessionLogOffset(0), 'detached')
   assert.deepEqual(restored.deriveMessages(), agent.session.deriveMessages())
   const cold = new MvuService({ storageDir, resources, inspect: async () => ({ header: restored.header, events: restored.snapshotEvents() }) }); t.after(() => cold.dispose())

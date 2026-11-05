@@ -21,7 +21,7 @@ for (const inHistory of [false, true]) test(`native first-turn greeting reaches 
     ctx.provide('sessionController', { inspect: async id => ({ events: ctx.sessions.get(id).snapshotEvents(), meta: ctx.sessions.get(id).header }) })
     for (const name of ['workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt, { includeHarnessIdentity: false, personaPrefix: 'OFFICIAL' })
-    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) await ctx.plugin(((await load(`dsh-${name}`)).default ?? await load(`dsh-${name}`)), name === 'agent-loop' ? { agents: [] } : {})
     ctx.on('agent/error', event => errors.push(event.error))
     class Offline extends llm.LlmAdapter {
       async resolveModel(provider, id) { return { provider, id, name: id, ...inHistory ? { systemPromptUpdate: 'in-history' } : {} } }

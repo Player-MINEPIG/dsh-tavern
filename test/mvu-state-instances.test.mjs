@@ -403,3 +403,18 @@ test('legacy wildcard access blocks recorded or uncertain old conversations whil
   await assert.rejects(f.read('old'), { code: 'MVU_MIGRATION_REQUIRED' }); await assert.rejects(f.read('unknown'), { code: 'MVU_MIGRATION_REQUIRED' })
   assert.equal((await f.read('fresh')).content.stat_data.hp, 100); assert.equal(readFileSync(join(storageDir, 'mvu-state.json'), 'utf8'), bytes)
 })
+
+
+test('DSH 0.2.2 ordinary forks require a matching inherited prefix without parentSession', async t => {
+  const f = fixture(t); f.create('root'); const reply = await f.turn('root', -10)
+  const prefix = f.sessions.get('root').events.filter(event => event.seq <= reply)
+  const orphan = f.create('orphan', undefined, prefix); orphan.header.isSeeded = true
+  await assert.rejects(f.read('orphan'), { code: 'MVU_SEED_REQUIRED' })
+  const ticket = await f.service.captureSessionSeed({ sessionId: 'root', kind: 'fork', atEventId: reply })
+  const forged = f.create('forged', undefined, prefix); forged.header.isSeeded = true
+  forged.events[1].data.message.id = 'different-source'
+  await assert.rejects(f.service.installSessionSeed({ ticket, sessionId: 'forged' }), { code: 'MVU_SEED_MISMATCH' })
+  const child = f.create('child', undefined, prefix); child.header.isSeeded = true
+  await f.service.installSessionSeed({ ticket, sessionId: 'child' })
+  assert.equal((await f.read('child')).content.stat_data.hp, 90)
+})

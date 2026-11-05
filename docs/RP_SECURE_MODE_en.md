@@ -2,9 +2,11 @@
 
 [中文](RP_SECURE_MODE.md)
 
-This page describes Tavern 3.1.5's RP tool-interception boundary on target DSH `0.2.1-rc.2` / `0.2.1-rc.3`.
+This page describes Tavern 3.2.0's RP tool-interception boundary on target DSH `0.2.2-rc.1`.
 
-RP is a session overlay, not a DSH agent preset. When it is on, this plugin intercepts high-risk tool calls before dispatch, pins a read-only file sandbox, and cancels the current turn. Changing the chat-bar permission chip cannot lift these limits. Turn it off with the RP switch on the character card, or with `/rp off`. Whether binding a character card enters RP automatically is controlled by **Follow character into RP** in UI settings; it is on by default.
+RP is a session overlay, not a DSH agent preset. The composer reuses the native DSH permission menu and adds **RP secure mode**, selected by default for new RP playthroughs. Choosing another permission leaves RP; choosing this option re-enables it. Native Full access / Auto confirmations remain intact. Settings and character panels no longer have the switch. Changes during execution apply at the next execution boundary, with existing protection retained until then. `/rp` and `/rp off` remain supported. The legacy `rpFollowCharacter` API setting remains for historical binding behavior and does not change the default for new playthroughs.
+
+This integration uses public UI slots and the Tavern RP API. DSH currently exposes only an Auto-specific permission registration API, so RP is not a native permission catalog entry. Native `/permission` commands do not disable Tavern RP protection; use the permission menu or `/rp off`.
 
 Child agents **may be spawned**. The child inherits the same limits and freezes the parent session's Tavern resource selection at that moment (the same projection as **New chat with current settings**). Whether the delegated task is narrowed is decided by the parent agent's spawn prompt, not by `rp:policy`. The parent can still summarize candidates or per-character output.
 
@@ -25,7 +27,7 @@ Secrets the user pastes into chat are out of scope.
 | Secret files | `read` / `read_image` targeting `.env`, `.env.*`, `.credentials.yaml`, `credentials.json`, `secrets.json`, `.netrc`, common private-key/certificate names | Not read even if the file is inside the workspace |
 | Content search | `grep` | Would search `.env` bodies in the workspace, so the whole class is blocked; use `glob` + `read` for non-secret files |
 | Child agents | `subagent` / `subagent_fork` / `send_message` are not blocked | The child inherits the RP lock; the notice is recorded on the **parent session**, and only that child is cancelled |
-| Read-only sandbox | `sandbox/mode = read-only` | Chat-bar chip changes are pinned back immediately |
+| Read-only sandbox | `sandbox/mode = read-only` | Direct sandbox changes while RP is active are pinned back |
 
 On intercept, an information dialog appears (not an approval): it says a write or other high-risk operation is in progress and to retry after turning RP off.
 

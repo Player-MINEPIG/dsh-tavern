@@ -173,7 +173,7 @@ export class MvuService {
           || (r.sessionIds.includes('*') && observed.events.some(e => ['user/message', 'assistant/message', 'turn/start'].includes(e.type)))
         return bound && (record.versions.length || record.revision > 0)
       })) fail('MVU_MIGRATION_REQUIRED', 'The old session has shared state requiring explicit migration')
-      if (header.parentSession) fail('MVU_SEED_REQUIRED', 'A fork requires a frozen state inheritance receipt')
+      if (header.isSeeded || header.parentSession) fail('MVU_SEED_REQUIRED', 'A fork requires a frozen state inheritance receipt')
       const definition = { ...template, id, templateId: template.id, instance: identity, sessionIds: [sessionId], activationSeqs: { [sessionId]: template.activationSeqs?.[sessionId] ?? (observed.events.at(-1)?.seq ?? -1) + 1 } }
       delete definition.schemaSource
       this.#save(id, { revision: 0, currentKey: null, versions: [], managementMode: template.managementMode ?? 'native', definition }, { templates: { ...(this.#state.templates ?? {}), [template.id]: template } })
@@ -252,8 +252,14 @@ export class MvuService {
       if (hash(sessionIdentity(sourceSession, seed.sourceSessionId)) !== hash(seed.sourceIdentity)) fail('MVU_SEED_MISMATCH', 'Seed source session identity changed')
       const prefixCut = seed.prefixEndEventId ?? seed.atEventId
       if (session.events.some(e => e.seq > prefixCut && ['user/message', 'assistant/message', 'turn/start'].includes(e.type))) fail('MVU_SEED_CONFLICT', 'Child already started new work')
-      if ((seed.kind === 'fork' || seed.prefixEndEventId !== undefined) && header.parentSession !== seed.sourceSessionId) fail('MVU_SEED_MISMATCH', 'Official child parent does not match the seed')
-      if (seed.kind !== 'fork' && seed.prefixEndEventId === undefined && (header.parentSession || session.events.some(e => ['turn/start', 'user/message', 'assistant/message'].includes(e.type)))) fail('MVU_SEED_MISMATCH', 'Root retry/swipe must use a new empty session')
+      if (seed.kind === 'fork' || seed.prefixEndEventId !== undefined) {
+        if ((!header.isSeeded && header.parentSession !== seed.sourceSessionId)
+          || (header.parentSession && header.parentSession !== seed.sourceSessionId)
+          || hash(session.events.filter(event => event.seq <= prefixCut)) !== hash(sourceSession.events.filter(event => event.seq <= prefixCut))) {
+          fail('MVU_SEED_MISMATCH', 'Official child inherited prefix does not match the frozen source')
+        }
+      }
+      if (seed.kind !== 'fork' && seed.prefixEndEventId === undefined && (header.isSeeded || header.parentSession || session.events.some(e => ['turn/start', 'user/message', 'assistant/message'].includes(e.type)))) fail('MVU_SEED_MISMATCH', 'Root retry/swipe must use a new empty session')
       const definitions = [], records = { ...this.#state.resources }
       for (const item of seed.items) {
         const template = this.templates.find(t => t.id === item.templateId)

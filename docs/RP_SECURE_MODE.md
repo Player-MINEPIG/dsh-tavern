@@ -2,9 +2,11 @@
 
 [English](RP_SECURE_MODE_en.md)
 
-本文说明Tavern 3.1.5在目标 DSH `0.2.1-rc.2` / `0.2.1-rc.3` 上的 RP 工具拦截边界。
+本文说明Tavern 3.2.0在目标 DSH `0.2.2-rc.1` 上的 RP 工具拦截边界。
 
-RP 是会话叠加，不是 DSH agent preset。开启后，本插件在工具 dispatch 前拦截高风险调用、钉死只读文件沙箱，并中断当前轮；聊天栏改权限不能放开这些限制。关掉方式：角色卡上的 RP 开关，或 `/rp off`。绑定角色卡是否自动进入 RP，由界面设置里的「绑卡跟随」控制，默认开启。
+RP 是会话叠加，不是 DSH agent preset。输入栏复用 DSH 原生权限菜单，并加入「RP 安全模式」；新 RP 周目默认选择它。选择其他权限即关闭 RP 安全模式，选择该项可重新开启；原生 Full access / Auto 的确认流程仍然保留。设置页和角色卡面板不再提供开关。运行中的变更在下一执行边界生效，期间原有保护继续有效。`/rp` 与 `/rp off` 仍可用。旧的 `rpFollowCharacter` API 配置保留用于历史绑定行为，不改变新周目的默认值。
+
+该集成使用公开 UI 插槽和 Tavern RP API；DSH 当前只公开 Auto 专用的权限注册接口，因此 RP 不是原生权限目录项。原生 `/permission` 命令不会关闭 Tavern RP 保护；请使用权限菜单或 `/rp off`。
 
 子 agent **可以派**。孩子沿用同一套限制，并固化父会话当时的 Tavern 资源选择（与「用当前配置新开对话」相同）。委派任务是否收窄由主 agent 的 spawn 提示决定，不写在 `rp:policy` 里。父 agent 仍可汇总各候选或各角色的输出。
 
@@ -25,7 +27,7 @@ RP 是会话叠加，不是 DSH agent preset。开启后，本插件在工具 di
 | 机密文件 | `read` / `read_image` 指向 `.env`、`.env.*`、`.credentials.yaml`、`credentials.json`、`secrets.json`、`.netrc`、常见私钥/证书名 | 即使文件在工作区里也不读 |
 | 内容搜索 | `grep` | 会把工作区里的 `.env` 正文搜出来，因此整类拦住；用 `glob` + `read` 读非机密文件 |
 | 子 agent | 不拦 `subagent` / `subagent_fork` / `send_message` | 孩子继承 RP 锁；违规时弹窗记在**父会话**，只中断那个孩子 |
-| 只读沙箱 | `sandbox/mode = read-only` | 聊天栏改芯片会被立刻钉回去 |
+| 只读沙箱 | `sandbox/mode = read-only` | RP 开启时，绕过 Tavern 菜单直接改沙箱会被钉回只读 |
 
 触发拦截时弹出告知窗（不是审批）：说明正在进行写入等高风险操作，关掉 RP 后再试。
 

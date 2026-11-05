@@ -21,8 +21,8 @@ const copy = structuredClone
 
 /** Plugin-owned openings. No draft identity is passed to a DSH Session API. */
 export class PlaythroughDrafts {
-  constructor({ storageDir, workspace, characters, configurations, selections, assembly, mvu, controller, workspaces, agents, renderingAuthority, reconcileRp, releaseRp, previewAssembly, onError = () => {} }) {
-    Object.assign(this, { workspace, characters, configurations, selections, assembly, mvu, controller, workspaces, agents, renderingAuthority, reconcileRp, releaseRp, previewAssembly, onError })
+  constructor({ storageDir, workspace, characters, configurations, selections, assembly, mvu, controller, inspect = id => controller.inspect(id), workspaces, agents, renderingAuthority, reconcileRp, releaseRp, previewAssembly, onError = () => {} }) {
+    Object.assign(this, { workspace, characters, configurations, selections, assembly, mvu, controller, inspect, workspaces, agents, renderingAuthority, reconcileRp, releaseRp, previewAssembly, onError })
     this.path = join(storageDir, 'playthrough-drafts.json')
     this.state = existsSync(this.path) ? readJsonFile(this.path, 32 * 1024 * 1024) : { version: 1, records: {} }
     if (this.state.version !== 1 || !this.state.records || typeof this.state.records !== 'object' || Array.isArray(this.state.records)) throw Error('Invalid playthrough draft storage')
@@ -85,7 +85,7 @@ export class PlaythroughDrafts {
     const record = this.record(id)
     if (record.claim && (record.phase !== 'started' || !record.claim.published)) {
       let inspection
-      try { inspection = await this.controller.inspect(record.claim.sessionId) } catch (error) { if (error.code !== 'session/not-found') throw error }
+      try { inspection = await this.inspect(record.claim.sessionId) } catch (error) { if (error.code !== 'session/not-found') throw error }
       if (inspection?.events) await this.finish(record, inspection.events)
     }
     return { draft: copy(record), playthrough: this.catalog().value.playthroughs.find(row => row.id === id) }
@@ -110,9 +110,18 @@ export class PlaythroughDrafts {
   update(id, patch) {
     const record = this.record(id)
     if (record.phase !== 'draft') fail('PLAY_DRAFT_LOCKED', 'First send is already being prepared; retry the same input')
-    if (!patch || Object.keys(patch).some(key => !['expectedRevision', 'selection', 'assemblyPresetId', 'variables', 'importContextRef', 'resetVariables'].includes(key))) fail('PLAY_DRAFT_INVALID', 'Unsupported draft field', 400)
+    if (!patch || Object.keys(patch).some(key => !['expectedRevision', 'selection', 'assemblyPresetId', 'variables', 'importContextRef', 'resetVariables', 'modelSelection', 'permissionPreset'].includes(key))) fail('PLAY_DRAFT_INVALID', 'Unsupported draft field', 400)
     if (patch.expectedRevision !== record.revision) fail('REVISION_CONFLICT', 'Draft changed in another view')
     const next = copy(record), previousGreeting = record.selection.character.greetingIndex ?? 0
+    if (Object.hasOwn(patch, 'modelSelection')) {
+      const value = patch.modelSelection
+      if (value !== null && (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !['provider', 'model', 'reasoningEffort'].includes(key)) || !['provider', 'model'].every(key => typeof value[key] === 'string' && value[key].trim() && value[key].length <= 512) || (Object.hasOwn(value, 'reasoningEffort') && (typeof value.reasoningEffort !== 'string' || !value.reasoningEffort.trim() || value.reasoningEffort.length > 512)))) fail('PLAY_DRAFT_INVALID', 'Invalid native model selection', 400)
+      next.modelSelection = copy(value)
+    }
+    if (Object.hasOwn(patch, 'permissionPreset')) {
+      if (patch.permissionPreset !== null && !safeId(patch.permissionPreset)) fail('PLAY_DRAFT_INVALID', 'Invalid native permission preset', 400)
+      next.permissionPreset = patch.permissionPreset
+    }
     next.greetingVariables ??= {}
     next.greetingVariables[previousGreeting] = copy(record.variables)
     if (patch.selection) { next.selection = this.validateSelection(patch.selection); if (next.selection.characterCardId !== record.selection.characterCardId) fail('PLAY_DRAFT_INVALID', 'Start a new playthrough to change its character', 400) }
@@ -221,14 +230,25 @@ export class PlaythroughDrafts {
     const binding = this.workspace.get()
     await this.controller.create({ sessionId: claim.sessionId, ...(binding.workspaceId ? { workspaceId: binding.workspaceId } : { cwd: record.rootPath }) })
     this.record(record.id)
-    const inspection = await this.controller.inspect(claim.sessionId)
+    const inspection = await this.inspect(claim.sessionId)
     if (await this.finish(record, inspection.events)) return { sessionId: claim.sessionId, requestId: claim.requestId, accepted: true }
     if ((inspection.events ?? []).some(event => ['turn/start', 'user/message'].includes(event.type))) fail('PLAY_DRAFT_SESSION_OCCUPIED', 'Prepared session contains a different conversation; it will not be rebound')
     await this.workspaces.archiveSession({ sessionId: claim.sessionId })
     this.record(record.id)
+    if (!claim.configurationDone) {
+      if (record.modelSelection) await this.controller.selectModel({ sessionId: claim.sessionId, ...record.modelSelection })
+      this.record(record.id)
+      claim.configurationDone = true; this.persist()
+    }
     // Archive precedes attaching any Tavern resource. Failures leave a visible
     // draft retry path and a durable native archive marker, never a reusable RP blank.
-    this.selections.set(claim.sessionId, record.selection); this.reconcileRp(claim.sessionId)
+    if (!claim.selectionDone) {
+      this.selections.set(claim.sessionId, record.selection)
+      if (this.applyPermission) await this.applyPermission(claim.sessionId, record.permissionPreset ?? 'tavern-rp')
+      else if (record.permissionPreset) fail('PLAY_DRAFT_HOST_UNAVAILABLE', 'Native permission presets are unavailable', 501)
+      if (!this.applyPermission) this.reconcileRp(claim.sessionId)
+      claim.selectionDone = true; this.persist()
+    }
     await this.mvu.flush()
     this.record(record.id)
     if (record.variables && !claim.variablesDone) {
@@ -301,7 +321,7 @@ export class PlaythroughDrafts {
   }
   async accepted(sessionId) {
     const record = Object.values(this.state.records).find(record => record.claim?.sessionId === sessionId)
-    if (record) { await this.finish(record, (await this.controller.inspect(sessionId)).events); if (record.claim?.cancelled) this.controller.cancel({ sessionId }) }
+    if (record) { await this.finish(record, (await this.inspect(sessionId)).events); if (record.claim?.cancelled) this.controller.cancel({ sessionId }) }
   }
   cancel(id) {
     const pending = this.cancellations.get(id)
@@ -320,7 +340,7 @@ export class PlaythroughDrafts {
     record = this.record(id)
     const sessionId = record.claim.sessionId
     let inspection
-    try { inspection = await this.controller.inspect(sessionId) } catch (error) { if (error.code !== 'session/not-found') throw error }
+    try { inspection = await this.inspect(sessionId) } catch (error) { if (error.code !== 'session/not-found') throw error }
     if (await this.finish(record, inspection?.events)) { this.controller.cancel({ sessionId }); return { draft: copy(record), sessionId } }
     const agent = this.agents?.get?.(sessionId)
     if ((agent?.inbox?.nextTurn?.length ?? 0) || (agent?.inbox?.nextStep?.length ?? 0) || inspection?.events?.some(event => ['turn/start', 'user/message'].includes(event.type))) fail('PLAY_DRAFT_SESSION_OCCUPIED', 'Input is already admitted; keep the native conversation')

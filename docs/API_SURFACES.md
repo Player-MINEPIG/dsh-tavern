@@ -6,9 +6,9 @@
 
 ## 稳定边界与依赖
 
-Tavern 单向依赖另行安装并启用的 Assembler `~1.1.3` Host bundle；`dshPromptAssembler.version` 是共享服务的公开版本元数据。Memory Manager 为可选扩展，Tavern 与 assembler 的包和服务都不要求它。assembler 拥有策略存储、来源注册和请求排列；Tavern 拥有正文、解析、权限、MVU 提交与 RP 界面。`tavernRequestSources` 是共享 `dshPromptSources` 的别名；旧 Tavern assembly-presets HTTP 转发同一 store/runtime。既有 v1/v2/v3 根路径、资源读取、selection、消息原文、Trace 官方引用、格式 exports、原生 DSH 与卸载回退继续支持。
+Tavern 单向依赖另行安装并启用的 Assembler `~1.2.0` Host bundle；`dshPromptAssembler.version` 是共享服务的公开版本元数据。Memory Manager 为可选扩展，Tavern 与 assembler 的包和服务都不要求它。assembler 拥有策略存储、来源注册和请求排列；Tavern 拥有正文、解析、权限、MVU 提交与 RP 界面。`tavernRequestSources` 是共享 `dshPromptSources` 的别名；旧 Tavern assembly-presets HTTP 转发同一 store/runtime。既有 v1/v2/v3 根路径、资源读取、selection、消息原文、Trace 官方引用、格式 exports、原生 DSH 与卸载回退继续支持。
 
-Tavern 3.1.5 的接口以本文和对应合同为准；旧版本行为查看其 Git tag。响应允许增加字段。当前请求 owner 为 `dsh-prompt-assembler`，历史仍接受 `pmp-dsh-tavern`；卸载来源撤销后续贡献，不删除历史。V4 坐标版本校验、模板未知字段拒绝、来源授权与 CAS 保留。旧调用方不能把完整 GET 响应直接回传为 mutation，不能把当前正文当作历史原文。
+Tavern 3.2.0 的接口以本文和对应合同为准；旧版本行为查看其 Git tag。响应允许增加字段。当前请求 owner 为 `dsh-prompt-assembler`，历史仍接受 `pmp-dsh-tavern`；卸载来源撤销后续贡献，不删除历史。V4 坐标版本校验、模板未知字段拒绝、来源授权与 CAS 保留。旧调用方不能把完整 GET 响应直接回传为 mutation，不能把当前正文当作历史原文。
 
 ## 程序入口
 
@@ -85,6 +85,6 @@ Factory handler 是可组合原语，需挂到文档规定的 Host admission/安
 | `tavernRenderingAuthority` | 可信渲染执行 grant；不开放任意 guest Host 调用 |
 | `pmpDshTavernChrome` | [前端合同](FRONTEND_INTEGRATION_zh-CN.md)：native/play 生命周期，消费者拥有并清理自己的 slots |
 
-Host-only 租约与 callback 不是 HTTP 值，不能序列化为权威。来源可见、注册、编辑预设、显示卡片都不授予 prompt 使用或写权限。Stock DSH rc.2 没有 `agentLoop.requestAssemblyVersion === 1`；安装插件不修改核心。实际装配前检查 capability，不可用时保留原生路径。
+Host-only 租约与 callback 不是 HTTP 值，不能序列化为权威。来源可见、注册、编辑预设、显示卡片都不授予 prompt 使用或写权限。Stock DSH 0.2.2-rc.1 没有 `agentLoop.requestAssemblyVersion === 1`；安装插件不修改核心。实际装配前检查 capability，不可用时保留原生路径。
 
 标准版与可选 core 的能力、迁移及证据范围见[装配策略](REQUEST_ASSEMBLY.md)。对所选后端检查 capabilities() 与 requireAvailable(preset)。

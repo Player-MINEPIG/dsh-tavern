@@ -7,9 +7,9 @@ import { pathToFileURL } from 'node:url'
 import { requireAssemblerVersion, requireSharedAssembler } from '../packages/tavern-loader/src/assembler-compatibility.js'
 
 test('only compatible stable shared Assembler implementations are admitted', () => {
-  for (const version of ['1.1.3', '1.1.4', '1.1.99']) assert.doesNotThrow(() => requireAssemblerVersion(version, 'test'))
-  for (const version of [undefined, '', '1.1.2', '1.1.3-rc.1', '1.2.0', '2.0.0', 'invalid']) {
-    assert.throws(() => requireAssemblerVersion(version, 'test'), error => error.code === 'TAVERN_ASSEMBLER_INCOMPATIBLE' && error.message.includes('releases/download/v1.1.3'))
+  for (const version of ['1.2.0', '1.2.1', '1.2.99']) assert.doesNotThrow(() => requireAssemblerVersion(version, 'test'))
+  for (const version of [undefined, '', '1.1.2', '1.2.0-rc.1', '1.3.0', '2.0.0', 'invalid']) {
+    assert.throws(() => requireAssemblerVersion(version, 'test'), error => error.code === 'TAVERN_ASSEMBLER_INCOMPATIBLE' && error.message.includes('releases/download/v1.2.0'))
   }
 })
 
@@ -18,7 +18,7 @@ test('legacy Assembler configuration is rejected before choosing a different sto
 })
 
 test('a matching version without the required public service fails admission', () => {
-  assert.throws(() => requireSharedAssembler({ version: '1.1.3' }), { code: 'TAVERN_ASSEMBLER_INCOMPATIBLE' })
+  assert.throws(() => requireSharedAssembler({ version: '1.2.0' }), { code: 'TAVERN_ASSEMBLER_INCOMPATIBLE' })
 })
 
 function isolatedHost(t, version) {
@@ -38,7 +38,7 @@ function isolatedHost(t, version) {
 }
 
 test('the installed Host entry explains a missing independent peer without importing the SDK', async t => {
-  await assert.rejects(import(isolatedHost(t)), error => error.code === 'TAVERN_ASSEMBLER_MISSING' && error.message.includes('Install and enable') && error.message.includes('releases/download/v1.1.3'))
+  await assert.rejects(import(isolatedHost(t)), error => error.code === 'TAVERN_ASSEMBLER_MISSING' && error.message.includes('Install and enable') && error.message.includes('releases/download/v1.2.0'))
 })
 
 test('Host admission rejects an old SDK even when a different compatible service might exist', async t => {
@@ -46,7 +46,7 @@ test('Host admission rejects an old SDK even when a different compatible service
 })
 
 test('matching SDK metadata does not admit an older running service', async t => {
-  const host = await import(isolatedHost(t, '1.1.3'))
+  const host = await import(isolatedHost(t, '1.2.0'))
   assert.ok(host.inject.includes('dshPromptAssembler'))
   await assert.rejects(host.apply({ get: () => ({ version: '1.1.2' }) }), { code: 'TAVERN_ASSEMBLER_INCOMPATIBLE' })
 })

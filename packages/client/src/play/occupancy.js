@@ -222,7 +222,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     if (draftId) {
       if (renderedDraftId === draftId) return
       dropOpeningEntries()
-      disposeDraftRoot = ctx.slots.register({ name: 'main.conversation', priority: PLAY_SLOT_PRIORITY, inject: () => ({ draftId, playClient, switchToNative, openSession: (id, playthrough) => openPlaySession(id, playthrough) }) }, DraftOpening)
+      disposeDraftRoot = ctx.slots.register({ name: 'main.conversation', priority: PLAY_SLOT_PRIORITY, inject: () => ({ draftId, playClient, switchToNative, native: ctx, openSession: (id, playthrough) => openPlaySession(id, playthrough) }) }, DraftOpening)
       renderedDraftId = draftId; return
     }
     if (disposeDraftRoot) { disposeDraftRoot(); disposeDraftRoot = null; renderedDraftId = null }

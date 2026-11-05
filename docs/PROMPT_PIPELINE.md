@@ -4,7 +4,7 @@
 
 必需的独立[请求装配器](REQUEST_ASSEMBLY.md)拥有装配策略与来源注册；标准策略使用公开 sections/context/pre-step，可选进阶 addon 提供协议 1 请求排列。未应用策略的会话继续使用下文的兼容 loader 路径。DSH 保留持久历史与 Provider 序列化的所有权。
 
-本文说明 Tavern 3.1.5中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
+本文说明 Tavern 3.2.0中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
 如何进入一次模型请求，并明确未实现的映射。DSH 自身的 turn/step、Inbox、Session、
 system assembly 和 request/header 顺序另见 `DSH_MESSAGE_FLOW.md`。
 
@@ -47,7 +47,7 @@ TauriTavern 的 Agent 路径则多了一层快照边界：
 3. loader 从公开 `agent/inbox/spliced` 投影本次 claimed batch，与 DSH durable user/assistant 历史按稳定 message id 去重并有界组合；世界信息 matcher 在首个 assembly 就据此得到本次激活条目。
 4. loader 按 preset marker 组合静态 prompt、用户名/描述、角色字段和激活 lore，形成有序的 `pmp-dsh-tavern:part:*` system sections。
 5. DSH 自己继续从 Session 投影用户输入、历史和工具结果；插件不复制 `chatHistory`。
-6. `temperature`、`maxTokens`、`reasoningEffort` 和 `stop` 通过 `agent/request` 映射；其他 ST sampler 目前只保存，不宣称已经下发。
+推理强度由 DSH 原生模型选择控制；预设编辑器不再允许修改。旧预设的 `reasoningEffort` 仅为导入／导出兼容保留，不覆盖模型选择。Trace 保留 requested/effective，并以 `stage: "selection"`、`reason: "native-model-selection"`、`code: "DSH_MODEL_SELECTION_OWNS_EFFORT"` 标记未应用的预设值。`temperature`、`maxTokens` 与 `stop` 继续通过现有 `agent/request` 接口应用；明确参数拒绝时仅对 Tavern 自己的覆盖执行有限回退，输出开始、取消或无关错误均不重试。
 
 代码边界与这条数据流对应：`tavern-format` 只把 ST JSON 归一化，`preset` 只管理持久化/API/UI，`tavern-loader` 才执行第 3–5 步并作为根插件入口。因而以后改变 DSH 注入策略，不需要修改或重新解释 ST parser。完整决策见 `docs/ARCHITECTURE.md`。
 

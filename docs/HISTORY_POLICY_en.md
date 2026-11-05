@@ -60,7 +60,7 @@ Preview backgrounds are red for removed text, blue for retained text and green f
 
 Presets without `historyPolicy` retain the legacy session policy at runtime. The editor loads and identifies that fallback, capturing it into the preset on the next save. Existing resources are not rewritten in bulk. Unconfigured policies default to disabled. Standard and optional core hooks read the applied strategy snapshot. Editor controls and read-only previews follow the draft backend; execution and direct session APIs follow the applied backend. Switching to advanced mode restores live standard placeholders before filtering the request copy.
 
-History and assembly APIs share the existing security router and browser/desktop transport. Cold-session previews use public inspect and sessions.prepare without creating an Agent. Tavern supplies the MVU example and embedding, without copying the generic engine or settings store. The `./history-policy` package export provides the Tavern example and mounting function.
+History and assembly APIs share the existing security router and browser/desktop transport. Cold-session previews use public sessionQuery.observeSession and sessions.prepare without creating an Agent. Tavern supplies the MVU example and embedding, without copying the generic engine or settings store. The `./history-policy` package export provides the Tavern example and mounting function.
 
 Actual requests use the recorded final messages. Advanced result cards reconcile history text using `metadata.historyPolicy`, while original layout and event audit remain intact. Standard provenance uses built-in replacement events and `data.historyPolicy/sourceEventSeqs`. Layout assembly precedes history filtering.
 

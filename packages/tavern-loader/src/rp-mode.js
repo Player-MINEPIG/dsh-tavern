@@ -12,7 +12,7 @@ export const DEFAULT_RP_STATE = Object.freeze({
   sandboxBefore: null,
 })
 
-export const RP_WRITE_BLOCK_REASON = 'Tavern roleplay is on. Writes, shell, fetch, and reads outside the workspace or of secret files are blocked until RP mode is turned off on the character card.'
+export const RP_WRITE_BLOCK_REASON = 'Tavern RP secure mode is on. Writes, shell, fetch, and reads outside the workspace or of secret files are blocked. Choose another mode in the permission menu or use /rp off to leave.'
 
 export const DEFAULT_RP_SECTION = RP_WRITE_BLOCK_REASON
 
@@ -222,7 +222,7 @@ export class RpModeController {
   get(agent) {
     const stored = this.stored(agent?.id ?? agent?.session?.id)
     const pending = agent?.session === undefined ? undefined : this.pendingIntents.get(agent.session)
-    return pending === undefined ? { rp: stored } : { rp: stored, pending: pending.rp }
+    return pending === undefined ? { rp: stored } : { rp: stored, pending: pending.rp, pendingPermissionPreset: pending.permissionPreset ?? null }
   }
 
   write(sessionId, rp) {
@@ -307,7 +307,7 @@ export class RpModeController {
     return true
   }
 
-  commit(agent, rp, { recaptureSandbox = false } = {}) {
+  commit(agent, rp, { recaptureSandbox = false, permissionPreset } = {}) {
     const sessionId = agent?.id ?? agent?.session?.id
     const session = agent?.session
     const current = this.stored(sessionId)
@@ -326,13 +326,21 @@ export class RpModeController {
     this.write(sessionId, next)
     if (session !== undefined) this.pendingIntents.delete(session)
     this.applySandbox(session, { active: false, previous })
+    if (permissionPreset !== undefined) {
+      try { this.permissions().set(session, permissionPreset) }
+      catch (error) { this.commit(agent, current); throw error }
+    }
     return 'committed'
   }
 
   /**
    * @returns `committed` | `queued` | `cancelled` | `noop`
    */
-  set(agent, active, { source = 'command', followSuppressed } = {}) {
+  set(agent, active, { source = 'command', followSuppressed, permissionPreset } = {}) {
+    if (permissionPreset !== undefined) {
+      if (active || typeof permissionPreset !== 'string' || !agent?.session || !this.permissions?.()) throw new TypeError('Native permission selection requires an existing session and RP off')
+      this.permissions().resolve(permissionPreset)
+    }
     const sessionId = agent?.id ?? agent?.session?.id
     if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('RP mode requires a session id')
     const stored = this.stored(sessionId)
@@ -344,11 +352,12 @@ export class RpModeController {
       sandboxBefore: stored.sandboxBefore,
     })
     const target = pending?.rp ?? stored
-    if (target.active === next.active && target.source === next.source && target.followSuppressed === next.followSuppressed) {
+    if (permissionPreset === undefined && target.active === next.active && target.source === next.source && target.followSuppressed === next.followSuppressed) {
       return 'noop'
     }
     if (
       pending !== undefined
+      && permissionPreset === undefined
       && stored.active === next.active
       && stored.source === next.source
       && stored.followSuppressed === next.followSuppressed
@@ -357,15 +366,16 @@ export class RpModeController {
       return 'cancelled'
     }
     if (agent?.session !== undefined && hasOpenTurn(snapshotSessionEvents(agent.session))) {
-      this.pendingIntents.set(agent.session, { rp: next })
+      this.pendingIntents.set(agent.session, { rp: next, permissionPreset })
       return 'queued'
     }
-    return this.commit(agent, next)
+    return this.commit(agent, next, { permissionPreset })
   }
 
   setBySessionId(sessionId, active, options) {
     const agent = this.agentFor(sessionId)
     if (agent !== undefined) return this.set(agent, active, options)
+    if (options?.permissionPreset !== undefined) throw new TypeError('Native permission selection requires an existing session')
     const stored = this.stored(sessionId)
     const next = cloneRp({
       ...stored,
@@ -382,7 +392,7 @@ export class RpModeController {
   onBoundary(agent) {
     const pending = agent?.session === undefined ? undefined : this.pendingIntents.get(agent.session)
     if (pending === undefined) return
-    this.commit(agent, pending.rp)
+    this.commit(agent, pending.rp, { permissionPreset: pending.permissionPreset })
   }
 
   onSessionStart(agent) {
@@ -464,6 +474,7 @@ export function createRpModeApiHandler(controller, { beforeChange = async () => 
           ok: true,
           rp: view.rp,
           pending: view.pending ?? null,
+          pendingPermissionPreset: view.pendingPermissionPreset ?? null,
           followCharacter: controller.followCharacterEnabled(),
         })
       }
@@ -477,6 +488,7 @@ export function createRpModeApiHandler(controller, { beforeChange = async () => 
         const outcome = controller.setBySessionId(body.sessionId, body.active, {
           source: 'command',
           followSuppressed: body.active !== true,
+          ...(Object.hasOwn(body, 'permissionPreset') ? { permissionPreset: body.permissionPreset } : {}),
         })
         const agent = controller.agentFor(body.sessionId)
         const view = agent === undefined ? { rp: controller.stored(body.sessionId) } : controller.get(agent)
@@ -485,6 +497,7 @@ export function createRpModeApiHandler(controller, { beforeChange = async () => 
           outcome,
           rp: view.pending ?? view.rp,
           pending: view.pending ?? null,
+          pendingPermissionPreset: view.pendingPermissionPreset ?? null,
           followCharacter: controller.followCharacterEnabled(),
         })
       }

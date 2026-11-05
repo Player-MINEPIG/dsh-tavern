@@ -22,9 +22,9 @@ test('official AgentLoop fallback preserves request evidence, defaults and retry
     try {
       for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) root.provide(name, {})
       await root.plugin(SystemPrompt, {})
-      for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) {
+      for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'tool-executor-native', 'agent-loop']) {
         const module = await load(`@deepseek-ai/dsh-${name}`)
-        await root.plugin(module.default, name === 'agent-loop' ? { agents: [] } : {})
+        await root.plugin(module.default ?? module, name === 'agent-loop' ? { agents: [] } : {})
       }
       class Adapter extends llm.LlmAdapter {
         async resolveModel(provider, model) { return { provider, id: model, name: model, reasoning: { efforts: [{ id: 'standard', name: 'Standard' }], defaultEffort: 'standard' } } }
@@ -54,14 +54,14 @@ test('official AgentLoop fallback preserves request evidence, defaults and retry
       const events = handle.agent.session.snapshotEvents()
       assert.equal(events.findLast(e => e.type === 'turn/end').data.reason.kind, ['recover', 'middleware'].includes(scenario) ? 'completed' : 'error')
       assert.equal(requests.length, ['recover', 'repeated-default', 'middleware'].includes(scenario) ? 2 : 1)
-      assert.equal(requests[0].reasoningEffort, scenario === 'middleware' ? 'xhigh' : 'standard')
+      assert.equal(requests[0].reasoningEffort, scenario === 'middleware' ? undefined : 'standard')
       if (requests.length === 2) assert.equal(requests[1].temperature, undefined)
       assert.equal(store.get(preset.id).sampling.temperature, 0.4)
       assert.equal(store.get(preset.id).sampling.reasoningEffort, 'xhigh')
       const records = store.assemblyStore.list(scenario)
       assert.equal(records.length, requests.length)
       assert.deepEqual(records[0].parameters.requested, { temperature: 0.4, reasoningEffort: 'xhigh' })
-      if (scenario !== 'middleware') assert.ok(records[0].parameters.fallbacks.some(f => f.parameter === 'reasoningEffort' && f.stage === 'preflight'))
+      assert.ok(records[0].parameters.fallbacks.some(f => f.parameter === 'reasoningEffort' && f.code === 'DSH_MODEL_SELECTION_OWNS_EFFORT'))
       if (scenario === 'recover') {
         assert.deepEqual(records[1].parameters.effective, { reasoningEffort: 'standard' })
         assert.ok(records[1].parameters.fallbacks.some(f => f.parameter === 'temperature' && f.stage === 'provider'))

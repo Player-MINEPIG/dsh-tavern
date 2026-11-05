@@ -1,6 +1,6 @@
 # pmp-dsh-tavern
 
-Tavern 3.1.5 uses independent shared [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.1.3. Install and enable Assembler before Tavern. Tavern carries no private Assembler package and starts no additional instance. See [integration](docs/ASSEMBLER_INTEGRATION_en.md). Current versions support Standard only; Advanced remains frozen at DSH 0.2.0-rc.2.
+Tavern 3.2.0 uses independent shared [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.2.0. Install and enable Assembler before Tavern. Tavern carries no private Assembler package and starts no additional instance. See [integration](docs/ASSEMBLER_INTEGRATION_en.md). Current versions support Standard only; Advanced remains frozen at DSH 0.2.0-rc.2.
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is an optional viewing and management extension. Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
 
@@ -10,13 +10,13 @@ Tavern 3.1.5 uses independent shared [dsh-prompt-assembler](https://github.com/P
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-This README describes Tavern **3.1.5**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
+This README describes Tavern **3.2.0**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
 
-Version 3.1.5 requires an independently installed Assembler shared by consumer plugins. Assembler 1.1.3 fixes first-turn greeting references in Standard assembly. Tavern fixes Windows desktop panel close-button overlap and fullscreen clearance. Existing V4 history and references need no migration.
+Version 3.2.0 and Assembler 1.2.0 target DSH 0.2.2-rc.1, Cordis 4.1.0 and Node >=24.9. Cold session reads use public observation leases. Reasoning effort follows the native DSH model selection and is no longer editable in presets. Existing V4 history and references need no migration.
 
-> Current Tavern source targets DSH **0.2.1-rc.2 / 0.2.1-rc.3**, with independent assembler integration, scoped MVU, read-only prompt templates and RP rendering. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
+> Current Tavern source targets DSH **0.2.2-rc.1**, with independent assembler integration, scoped MVU, read-only prompt templates and RP rendering. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
 >
-> Before upgrading from 3.x or earlier, retain backups and stop the target Host. Install and enable independent Assembler 1.1.3 in the same profile, then remove the old Tavern package while retaining data and reinstall Tavern 3.1.5 to clear the formerly bundled copy. The default Assembler data directory stays unchanged. Follow the [upgrade steps](docs/INSTALLATION_en.md#upgrade-to-3-1-5) for custom storage and security settings previously forwarded to Assembler. The DSH range remains `>=0.2.1-rc.2 <0.2.2-0`. Existing V4 sessions and references need no conversion. Earlier formats use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
+> From 3.1.5, back up data and stop the Host, then update independent Assembler to 1.2.0 followed by Tavern to 3.2.0. Older versions that bundled Assembler require removing the old Tavern package while retaining data before installing the two independent components. The default Assembler data directory stays unchanged. Follow the [upgrade steps](docs/INSTALLATION_en.md#upgrade-to-3-2-0) for custom storage and security settings previously forwarded to Assembler. The DSH range remains `>=0.2.2-rc.1 <0.2.3-0`. Existing V4 sessions and references need no conversion. Earlier formats use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
@@ -26,7 +26,7 @@ Version 3.1.5 requires an independently installed Assembler shared by consumer p
 
 This project maintains the frontend embedded in DSH Web and Desktop and will not build an additional standalone Web UI. Native navigation, composition input and session lifecycle remain owned by DSH; Tavern supplies RP presentation through public extensions. Third-party clients can still compose the HTTP APIs. This decision changes product scope and requires no data migration.
 
-Compatibility range: `>=0.2.1-rc.2 <0.2.2-0`. DSH rc.2 and rc.3 are exercised; later 0.2.1 RCs and the final release are admitted by policy, not a claim of prior validation. Reassess 0.2.2, including its prereleases.
+Compatibility range: `>=0.2.2-rc.1 <0.2.3-0`. The target is DSH 0.2.2-rc.1; later 0.2.2 RCs and the final release are admitted by policy, not a claim of prior validation. Reassess 0.2.3, including its prereleases.
 
 ## Design
 
@@ -58,16 +58,16 @@ Promo video: [Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/) (see t
 
 ### 0. Install
 
-Use DSH `0.2.1-rc.2` / `0.2.1-rc.3`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. In GUI **Plugins → Add plugin**, paste the [Assembler 1.1.3 tarball](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz) attachment URL, install it, and enable it. Then install and enable [Tavern 3.1.5](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz). Restart the Host when the GUI requests it. A Release webpage is not an installation address.
+Use DSH `0.2.2-rc.1`, Node `>=24.9.0`, and an initialized profile. In GUI **Plugins → Add plugin**, paste the [Assembler 1.2.0 tarball](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz) attachment URL, install it, and enable it. Then install and enable [Tavern 3.2.0](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz). Restart the Host when the GUI requests it. A Release webpage is not an installation address.
 
 For CLI installation, stop the target Host and install both components in this order:
 
 ```sh
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.1.3/dsh-prompt-assembler-1.1.3.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.1.5/pmp-dsh-tavern-3.1.5.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
 ```
 
-Tavern requires Assembler `~1.1.3` and does not download or start it automatically. If Assembler is already installed independently, check its version and enabled state. Standard uses public DSH interfaces. Advanced remains frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2. See [integration](docs/ASSEMBLER_INTEGRATION_en.md).
+Tavern requires Assembler `~1.2.0` and does not download or start it automatically. If Assembler is already installed independently, check its version and enabled state. Standard uses public DSH interfaces. Advanced remains frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2. See [integration](docs/ASSEMBLER_INTEGRATION_en.md).
 
 Optional resource viewing and management is available through Memory Manager v1.0.0. Version 1.0.0 was validated on DSH 0.2.0-rc.2 and needs separate validation for this target; see [integration](docs/ASSEMBLER_INTEGRATION_en.md#optional-memory-manager) for its capabilities and generic resource assembly requirements:
 
@@ -108,7 +108,7 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | Area | Main capabilities | Details |
 | --- | --- | --- |
 | Resources | ST presets, V1/V2/V3 JSON/PNG cards, standalone/embedded world books, user profiles, bindings, export | [Usage](docs/USAGE_en.md) |
-| Request assembly | Assembler v1.1.3 strategies, source modules, standard delivery, legacy advanced configuration reads, previews and recorded requests | [Request assembly](docs/REQUEST_ASSEMBLY_en.md) · [Integration](docs/ASSEMBLER_INTEGRATION_en.md) |
+| Request assembly | Assembler v1.2.0 strategies, source modules, standard delivery, legacy advanced configuration reads, previews and recorded requests | [Request assembly](docs/REQUEST_ASSEMBLY_en.md) · [Integration](docs/ASSEMBLER_INTEGRATION_en.md) |
 | MVU variables | [initvar] initialization, restricted schemas, reply updates, branch-specific state, Trace inspection and scoped card reads/writes | [MVU](docs/MVU_en.md) |
 | Prompt templates | Restricted read-only EJS, source-variable dependencies and assembly modules | [Prompt templates](docs/PROMPT_TEMPLATE_en.md) |
 | RP frontend | Character/playthrough sidebar, greeting, Markdown/HTML/LaTeX rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |
@@ -137,7 +137,7 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - [Installation](docs/INSTALLATION_en.md): install options, refresh recovery, backup, uninstall
 - [HTTP API](docs/API_en.md): v1 resource contract and stable v2 RP surface
 - [Request assembly](docs/REQUEST_ASSEMBLY_en.md): strategies, source modules, standard/advanced backends, previews and actual requests
-- [Assembler integration](docs/ASSEMBLER_INTEGRATION_en.md): v1.1.3 independent installation, shared services, optional Manager and removal
+- [Assembler integration](docs/ASSEMBLER_INTEGRATION_en.md): v1.2.0 independent installation, shared services, optional Manager and removal
 - [MVU](docs/MVU_en.md): initialization, schemas, update commands, state instances, branches and card permissions
 - [Prompt templates](docs/PROMPT_TEMPLATE_en.md): restricted EJS and read-only variable dependencies
 - [Trace v3 API and design](docs/PROMPT_API_V3_en.md): historical assembly indexes, official references, and on-demand body reads
