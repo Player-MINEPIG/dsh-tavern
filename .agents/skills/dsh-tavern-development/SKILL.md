@@ -9,11 +9,12 @@ Use project-specific evidence for the requested change. Shared architecture, com
 
 ## Read only what the task needs
 
-- Release status, development plans, or conflicting sources: [source authority](references/source-authority.md).
+- Integration baseline, release status, development plans, or conflicting sources: [source authority](references/source-authority.md).
 - DSH APIs, Host/client lifecycle, installation compatibility, or runtime support: [DSH compatibility](references/dsh-compatibility.md).
 - Product behavior: [README](../../../README.md) and [usage](../../../docs/USAGE_zh-CN.md).
 - Architecture and lifecycle: [architecture](../../../docs/ARCHITECTURE.md) and [loader contract](../../../docs/LOADER_CONTRACT.md).
-- HTTP or frontend interfaces: [API](../../../docs/API.md) and [frontend integration](../../../docs/FRONTEND_INTEGRATION_zh-CN.md).
+- Public interfaces: start with the [API surface index](../../../docs/API_SURFACES.md), then consult the [HTTP API](../../../docs/API.md) and [frontend integration](../../../docs/FRONTEND_INTEGRATION_zh-CN.md).
+- Assembler ownership, dependency admission, installation order, or Standard versus legacy Advanced behavior: [independent Assembler integration](../../../docs/ASSEMBLER_INTEGRATION.md).
 - Message or prompt behavior: [DSH message flow](../../../docs/DSH_MESSAGE_FLOW.md) and [prompt pipeline](../../../docs/PROMPT_PIPELINE.md).
 - Prompt Trace, historical provenance, or v3 consumers: [Prompt API v3](../../../docs/PROMPT_API_V3.md).
 - Automated, Host, browser, or external integration acceptance: [developer verification](../../../docs/TESTING.md).

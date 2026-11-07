@@ -4,9 +4,11 @@ Use this reference when a change depends on DSH behavior rather than Tavern-only
 
 ## Target contract
 
-Use the task's explicit DSH target. Otherwise resolve the supported range from the current [README](../../../../README.md), [package.json](../../../../package.json), and relevant compatibility documents. A historical Tavern baseline is not the current default.
+Use the task's explicit DSH target. Otherwise resolve the supported range from the current [package.json](../../../../package.json) (`engines.dsh` and required peers). Use the [verification guide](../../../../docs/TESTING.md#backend-compatibility) for the official runtime actually exercised; a version admitted by the range is not necessarily one tested. A historical Tavern baseline is not the current default.
 
 The installed DSH version is a validation environment, not a replacement for the target contract. Verify affected public seams against code, exported types, or official documentation at the target's immutable upstream tag or commit. Upstream `master` is migration evidence, not proof of older-version behavior; prerelease versions may break compatibility.
+
+For prompt integration, Tavern consumes the separately installed Standard Assembler peer. Check its version and enabled state as well as the DSH Host; the frozen Advanced path is not evidence for current Standard support. See [Assembler integration](../../../../docs/ASSEMBLER_INTEGRATION.md).
 
 Inspect the dimensions affected by the change: service or slot signatures, ownership, lifecycle/disposal, Remote events, durable schema, or failure behavior. Tavern documents explain the integration but do not override the target DSH implementation.
 
@@ -16,7 +18,7 @@ For Node support, intersect Tavern's `engines.node` with the target DSH requirem
 
 Choose checks for the affected behavior; command selection is in [AGENTS.md](../../../../AGENTS.md), and environment setup, runnable procedures, and coverage limits are in [developer verification](../../../../docs/TESTING.md).
 
-- Host reads: `DSH_TAVERN_PLAY_LIVE=1 DSH_TAVERN_PLAY_LIVE_URL=<url> node --test test/play-sessions.test.mjs`. The opt-in live smoke reads only v2 `GET /chrome` and `GET /workspace`; it does not establish writes, Remote compatibility, or browser lifecycle behavior.
+- Host reads: set `host_url` to the running test Host origin, then run `DSH_TAVERN_PLAY_LIVE=1 DSH_TAVERN_PLAY_LIVE_URL="$host_url" node --test test/play-sessions.test.mjs`. The opt-in live smoke reads only v2 `GET /chrome` and `GET /workspace`; it does not establish writes, Remote compatibility, or browser lifecycle behavior.
 - Prompt assembly and Trace: use `DSH_TAVERN_PROMPT_COMPAT_ROOT` to resolve the target official Host modules. Check the affected assembly against the final request, historical reads after Host restart, missing references, and failure attribution as applicable. Follow [Prompt API v3](../../../../docs/PROMPT_API_V3.md) and the verification guide; real-module tests with a synthetic model do not establish Web Host, browser, provider, or third-party integration acceptance.
 - DSH services or Remote calls: exercise the affected path on a Host running the target version.
 - Client slots, stores, or lifecycle: verify affected mounting, ownership, disposal, switching, and interactions in the target runtime/browser.

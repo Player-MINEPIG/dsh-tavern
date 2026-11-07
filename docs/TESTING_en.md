@@ -21,14 +21,14 @@ Frontend, backend and operation logs must be verified together. Run the presenta
 
 Standalone Tavern tests require Node.js `>=24.9.0`; the target DSH `0.2.2-rc.1` requires Node.js `>=24.9.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
 
-Run `npm ci --legacy-peer-deps` at the repository root to install locked dependencies, then run these commands. [package.json](../package.json) is the command definition source. The development lockfile pins an Assembler GitHub source archive and includes official `@deepseek-ai/dsh-llm` `0.2.2-rc.1` for tests. The target DSH supplies official peers at runtime; the user installs and enables independent Assembler.
+Run `npm ci --legacy-peer-deps` at the repository root to install locked dependencies, then run these commands. [package.json](../package.json) is the command definition source. The development lockfile pins the Assembler GitHub Release tarball and its integrity hash and includes official `@deepseek-ai/dsh-llm` `0.2.2-rc.1` for tests. The target DSH supplies official peers at runtime; the user installs and enables independent Assembler.
 
 | Change scope | Check |
 | --- | --- |
 | Documentation only | Check content, bilingual parity, relative links, and diff; no build required |
 | Localized logic | `node --test test/<relevant-file>.test.mjs` |
 | Cross-module behavior | `npm test` |
-| Client bundle | Relevant tests and `npm run build`; `dist/client.js` is generated |
+| Client bundle | Run relevant tests and `npm run build`; commit any resulting change to `dist/client.js` |
 | Full build and tests | `npm run check` |
 | Protocol, installation, packaging, or release preparation | `npm run verify:2.0`, plus affected runtime checks |
 
@@ -37,7 +37,7 @@ Run `npm ci --legacy-peer-deps` at the repository root to install locked depende
 <a id="patch-release-documents"></a>
 ## Patch release documentation
 
-Use a patch version for compatible bug fixes; documentation corrections alone do not require a version bump. Release preparation must deliver a candidate with final versions, changelog, bilingual documentation, and installation examples, ready to publish immediately after review. Do not leave preparation status, unreleased labels, or old-version installation placeholders in candidate documentation; record pending review/publication in the handoff and `.local/`. Revise or roll back the candidate if review finds issues. Align the package version, Git tag, GitHub Release, and pinned installation examples. Never move or overwrite a published tag. Push completed, locally validated commits under the standing repository authorization in AGENTS.md; tags and releases require explicit authorization.
+Use a patch version for compatible bug fixes; documentation corrections alone do not require a version bump. Release preparation must deliver a candidate with final versions, changelog, bilingual documentation, and installation examples, ready to publish immediately after review. Do not leave preparation status, unreleased labels, or old-version installation placeholders in candidate documentation; record pending review/publication in the handoff and `.local/`. Revise or roll back the candidate if review finds issues. Align the package version, Git tag, GitHub Release, and pinned installation examples. Never move or overwrite a published tag. Follow the [development and release workflow](../AGENTS.md#development-and-release) for work branch pushes; candidate preparation alone does not authorize a push or publication.
 
 | File or release item | When to update |
 | --- | --- |
@@ -49,7 +49,7 @@ Use a patch version for compatible bug fixes; documentation corrections alone do
 | Architecture, migration, security documents and diagrams | Check target versions, migration allowlists, the maintained security line and diagram source revisions; rewrite behavior descriptions only when the design, data format or security boundary changes |
 | Git tag and GitHub Release | At publication, create the matching tag and concise release notes covering the fix, target DSH, upgrade steps, and known limits |
 
-Before publication, check both READMEs’ versions and update summaries, install commands, the SECURITY maintenance line, migration allowlists, API impact notes, and the versions/source revisions in diagram sources and generated pages. Older version numbers should occur only in change history or supported migration guidance. After pushing, read both READMEs from GitHub’s default branch and target tag and confirm they match the accepted commit before publishing the Release.
+Before publication, check both READMEs’ versions and update summaries, install commands, the SECURITY maintenance line, migration allowlists, API impact notes, and the versions/source revisions in diagram sources and generated pages. Keep older versions where they explain change history, upgrade paths, or compatibility limits. For a formal release, select and validate a candidate from `dev`. Once the maintainer confirms the exact commit and version, fast-forward `main` to that commit and tag it. Before publishing the Release, verify that remote `main` and the tag point to the confirmed commit and check the installation examples in both READMEs.
 
 Keep run-specific logs, screenshots, test counts, and release-note drafts in Git-ignored `.local/`; summarize relevant evidence in the PR. Keep reusable procedures in `docs/`, without accumulating per-release acceptance records. Update corresponding Chinese and English files in the same change.
 
@@ -91,7 +91,7 @@ For this compatibility boundary, additionally check all five resources through c
 
 Run `node --test test/tavern-bundle.test.mjs` and `npm test` to verify that Tavern only consumes the independent service and creates no Host or standalone-client copy. Package contents and lifecycle are separate boundaries and need separate checks. Run `DSH_TAVERN_PROMPT_COMPAT_ROOT=<official dependency directory> node --test test/host-client-discovery.test.mjs` to verify that the declared Host file is anchored by the official patch loader and advertises Tavern in the official browser module graph.
 
-Use a temporary profile outside the development checkout, retaining DSH's `nodeLinker: hoisted` and `autoInstallPeers: false`. Produce two separate tarballs with `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler`. Install and enable Assembler 1.2.0 before Tavern 3.2.0. Check that Tavern declares no `bundleDependencies`, regular Assembler subdependency or nested Assembler files. Verify the development source archive and lockfile through clean `npm ci --legacy-peer-deps`; do not rely on npm version 1.2.0 being available.
+Use a temporary profile outside the development checkout, retaining DSH's `nodeLinker: hoisted` and `autoInstallPeers: false`. Produce two separate tarballs with `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler`. Install and enable Assembler 1.2.0 before Tavern 3.2.0. Check that Tavern declares no `bundleDependencies`, regular Assembler subdependency or nested Assembler files. Verify the development release tarball and lockfile through clean `npm ci --legacy-peer-deps`; do not rely on npm version 1.2.0 being available.
 
 Run these checks against 0.2.2-rc.1:
 

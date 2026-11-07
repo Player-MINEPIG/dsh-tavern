@@ -21,14 +21,14 @@ Tavern 3.2.0 与独立标准 Assembler 1.2.0 的 Host 准入范围为 `>=0.2.2-r
 
 Tavern 的独立测试要求 Node.js `>=24.9.0`；目标 DSH `0.2.2-rc.1` 要求 Node.js `>=24.9.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
-在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖通过 lockfile 固定 Assembler 的 GitHub 源码归档，并包含测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.2-rc.1`。插件运行时由目标 DSH 提供官方 peer，独立 Assembler 则由用户安装并启用。
+在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖通过 lockfile 固定 Assembler 的 GitHub Release 安装包及其完整性校验值，并包含测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.2-rc.1`。插件运行时由目标 DSH 提供官方 peer，独立 Assembler 则由用户安装并启用。
 
 | 改动范围 | 检查 |
 | --- | --- |
 | 仅文档 | 检查内容、中英文对应、相对链接与 diff，无需构建 |
 | 局部逻辑 | `node --test test/<相关文件>.test.mjs` |
 | 跨模块行为 | `npm test` |
-| 客户端 bundle | 相关测试及 `npm run build`；`dist/client.js` 是生成文件 |
+| 客户端 bundle | 运行相关测试和 `npm run build`，将生成的 `dist/client.js` 变更一起提交 |
 | 完整构建与测试 | `npm run check` |
 | 协议、安装、打包或发布准备 | `npm run verify:2.0`，并补充受影响的运行时检查 |
 
@@ -37,7 +37,7 @@ Tavern 的独立测试要求 Node.js `>=24.9.0`；目标 DSH `0.2.2-rc.1` 要求
 <a id="patch-release-documents"></a>
 ## 补丁发布的文档同步
 
-兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。已完成本地验证的提交按 AGENTS.md 中既有授权推送；创建 tag 和 Release 仍需明确授权。
+兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。工作分支按[开发与发布规范](../AGENTS.md#development-and-release)推送；候选准备本身不授权推送或发布。
 
 | 文件或发布内容 | 何时更新 |
 | --- | --- |
@@ -49,7 +49,7 @@ Tavern 的独立测试要求 Node.js `>=24.9.0`；目标 DSH `0.2.2-rc.1` 要求
 | 架构、迁移、安全文档与图 | 核对目标版本、迁移白名单、安全维护线和图源 revision；行为说明仅在对应设计、数据格式或安全边界变化时改写 |
 | Git tag 与 GitHub Release | 正式发布时创建对应 tag 和简短发布说明，说明修复、目标 DSH、升级方式及已知限制 |
 
-发布前逐项核对中英文 README 的版本说明与更新内容、安装命令、SECURITY 维护线、迁移工具支持列表、API 影响说明，以及图源与生成页面的版本和源码 revision。旧版本号只应出现在变更历史或仍支持的迁移说明中。推送后从 GitHub 默认分支和目标 tag 重新读取中英文 README，确认其内容与验收提交一致，再发布 Release。
+发布前逐项核对中英文 README 的版本说明与更新内容、安装命令、SECURITY 维护线、迁移工具支持列表、API 影响说明，以及图源与生成页面的版本和源码 revision。旧版本号可保留在变更历史、升级路径和兼容边界说明中。正式发布时，从 `dev` 选取并验证候选，由维护者确认具体提交和版本，再将 `main` 快进到该提交并在同一提交创建 tag。发布 Release 前核实远端 `main` 和 tag 均指向已确认的提交，并核对中英文 README 的安装示例。
 
 每次验收的日志、截图、测试数量和发布说明草稿放在 Git 忽略的 `.local/`；PR 摘要给出相关证据。`docs/` 保留可复用的方法，不累积逐次发布的验收记录。中英文对应文件在同一变更中同步。
 
@@ -91,7 +91,7 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 
 运行 `node --test test/tavern-bundle.test.mjs` 与 `npm test`，验证 Tavern 只消费独立服务，不创建 Host 或独立客户端副本。包内容与 lifecycle 是两个边界，分别检查。运行 `DSH_TAVERN_PROMPT_COMPAT_ROOT=<官方依赖目录> node --test test/host-client-discovery.test.mjs`，检查官方 patch loader 锚定声明的 Host 文件，并在官方浏览器模块图中发现 Tavern。
 
-使用开发 checkout 之外的临时 profile，保留 DSH 的 `nodeLinker: hoisted` 与 `autoInstallPeers: false`。通过 `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler` 生成两个独立 tgz，先安装并启用 Assembler 1.2.0，再安装 Tavern 3.2.0。检查 Tavern 包没有 `bundleDependencies`、普通 Assembler 子依赖或嵌套 Assembler 文件。开发依赖的源码归档与 lockfile 也要通过干净的 `npm ci --legacy-peer-deps` 验证，不能依赖 npm 上存在 1.2.0。
+使用开发 checkout 之外的临时 profile，保留 DSH 的 `nodeLinker: hoisted` 与 `autoInstallPeers: false`。通过 `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler` 生成两个独立 tgz，先安装并启用 Assembler 1.2.0，再安装 Tavern 3.2.0。检查 Tavern 包没有 `bundleDependencies`、普通 Assembler 子依赖或嵌套 Assembler 文件。开发依赖的发布包与 lockfile 也要通过干净的 `npm ci --legacy-peer-deps` 验证，不能依赖 npm 上存在 1.2.0。
 
 在 0.2.2-rc.1 分别执行以下检查：
 

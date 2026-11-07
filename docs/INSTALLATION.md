@@ -102,7 +102,7 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 npm run pack:release -- --assembler node_modules/dsh-prompt-assembler
 ```
 
-命令重建两个前端并输出独立的 Tavern 与 Assembler tgz。Tavern 的编辑器会编入复用的前端 SDK，但不会加载另一个 Assembler Host 或独立客户端实例。输出 Tavern 包不得含 `node_modules/dsh-prompt-assembler`。安装验收必须使用最终 tgz 或实际发布附件，不能用源码目录的依赖替代。
+命令构建 Tavern 前端并输出两个独立的 tgz。Assembler 有 build 脚本时运行它；否则使用包内预构建的 `dist/client.js`。Tavern 的编辑器会编入复用的前端 SDK，但不会加载另一个 Assembler Host 或独立客户端实例。输出 Tavern 包不得含 `node_modules/dsh-prompt-assembler`。安装验收必须使用最终 tgz 或实际发布附件，不能用源码目录的依赖替代。
 
 ### 数据与源码安装器
 
