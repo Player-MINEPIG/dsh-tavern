@@ -61,7 +61,7 @@ function selection(value) {
   return {
     presetId: stringOrNull(value?.presetId),
     characterCardId: stringOrNull(value?.characterCardId),
-    ...(value?.personalityCardId ? { personalityCardId: stringOrNull(value.personalityCardId) } : {}),
+    ...(value && Object.hasOwn(value, 'personalityCardId') ? { personalityCardId: stringOrNull(value.personalityCardId) } : {}),
     userProfileId: stringOrNull(value?.userProfileId ?? value?.userId),
     worldBookIds: stringArray(value?.worldBookIds, MAX_WORLD_BOOK_IDS),
   }
@@ -236,7 +236,7 @@ export class TavernTraceRecorder {
       resources: {
         preset: resource(resources.preset),
         characterCard: resource(resources.characterCard),
-        ...(resources.personalityCard ? { personalityCard: resource(resources.personalityCard) } : {}),
+        ...(Object.hasOwn(resources, 'personalityCard') ? { personalityCard: resource(resources.personalityCard) } : {}),
         userProfile: resource(resources.userProfile ?? resources.user),
         worldBooks: Array.isArray(resources.worldBooks) ? resources.worldBooks.slice(0, 32).map(resource).filter(Boolean) : [],
       },

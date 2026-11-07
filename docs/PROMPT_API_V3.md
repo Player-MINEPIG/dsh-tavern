@@ -208,7 +208,7 @@ characters 是 Unicode 码点数；utf16Units 与 utf8Bytes 也不是 token 数�
 
 无策略或沿用旧官方指令槽时，已绑定人格卡使用 `pmp-dsh-tavern:part:personality:<field>`，字段路径中的斜线在段名里显示为冒号。每段保留当时的卡 ID、来源字段与 `resourceRevision`；`index` 给出实际顺序。例如 `mes_example` 的历史来源仍是卡片字段，装配正文可以含文风标签和已展开的宏。`evolution/after`、`evolution/behavior`、`evolution/boundary` 取有效自我修订，`mood` 取适用的临时状态。这些状态按字面装配，来源 revision 分别归成长历史与心情状态。选择按压缩边界刷新时，Trace 记录本次实际固定使用的自我修订版本。选择 ID 表示当时的绑定；策略省略、complete 覆盖等情况下，应看记录的字段和交付证据来确认模型实际收到什么。
 
-显式 `tavern.personality` 来源按 `card`、`evolution`、`mood` 三个位置装配；记录通过实际段和来源字段识别贡献，不依赖某个固定的 system 消息序号。没有选择装配策略的原生请求同样记录完整请求的历史引用。旧记录若只核验了部分系统段，Trace 仍可显示这些段的消息 ID 和 UTF-16 范围，但不补写整份历史请求，也不猜测其消息序号。成长评估和自动心情判断是后台辅助调用，各自的结果通过后续普通请求生效。请求 Trace 与人格修订依据在[人格卡 API](API.md#personality-cards) 中分别读取。
+显式 `tavern.personality` 来源提供 `name`、`system_prompt`、`description`、`personality`、`scenario`、`mes_example`、`first_mes`、`post_history_instructions` 字段位置，以及独立的 `evolution`、`mood` 位置。备选开场共用 `first_mes` 位置，`source.field` 仍记录实际的 `alternate_greetings/<index>`。旧 `card` 位置保留为静态字段总开关与共同定位；单独定位或被用作锚点的字段保留自身 `positionId`，其余字段在共同定位生效时使用 `card`。位置是装配策略，不改变原始来源字段；历史记录不迁移为新粒度。操作和继承规则见[人格卡使用说明](USAGE_zh-CN.md#在原生工作会话使用人格卡)。记录通过实际段和来源字段识别贡献，不依赖某个固定的 system 消息序号。没有选择装配策略的原生请求同样记录完整请求的历史引用。旧记录若只核验了部分系统段，Trace 仍可显示这些段的消息 ID 和 UTF-16 范围，但不补写整份历史请求，也不猜测其消息序号。成长评估和自动心情判断是后台辅助调用，各自的结果通过后续普通请求生效。请求 Trace 与人格修订依据在[人格卡 API](API.md#personality-cards) 中分别读取。
 
 ### 世界书条目标识
 
@@ -262,7 +262,7 @@ metadata 和官方引用，不保存新的 section/context/system-message/source
 
 世界书 `included` 仅表示通过激活判定的候选，不保证最终注入。Trace 分别展示激活候选与同次已核验 `requestAssembly` 中的结果：带匹配来源节点和版本诊断的已观察请求可显示已进入请求；`WORLD_BOOK_POLICY_SKIPPED` 显示策略跳过及当次原因。旧诊断缺原因时显示具体原因未记录，无法唯一关联资源或缺请求记录时不推断最终使用情况。读取不重跑激活、不改写历史或 manager journal。
 
-Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 **assembler 装配情况**。历史读取继续使用同一 v3 装配索引与记录 ID 详情接口。完整请求取自详情中已核验的 `requestAssembly` 或 `nativeRequest`，使用 Assembler 公开的 `actualAssemblyResult` 投影，标准版补入详情的 `nativeProvenance`；展开 assembler 装配情况后，直接按发送时顺序列出全部 system/user/assistant/tool 消息卡片；system 按记录中的来源模块列出独立卡片，嵌套来源显示为各自子模块；模块正文和完整 system 原文分别按需展开。关联使用记录中的消息坐标或 system 快照贡献标识，不按正文猜测来源；缺少可核验模块划分时保留完整原文并明确提示。其他消息可点击单条卡片查看正文，具备明确消息坐标的来源名称显示在对应卡片上。另可展开来源节点、已记录的当次历史过滤及诊断。标准版记录可能没有单独的历史过滤决策，界面明确标为未记录，仍显示核验后的完整消息。不会调用只返回最近请求的 `/actual` 来填充其他历史记录，也不会调用当前 `/preview` 或 `/active` 重算。当前预览属于当前草稿/资源，发送时冻结的记录属于该次请求，历史来源仅来自记录与可核验引用；当前名称回退会明确标注，不改变历史正文。
+Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 **assembler 装配情况**。历史读取继续使用同一 v3 装配索引与记录 ID 详情接口。完整请求取自详情中已核验的 `requestAssembly` 或 `nativeRequest`，使用 Assembler 公开的 `actualAssemblyResult` 投影，标准版补入详情的 `nativeProvenance`；展开 assembler 装配情况后，直接按发送时顺序列出全部 system/user/assistant/tool 消息卡片；system 按记录中的来源模块展示，人格字段仅在配置摘要中归为已加载、未加载或未能核验；不另设人格段落、字段展开项或重复的私有字段正文。完整 system 原文保留在通用原文入口，其他模块正文按需展开。关联使用记录中的消息坐标或 system 快照贡献标识，不按正文猜测来源；缺少可核验模块划分时保留完整原文并明确提示。其他消息可点击单条卡片查看正文，具备明确消息坐标的来源名称显示在对应卡片上。另可展开来源节点、已记录的当次历史过滤及诊断。标准版记录可能没有单独的历史过滤决策，界面明确标为未记录，仍显示核验后的完整消息。不会调用只返回最近请求的 `/actual` 来填充其他历史记录，也不会调用当前 `/preview` 或 `/active` 重算。当前预览属于当前草稿/资源，发送时冻结的记录属于该次请求，历史来源仅来自记录与可核验引用；当前名称回退会明确标注，不改变历史正文。已加载要求观察到请求并核验人格来源；未加载要求当时明确未绑卡，或核验到冻结的请求策略已排除人格；历史缺证据时保留未能核验。这仅调整界面呈现，不改变历史 API 的字段、来源版本、范围或请求正文。
 
 “装配阶段的系统段落与上下文”保留原 `sections`、`contexts` 与观察到的系统消息，明确它们可能经过后续装配或过滤，不能替代完整请求。缺少完整请求引用时明确不可用；段落/context 正文可验证恢复时仍显示。schema 4 来源只显示 metadata/hash/counts，不显示 `source.text`，旧 schema 3 记录仍可能包含标为旧快照的来源正文。无法恢复时显示具体不可用原因。
 

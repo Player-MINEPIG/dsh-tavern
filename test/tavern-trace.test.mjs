@@ -403,3 +403,19 @@ test('client registers Tavern Trace as an additive official conversation view', 
   assert.doesNotMatch(source, /MutationObserver|monkey|tool\/call|user\/message|assistant\/message/)
   assert.ok(manifest.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-conversation'))
 })
+
+test('Trace preserves explicit no-personality facts without inventing them for old captures', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-personality-audit-'))
+  try {
+    const recorder = new TavernTraceRecorder(new TavernTraceStore(directory))
+    const old = recorder.begin({ agent: { id: 'old' }, turn: 1, step: 1, snapshot: snapshot() })
+    assert.equal(Object.hasOwn(old.selection, 'personalityCardId'), false)
+    assert.equal(Object.hasOwn(old.resources, 'personalityCard'), false)
+    const absent = snapshot()
+    absent.audit.selection.personalityCardId = null
+    absent.resources.personalityCard = null
+    const current = recorder.begin({ agent: { id: 'new' }, turn: 1, step: 1, snapshot: absent })
+    assert.equal(current.selection.personalityCardId, null)
+    assert.equal(current.resources.personalityCard, null)
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})

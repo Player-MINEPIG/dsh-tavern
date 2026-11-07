@@ -1,9 +1,8 @@
 import { installTavernStyle } from '../../client-style.js'
 import { MvuRoundSection, mvuStyles } from './mvu-view.js'
 import { worldBookRequestOutcome } from './world-book-request.js'
-import { recordedMessageNodes, recordedPersonalityPositions, recordedRequestResult, recordedSystemModules } from './request-view.js'
+import { recordedMessageNodes, recordedPersonalityLoadState, recordedRequestResult, recordedSystemModules } from './request-view.js'
 import { isPersonalitySource } from './personality-source.js'
-import { personalityFieldName } from '../../personality/src/field-name.js'
 import {
   createElement,
   useCallback,
@@ -26,16 +25,23 @@ const TRACE_API = `${API_V3}/sessions`
 
 const css = `
 ${mvuStyles}
-.dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
-.dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:10px;flex:none;zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1))}.dttrace-title{font-size:16px;font-weight:680;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:inherit;padding:7px 10px;font-size:13px;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.dttrace-body{flex:1;min-height:0;overflow:auto;padding:12px max(14px,calc((100% - 880px)/2)) 180px}.dttrace-scale{zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1));display:flex;flex-direction:column;gap:10px;padding-bottom:8px}.dttrace-note,.dttrace-status{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dttrace-status{padding:9px 10px;border-radius:8px;background:var(--dsw-specific-tip)}.dttrace-status[data-error=true]{color:var(--dsw-alias-state-error)}
-.dttrace-record{border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-base);overflow:visible}.dttrace-record>summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;gap:8px;border-radius:10px}.dttrace-record[open]>summary{border-radius:10px 10px 0 0}.dttrace-record>summary::-webkit-details-marker{display:none}.dttrace-round{font-size:14px;font-weight:670}.dttrace-time{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-left:auto}.dttrace-badge{border-radius:999px;padding:2px 7px;font-size:11px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-secondary)}.dttrace-badge[data-ok=true]{background:color-mix(in srgb,var(--dsw-alias-state-success,#2fa36b) 18%,transparent);color:var(--dsw-alias-state-success,#2fa36b)}
-.dttrace-content{border-top:1px solid var(--dsw-alias-border-l1);padding:11px 12px 16px;display:flex;flex-direction:column;gap:10px}.dttrace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.dttrace-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;min-width:0}.dttrace-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary)}.dttrace-value{font-size:13px;font-weight:620;margin-top:3px;overflow-wrap:anywhere}.dttrace-meta{font-size:12px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin-top:3px;overflow-wrap:anywhere}
-.dttrace-section{display:flex;flex-direction:column;gap:6px}.dttrace-section-title{font-size:14px;font-weight:670}.dttrace-book>summary{overflow-wrap:anywhere}.dttrace-book{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dttrace-decision{display:grid;grid-template-columns:76px minmax(110px,.7fr) minmax(160px,1.5fr);gap:7px;padding:6px 0;border-top:1px solid var(--dsw-alias-border-l1);font-size:12px;line-height:1.45}.dttrace-decision:first-of-type{border-top:0}.dttrace-decision-state{font-weight:650}.dttrace-decision[data-included=true] .dttrace-decision-state{color:var(--dsw-alias-state-success,#2fa36b)}.dttrace-keywords{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}.dttrace-list{margin:0;padding-left:18px;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary)}
-.dttrace-disclosure{border-top:1px solid var(--dsw-alias-border-l1);padding-top:10px;margin-top:4px}.dttrace-disclosure>summary{cursor:pointer;font-size:14px;font-weight:650}.dttrace-disclosure-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.dttrace-card .dttrace-label{text-transform:none;letter-spacing:0}
-.dttrace-messages{display:flex;flex-direction:column;gap:8px}.dttrace-message{border-left:4px solid #8192ad}.dttrace-message[data-role=user]{border-left-color:#6495ed}.dttrace-message[data-role=assistant]{border-left-color:#9472c3}.dttrace-message[data-role=tool]{border-left-color:#3d9c80}.dttrace-message>summary{cursor:pointer;font-weight:620}.dttrace-message-sources{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:400;color:var(--dsw-alias-label-secondary);margin-top:4px}.dttrace-message[open]>summary{margin-bottom:8px}
-.dttrace-system-modules{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dttrace-system-group{display:flex;flex-direction:column;gap:6px}.dttrace-system-modules .dttrace-book>summary{cursor:pointer}
-@media(max-width:760px){.dttrace-grid{grid-template-columns:1fr}.dttrace-decision{grid-template-columns:70px 1fr}.dttrace-keywords{grid-column:1/-1}}
+.dttrace-root{--dttrace-success:color-mix(in srgb,var(--dsw-alias-state-success-primary,var(--dsw-alias-state-success,#2fa36b)) 60%,var(--dsw-alias-label-primary));height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family),sans-serif;font-size:13px;line-height:1.5}
+.dttrace-root ::selection{background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 22%,transparent)}
+.dttrace-root :is(button,summary,input):focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
+.dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 18px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:12px;flex:none;zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1))}
+.dttrace-title{font-size:15px;font-weight:650;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-base);color:inherit;padding:6px 12px;min-height:32px;font:inherit;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dttrace-button:active{background:var(--dsw-specific-tip)}
+.dttrace-body{flex:1;min-height:0;overflow:auto;padding:16px max(20px,calc((100% - 1040px)/2)) 180px;scrollbar-color:var(--dsw-alias-border-l2) transparent}
+.dttrace-scale{zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1));display:flex;flex-direction:column;gap:14px;padding-bottom:8px}
+.dttrace-note,.dttrace-status{font-size:12px;line-height:1.6;color:var(--dsw-alias-label-secondary);margin:0}.dttrace-status{padding:12px 14px;border-radius:8px;background:var(--dsw-specific-tip)}.dttrace-status[data-error=true]{color:var(--dsw-alias-state-error)}.dttrace-help{font-size:12px;color:var(--dsw-alias-label-secondary)}.dttrace-help>summary{cursor:pointer}.dttrace-help p{max-width:72ch;margin:8px 0 0}
+.dttrace-record{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);min-width:0;overflow:visible}.dttrace-record>summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;align-items:center;gap:10px;border-radius:12px}.dttrace-record>summary:hover{background:var(--dsw-alias-interactive-bg-hover)}.dttrace-record[open]>summary{border-radius:12px 12px 0 0}.dttrace-record>summary::-webkit-details-marker{display:none}.dttrace-record>summary:before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);flex:none;margin-right:3px}.dttrace-record[open]>summary:before{transform:rotate(45deg);margin-top:-3px}
+.dttrace-round{font-size:14px;font-weight:650}.dttrace-time{font-size:12px;color:var(--dsw-alias-label-secondary);margin-left:auto;font-variant-numeric:tabular-nums}.dttrace-badge{border-radius:4px;padding:2px 6px;font-size:11px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-secondary)}.dttrace-badge[data-ok=true]{color:var(--dttrace-success);background:color-mix(in srgb,var(--dttrace-success) 10%,transparent)}
+.dttrace-content{border-top:1px solid var(--dsw-alias-border-l1);padding:16px;display:flex;flex-direction:column;gap:12px}.dttrace-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;row-gap:0;margin-bottom:4px}.dttrace-card{display:grid;grid-template-columns:minmax(76px,.65fr) minmax(0,1.6fr);align-content:start;column-gap:12px;padding:9px 0;min-width:0;border-bottom:1px solid var(--dsw-alias-border-l1)}.dttrace-label{font-size:12px;color:var(--dsw-alias-label-secondary)}.dttrace-value{font-size:13px;font-weight:550;overflow-wrap:anywhere;min-width:0}.dttrace-meta{font-size:12px;line-height:1.6;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.dttrace-card .dttrace-meta{grid-column:2;font-size:11px;margin-top:2px}.dttrace-personality[data-state=loaded] .dttrace-value{color:var(--dttrace-success)}
+.dttrace-section{display:flex;flex-direction:column;gap:10px;min-width:0}.dttrace-section-title{font-size:13px;font-weight:650}.dttrace-book{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:10px 12px;min-width:0}.dttrace-book>summary{overflow-wrap:anywhere;cursor:pointer}.dttrace-book>summary~*{margin-top:8px}.dttrace-decision{display:grid;grid-template-columns:90px minmax(110px,.7fr) minmax(160px,1.5fr);gap:10px;padding:9px 0;border-top:1px solid var(--dsw-alias-border-l1);font-size:12px;line-height:1.5}.dttrace-decision:first-of-type{border-top:0}.dttrace-decision-state{font-weight:600}.dttrace-decision[data-included=true] .dttrace-decision-state{color:var(--dttrace-success)}.dttrace-keywords{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}.dttrace-list{margin:0;padding-left:18px;font-size:12px;line-height:1.6;color:var(--dsw-alias-label-secondary)}
+.dttrace-disclosure{border-top:1px solid var(--dsw-alias-border-l1);margin-top:4px}.dttrace-disclosure>summary{cursor:pointer;font-size:13px;font-weight:600;padding:12px 0;min-height:20px}.dttrace-disclosure>summary:hover{color:var(--dsw-alias-state-business-primary)}.dttrace-disclosure-body{display:flex;flex-direction:column;gap:12px;padding:0 0 12px}.dttrace-content pre{font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;max-height:440px;overflow:auto;padding:12px;background:var(--dsw-specific-tip);border-radius:6px;tab-size:2}
+.dttrace-messages{display:flex;flex-direction:column;gap:8px}.dttrace-message>summary{font-weight:600}.dttrace-message-sources{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:400;color:var(--dsw-alias-label-secondary);margin-top:4px}.dttrace-message[open]>summary{margin-bottom:8px}.dttrace-message>.dttrace-disclosure{margin-top:8px}.dttrace-message .dttrace-section-title{font-variant-numeric:tabular-nums}.dttrace-system-modules{display:flex;flex-direction:column;gap:0;margin-top:8px}.dttrace-system-group{display:flex;flex-direction:column;gap:6px}.dttrace-system-modules .dttrace-book{border:0;border-top:1px solid var(--dsw-alias-border-l1);border-radius:0;padding:8px 0}.dttrace-system-modules .dttrace-book>summary{font-size:12px}.dttrace-loading{display:flex;flex-direction:column;gap:10px;padding:12px 0;color:var(--dsw-alias-label-secondary)}.dttrace-loading:after{content:"";height:44px;border-radius:6px;background:var(--dsw-specific-tip)}
+@media(max-width:760px){.dttrace-body{padding:12px 14px 180px}.dttrace-record>summary{flex-wrap:wrap;gap:7px 8px;padding:12px}.dttrace-time{flex-basis:100%;padding-left:18px}.dttrace-content{padding:12px}.dttrace-grid{column-gap:20px}.dttrace-card{grid-template-columns:1fr;gap:3px}.dttrace-card .dttrace-meta{grid-column:1}.dttrace-decision{grid-template-columns:80px 1fr}.dttrace-keywords{grid-column:1/-1}}
+@media(max-width:440px){.dttrace-grid{grid-template-columns:1fr}.dttrace-card{grid-template-columns:92px minmax(0,1fr);column-gap:12px}.dttrace-card .dttrace-meta{grid-column:2}.dttrace-toolbar{padding-inline:14px}.dttrace-record>summary .dttrace-badge{max-width:100%;overflow-wrap:anywhere}}
+
 `
 
 const statusLabels = Object.freeze({
@@ -230,7 +236,7 @@ function sourceMetadata(source) {
 }
 
 function segments(items, kind, legacySnapshot) {
-  return (items ?? []).map((part, index) => h('details', { key: `${kind}-${index}`, className: 'dttrace-book' },
+  return (items ?? []).filter(part => !part.sources?.some(isPersonalitySource)).map((part, index) => h('details', { key: `${kind}-${index}`, className: 'dttrace-book' },
     h('summary', null, uiMessage('trace.v3.part', { index: part.index + 1, name: part.name, count: part.characters })),
     h('div', { className: 'dttrace-meta' }, rawText(`SHA-256 ${part.hash} · UTF-16 ${part.offsetUtf16 ?? '—'} · ${part.provenance}`)),
     legacySnapshot && typeof part.text === 'string'
@@ -262,8 +268,6 @@ const sourceStatusLabels = { 'name-unrecorded': 'trace.assembler.nameUnrecorded'
   'section-only': 'trace.assembler.fieldsUnrecorded', unrecorded: 'trace.assembler.sourceUnrecorded' }
 const preStyle = { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 }
 function requestNodeTitle(node, index) {
-  if (isPersonalitySource(node.source))
-    return rawText(personalityFieldName(node.source.field))
   if (node.source?.module === 'character' && node.source.field === 'personality')
     return uiMessage('trace.resource.characterPersonality')
   const named = ['recorded', 'current-name'].includes(node.sourceStatus)
@@ -272,6 +276,9 @@ function requestNodeTitle(node, index) {
     return uiMessage('trace.assembler.unnamedItem', { index: index + 1 })
   }
   return rawText(node.name || translate('trace.assembler.sourceUnrecorded'))
+}
+function publicRequestNodes(nodes) {
+  return (nodes ?? []).filter(node => !isPersonalitySource(node.source)).map(node => ({ ...node, children: publicRequestNodes(node.children) }))
 }
 function requestNodes(nodes) {
   return (nodes ?? []).map((node, index) => h('details', { className: 'dttrace-book', key: `${node.id}:${index}` },
@@ -284,7 +291,7 @@ function requestNodes(nodes) {
   ))
 }
 function systemModuleCards(nodes) {
-  return nodes.map((node, index) => node.children?.length
+  return (nodes ?? []).map((node, index) => node.children?.length
     ? h('div', { className: 'dttrace-system-group', key: `${node.id}:${index}` },
       h('div', { className: 'dttrace-meta' }, requestNodeTitle(node, index)), ...systemModuleCards(node.children))
     : h('details', { className: 'dttrace-book', key: `${node.id}:${index}`, 'data-system-module': node.id },
@@ -293,7 +300,8 @@ function systemModuleCards(nodes) {
       h('div', { className: 'dttrace-meta' }, rawText(Object.entries(node.source ?? {}).map(([key, value]) => `${key}=${value}`).join(' · '))),
       typeof node.text === 'string' ? h('pre', { style: preStyle }, rawText(node.text)) : null))
 }
-function RecordedRequest({ result }) {
+function RecordedRequest({ result: recorded }) {
+  const result = recorded ? { ...recorded, nodes: publicRequestNodes(recorded.nodes) } : null
   return h('div', { className: 'dttrace-section', 'data-trace-request': result ? 'available' : 'unavailable' },
     h('p', { className: 'dttrace-note' }, uiMessage(result ? 'trace.assembler.recorded' : 'trace.assembler.unavailable')),
     result ? h('div', { className: 'dttrace-messages' },
@@ -346,14 +354,15 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
   const unavailable = () => uiMessage('trace.v3.notRecorded')
   const resourceKnown = (key, selectionKey) => Object.hasOwn(resources, key) || Object.hasOwn(selection, selectionKey)
   const result = recordedRequestResult(record)
-  const positions = recordedPersonalityPositions(record, result)
-  const hasPersonality = resourceKnown('personalityCard', 'personalityCardId') || positions.length > 0
+  const personalityState = recordedPersonalityLoadState(record, result)
   return h('div', { className: 'dttrace-section' },
     h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.configuration')),
     h('div', { className: 'dttrace-grid' },
       resourceCard('trace.resource.preset', resources.preset, selection.presetId, resourceKnown('preset', 'presetId')),
       resourceCard('trace.resource.character', resources.characterCard, selection.characterCardId, resourceKnown('characterCard', 'characterCardId')),
-      hasPersonality ? resourceCard('trace.resource.personality', resources.personalityCard, selection.personalityCardId ?? positions[0]?.source.resourceId, true) : null,
+      h('div', { className: 'dttrace-card dttrace-personality', 'data-personality-state': personalityState, 'data-state': personalityState },
+        h('div', { className: 'dttrace-label' }, uiMessage('trace.resource.personality')),
+        h('div', { className: 'dttrace-value' }, uiMessage(`trace.personality.${personalityState}`))),
       resourceCard('trace.resource.user', resources.userProfile, selection.userId ?? selection.userProfileId,
         resourceKnown('userProfile', 'userId') || Object.hasOwn(selection, 'userProfileId')),
       summaryCard('trace.v3.worldBooks', bookResources === undefined ? unavailable() : bookResources.length
@@ -362,17 +371,6 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
       summaryCard('trace.v3.model', record.delivery?.model
         ? rawText([record.delivery.provider, record.delivery.model].filter(Boolean).join(' / ')) : unavailable()),
     ),
-    hasPersonality ? h('div', { className: 'dttrace-section', 'data-personality-positions': positions.length },
-      h('div', { className: 'dttrace-section-title' }, uiMessage('trace.personality.positions')),
-      positions.length ? positions.map(({ source, messageId, role, messageIndex, range, text }) =>
-        h('details', { className: 'dttrace-book', key: JSON.stringify([messageId, source.field, range]) },
-          h('summary', null, rawText(personalityFieldName(source.field)), ' · ', messageIndex >= 0 ? uiMessage('trace.personality.message', { number: messageIndex + 1, role }) : rawText(role),
-            ' · ', rawText(`UTF-16 [${range.startUtf16}, ${range.endUtf16})`)),
-          h('div', { className: 'dttrace-meta' }, uiMessage('trace.personality.messageId', { id: messageId })),
-          h('div', { className: 'dttrace-meta' }, rawText(`field=${source.field} · resourceId=${source.resourceId ?? '—'}`)),
-          source.resourceRevision != null ? h('div', { className: 'dttrace-meta' }, uiMessage('trace.personality.revision', { revision: source.resourceRevision })) : null,
-          h('pre', { style: preStyle }, rawText(text))))
-        : h('p', { className: 'dttrace-note' }, uiMessage('trace.personality.noPosition'))) : null,
     Number.isSafeInteger(selection.character?.greetingIndex)
       ? h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.greeting', { index: selection.character.greetingIndex })) : null,
     h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.sampling'), ' ', config === undefined ? unavailable()
@@ -385,11 +383,9 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
         ...['requested', 'effective', 'fallbacks'].map(key => h('div', { key },
           h('strong', null, uiMessage(`trace.parameters.${key}`)),
           h('pre', null, rawText(JSON.stringify(record.parameters[key], null, 2))))))) : null,
-    contentNotice
+    contentNotice && record.contentStatus !== 'available'
       ? h('p', { className: 'dttrace-note' }, record.contentStatus === 'available' ? null : uiMessage('trace.v3.contentUnavailable'), ' ', contentNotice,
         referenceBacked && record.referenceError ? rawText(` · ${unwrapText(referenceReason(record.referenceError))}`) : null) : null,
-    referenceBacked
-      ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v4.metadataRetention')) : null,
     h('details', { className: 'dttrace-disclosure' },
       h('summary', null, uiMessage('trace.v3.worldBookDetails')),
       h('div', { className: 'dttrace-disclosure-body' },
@@ -411,6 +407,8 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
         h('details', { className: 'dttrace-book' },
           h('summary', null, uiMessage('trace.assembler.materials')),
           h('p', { className: 'dttrace-note' }, uiMessage('trace.assembler.materialsNote')),
+          record.contentStatus === 'available' && contentNotice ? h('p', { className: 'dttrace-note' }, contentNotice) : null,
+          referenceBacked ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v4.metadataRetention')) : null,
           h('p', { className: 'dttrace-note' }, uiMessage(record.delivery?.assemblyVerified ? 'trace.v3.verified' : 'trace.v3.unverified')),
           record.sections ? h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.sections')) : null,
           ...segments(record.sections, 'system', legacySnapshot),
@@ -452,14 +450,13 @@ function AssemblyRecord({ summary, sessionId, latest, running, lastVisibleSeq })
   return h('details', { className: 'dttrace-record', open: opened, onToggle: e => setOpened(e.currentTarget.open) },
     h('summary', null,
       h('span', { className: 'dttrace-round', title: translate('trace.v3.termsText') }, uiMessage(summary.attempt > 1 ? 'trace.roundAttempt' : 'trace.round', { turn: summary.turn, step: summary.step, attempt: summary.attempt })),
-      h('span', { className: 'dttrace-badge', title: summary.status }, statusLabels[summary.status] ? uiMessage(statusLabels[summary.status]) : rawText(summary.status)),
-      summary.contentStatus === 'reference-only'
-        ? h('span', { className: 'dttrace-badge' }, uiMessage('trace.v4.referenceOnly')) : null,
+      h('span', { className: 'dttrace-badge', title: summary.status, 'data-ok': summary.status === 'request-observed' }, statusLabels[summary.status] ? uiMessage(statusLabels[summary.status]) : rawText(summary.status)),
+
       h('span', { className: 'dttrace-time' }, rawText(formatTime(summary.recordedAt))),
     ),
     h('div', { className: 'dttrace-content' },
       error ? h('p', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
-      record ? h(TraceRecordContent, { record, sessionId, turn: summary.turn, latest, running, lastVisibleSeq }) : h('p', null, uiMessage('trace.reading')),
+      record ? h(TraceRecordContent, { record, sessionId, turn: summary.turn, latest, running, lastVisibleSeq }) : h('div', { className: 'dttrace-loading', role: 'status' }, uiMessage('trace.reading')),
     ),
   )
 }
@@ -507,15 +504,15 @@ export function TavernTraceView({ sessionId, useSession, useChat }) {
     ),
     h('div', { className: 'dttrace-body' },
       h('div', { className: 'dttrace-scale' },
-        h('p', { className: 'dttrace-note' }, uiMessage('trace.v3.intro')),
-        h('details', { className: 'dttrace-note' },
+        h('details', { className: 'dttrace-help' },
           h('summary', null, uiMessage('trace.v3.terms')),
-          h('p', null, uiMessage('trace.v3.termsText'))),
-        error ? h('div', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
-        data === null && !error ? h('div', { className: 'dttrace-status' }, uiMessage('trace.reading')) : null,
+          h('p', null, uiMessage('trace.v3.intro')),
+          h('p', null, uiMessage('trace.v3.termsText')),
+          data !== null ? h('p', null, storageStatus(data.storage)) : null),
+        error ? h('div', { className: 'dttrace-status', 'data-error': true, role: 'alert' }, rawText(error)) : null,
+        data === null && !error ? h('div', { className: 'dttrace-loading', role: 'status' }, uiMessage('trace.reading')) : null,
         records.length === 0 && data !== null ? h('div', { className: 'dttrace-status' }, uiMessage('trace.empty')) : null,
         ...records.map((record, index) => h(AssemblyRecord, { summary: record, sessionId, latest: index === 0, running, lastVisibleSeq, key: `${sessionId}:${record.id}` })),
-        data !== null ? h('p', { className: 'dttrace-note' }, storageStatus(data.storage)) : null,
       ),
     ),
   )

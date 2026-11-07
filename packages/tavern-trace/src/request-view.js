@@ -37,7 +37,7 @@ export function recordedSystemModules(result, message, index) {
 const hasPersonalityNode = node => isPersonalitySource(node.source) || node.children?.some(hasPersonalityNode)
 
 /** Consecutive snapshots can carry the same field at different coordinates. */
-export function recordedPersonalityPositions(record, result) {
+export function recordedPersonalityPositions(record, result, { firstOnly = false } = {}) {
   const rows = new Map()
   function add(source, messageId, role, messageIndex, range, text) {
     const key = JSON.stringify([messageId, source.resourceId, source.field, range?.startUtf16, range?.endUtf16])
@@ -52,6 +52,7 @@ export function recordedPersonalityPositions(record, result) {
     const index = result?.messages.findIndex(message => message.id === ref.messageId) ?? -1
     if (result && index < 0) continue
     add(part.sources[0], ref.messageId, 'system', index, ref.range, part.text)
+    if (firstOnly) return [...rows.values()]
   }
   const candidates = result?.nodes.filter(hasPersonalityNode) ?? []
   const fieldResult = candidates.length ? { ...result, nodes: candidates } : null
@@ -60,6 +61,7 @@ export function recordedPersonalityPositions(record, result) {
     if (!nodes.length) continue
     const content = (message.content ?? []).filter(block => block.type === 'text').map(block => block.text).join('')
     function visit(node) {
+      if (firstOnly && rows.size) return
       if (isPersonalitySource(node.source) && node.text) {
         const ref = node.reference
         const start = ref?.messageId === message.id ? ref.startUtf16 : content.indexOf(node.text)
@@ -72,6 +74,23 @@ export function recordedPersonalityPositions(record, result) {
       for (const child of node.children ?? []) visit(child)
     }
     nodes.forEach(visit)
+    if (firstOnly && rows.size) return [...rows.values()]
   }
   return [...rows.values()].sort((a, b) => a.messageIndex - b.messageIndex || a.range.startUtf16 - b.range.startUtf16)
+}
+
+/** Delivery is historical evidence, not today's selection or an assembly preview. */
+export function recordedPersonalityLoadState(record, result = recordedRequestResult(record)) {
+  if (record.status !== 'request-observed') return 'unverifiable'
+  if (recordedPersonalityPositions(record, result, { firstOnly: true }).length > 0) return 'loaded'
+  const resources = record.audit?.resources ?? {}
+  const selection = record.selection ?? record.audit?.selection ?? {}
+  if (resources.personalityCard === null || selection.personalityCardId === null) return 'notLoaded'
+  if (record.nativeRequest && result?.personalityExcluded === true && !result.nodes.some(hasPersonalityNode)) return 'notLoaded'
+  const decisions = result?.resourceLayout?.positionDecisions?.filter(item => isPersonalitySource({ module: item.sourceId, field: item.positionId })) ?? []
+  if (record.requestAssembly?.metadata?.owner === 'dsh-prompt-assembler'
+    && (decisions.length && decisions.every(item => item.decision === 'disabled')
+      || result?.diagnostics.some(item => item.code === 'TAVERN_PERSONALITY_POLICY_DISABLED' && item.sourceId === 'tavern.personality'))
+    && result && !result.nodes.some(hasPersonalityNode)) return 'notLoaded'
+  return 'unverifiable'
 }

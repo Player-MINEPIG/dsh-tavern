@@ -306,7 +306,7 @@ export class TavernProfileLoader {
     const resources = {
       preset: preset === null ? null : { id: preset.id, name: preset.name, updatedAt: preset.updatedAt },
       ...(personality ? { personalityCard: { id: personality.character.id, name: personality.character.name, updatedAt: personality.character.updatedAt,
-        selfRevision: evolution?.revision ?? null, moodRevision: mood?.mood ? mood.revision : null } } : {}),
+        selfRevision: evolution?.revision ?? null, moodRevision: mood?.mood ? mood.revision : null } } : { personalityCard: null }),
       characterCard: characterResult.character === null ? null : {
         id: characterResult.character.id,
         name: characterResult.character.name ?? characterResult.character.data?.name ?? '',
@@ -318,8 +318,8 @@ export class TavernProfileLoader {
     const audit = {
       schemaVersion: 1,
       sessionId: shared.sessionId,
-      selection: { ...clone(effectiveSelection), ...(personality ? { personalityCardId: personality.character.id } : {}) },
-      sessionSelection: { ...clone(selection), ...(personality ? { personalityCardId: personality.character.id } : {}) },
+      selection: { ...clone(effectiveSelection), personalityCardId: personality?.character.id ?? null },
+      sessionSelection: { ...clone(selection), personalityCardId: personality?.character.id ?? null },
       worldBookSelection: clone(worldBookSelection),
       resources,
       diagnostics: clone(diagnostics),

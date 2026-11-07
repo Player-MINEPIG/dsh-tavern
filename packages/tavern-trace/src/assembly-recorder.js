@@ -1,4 +1,4 @@
-import { captureNativeSourceReferences } from './native-provenance.js'
+import { captureNativePersonalityExclusion, captureNativeSourceReferences } from './native-provenance.js'
 import { isPersonalitySource } from './personality-source.js'
 import { randomUUID } from 'node:crypto'
 import { digest, counts } from '../../prompt-metadata.js'
@@ -111,11 +111,14 @@ export class AssemblyRecorder {
     if (currentAssembly) {
       record.requestAssemblyRef = { seq: requestEvent.seq, hash: digest(requestEvent.data), version: 1 }
     }
+    record.delivery.historyVerified = verified && Boolean(record.systemMessageRefs?.[indices[0]])
     if (native && record.sessionRef) {
       record.nativeRequestRef = { version: 1, messagesHash: nativeMessagesHash }
-      record.nativeSourceRefs = captureNativeSourceReferences(record, observedNative, options.messages)
+      const hashes = { messagesHash: nativeMessagesHash, observedMessagesHash: observedNative ? digest(observedNative.messages) : null }
+      record.nativeSourceRefs = captureNativeSourceReferences(record, observedNative, options.messages, hashes)
+      const exclusion = record.delivery.historyVerified ? captureNativePersonalityExclusion(observedNative, options.messages, hashes) : null
+      if (exclusion) record.nativePersonalityExclusion = exclusion
     }
-    record.delivery.historyVerified = verified && Boolean(record.systemMessageRefs?.[indices[0]])
     record.status = 'request-observed'
     this.store.put(record)
     this.pending.delete(options.sessionId)

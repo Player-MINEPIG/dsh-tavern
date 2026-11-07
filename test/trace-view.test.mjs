@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { recordedPersonalityLoadState, recordedPersonalityPositions, recordedRequestResult } from '../packages/tavern-trace/src/request-view.js'
 import { TraceRecordContent } from '../packages/tavern-trace/src/client.js'
 import { setClientUiSettings } from '../packages/client/src/i18n.js'
 
@@ -77,57 +78,73 @@ test('omitted records distinguish unrecorded resources from explicitly unused re
   assert.ok(unused.includes('未使用'))
 })
 
-test('old no-policy traces expose verified personality ranges without implying a complete message list', () => {
+test('historical personality evidence becomes one status without field text or a separate disclosure', () => {
   const source = { kind: 'personality', resourceId: 'star', field: 'mood', resourceRevision: 6 }
-  const part = { name: 'personality:mood', contentStatus: 'available', text: '旧心情', sources: [source],
-    reference: { kind: 'system-message', messageId: 'old-system', range: { startUtf16: 8, endUtf16: 11 } } }
-  const row = { schemaVersion: 4, audit: { resources: { personalityCard: { id: 'star', name: '记录时的卡名' } } }, sections: [part] }
+  const part = { name: 'personality:mood', contentStatus: 'available', text: 'PRIVATE OLD MOOD', sources: [source],
+    reference: { kind: 'system-message', messageId: 'old-system', range: { startUtf16: 8, endUtf16: 24 } } }
+  const row = { status: 'request-observed', schemaVersion: 4, audit: { resources: { personalityCard: { id: 'star', name: 'PRIVATE CARD NAME' } } }, sections: [part] }
+  const before = structuredClone(row)
   const shown = body(row)
-  const locations = find(shown, node => node.props['data-personality-positions'] === 1)[0]
-  assert.ok(text(shown, true).includes('记录时的卡名'))
-  for (const label of ['本次请求的人格字段位置', 'mood', 'system', 'UTF-16 [8, 11)']) assert.ok(text(locations, true).includes(label))
-  assert.ok(!text(locations, true).includes('旧心情'))
-  for (const label of ['旧心情', 'old-system', '来源版本：6']) assert.ok(text(locations).includes(label))
-  assert.ok(find(shown, node => node.props['data-trace-request'] === 'unavailable').length)
-  assert.ok(!text(locations).includes('消息 1'), 'a section reference cannot establish its request message index')
+  assert.equal(find(shown, node => node.props['data-personality-state'] === 'loaded').length, 1)
+  assert.ok(text(shown, true).includes('已加载'))
+  for (const privateValue of ['PRIVATE OLD MOOD', 'PRIVATE CARD NAME', 'old-system', 'UTF-16', '人格字段位置']) assert.ok(!text(shown).includes(privateValue), privateValue)
+  assert.equal(find(shown, node => node.props['data-personality-positions'] !== undefined).length, 0)
+  assert.deepEqual(row, before)
   part.contentStatus = 'reference-unavailable'
-  assert.ok(text(body(row, 'en'), true).includes('no verified message range'))
+  assert.equal(recordedPersonalityLoadState(row), 'unverifiable')
 })
 
-test('core policy positions require both a recorded message mapping and unambiguous final text', () => {
+test('personality loading requires observed delivery and verified final placement', () => {
   const source = { module: 'personality', field: 'evolution/after', resourceId: 'card' }
   const make = (id, text) => ({ id, role: 'system', content: [{ type: 'text', text }] })
-  const value = { turn: 2, step: 1, requestAssembly: { turn: 2, step: 1,
+  const value = { status: 'request-observed', turn: 2, step: 1, requestAssembly: { turn: 2, step: 1,
     messages: [make('mapped', '😀\n\nobserved'), make('unmapped', 'observed'), make('duplicate', 'observed observed')],
     metadata: { assembly: { nodes: [{ id: 'field', source, text: 'observed', requestMessageIds: ['mapped', 'duplicate'] }] } } } }
-  const locations = find(body(value), node => node.props['data-personality-positions'] === 1)[0]
-  assert.ok(text(locations, true).includes('消息 1 · system'))
-  assert.ok(text(locations, true).includes('UTF-16 [4, 12)'))
-  assert.ok(!text(locations).includes('unmapped'))
-  value.requestAssembly.metadata.historyPolicy = { decisions: [{ messageId: 'mapped', action: 'truncate' }] }
-  assert.equal(find(body(value), node => node.props['data-personality-positions'] > 0).length, 0)
+  assert.equal(recordedPersonalityLoadState(value), 'loaded')
+  assert.deepEqual(recordedPersonalityPositions(value, recordedRequestResult(value)).map(p => p.range), [{ startUtf16: 4, endUtf16: 12 }])
+  for (const change of [v => { v.status = 'assembled' }, v => { v.requestAssembly.turn++ }, v => { v.requestContentStatus = 'reference-unavailable' }, v => { v.requestAssembly.metadata.assembly.preview = true }, v => { v.requestAssembly.metadata.historyPolicy = { decisions: [{ messageId: 'mapped', action: 'truncate' }] } }]) {
+    const unverified = structuredClone(value); change(unverified)
+    assert.equal(recordedPersonalityLoadState(unverified), 'unverifiable')
+    assert.ok(text(body(unverified), true).includes('未能核验'))
+  }
+})
+
+test('explicit historical no-card selection is distinct from a missing historical selection', () => {
+  for (const value of [{ selection: { personalityCardId: null } }, { audit: { resources: { personalityCard: null } } }]) {
+    value.status = 'request-observed'
+    assert.equal(recordedPersonalityLoadState(value), 'notLoaded')
+    assert.ok(text(body(value), true).includes('未加载'))
+    assert.ok(text(body(value, 'en'), true).includes('Not loaded'))
+    value.status = 'request-unconfirmed'
+    assert.equal(recordedPersonalityLoadState(value), 'unverifiable')
+  }
+  for (const value of [{}, { selection: { personalityCardId: 'selected-only' } }]) {
+    value.status = 'request-observed'
+    assert.equal(recordedPersonalityLoadState(value), 'unverifiable')
+  }
 })
 
 for (const module of ['personality', 'tavern.personality']) {
-  test(`Trace distinguishes recorded ${module} from RP character personality`, () => {
+  test(`Trace summarizes ${module} privately and retains general request text and RP character modules`, () => {
     const nodes = [
       { module, field: 'personality', plugin: 'pmp-dsh-tavern', resourceId: 'agent' },
       { module: 'character', field: 'personality', plugin: 'pmp-dsh-tavern', resourceId: 'rp' },
       { module: 'personality', field: 'mood', plugin: 'other-plugin', resourceId: 'other' },
     ].map((source, i) => ({ id: `node-${i}`, name: source.field, source, text: `body-${i}`, requestMessageIds: ['system'] }))
-    const record = { turn: 1, step: 1, requestAssembly: { turn: 1, step: 1,
+    const record = { status: 'request-observed', turn: 1, step: 1, requestAssembly: { turn: 1, step: 1,
       messages: [{ id: 'system', role: 'system', content: [{ type: 'text', text: nodes.map(node => node.text).join('\n\n') }] }],
       metadata: { assembly: { nodes } } } }
     const before = structuredClone(record)
     const shown = body(record)
-    const locations = find(shown, node => node.props['data-personality-positions'] === 1)[0]
-    assert.ok(text(locations).includes('body-0'))
-    assert.ok(!text(locations).includes('body-1') && !text(locations).includes('body-2'))
+    assert.equal(recordedPersonalityLoadState(record), 'loaded')
     const system = find(shown, node => node.props['data-message-index'] === 0)[0]
-    assert.ok(text(system, true).includes('人格卡 · 性格 / Personality traits'))
-    assert.ok(text(locations).includes('field=personality · resourceId=agent'))
     assert.ok(text(system, true).includes('角色性格'))
-    assert.deepEqual(record, before, 'viewing an old record must preserve its original source module')
+    assert.ok(!text(system, true).includes('人格卡 · 性格'))
+    assert.ok(text(system).includes('body-0'), 'general complete system text remains available')
+    const personalityModules = find(shown, node => node.props['data-system-module'] === 'node-0')
+    assert.equal(personalityModules.length, 0, 'private fields are not duplicated as individual modules')
+    assert.equal(text(shown).split('body-0').length - 1, 1, 'personality appears only in the complete request text')
+    assert.deepEqual(record, before)
   })
 }
 
@@ -157,7 +174,7 @@ test('reference-backed records keep configuration visible and explain partial bo
   const visible = text(result, true)
   assert.ok(visible.includes('Historical preset'))
   assert.ok(visible.includes('部分正文引用不可用'))
-  assert.ok(visible.includes('官方日志引用'))
+  assert.ok(text(result).includes('官方日志引用'))
   const all = text(result)
   assert.ok(all.includes('<script>BODY</script>'))
   assert.ok(all.includes('正文摘要校验失败'))

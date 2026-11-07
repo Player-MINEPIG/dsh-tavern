@@ -14,7 +14,8 @@
       "source": null,
       "followSuppressed": false,
       "sandboxBefore": null
-    }
+    },
+    "personalityCardId": null
   },
   "resources": {
     "preset": null,
@@ -24,7 +25,8 @@
       "name": "Snapshot Reader",
       "description": "Synthetic snapshot description for {{user}}."
     },
-    "worldBooks": []
+    "worldBooks": [],
+    "personalityCard": null
   },
   "systemText": "Synthetic snapshot description for Snapshot Reader.",
   "diagnosticCodes": [

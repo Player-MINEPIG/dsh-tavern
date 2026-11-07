@@ -8,13 +8,16 @@ import { pathToFileURL } from 'node:url'
 import { CharacterStore } from '../packages/character/src/store.js'
 import { assembleRequest, configurePosition, positionRows } from 'dsh-prompt-assembler'
 import { BUILTINS as CORE_BUILTINS, createDefaultRegistry, NATIVE_BUILTINS } from 'dsh-prompt-assembler/adapters/tavern'
-import { registerPersonalitySource, withPersonalityRule } from '../packages/tavern-loader/src/personality-source.js'
+import { reconcilePersonalityPreview, registerPersonalitySource, withPersonalityRule } from '../packages/tavern-loader/src/personality-source.js'
 import { PersonalityStore } from '../packages/personality/src/store.js'
 import { TavernProfileLoader } from '../packages/tavern-loader/src/profile-loader.js'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { installIndependentAssembler } from './helpers/assembler-host.mjs'
+import { createNativeRequestReader } from '../packages/tavern-trace/src/native-request-reader.js'
+import { recordedPersonalityLoadState } from '../packages/tavern-trace/src/request-view.js'
 
-const input = { spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Aster', description: '{{char}} works with {{user}}', personality: 'Economical with words', mes_example: '{{user}}: Question? {{char}}: Evidence first.', first_mes: 'GREETING', alternate_greetings: ['ALT GREETING'], creator_notes: 'EDITOR ONLY', system_prompt: 'GIVE STEPS', post_history_instructions: 'CHECK CLAIMS' } }
+const input = { spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Aster', description: '{{char}} works with {{user}}', personality: 'Economical with words', scenario: 'Working together', mes_example: '{{user}}: Question? {{char}}: Evidence first.', first_mes: 'GREETING', alternate_greetings: ['ALT GREETING'], creator_notes: 'EDITOR ONLY', system_prompt: 'GIVE STEPS', post_history_instructions: 'CHECK CLAIMS' } }
+const cardFields = ['name', 'system_prompt', 'description', 'personality', 'scenario', 'mes_example', 'first_mes', 'post_history_instructions']
 function temporary(t) {
   const dir = mkdtempSync(join(tmpdir(), 'personality-assembly-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
@@ -77,6 +80,81 @@ test('Assembler resource positions resolve personality literals independently of
   }
   unregister()
   assert.ok(!registry.list().some(source => source.id === 'tavern.personality'))
+})
+
+test('personality field positions preserve default order, selected openings and legacy whole-card controls', t => {
+  const cards = new PersonalityStore(temporary(t)), card = cards.import(JSON.stringify(input))
+  cards.select('work', { characterCardId: card.id, character: { greetingIndex: 1 } })
+  const registry = createDefaultRegistry()
+  registerPersonalitySource(registry, cards)
+  registry.register({ id: 'external', pluginId: 'external', name: 'External source',
+    resolve: () => ({ blocks: [{ type: 'text', id: 'external', text: 'EXTERNAL', role: 'system' }] }) })
+  const runtime = new TavernProfileLoader({ presetStore: {}, personalityStore: cards,
+    personalityEvolution: { current: () => ({ revision: 1, after: 'EVOLVED' }) },
+    personalityMood: { read: () => ({ revision: 1, mood: { feeling: 'curious', intensity: 3, reason: 'MOOD' } }) },
+    selections: { get: () => ({ presetId: null, worldBookIds: [], character: {} }) } })
+  const { assemblyInput: assets } = runtime.compile({ sessionId: 'work' })
+  for (const builtin of [NATIVE_BUILTINS[0], CORE_BUILTINS[0]]) {
+    const preset = withPersonalityRule(builtin), sources = registry.list({ sessionId: 'work' })
+    const assemble = candidate => assembleRequest({ registry, assets, sessionId: 'work', preset: candidate, preview: true })
+    const nodes = candidate => assemble(candidate).nodes.filter(node => node.module === 'tavern.personality')
+    const baseline = nodes(preset)
+    assert.deepEqual(baseline.map(node => node.source.field), [...cardFields.map(field => field === 'first_mes' ? 'alternate_greetings/0' : field), 'evolution/after', 'mood'])
+    assert.deepEqual(baseline.map(node => node.positionId), [...cardFields, 'evolution', 'mood'])
+    assert.deepEqual(baseline.map(node => node.text), assets.personalitySections.map(section => section.text))
+    const update = (candidate, field, patch, before) => configurePosition(candidate, sources, `tavern.personality#${field}`, patch, before)
+    const fieldOff = update(preset, 'description', { enabled: false })
+    assert.ok(!nodes(fieldOff).some(node => node.source.field === 'description'))
+    assert.deepEqual(nodes(fieldOff).map(node => node.positionId), [...cardFields.filter(field => field !== 'description'), 'evolution', 'mood'])
+    const movedField = update(preset, 'personality', {}, 'tavern.personality#name')
+    assert.deepEqual(nodes(movedField).slice(0, 2).map(node => node.source.field), ['personality', 'name'])
+    // A saved old card row has no fine positions. Editing any other row writes
+    // every new descriptor back; the old whole-card switch must still win.
+    const legacy = { ...preset, layout: { version: 1, source: 'preset-slots', identity: 'preserve', fallback: 'error', overrides: [],
+      priority: ['preset', 'resource', 'default'], positions: [{ sourceId: 'tavern.personality', positionId: 'card', enabled: false, placement: 'source' }] } }
+    const unrelatedEdit = update(legacy, 'mood', { enabled: false })
+    assert.deepEqual(nodes(unrelatedEdit).map(node => node.source.field), ['evolution/after'])
+    const restore = update(unrelatedEdit, 'card', { enabled: true })
+    assert.equal(nodes(restore).filter(node => cardFields.includes(node.positionId)).length, cardFields.length)
+    // The old group remains a usable placement anchor, while individual
+    // fields can be disabled or moved out of its inherited location.
+    const group = update(preset, 'card', {}, 'tavern.personality#mood')
+    assert.deepEqual(nodes(group).filter(node => node.positionId === 'card').map(node => node.text), baseline.slice(0, cardFields.length).map(node => node.text))
+    const mixed = update(update(group, 'description', { enabled: false }), 'personality', {}, 'tavern.personality#card')
+    const mixedNodes = nodes(mixed)
+    assert.ok(!mixedNodes.some(node => node.source.field === 'description'))
+    assert.equal(mixedNodes.find(node => node.source.field === 'personality').positionId, 'personality')
+    assert.ok(mixedNodes.findIndex(node => node.source.field === 'personality') < mixedNodes.findIndex(node => node.positionId === 'card'))
+    assert.equal(mixedNodes.filter(node => node.positionId === 'card').length, cardFields.length - 2)
+    const anchored = update(preset, 'mood', {}, 'tavern.personality#card')
+    const anchoredNodes = nodes(anchored)
+    assert.equal(anchoredNodes[0].positionId, 'mood')
+    assert.equal(anchoredNodes.filter(node => node.positionId === 'card').length, cardFields.length)
+    assert.ok(!assemble(anchored).diagnostics.some(row => row.code === 'POSITION_SOURCE_MISSING'))
+    for (const side of ['before', 'after']) {
+      const withExternal = configurePosition(group, sources, 'external#content', { enabled: true }, 'tavern.personality#description')
+      const strict = { ...withExternal, layout: { ...withExternal.layout, source: 'manual', fallback: 'error', positions: withExternal.layout.positions.map(row => row.sourceId === 'external'
+        ? { ...row, anchor: { sourceId: 'tavern.personality', positionId: 'description', side } } : row) } }
+      const result = assemble(strict), description = result.nodes.findIndex(node => node.source.module === 'tavern.personality' && node.source.field === 'description')
+      const external = result.nodes.findIndex(node => node.source.module === 'external')
+      assert.equal(external - description, side === 'before' ? -1 : 1)
+      assert.equal(result.nodes[description].positionId, 'description')
+      assert.ok(!result.diagnostics.some(row => ['POSITION_SOURCE_MISSING', 'POSITION_ANCHOR_MISSING'].includes(row.code)))
+    }
+    const absent = { ...preset, rules: preset.rules.filter(rule => rule.kind !== 'tavern.personality') }
+    const enabledField = update(absent, 'personality', { enabled: true })
+    assert.equal(enabledField.rules.find(rule => rule.kind === 'tavern.personality').enabled, true)
+    assert.equal(nodes(enabledField).length, 0, 'the generated disabled master switch still controls card fields')
+    assert.deepEqual(nodes(update(enabledField, 'card', { enabled: true })).map(node => node.source.field), ['personality'])
+    const disabled = { ...preset, rules: preset.rules.map(rule => rule.kind === 'tavern.personality' ? { ...rule, enabled: false } : rule) }
+    for (const [candidate, preview, expected] of [[disabled, false, true], [disabled, true, false], [absent, false, false], [preset, false, false]]) {
+      const result = assembleRequest({ registry, assets, sessionId: 'work', preset: candidate, preview, afterAssembly: reconcilePersonalityPreview })
+      assert.equal(result.diagnostics.some(row => row.code === 'TAVERN_PERSONALITY_POLICY_DISABLED'), expected)
+    }
+    const enabledFromDisabled = update(disabled, 'personality', { enabled: true })
+    assert.equal(nodes(enabledFromDisabled).length, 0)
+    assert.deepEqual(nodes(update(enabledFromDisabled, 'card', { enabled: true })).map(node => node.source.field), ['personality'])
+  }
 })
 
 test('a read-only preview never pins growth; live snapshots refresh at successful compaction, rollback or rebinding', t => {
@@ -225,10 +303,12 @@ test('stock DSH sends one personality with native instructions and records its f
       assert.equal(view.nodes.some(node => node.module === 'tavern.personality' && node.positionId === 'mood' && node.text.includes('WORKSPACE ONLY')), same)
       assert.equal(root.sessions.get(id),undefined, 'preview did not activate the detached session')
     }
+    const reader = createNativeRequestReader({ assemblies: store.assemblyStore, sessions: () => root.sessions,
+      sessionController: { inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) } })
     const sourceList = face.runtime.sources(agent.id)
     const preset = face.store.get('builtin-native-slots')
     assert.deepEqual(positionRows(preset, sourceList).filter(row => row.sourceId === 'tavern.personality')
-      .map(({positionId, enabled}) => [positionId, enabled]), [['card',true],['evolution',true],['mood',true]])
+      .map(({positionId, enabled}) => [positionId, enabled]), ['card', ...cardFields, 'evolution', 'mood'].map(id => [id, true]))
     const descriptor = sourceList.find(source => source.id === 'tavern.personality')
     assert.equal(descriptor.moduleAvailable, true)
     assert.equal(descriptor.name, '人格卡 / Personality card')
@@ -253,6 +333,17 @@ test('stock DSH sends one personality with native instructions and records its f
       await turn()
       const delivered = requests.at(-1)
       assert.equal(delivered.split('Economical with words').length - 1, expected)
+      const captured = store.assemblyStore.get(agent.id, store.assemblyStore.list(agent.id).at(-1).id)
+      const detail = await reader.readBodies(captured)
+      assert.equal(recordedPersonalityLoadState(detail), expected ? 'loaded' : 'notLoaded', 'Trace reads actual stock native delivery')
+      if (candidate === off) {
+        assert.ok(captured.nativePersonalityExclusion)
+        assert.equal(detail.nativeProvenance.personalityExcluded, true)
+        const old = structuredClone(captured); delete old.nativePersonalityExclusion
+        assert.equal(recordedPersonalityLoadState(await reader.readBodies(old)), 'unverifiable', 'old absent evidence remains unknown')
+        const lost = structuredClone(captured); lost.nativeRequestRef.messagesHash = 'unavailable'
+        assert.equal(recordedPersonalityLoadState(await reader.readBodies(lost)), 'unverifiable', 'exclusion needs the matching historical request body')
+      }
       assert.ok(delivered.includes('HOST BASE'))
       if (candidate === onlyCard) {
         assert.ok(!delivered.includes('WORKSPACE ONLY'))
@@ -260,9 +351,29 @@ test('stock DSH sends one personality with native instructions and records its f
       }
       if (candidate === beforeBase) assert.ok(delivered.indexOf('Economical with words') < delivered.indexOf('HOST BASE'))
     }
+    const descriptionOff = configurePosition(preset,sourceList,'tavern.personality#description',{ enabled:false })
+    const cardOff = configurePosition(preset,sourceList,'tavern.personality#card',{ enabled:false })
+    const cardOffAfterOtherEdit = configurePosition(cardOff,sourceList,'tavern.personality#personality',{ enabled:true })
+    const movedTraits = configurePosition(preset,sourceList,'tavern.personality#personality',{},'native-system#content')
+    for (const candidate of [descriptionOff,cardOffAfterOtherEdit,movedTraits]) {
+      const {text} = await positionPreview(candidate)
+      face.store.applySnapshot(agent.id,candidate)
+      await turn()
+      const delivered = requests.at(-1)
+      assert.ok(delivered.includes('HOST BASE'))
+      for (const actual of [text,delivered]) {
+        assert.equal(actual.includes('Aster works with User'),candidate === movedTraits)
+        assert.equal(actual.split('Economical with words').length - 1,candidate === cardOffAfterOtherEdit ? 0 : 1)
+        if (candidate === movedTraits) assert.ok(actual.indexOf('Economical with words') < actual.indexOf('HOST BASE'))
+      }
+      const summary = store.assemblyStore.list(agent.id).at(-1), trace = store.assemblyStore.get(agent.id,summary.id)
+      assert.equal(trace.delivery.assemblyVerified,true)
+    }
     cards.select(agent.id,null)
     await turn()
     assert.ok(!requests.at(-1).includes('Economical with words'))
     assert.ok(requests.at(-1).includes('HOST BASE'))
+    const unbound = store.assemblyStore.get(agent.id, store.assemblyStore.list(agent.id).at(-1).id)
+    assert.equal(recordedPersonalityLoadState(await reader.readBodies(unbound)), 'notLoaded')
   } finally { await root.fiber.dispose() }
 })

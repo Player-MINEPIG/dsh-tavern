@@ -33,9 +33,23 @@ function nodeReference(node, anchor, text) {
     hash: digest(text), reference: anchor, children, nameRecorded: true }
 }
 
+/** Freeze exclusion only when the public native observation matches the sent bytes. */
+export function captureNativePersonalityExclusion(observed, messages, { observedMessagesHash, messagesHash } = {}) {
+  if (!observed) return null
+  const decisions = observed.resourceLayout?.positionDecisions?.filter(item => isPersonalitySource({ module: item.sourceId, field: item.positionId })) ?? []
+  const disabled = observed.diagnostics?.some(item => item.code === 'TAVERN_PERSONALITY_POLICY_DISABLED' && item.sourceId === 'tavern.personality')
+    || decisions.length > 0 && decisions.every(item => item.decision === 'disabled')
+  if (!disabled) return null
+  const hasSource = node => isPersonalitySource(node.source) || node.children?.some(hasSource)
+  if (observed.nodes.some(hasSource)) return null
+  const sentHash = messagesHash ?? digest(messages)
+  if ((observedMessagesHash ?? digest(observed.messages)) !== sentHash) return null
+  return { version: 1, messagesHash: sentHash }
+}
+
 /** Only keep metadata for nodes observed in the frozen native request. */
-export function captureNativeSourceReferences(record, observed, messages) {
-  if (!observed || digest(observed.messages) !== digest(messages)) return []
+export function captureNativeSourceReferences(record, observed, messages, { observedMessagesHash, messagesHash } = {}) {
+  if (!observed || (observedMessagesHash ?? digest(observed.messages)) !== (messagesHash ?? digest(messages))) return []
   return observed.nodes.flatMap(node => {
     let anchor
     if (node.nativeSectionName) {
@@ -141,5 +155,7 @@ export function nativeRequestProvenance(record, request, { resolveSourceName } =
     }
     fallback(offset, text.length)
   })
-  return { backend: 'native', nodes, diagnostics: [], provenance: 'recorded-references' }
+  const excluded = record.nativePersonalityExclusion
+  const personalityExcluded = excluded?.version === 1 && excluded.messagesHash === digest(messages)
+  return { backend: 'native', nodes, diagnostics: [], provenance: 'recorded-references', ...(personalityExcluded ? { personalityExcluded: true } : {}) }
 }
