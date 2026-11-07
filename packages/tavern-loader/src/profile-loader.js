@@ -1,6 +1,6 @@
 import { assemblyBody, digest, namedParts, source } from './assembly-parts.js'
 import { createHash } from 'node:crypto'
-import { PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
+import { PERSONALITY_SOURCE_ID, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
 import { assemblePresetParts, projectPresetCallConfig } from './profile-compiler.js'
 import { composeWorldBookSelection } from './user-world-book-policy.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
@@ -291,12 +291,17 @@ export class TavernProfileLoader {
     const personalitySections = personality
       ? assemblePersonality(personality, macroContext.user, assemblyInput.includeGreetingReference, evolution, mood)
       : []
+    assemblyInput.personalitySections = personalitySections
+    const officialPersonalitySections = !options.context?.dshAssemblerRaw && this.hasPersonalityRule?.(shared.sessionId) ? [] : personalitySections
     const compiled = options.resolveOnly || this.requestAssemblyEnabled?.(shared.sessionId)
       ? { systemText: '', sections: [], runtimeContexts: [], activeLoreEntries: assemblyInput.loreEntries.map(e => e.id), diagnostics: [], callConfig: preset ? projectPresetCallConfig(preset) : {}, systemPromptMode: 'append' }
       : compileTavernProfile(assemblyInput, personalitySections)
     diagnostics.push(...compiled.diagnostics)
 
-    const systemText = includePersonalitySections(compiled.systemText, personalitySections, this.maxProfileBytes)
+    // Assembler raw previews include the legacy sections temporarily. Admission
+    // uses the candidate's actual enabled positions once the policy is known.
+    const previewing = options.resolveOnly || options.context?.dshAssemblerRaw
+    const systemText = includePersonalitySections(compiled.systemText, officialPersonalitySections, previewing ? Infinity : this.maxProfileBytes)
 
     const resources = {
       preset: preset === null ? null : { id: preset.id, name: preset.name, updatedAt: preset.updatedAt },
@@ -344,6 +349,7 @@ export class TavernProfileLoader {
       ...compiled,
       systemText,
       personalitySections,
+      officialPersonalitySections,
       assemblyInput,
       macroContext,
       diagnostics,
@@ -584,7 +590,7 @@ function assemblePersonality({ character, selection }, user, firstTurn, evolutio
 function personalityField(card, field, raw, text, revision) {
   return { name: `${PLUGIN_ID}:part:personality:${field.replaceAll('/', ':')}`,
     text, interpolate: false, provenance: 'section-contributors',
-    sources: [source('personality', card, field, raw, { plugin: PLUGIN_ID, module: 'personality', resourceRevision: revision })] }
+    sources: [source('personality', card, field, raw, { plugin: PLUGIN_ID, module: PERSONALITY_SOURCE_ID, resourceRevision: revision })] }
 }
 
 function stringField(value) {

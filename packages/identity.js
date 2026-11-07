@@ -1,4 +1,5 @@
 export const PLUGIN_ID = 'pmp-dsh-tavern'
+export const PERSONALITY_SOURCE_ID = 'tavern.personality'
 export const API_ROOT = `/${PLUGIN_ID}/api`
 export const API_V1 = `${API_ROOT}/v1`
 export const API_V3 = `${API_ROOT}/v3`

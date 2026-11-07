@@ -1,3 +1,4 @@
+import { hasPersonalityRule, reconcilePersonalityPreview, registerPersonalitySource, withPersonalityRule } from './personality-source.js'
 import { installMoodHost } from '../../personality/src/mood-host.js'
 import { PersonalityMood } from '../../personality/src/mood.js'
 import { isMoodApiPath, moodApi } from '../../personality/src/mood-http.js'
@@ -463,7 +464,8 @@ export function apply(ctx, config = {}) {
   const registry = sharedAssembler.registry
   const requestAssembler = sharedAssembler.runtime
   ctx.effect(() => registerTavernSources(registry, sourceOptions))
-  ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS], defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly: diagnoseTavernAssembly,
+  ctx.effect(() => registerPersonalitySource(registry, personalityStore))
+  ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS].map(withPersonalityRule), defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly(assembly, context) { reconcilePersonalityPreview(assembly, context); diagnoseTavernAssembly(assembly, context) },
       validateResult: (result, agent) => { const nativeContext = runtime.assembledFor(agent)?.memoryContext; if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext); memorySources.validateAssembly(result.metadata?.assembly) } }))
   installMemorySources(ctx, memorySources, registry)
   store.assemblyPresets = assemblyPresets
@@ -491,6 +493,7 @@ export function apply(ctx, config = {}) {
     isActive: (resource, sessionId) => selections.get(sessionId).characterCardId === resource.characterId,
     getSelection: sessionId => selections.get(sessionId), getSelectionToken: sessionId => selections.selectionRevision(sessionId),
     memberships: playMemberships, onError: error => recordFailure('mvu.update', error) })
+  runtime.hasPersonalityRule = sessionId => hasPersonalityRule(requestAssembler.selected(sessionId))
   runtime.requestAssemblyEnabled = sessionId => {
     const selected = requestAssembler.selected(sessionId)
     if (selected) requestAssembler.requireAvailable(selected)
@@ -515,7 +518,13 @@ export function apply(ctx, config = {}) {
       return matches.length === 1 ? matches[0].name : null
     } })
   const traceRecorder = new TavernTraceRecorder(traceStore)
-  const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: sessionId => requestAssembler.requestAssemblyAvailable(sessionId), requiresNativeRequest: sessionId => requestAssembler.selected(sessionId)?.backend === 'native' })
+  const assemblyRecorder = new AssemblyRecorder(assemblyStore, {
+    requiresRequestAssembly: sessionId => Boolean(requestAssembler.selected(sessionId)) && requestAssembler.requestAssemblyAvailable(sessionId),
+    requiresNativeRequest: sessionId => {
+      const policy = requestAssembler.selected(sessionId)
+      return !policy || policy.backend === 'native'
+    },
+  })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
   runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, { ...config.worldBook,
@@ -800,7 +809,7 @@ export function apply(ctx, config = {}) {
       if (section.name !== PROFILE_SECTION) return [section]
       if (section.text !== snapshot.registeredProfileText) return [section]
       const imported = snapshot.importedContext
-      return [...[...contributions, ...snapshot.personalitySections].map(({ name, text, interpolate }) => ({ name, text, ...(interpolate === false ? { interpolate } : {}) })),
+      return [...[...contributions, ...snapshot.officialPersonalitySections].map(({ name, text, interpolate }) => ({ name, text, ...(interpolate === false ? { interpolate } : {}) })),
         ...(imported ? [{ name: PROFILE_SECTION, text: imported }] : [])]
     })
     const selected = snapshot.systemPromptMode === 'replace'

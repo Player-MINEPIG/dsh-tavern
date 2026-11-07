@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { AssemblyPanel } from '../packages/request-assembler/client.js'
 import { BUILTINS, createDefaultRegistry } from '../packages/request-assembler/index.js'
+import { registerPersonalitySource } from '../packages/tavern-loader/src/personality-source.js'
 import { registerTavernMvuSource, registerTavernTemplateSource } from 'dsh-prompt-assembler/adapters/tavern'
 import { getClientUiSettings, setClientUiSettings } from '../packages/client/src/i18n.js'
 import { Readable } from 'node:stream'
@@ -76,12 +77,13 @@ for (const [locale, label, sourceName, help, add] of [
   setClientUiSettings({ locale, scale: 1 }, { announce: false })
   const registry = createDefaultRegistry()
   registerTavernMvuSource(registry, { hasModule: () => true, resolveRequest: () => ({ blocks: [] }), validateResolved() {} })
+  registerPersonalitySource(registry, { binding: id => id === 's' ? { characterCardId: 'sample' } : null })
   const presets = structuredClone(BUILTINS), original = structuredClone(presets), calls = []
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url, method: options.method ?? 'GET' })
     assert.ok((options.method ?? 'GET') === 'GET' || options.method === 'POST' && url.endsWith('/preview'), 'opening or editing may resolve positions but must not save or apply')
     if (url.endsWith('/preview')) return new Response(JSON.stringify({ preview: { nodes: [], messages: [], diagnostics: [] } }), { headers: { 'Content-Type': 'application/json' } })
-    return new Response(JSON.stringify({ presets, sources: registry.list(), selection: presets[0], capability: true }), { headers: { 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ presets, sources: registry.list({ sessionId: 's' }), selection: presets[0], capability: true }), { headers: { 'Content-Type': 'application/json' } })
   }
   const container = document.getElementById('root'), root = createRoot(container)
   t.after(async () => {
@@ -96,6 +98,7 @@ for (const [locale, label, sourceName, help, add] of [
   assert(container.textContent.includes(help))
   const chooser = container.querySelector('#dta-add-source')
   assert.equal(chooser.querySelector('option[value="tavern.mvu/state"]').textContent, `DSH Tavern · ${sourceName}`)
+  assert.equal(chooser.querySelector('option[value="tavern.personality"]').textContent, 'DSH Tavern · 人格卡 / Personality card')
   assert.equal(container.querySelectorAll('.dta-row:not([data-context-control])').length, original[0].rules.length)
   assert.equal(container.querySelectorAll('[data-context-control]').length, 3, 'old strategies expose native context controls without altering saved rules')
   assert(!original.some(preset => preset.rules.some(rule => rule.kind === 'tavern.mvu/state')))

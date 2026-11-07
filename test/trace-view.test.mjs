@@ -77,6 +77,60 @@ test('omitted records distinguish unrecorded resources from explicitly unused re
   assert.ok(unused.includes('未使用'))
 })
 
+test('old no-policy traces expose verified personality ranges without implying a complete message list', () => {
+  const source = { kind: 'personality', resourceId: 'star', field: 'mood', resourceRevision: 6 }
+  const part = { name: 'personality:mood', contentStatus: 'available', text: '旧心情', sources: [source],
+    reference: { kind: 'system-message', messageId: 'old-system', range: { startUtf16: 8, endUtf16: 11 } } }
+  const row = { schemaVersion: 4, audit: { resources: { personalityCard: { id: 'star', name: '记录时的卡名' } } }, sections: [part] }
+  const shown = body(row)
+  const locations = find(shown, node => node.props['data-personality-positions'] === 1)[0]
+  assert.ok(text(shown, true).includes('记录时的卡名'))
+  for (const label of ['本次请求的人格字段位置', 'mood', 'system', 'UTF-16 [8, 11)']) assert.ok(text(locations, true).includes(label))
+  assert.ok(!text(locations, true).includes('旧心情'))
+  for (const label of ['旧心情', 'old-system', '来源版本：6']) assert.ok(text(locations).includes(label))
+  assert.ok(find(shown, node => node.props['data-trace-request'] === 'unavailable').length)
+  assert.ok(!text(locations).includes('消息 1'), 'a section reference cannot establish its request message index')
+  part.contentStatus = 'reference-unavailable'
+  assert.ok(text(body(row, 'en'), true).includes('no verified message range'))
+})
+
+test('core policy positions require both a recorded message mapping and unambiguous final text', () => {
+  const source = { module: 'personality', field: 'evolution/after', resourceId: 'card' }
+  const make = (id, text) => ({ id, role: 'system', content: [{ type: 'text', text }] })
+  const value = { turn: 2, step: 1, requestAssembly: { turn: 2, step: 1,
+    messages: [make('mapped', '😀\n\nobserved'), make('unmapped', 'observed'), make('duplicate', 'observed observed')],
+    metadata: { assembly: { nodes: [{ id: 'field', source, text: 'observed', requestMessageIds: ['mapped', 'duplicate'] }] } } } }
+  const locations = find(body(value), node => node.props['data-personality-positions'] === 1)[0]
+  assert.ok(text(locations, true).includes('消息 1 · system'))
+  assert.ok(text(locations, true).includes('UTF-16 [4, 12)'))
+  assert.ok(!text(locations).includes('unmapped'))
+  value.requestAssembly.metadata.historyPolicy = { decisions: [{ messageId: 'mapped', action: 'truncate' }] }
+  assert.equal(find(body(value), node => node.props['data-personality-positions'] > 0).length, 0)
+})
+
+for (const module of ['personality', 'tavern.personality']) {
+  test(`Trace distinguishes recorded ${module} from RP character personality`, () => {
+    const nodes = [
+      { module, field: 'personality', plugin: 'pmp-dsh-tavern', resourceId: 'agent' },
+      { module: 'character', field: 'personality', plugin: 'pmp-dsh-tavern', resourceId: 'rp' },
+      { module: 'personality', field: 'mood', plugin: 'other-plugin', resourceId: 'other' },
+    ].map((source, i) => ({ id: `node-${i}`, name: source.field, source, text: `body-${i}`, requestMessageIds: ['system'] }))
+    const record = { turn: 1, step: 1, requestAssembly: { turn: 1, step: 1,
+      messages: [{ id: 'system', role: 'system', content: [{ type: 'text', text: nodes.map(node => node.text).join('\n\n') }] }],
+      metadata: { assembly: { nodes } } } }
+    const before = structuredClone(record)
+    const shown = body(record)
+    const locations = find(shown, node => node.props['data-personality-positions'] === 1)[0]
+    assert.ok(text(locations).includes('body-0'))
+    assert.ok(!text(locations).includes('body-1') && !text(locations).includes('body-2'))
+    const system = find(shown, node => node.props['data-message-index'] === 0)[0]
+    assert.ok(text(system, true).includes('人格卡 · 性格 / Personality traits'))
+    assert.ok(text(locations).includes('field=personality · resourceId=agent'))
+    assert.ok(text(system, true).includes('角色性格'))
+    assert.deepEqual(record, before, 'viewing an old record must preserve its original source module')
+  })
+}
+
 test('configuration and collapsed detail labels also render in English', () => {
   const visible = text(body(record, 'en'), true)
   for (const label of ['Configuration for this request', 'World-book activation', 'Assembler assembly', 'Tavern sampling configuration']) assert.ok(visible.includes(label), label)

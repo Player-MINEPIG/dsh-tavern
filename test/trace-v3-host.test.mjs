@@ -7,6 +7,8 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { createAssemblyBodyReader } from '../packages/tavern-trace/src/body-references.js'
+import { createNativeRequestReader } from '../packages/tavern-trace/src/native-request-reader.js'
+import { recordedPersonalityPositions, recordedRequestResult } from '../packages/tavern-trace/src/request-view.js'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 
 const runtimeRoot = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
@@ -108,6 +110,45 @@ test('DSH real AgentLoop: official sections, LLM capture, durable system message
     assert.equal(second.delivery.assemblyVerified, false)
     assert.deepEqual(second.systemMessages, ['ONLY_COMPLETE'])
     removeComplete()
+    const card = store.personalityStore.import(JSON.stringify({ spec: 'chara_card_v2', spec_version: '2.0',
+      data: { name: 'Archivist', personality: 'Cite only verified facts 📚' } }))
+    store.personalityStore.select(agent.id, { characterCardId: card.id })
+    const reader = createNativeRequestReader({ assemblies: store.assemblyStore, sessions: () => root.sessions,
+      sessionController: { inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) } })
+    for (const policy of [null, 'builtin-native-slots']) {
+      if (policy) root.get('dshPromptAssembler').store.apply(agent.id, policy)
+      await turn()
+      const row = store.assemblyStore.get(agent.id, store.assemblyStore.list(agent.id).at(-1).id)
+      assert.ok(row.nativeRequestRef, 'retain the exact stock request cut with or without a strategy')
+      const detail = await reader.readBodies(row)
+      const result = recordedRequestResult(detail)
+      const positions = recordedPersonalityPositions(detail, result)
+      const field = positions.find(pos => pos.source.field === 'personality')
+      assert.equal(field.source.module, 'tavern.personality')
+      assert.equal(field.source.resourceId, card.id)
+      assert.ok(field.source.resourceRevision)
+      const actualNode = result.nodes.find(node => node.source?.module === 'tavern.personality' && node.source.field === 'personality')
+      assert.ok(actualNode)
+      assert.equal(actualNode.name, '人格卡 · 性格 / Personality traits')
+      assert.equal(actualNode.sourceStatus, policy ? 'recorded' : 'recorded-field')
+      assert.equal(actualNode.source.resourceRevision, field.source.resourceRevision)
+      assert.equal(field.text, 'Traits: Cite only verified facts 📚')
+      const message = result.messages[field.messageIndex]
+      assert.equal(message.id, field.messageId)
+      assert.equal(message.content[0].text.slice(field.range.startUtf16, field.range.endUtf16), field.text)
+      if (policy) {
+        const archived = structuredClone(row)
+        const old = archived.nativeSourceRefs.find(node => node.source.field === 'personality')
+        old.name = old.source.field
+        old.source.module = old.source.sourceId = 'personality'
+        const projection = recordedRequestResult(await reader.readBodies(archived))
+        const projected = projection.nodes.find(node => node.source?.resourceId === card.id && node.source.field === 'personality')
+        assert.equal(projected.source.module, 'personality')
+        assert.equal(projected.name, '人格卡 · 性格 / Personality traits')
+        assert.equal(projected.recordedName, 'personality')
+        assert.equal(old.name, 'personality')
+      }
+    }
     await plugin.dispose()
     const clean = await root.systemPrompt.assemble({ agent, scope: agent })
     assert.equal(clean.sections.some(s => s.name.startsWith('pmp-dsh-tavern:')), false)

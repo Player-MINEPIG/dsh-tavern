@@ -206,9 +206,9 @@ characters 是 Unicode 码点数；utf16Units 与 utf8Bytes 也不是 token 数�
 
 ### 人格卡
 
-已绑定人格卡使用 `pmp-dsh-tavern:part:personality:<field>`，字段路径中的斜线在段名里显示为冒号。每段保留当时的卡 ID、来源字段与 `resourceRevision`；`index` 给出实际顺序。例如 `mes_example` 的历史来源仍是卡片字段，装配正文可以含文风标签和已展开的宏。`evolution/after`、`evolution/behavior`、`evolution/boundary` 取有效自我修订，`mood` 取适用的临时状态。这些状态按字面装配，来源 revision 分别归成长历史与心情状态。选择按压缩边界刷新时，Trace 记录本次实际固定使用的自我修订版本。选择 ID 表示当时的绑定；策略省略、complete 覆盖等情况下，应看记录的字段和交付证据来确认模型实际收到什么。
+无策略或沿用旧官方指令槽时，已绑定人格卡使用 `pmp-dsh-tavern:part:personality:<field>`，字段路径中的斜线在段名里显示为冒号。每段保留当时的卡 ID、来源字段与 `resourceRevision`；`index` 给出实际顺序。例如 `mes_example` 的历史来源仍是卡片字段，装配正文可以含文风标签和已展开的宏。`evolution/after`、`evolution/behavior`、`evolution/boundary` 取有效自我修订，`mood` 取适用的临时状态。这些状态按字面装配，来源 revision 分别归成长历史与心情状态。选择按压缩边界刷新时，Trace 记录本次实际固定使用的自我修订版本。选择 ID 表示当时的绑定；策略省略、complete 覆盖等情况下，应看记录的字段和交付证据来确认模型实际收到什么。
 
-无装配策略也会记录普通请求的具名段和 DSH 历史引用。Assembler 的 Standard「实际请求」完整投影视图需要 native 策略产生的请求引用；没有该引用时，可从 v3 查看经验证的普通段落。成长评估和自动心情判断是后台辅助调用，各自的结果通过后续普通请求生效。请求 Trace 与人格修订依据在[人格卡 API](API.md#personality-cards) 中分别读取。
+显式 `tavern.personality` 来源按 `card`、`evolution`、`mood` 三个位置装配；记录通过实际段和来源字段识别贡献，不依赖某个固定的 system 消息序号。没有选择装配策略的原生请求同样记录完整请求的历史引用。旧记录若只核验了部分系统段，Trace 仍可显示这些段的消息 ID 和 UTF-16 范围，但不补写整份历史请求，也不猜测其消息序号。成长评估和自动心情判断是后台辅助调用，各自的结果通过后续普通请求生效。请求 Trace 与人格修订依据在[人格卡 API](API.md#personality-cards) 中分别读取。
 
 ### 世界书条目标识
 

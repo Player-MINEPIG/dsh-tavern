@@ -6,6 +6,9 @@ import { join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { CharacterStore } from '../packages/character/src/store.js'
+import { assembleRequest, configurePosition, positionRows } from 'dsh-prompt-assembler'
+import { BUILTINS as CORE_BUILTINS, createDefaultRegistry, NATIVE_BUILTINS } from 'dsh-prompt-assembler/adapters/tavern'
+import { registerPersonalitySource, withPersonalityRule } from '../packages/tavern-loader/src/personality-source.js'
 import { PersonalityStore } from '../packages/personality/src/store.js'
 import { TavernProfileLoader } from '../packages/tavern-loader/src/profile-loader.js'
 import * as tavern from '../packages/tavern-loader/src/index.js'
@@ -48,6 +51,32 @@ test('only the selected self revision and applicable temporary mood enter the ne
   assert.deepEqual(runtime.compile({ sessionId: 'other' }).personalitySections, [])
   assert.ok(!runtime.compile({ sessionId: 'work' }).personalitySections.some(s => /my mind|do_not_expand/.test(s.text)))
   assert.ok(frozen.some(s => s.text.includes('I can change my mind')))
+})
+
+test('Assembler resource positions resolve personality literals independently of RP macros and disappear on unload', t => {
+  const cards = new PersonalityStore(temporary(t))
+  const card = cards.import(JSON.stringify(input))
+  cards.select('work', { characterCardId: card.id })
+  const registry = createDefaultRegistry()
+  const unregister = registerPersonalitySource(registry, cards)
+  assert.equal(registry.list({ sessionId:'unbound' }).find(source => source.id === 'tavern.personality').moduleAvailable, false)
+  const runtime = new TavernProfileLoader({ presetStore: {}, personalityStore: cards,
+    personalityMood: { read: () => ({ revision:1, mood:{ feeling:'curious', intensity:3, reason:'Keep {{description}} literal' } }) },
+    selections: { get:() => ({ presetId:null, worldBookIds:[], character:{} }) } })
+  const {assemblyInput} = runtime.compile({sessionId:'work'})
+  const assets = { ...assemblyInput, character:{id:'RP',data:{name:'RP',description:'RP description'}} }
+  for (const preset of [NATIVE_BUILTINS[0], CORE_BUILTINS[0]]) {
+    const result = assembleRequest({ registry, assets, sessionId:'work', preset:withPersonalityRule(preset), preview:true })
+    const nodes = result.nodes.filter(node => node.module === 'tavern.personality')
+    const mood = nodes.find(node => node.positionId === 'mood')
+    assert.ok(mood.text.includes('Keep {{description}} literal'))
+    assert.equal(nodes.find(node => node.source.field === 'personality').name, '人格卡 · 性格 / Personality traits')
+    assert.equal(nodes.find(node => node.source.field === 'description').name, '人格卡 · 描述 / Personality description')
+    assert.ok(nodes.every(node => node.name.startsWith('人格卡 · ')))
+    assert.ok(result.nodes.some(node => node.module === 'character' && node.text === 'RP description'))
+  }
+  unregister()
+  assert.ok(!registry.list().some(source => source.id === 'tavern.personality'))
 })
 
 test('a read-only preview never pins growth; live snapshots refresh at successful compaction, rollback or rebinding', t => {
@@ -158,6 +187,11 @@ test('stock DSH sends one personality with native instructions and records its f
       const summary = store.assemblyStore.list(agent.id)[index], trace = store.assemblyStore.get(agent.id,summary.id)
       assert.equal(trace.delivery.assemblyVerified,true)
       assert.ok(trace.sections.some(s => s.sources?.some(source => source.kind === 'personality' && source.field === 'description' && source.resourceId === card.id && source.resourceRevision)))
+      if (index === 1) {
+        const recorded = trace.nativeSourceRefs.find(ref => ref.source?.module === 'tavern.personality' && ref.source?.field === 'description')
+        assert.equal(recorded?.name, '人格卡 · 描述 / Personality description')
+        assert.equal(recorded.source.resourceId, card.id)
+      }
     }
     assert.equal(requests.length,2)
     const fresh = (await root.agents.create({sessionId:'another-workspace',agentOptions:{provider:'offline',model:'test'}})).agent
@@ -186,9 +220,45 @@ test('stock DSH sends one personality with native instructions and records its f
       const session = root.sessions.prepare(id,{meta:{ ...agent.session.header, id, cwd },seed:[],eventState:'detached'})
       cards.select(id,{characterCardId:card.id})
       const view = await face.runtime.preview({ agent:{id,session},sessionId:id,preset:face.store.get('builtin-native-slots') })
-      const system = view.messages.find(m => m.role === 'system')
-      assert.equal(system.content[0].text.includes('WORKSPACE ONLY'),same)
+      const system = view.messages.filter(m => m.role === 'system').map(m => m.content[0].text).join('\n')
+      assert.equal(system.includes('WORKSPACE ONLY'),same)
+      assert.equal(view.nodes.some(node => node.module === 'tavern.personality' && node.positionId === 'mood' && node.text.includes('WORKSPACE ONLY')), same)
       assert.equal(root.sessions.get(id),undefined, 'preview did not activate the detached session')
+    }
+    const sourceList = face.runtime.sources(agent.id)
+    const preset = face.store.get('builtin-native-slots')
+    assert.deepEqual(positionRows(preset, sourceList).filter(row => row.sourceId === 'tavern.personality')
+      .map(({positionId, enabled}) => [positionId, enabled]), [['card',true],['evolution',true],['mood',true]])
+    const descriptor = sourceList.find(source => source.id === 'tavern.personality')
+    assert.equal(descriptor.moduleAvailable, true)
+    assert.equal(descriptor.name, '人格卡 / Personality card')
+    const off = { ...preset, rules: preset.rules.map(rule => rule.kind === 'tavern.personality' ? { ...rule, enabled: false } : rule) }
+    const old = { ...preset, rules: preset.rules.filter(rule => rule.kind !== 'tavern.personality') }
+    const onlyCard = configurePosition(configurePosition(preset,sourceList,'tavern.personality#mood',{ enabled:false }),
+      sourceList,'tavern.personality#evolution',{ enabled:false })
+    const beforeBase = configurePosition(preset, sourceList, 'tavern.personality#card', {}, 'native-system#content')
+    const positionPreview = async candidate => {
+      const preview = await face.runtime.preview({ agent, sessionId:agent.id, preset:candidate })
+      return { preview, text:preview.messages.filter(m => m.role === 'system').flatMap(m => m.content.map(b => b.text)).join('\n') }
+    }
+    // Draft previews follow their own rules when the currently applied policy differs.
+    face.store.applySnapshot(agent.id, old)
+    for (const [candidate, expected] of [[old,1],[off,0],[preset,1]]) {
+      const {text,preview} = await positionPreview(candidate)
+      assert.equal(text.split('Economical with words').length - 1,expected)
+      assert.equal(preview.nodes.filter(node => node.source.module === 'tavern.personality' && node.source.field === 'personality').length, candidate === preset ? 1 : 0)
+    }
+    for (const [candidate, expected] of [[face.store.get('builtin-native'),1],[old,1],[off,0],[onlyCard,1],[beforeBase,1]]) {
+      face.store.applySnapshot(agent.id, candidate)
+      await turn()
+      const delivered = requests.at(-1)
+      assert.equal(delivered.split('Economical with words').length - 1, expected)
+      assert.ok(delivered.includes('HOST BASE'))
+      if (candidate === onlyCard) {
+        assert.ok(!delivered.includes('WORKSPACE ONLY'))
+        assert.ok(!delivered.includes('I distinguish observed and inferred facts'))
+      }
+      if (candidate === beforeBase) assert.ok(delivered.indexOf('Economical with words') < delivered.indexOf('HOST BASE'))
     }
     cards.select(agent.id,null)
     await turn()

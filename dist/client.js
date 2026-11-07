@@ -9856,6 +9856,7 @@ function isSupportedUiLocale(value) {
 
 // packages/identity.js
 var PLUGIN_ID = "pmp-dsh-tavern";
+var PERSONALITY_SOURCE_ID = "tavern.personality";
 var API_ROOT = `/${PLUGIN_ID}/api`;
 var API_V1 = `${API_ROOT}/v1`;
 var API_V3 = `${API_ROOT}/v3`;
@@ -11038,6 +11039,13 @@ var zh_CN_default = Object.freeze({
   "trace.roundAttempt": "\u8F6E\u6B21 {turn} \xB7 \u6B65\u9AA4 {step} \xB7 \u8BF7\u6C42\u8BB0\u5F55 {attempt}",
   "trace.resource.preset": "Preset",
   "trace.resource.character": "Character",
+  "trace.resource.characterPersonality": "\u89D2\u8272\u6027\u683C",
+  "trace.resource.personality": "\u4EBA\u683C\u5361",
+  "trace.personality.positions": "\u672C\u6B21\u8BF7\u6C42\u7684\u4EBA\u683C\u5B57\u6BB5\u4F4D\u7F6E",
+  "trace.personality.message": "\u6D88\u606F {number} \xB7 {role}",
+  "trace.personality.messageId": "\u6D88\u606F ID\uFF1A{id}",
+  "trace.personality.revision": "\u6765\u6E90\u7248\u672C\uFF1A{revision}",
+  "trace.personality.noPosition": "\u8FD9\u6761\u8BB0\u5F55\u6CA1\u6709\u53EF\u6838\u9A8C\u7684\u4EBA\u683C\u5B57\u6BB5\u6D88\u606F\u4F4D\u7F6E\u3002",
   "trace.resource.user": "User",
   "trace.worldBook.activationNote": "\u6FC0\u6D3B\u5019\u9009\u662F\u5173\u952E\u8BCD\u3001\u6982\u7387\u548C\u9884\u7B97\u9636\u6BB5\u7684\u7ED3\u679C\uFF1B\u6700\u7EC8\u662F\u5426\u8FDB\u5165\u8BF7\u6C42\uFF0C\u4EE5\u4E0B\u65B9\u672C\u6B21\u8BF7\u6C42\u8BB0\u5F55\u4E3A\u51C6\u3002",
   "trace.worldBook.request": "\u672C\u6B21\u8BF7\u6C42\uFF1A",
@@ -12256,6 +12264,13 @@ var en_default = Object.freeze({
   "trace.roundAttempt": "Turn {turn} \xB7 Step {step} \xB7 Request record {attempt}",
   "trace.resource.preset": "Preset",
   "trace.resource.character": "Character",
+  "trace.resource.characterPersonality": "Character personality",
+  "trace.resource.personality": "Personality card",
+  "trace.personality.positions": "Personality field positions in this request",
+  "trace.personality.message": "Message {number} \xB7 {role}",
+  "trace.personality.messageId": "Message ID: {id}",
+  "trace.personality.revision": "Source revision: {revision}",
+  "trace.personality.noPosition": "This record has no verified message range for a personality field.",
   "trace.resource.user": "User",
   "trace.worldBook.activationNote": "Activation candidates reflect keyword, probability and budget evaluation. Final use is reported separately from this request\u2019s recorded evidence.",
   "trace.worldBook.request": "This request:",
@@ -28816,6 +28831,14 @@ function worldBookRequestOutcome(record, book) {
   return { applied, skipped: skips.length > 0, reasons: [...new Set(skips.map((fact) => typeof fact.reason === "string" && fact.reason ? fact.reason : null))] };
 }
 
+// packages/tavern-trace/src/personality-source.js
+function isPersonalitySource(source) {
+  if (!source?.field || source.plugin && source.plugin !== PLUGIN_ID) return false;
+  if (source.kind) return source.kind === "personality";
+  const id = source.module ?? source.sourceId;
+  return id === PERSONALITY_SOURCE_ID || id === "personality";
+}
+
 // packages/tavern-trace/src/request-view.js
 function recordedRequestResult(record) {
   const request2 = record.requestAssembly ?? record.nativeRequest;
@@ -28832,6 +28855,65 @@ function recordedMessageNodes(result, message, index) {
 function recordedSystemModules(result, message, index) {
   if (result.historyPolicy?.decisions?.some((item) => item.messageId === message.id && item.action !== "keep")) return [];
   return recordedMessageNodes(result, message, index);
+}
+var hasPersonalityNode = (node) => isPersonalitySource(node.source) || node.children?.some(hasPersonalityNode);
+function recordedPersonalityPositions(record, result) {
+  const rows = /* @__PURE__ */ new Map();
+  function add(source, messageId, role2, messageIndex, range, text3) {
+    const key2 = JSON.stringify([messageId, source.resourceId, source.field, range?.startUtf16, range?.endUtf16]);
+    if (!rows.has(key2)) rows.set(key2, { source, messageId, role: role2, messageIndex, range, text: text3 });
+  }
+  for (const part of record.sections ?? []) {
+    const ref2 = part.reference;
+    if (part.contentStatus !== "available" || ref2?.kind !== "system-message" || !ref2.range || !ref2.messageId || part.sources?.length !== 1 || !isPersonalitySource(part.sources[0])) continue;
+    const index = result?.messages.findIndex((message) => message.id === ref2.messageId) ?? -1;
+    if (result && index < 0) continue;
+    add(part.sources[0], ref2.messageId, "system", index, ref2.range, part.text);
+  }
+  const candidates = result?.nodes.filter(hasPersonalityNode) ?? [];
+  const fieldResult = candidates.length ? { ...result, nodes: candidates } : null;
+  for (const [index, message] of (fieldResult?.messages ?? []).entries()) {
+    let visit3 = function(node) {
+      if (isPersonalitySource(node.source) && node.text) {
+        const ref2 = node.reference;
+        const start = ref2?.messageId === message.id ? ref2.startUtf16 : content.indexOf(node.text);
+        const end = start + node.text.length;
+        if (start >= 0 && content.slice(start, end) === node.text && (ref2?.messageId === message.id ? ref2.endUtf16 === end : content.indexOf(node.text, start + 1) < 0)) {
+          add(node.source, message.id, message.role, index, { startUtf16: start, endUtf16: end }, node.text);
+        }
+      }
+      for (const child of node.children ?? []) visit3(child);
+    };
+    const nodes = message.role === "system" ? recordedSystemModules(fieldResult, message, index) : recordedMessageNodes(fieldResult, message, index);
+    if (!nodes.length) continue;
+    const content = (message.content ?? []).filter((block) => block.type === "text").map((block) => block.text).join("");
+    nodes.forEach(visit3);
+  }
+  return [...rows.values()].sort((a, b2) => a.messageIndex - b2.messageIndex || a.range.startUtf16 - b2.range.startUtf16);
+}
+
+// packages/personality/src/field-name.js
+var fieldLabels = {
+  name: "\u540D\u79F0 / Personality name",
+  system_prompt: "\u884C\u4E3A\u6307\u5F15 / Behavior guidance",
+  description: "\u63CF\u8FF0 / Personality description",
+  personality: "\u6027\u683C / Personality traits",
+  scenario: "\u80CC\u666F / Background",
+  mes_example: "\u5BF9\u8BDD\u793A\u4F8B / Dialogue examples",
+  first_mes: "\u5F00\u573A\u53C2\u8003 / Opening reference",
+  post_history_instructions: "\u8865\u5145\u6307\u5F15 / Additional guidance",
+  "evolution/after": "\u81EA\u6211\u8BA4\u8BC6 / Self-understanding",
+  "evolution/behavior": "\u884C\u4E3A\u53D8\u5316 / Behavioral change",
+  "evolution/boundary": "\u9002\u7528\u8FB9\u754C / Scope",
+  mood: "\u5F53\u524D\u5FC3\u60C5 / Current mood"
+};
+function personalityFieldName(field) {
+  const alternate = /^alternate_greetings\/(\d+)$/.exec(field);
+  if (alternate) {
+    const number2 = Number(alternate[1]) + 1;
+    return `\u4EBA\u683C\u5361 \xB7 \u5907\u9009\u5F00\u573A ${number2} / Alternate opening ${number2}`;
+  }
+  return `\u4EBA\u683C\u5361 \xB7 ${Object.hasOwn(fieldLabels, field) ? fieldLabels[field] : field}`;
 }
 
 // packages/tavern-trace/src/client.js
@@ -29074,6 +29156,10 @@ var sourceStatusLabels = {
 };
 var preStyle = { whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: 0 };
 function requestNodeTitle(node, index) {
+  if (isPersonalitySource(node.source))
+    return rawText(personalityFieldName(node.source.field));
+  if (node.source?.module === "character" && node.source.field === "personality")
+    return uiMessage("trace.resource.characterPersonality");
   const named = ["recorded", "current-name"].includes(node.sourceStatus);
   if (!named && nodeLabels[node.name]) return uiMessage(nodeLabels[node.name]);
   if (node.sourceStatus === "name-unrecorded" || !named && /^(preset|worldbook):/.test(node.name ?? "")) {
@@ -29194,6 +29280,9 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
   const contentNotice = referenceBacked ? bodyStatusNotice(record.contentStatus) : record.contentStatus && record.contentStatus !== "available" ? rawText(record.contentStatus) : null;
   const unavailable = () => uiMessage("trace.v3.notRecorded");
   const resourceKnown = (key2, selectionKey) => Object.hasOwn(resources, key2) || Object.hasOwn(selection, selectionKey);
+  const result = recordedRequestResult(record);
+  const positions = recordedPersonalityPositions(record, result);
+  const hasPersonality = resourceKnown("personalityCard", "personalityCardId") || positions.length > 0;
   return h24(
     "div",
     { className: "dttrace-section" },
@@ -29203,6 +29292,7 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
       { className: "dttrace-grid" },
       resourceCard("trace.resource.preset", resources.preset, selection.presetId, resourceKnown("preset", "presetId")),
       resourceCard("trace.resource.character", resources.characterCard, selection.characterCardId, resourceKnown("characterCard", "characterCardId")),
+      hasPersonality ? resourceCard("trace.resource.personality", resources.personalityCard, selection.personalityCardId ?? positions[0]?.source.resourceId, true) : null,
       resourceCard(
         "trace.resource.user",
         resources.userProfile,
@@ -29213,6 +29303,28 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
       summaryCard("trace.v3.mode", mode === "append" ? uiMessage("trace.v3.append") : mode === "replace" ? uiMessage("trace.v3.replace") : unavailable()),
       summaryCard("trace.v3.model", record.delivery?.model ? rawText([record.delivery.provider, record.delivery.model].filter(Boolean).join(" / ")) : unavailable())
     ),
+    hasPersonality ? h24(
+      "div",
+      { className: "dttrace-section", "data-personality-positions": positions.length },
+      h24("div", { className: "dttrace-section-title" }, uiMessage("trace.personality.positions")),
+      positions.length ? positions.map(({ source, messageId, role: role2, messageIndex, range, text: text3 }) => h24(
+        "details",
+        { className: "dttrace-book", key: JSON.stringify([messageId, source.field, range]) },
+        h24(
+          "summary",
+          null,
+          rawText(personalityFieldName(source.field)),
+          " \xB7 ",
+          messageIndex >= 0 ? uiMessage("trace.personality.message", { number: messageIndex + 1, role: role2 }) : rawText(role2),
+          " \xB7 ",
+          rawText(`UTF-16 [${range.startUtf16}, ${range.endUtf16})`)
+        ),
+        h24("div", { className: "dttrace-meta" }, uiMessage("trace.personality.messageId", { id: messageId })),
+        h24("div", { className: "dttrace-meta" }, rawText(`field=${source.field} \xB7 resourceId=${source.resourceId ?? "\u2014"}`)),
+        source.resourceRevision != null ? h24("div", { className: "dttrace-meta" }, uiMessage("trace.personality.revision", { revision: source.resourceRevision })) : null,
+        h24("pre", { style: preStyle }, rawText(text3))
+      )) : h24("p", { className: "dttrace-note" }, uiMessage("trace.personality.noPosition"))
+    ) : null,
     Number.isSafeInteger(selection.character?.greetingIndex) ? h24("div", { className: "dttrace-meta" }, uiMessage("trace.v3.greeting", { index: selection.character.greetingIndex })) : null,
     h24("div", { className: "dttrace-meta" }, uiMessage("trace.v3.sampling"), " ", config === void 0 ? unavailable() : Object.keys(config).length ? rawText(Object.entries(config).map(([key2, value]) => `${key2}: ${JSON.stringify(value)}`).join(" \xB7 ")) : uiMessage("trace.v3.noSampling")),
     record.parameters?.fallbacks?.some((item) => item.code === "DSH_MODEL_SELECTION_OWNS_EFFORT") ? h24("p", { className: "dttrace-note" }, uiMessage("preset.reasoningEffortNative")) : null,
@@ -29264,7 +29376,7 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
       h24(
         "div",
         { className: "dttrace-disclosure-body" },
-        h24(RecordedRequest, { result: recordedRequestResult(record) }),
+        h24(RecordedRequest, { result }),
         h24(
           "details",
           { className: "dttrace-book" },

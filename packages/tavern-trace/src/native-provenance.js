@@ -1,4 +1,6 @@
 import { digest } from '../../prompt-metadata.js'
+import { isPersonalitySource } from './personality-source.js'
+import { personalityFieldName } from '../../personality/src/field-name.js'
 
 const textOf = message => (message?.content ?? []).filter(block => block.type === 'text').map(block => block.text).join('')
 const contentHash = message => digest(message.content)
@@ -39,6 +41,10 @@ export function captureNativeSourceReferences(record, observed, messages) {
     if (node.nativeSectionName) {
       const part = record.sections.find(s => s.name === node.nativeSectionName && s.hash === digest(node.text))
       anchor = part && partAnchor(part, messages)
+      const field = part?.sources?.length === 1 && part.sources[0]
+      if (field?.kind === 'personality' && isPersonalitySource(node.source)
+        && node.source?.field === field.field && node.source?.resourceId === field.resourceId)
+        node = { ...node, source: { ...node.source, resourceRevision: field.resourceRevision } }
     } else if (node.nativeMessageId) {
       const message = messages.find(m => m.id === node.nativeMessageId && m.role === node.role && textOf(m) === node.text)
       if (message) anchor = { messageId: message.id, messageHash: contentHash(message), startUtf16: 0, endUtf16: node.text.length }
@@ -62,7 +68,9 @@ function hydrateNode(stored, messages) {
     || ref.startUtf16 < 0 || ref.endUtf16 <= ref.startUtf16 || ref.endUtf16 > textOf(message).length) return null
   const text = textOf(message).slice(ref.startUtf16, ref.endUtf16)
   if (digest(text) !== stored.hash) return null
-  return { ...stored, source: sourceMetadata(stored.source), text, role: message.role, lifetime: 'native',
+  const display = isPersonalitySource(stored.source) && stored.name === stored.source.field
+    ? { name: personalityFieldName(stored.source.field), recordedName: stored.name } : {}
+  return { ...stored, ...display, source: sourceMetadata(stored.source), text, role: message.role, lifetime: 'native',
     locked: true, lockReason: 'recorded-request', sourceStatus: stored.nameRecorded ? 'recorded' : 'name-unrecorded',
     children: (stored.children ?? []).map(child => hydrateNode(child, messages)).filter(Boolean) }
 }
@@ -81,7 +89,7 @@ export function nativeRequestProvenance(record, request, { resolveSourceName } =
     // A personality section has one recorded input field. The label and ST
     // macro expansion can make its assembled hash differ from its raw field.
     const source = (part.sources ?? []).find(s => s.hash === part.hash)
-      ?? (part.sources?.length === 1 && part.sources[0].kind === 'personality' ? part.sources[0] : null)
+      ?? (part.sources?.length === 1 && isPersonalitySource(part.sources[0]) ? part.sources[0] : null)
     const module = source?.module ?? source?.sourceId ?? 'native-section'
     const node = hydrateNode({ version: 1, id: `recorded-section-${index}`, module,
       name: source?.field ? `${module}:${source.field}` : part.name,
@@ -89,6 +97,10 @@ export function nativeRequestProvenance(record, request, { resolveSourceName } =
       nameRecorded: false, hash: part.hash, reference: anchor, children: [], stability: 'snapshot' }, messages)
     if (node) {
       if (!source) node.sourceStatus = 'section-only'
+      else if (isPersonalitySource(source)) {
+        node.name = personalityFieldName(source.field)
+        node.sourceStatus = 'recorded-field'
+      }
       else if (resolveSourceName) {
         // A current label helps identify an old item; it is never historical evidence.
         let name

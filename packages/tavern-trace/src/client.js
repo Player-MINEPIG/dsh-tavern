@@ -1,7 +1,9 @@
 import { installTavernStyle } from '../../client-style.js'
 import { MvuRoundSection, mvuStyles } from './mvu-view.js'
 import { worldBookRequestOutcome } from './world-book-request.js'
-import { recordedMessageNodes, recordedRequestResult, recordedSystemModules } from './request-view.js'
+import { recordedMessageNodes, recordedPersonalityPositions, recordedRequestResult, recordedSystemModules } from './request-view.js'
+import { isPersonalitySource } from './personality-source.js'
+import { personalityFieldName } from '../../personality/src/field-name.js'
 import {
   createElement,
   useCallback,
@@ -260,6 +262,10 @@ const sourceStatusLabels = { 'name-unrecorded': 'trace.assembler.nameUnrecorded'
   'section-only': 'trace.assembler.fieldsUnrecorded', unrecorded: 'trace.assembler.sourceUnrecorded' }
 const preStyle = { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 }
 function requestNodeTitle(node, index) {
+  if (isPersonalitySource(node.source))
+    return rawText(personalityFieldName(node.source.field))
+  if (node.source?.module === 'character' && node.source.field === 'personality')
+    return uiMessage('trace.resource.characterPersonality')
   const named = ['recorded', 'current-name'].includes(node.sourceStatus)
   if (!named && nodeLabels[node.name]) return uiMessage(nodeLabels[node.name])
   if (node.sourceStatus === 'name-unrecorded' || !named && /^(preset|worldbook):/.test(node.name ?? '')) {
@@ -339,11 +345,15 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
       : null
   const unavailable = () => uiMessage('trace.v3.notRecorded')
   const resourceKnown = (key, selectionKey) => Object.hasOwn(resources, key) || Object.hasOwn(selection, selectionKey)
+  const result = recordedRequestResult(record)
+  const positions = recordedPersonalityPositions(record, result)
+  const hasPersonality = resourceKnown('personalityCard', 'personalityCardId') || positions.length > 0
   return h('div', { className: 'dttrace-section' },
     h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.configuration')),
     h('div', { className: 'dttrace-grid' },
       resourceCard('trace.resource.preset', resources.preset, selection.presetId, resourceKnown('preset', 'presetId')),
       resourceCard('trace.resource.character', resources.characterCard, selection.characterCardId, resourceKnown('characterCard', 'characterCardId')),
+      hasPersonality ? resourceCard('trace.resource.personality', resources.personalityCard, selection.personalityCardId ?? positions[0]?.source.resourceId, true) : null,
       resourceCard('trace.resource.user', resources.userProfile, selection.userId ?? selection.userProfileId,
         resourceKnown('userProfile', 'userId') || Object.hasOwn(selection, 'userProfileId')),
       summaryCard('trace.v3.worldBooks', bookResources === undefined ? unavailable() : bookResources.length
@@ -352,6 +362,17 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
       summaryCard('trace.v3.model', record.delivery?.model
         ? rawText([record.delivery.provider, record.delivery.model].filter(Boolean).join(' / ')) : unavailable()),
     ),
+    hasPersonality ? h('div', { className: 'dttrace-section', 'data-personality-positions': positions.length },
+      h('div', { className: 'dttrace-section-title' }, uiMessage('trace.personality.positions')),
+      positions.length ? positions.map(({ source, messageId, role, messageIndex, range, text }) =>
+        h('details', { className: 'dttrace-book', key: JSON.stringify([messageId, source.field, range]) },
+          h('summary', null, rawText(personalityFieldName(source.field)), ' · ', messageIndex >= 0 ? uiMessage('trace.personality.message', { number: messageIndex + 1, role }) : rawText(role),
+            ' · ', rawText(`UTF-16 [${range.startUtf16}, ${range.endUtf16})`)),
+          h('div', { className: 'dttrace-meta' }, uiMessage('trace.personality.messageId', { id: messageId })),
+          h('div', { className: 'dttrace-meta' }, rawText(`field=${source.field} · resourceId=${source.resourceId ?? '—'}`)),
+          source.resourceRevision != null ? h('div', { className: 'dttrace-meta' }, uiMessage('trace.personality.revision', { revision: source.resourceRevision })) : null,
+          h('pre', { style: preStyle }, rawText(text))))
+        : h('p', { className: 'dttrace-note' }, uiMessage('trace.personality.noPosition'))) : null,
     Number.isSafeInteger(selection.character?.greetingIndex)
       ? h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.greeting', { index: selection.character.greetingIndex })) : null,
     h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.sampling'), ' ', config === undefined ? unavailable()
@@ -386,7 +407,7 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
     h('details', { className: 'dttrace-disclosure' },
       h('summary', null, uiMessage('trace.v3.loaderDetails')),
       h('div', { className: 'dttrace-disclosure-body' },
-        h(RecordedRequest, { result: recordedRequestResult(record) }),
+        h(RecordedRequest, { result }),
         h('details', { className: 'dttrace-book' },
           h('summary', null, uiMessage('trace.assembler.materials')),
           h('p', { className: 'dttrace-note' }, uiMessage('trace.assembler.materialsNote')),
