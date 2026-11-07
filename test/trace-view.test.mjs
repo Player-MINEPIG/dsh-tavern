@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { recordedPersonalityLoadState, recordedPersonalityPositions, recordedRequestResult } from '../packages/tavern-trace/src/request-view.js'
+import { recordedPersonalityLoadState, recordedPersonalityName, recordedPersonalityPositions, recordedRequestResult } from '../packages/tavern-trace/src/request-view.js'
 import { TraceRecordContent } from '../packages/tavern-trace/src/client.js'
 import { setClientUiSettings } from '../packages/client/src/i18n.js'
 
@@ -82,25 +82,56 @@ test('historical personality evidence becomes one status without field text or a
   const source = { kind: 'personality', resourceId: 'star', field: 'mood', resourceRevision: 6 }
   const part = { name: 'personality:mood', contentStatus: 'available', text: 'PRIVATE OLD MOOD', sources: [source],
     reference: { kind: 'system-message', messageId: 'old-system', range: { startUtf16: 8, endUtf16: 24 } } }
-  const row = { status: 'request-observed', schemaVersion: 4, audit: { resources: { personalityCard: { id: 'star', name: 'PRIVATE CARD NAME' } } }, sections: [part] }
+  const row = { status: 'request-observed', schemaVersion: 4, audit: { resources: { personalityCard: { id: 'star', name: '绮洛' } } }, sections: [part] }
   const before = structuredClone(row)
   const shown = body(row)
   assert.equal(find(shown, node => node.props['data-personality-state'] === 'loaded').length, 1)
-  assert.ok(text(shown, true).includes('已加载'))
-  for (const privateValue of ['PRIVATE OLD MOOD', 'PRIVATE CARD NAME', 'old-system', 'UTF-16', '人格字段位置']) assert.ok(!text(shown).includes(privateValue), privateValue)
+  assert.ok(text(shown, true).includes('已加载 · 绮洛'))
+  assert.ok(text(body(row, 'en'), true).includes('Loaded · 绮洛'))
+  for (const privateValue of ['PRIVATE OLD MOOD', 'old-system', 'UTF-16', '人格字段位置']) assert.ok(!text(shown).includes(privateValue), privateValue)
   assert.equal(find(shown, node => node.props['data-personality-positions'] !== undefined).length, 0)
   assert.deepEqual(row, before)
   part.contentStatus = 'reference-unavailable'
   assert.equal(recordedPersonalityLoadState(row), 'unverifiable')
+  assert.ok(!text(body(row), true).includes('绮洛'))
+})
+
+test('loaded historical personality names require matching recorded and verified identities', () => {
+  const source = { kind: 'personality', resourceId: 'historical-card', field: 'mood' }
+  const value = { status: 'request-observed', audit: { resources: { personalityCard: { id: 'historical-card', name: 'Historical name' } } },
+    sections: [{ contentStatus: 'available', sources: [source], text: 'historical mood',
+      reference: { kind: 'system-message', messageId: 'system', range: { startUtf16: 0, endUtf16: 15 } } }] }
+  assert.equal(recordedPersonalityName(value), 'Historical name')
+  for (const change of [
+    v => { delete v.audit.resources.personalityCard },
+    v => { delete v.audit.resources.personalityCard.name },
+    v => { v.audit.resources.personalityCard.id = 'different-card' },
+    v => { v.selection = { personalityCardId: 'different-card' } },
+    v => { v.sections[0].sources[0].resourceId = undefined },
+    v => { v.sections.push({ ...v.sections[0], sources: [{ ...source, resourceId: 'another-card' }] }) },
+    v => { v.audit.resources.personalityCard.id = 'clipped…'; v.sections[0].sources[0].resourceId = 'clipped…' },
+  ]) {
+    const old = structuredClone(value); change(old)
+    // Current resource labels and provenance field labels are not card names.
+    old.resources = { personalityCard: { id: 'historical-card', name: 'Current name' } }
+    assert.equal(recordedPersonalityLoadState(old), 'loaded')
+    assert.equal(recordedPersonalityName(old), null)
+    assert.ok(text(body(old), true).includes('已加载 · 名称未能核验'))
+    assert.ok(text(body(old, 'en'), true).includes('Loaded · Name unverifiable'))
+    assert.ok(!text(body(old), true).includes('Current name'))
+    assert.equal(find(body(old), node => node.props['data-personality-state'] === 'loaded').length, 1)
+  }
 })
 
 test('personality loading requires observed delivery and verified final placement', () => {
   const source = { module: 'personality', field: 'evolution/after', resourceId: 'card' }
   const make = (id, text) => ({ id, role: 'system', content: [{ type: 'text', text }] })
-  const value = { status: 'request-observed', turn: 2, step: 1, requestAssembly: { turn: 2, step: 1,
+  const value = { status: 'request-observed', turn: 2, step: 1, audit: { resources: { personalityCard: { id: 'card', name: 'Observed card' } } }, requestAssembly: { turn: 2, step: 1,
     messages: [make('mapped', '😀\n\nobserved'), make('unmapped', 'observed'), make('duplicate', 'observed observed')],
     metadata: { assembly: { nodes: [{ id: 'field', source, text: 'observed', requestMessageIds: ['mapped', 'duplicate'] }] } } } }
   assert.equal(recordedPersonalityLoadState(value), 'loaded')
+  assert.equal(recordedPersonalityName(value), 'Observed card')
+  assert.ok(text(body(value, 'en'), true).includes('Loaded · Observed card'))
   assert.deepEqual(recordedPersonalityPositions(value, recordedRequestResult(value)).map(p => p.range), [{ startUtf16: 4, endUtf16: 12 }])
   for (const change of [v => { v.status = 'assembled' }, v => { v.requestAssembly.turn++ }, v => { v.requestContentStatus = 'reference-unavailable' }, v => { v.requestAssembly.metadata.assembly.preview = true }, v => { v.requestAssembly.metadata.historyPolicy = { decisions: [{ messageId: 'mapped', action: 'truncate' }] } }]) {
     const unverified = structuredClone(value); change(unverified)

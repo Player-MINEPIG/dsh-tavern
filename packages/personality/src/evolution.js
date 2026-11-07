@@ -7,7 +7,7 @@ const MAX_LEDGER_BYTES = 16 * 1024 * 1024
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const scopeKey = ref => digest([ref.sessionId, ref.sessionCreatedAt])
 const refKey = ref => scopeKey(ref) + ':' + ref.endSeq
-const initial = () => ({ version: 1, revision: 0, config: { enabled: true, referenceSource: 'original', assessmentInterval: 1, refreshMode: 'immediate' },
+const initial = () => ({ version: 1, revision: 0, config: { enabled: true, referenceSource: 'original', assessmentInterval: 4, refreshMode: 'immediate' },
   generation: 0, history: [], receipts: [], observed: {}, pending: {}, attempts: {}, turnCounts: {} })
 
 function reject(message, code = 'INVALID_EVOLUTION', status = 400) {
@@ -18,6 +18,10 @@ function bounded(value, max, label) {
   if (typeof value !== 'string' || !value.trim() || value.length > max) reject(`Invalid ${label}`)
   return value.trim()
 }
+
+const evidenceKeys = reference => (reference?.items ?? [reference]).flatMap(ref => ref?.kind === 'external'
+  ? [digest([ref.source, ref.id, ref.version]), digest([ref.source, ref.id, ref.textHash])]
+  : [])
 
 export class PersonalityEvidenceSources {
   #sources = new Map()
@@ -67,6 +71,8 @@ export class PersonalityEvolution {
       data.pending ??= {}
       data.attempts ??= {}
       data.turnCounts ??= {}
+      // Older ledgers retain their original cadence and evidence history.
+      data.reviewedEvidence ??= Object.fromEntries(data.history.flatMap(row => evidenceKeys(row.evidence)).map(key => [key, true]))
       this.#cache.set(id, data)
     }
     return this.#cache.get(id)
@@ -144,11 +150,11 @@ export class PersonalityEvolution {
     this.save(id, { ...state, pending: { ...state.pending, [key]: [...queue, origin] },
       observed: { ...state.observed, [key]: origin.endSeq }, turnCounts: { ...state.turnCounts, [key]: (state.turnCounts[key] ?? 0) + 1 } })
   }
-  batch(id, origin) {
+  batch(id, origin, { urgent = false } = {}) {
     const state = this.record(id)
     const key = scopeKey(origin)
     const queue = state.pending[key] ?? []
-    if (queue.length < state.config.assessmentInterval) return []
+    if (!urgent && queue.length < state.config.assessmentInterval) return []
     const fresh = [], retry = []
     for (const entry of queue) {
       const attempt = state.attempts[refKey(entry)]
@@ -168,15 +174,19 @@ export class PersonalityEvolution {
     if (!state.pending[key]?.includes(origin)) return
     const token = refKey(origin)
     const count = (state.attempts[token]?.count ?? 0) + 1
-    const nextTurn = (state.turnCounts[key] ?? 0) + Math.min(16, 2 ** Math.min(4, count - 1))
+    const nextTurn = (state.turnCounts[key] ?? 0) + (reason === 'assessment-rejected' ? Math.min(32, 4 * 2 ** Math.min(3, count - 1)) : Math.min(16, 2 ** Math.min(4, count - 1)))
     this.save(id, { ...state, attempts: { ...state.attempts, [token]: { reason, count, nextTurn } } })
   }
-  finish(id, revision, batch, evidence, candidate) {
+  hasEvidence(id, reference) {
+    return evidenceKeys(reference).some(key => this.record(id).reviewedEvidence?.[key])
+  }
+  finish(id, revision, batch, evidence, candidate, { partial = false, reviewed = [evidence] } = {}) {
     const origin = batch[0]
     const state = this.record(id)
     const key = scopeKey(origin)
     const queue = state.pending[key] ?? []
-    if (state.revision !== revision || !state.config.enabled || batch.length !== state.config.assessmentInterval || batch.some(ref => !queue.includes(ref))) return false
+    if (state.revision !== revision || !state.config.enabled || !batch.length ||
+      (partial ? batch.length > state.config.assessmentInterval : batch.length !== state.config.assessmentInterval) || batch.some(ref => !queue.includes(ref))) return false
     const pending = { ...state.pending }
     const included = new Set(batch)
     const rest = queue.filter(ref => !included.has(ref))
@@ -184,7 +194,7 @@ export class PersonalityEvolution {
     for (const ref of batch) delete attempts[refKey(ref)]
     if (rest.length) pending[key] = rest
     else delete pending[key]
-    const next = { ...state, pending, attempts }
+    const next = { ...state, pending, attempts, reviewedEvidence: { ...state.reviewedEvidence, ...Object.fromEntries(reviewed.flatMap(evidenceKeys).map(key => [key, true])) } }
     if (candidate) {
       const value = validateChange(candidate)
       const previous = this.current(id)

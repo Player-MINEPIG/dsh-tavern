@@ -3,6 +3,55 @@ import { personalityFieldName } from '../../personality/src/field-name.js'
 import { PERSONALITY_SOURCE_ID } from '../../identity.js'
 import { includePersonalitySections } from './profile-loader.js'
 import { renderOfficialSections } from 'dsh-prompt-assembler/native-backend'
+import { describeResourceLayout } from 'dsh-prompt-assembler/resource-layout'
+
+const isDynamicField = field => field === 'mood' || field?.startsWith('evolution/')
+const defaultDynamicPosition = position => position?.enabled && position.placement === 'list'
+  && position.anchor?.sourceId === 'history' && position.anchor.positionId === 'content' && position.anchor.side === 'before'
+
+// Preserve-role native layouts cannot express a system boundary as a cross-role
+// anchor. Finish only our default anchors through the public assembly callback.
+// Persisted policies contain ordinary positions and remain readable without us.
+export function orderPersonalityDynamicTail(result, { preset }) {
+  if (preset.backend !== 'native') return
+  const positions = preset.layout?.positions ?? []
+  const eligible = positionId => defaultDynamicPosition(positions.find(position => position.sourceId === PERSONALITY_SOURCE_ID && position.positionId === positionId))
+    && !positions.some(position => position.enabled && position.placement === 'list' && position.anchor?.sourceId === PERSONALITY_SOURCE_ID && position.anchor.positionId === positionId)
+  const dynamic = result.nodes.filter(node => node.source?.module === PERSONALITY_SOURCE_ID && isDynamicField(node.source.field)
+    && node.role === 'system' && !node.positionOverride && eligible(node.positionId))
+  if (!dynamic.length) return
+  dynamic.sort((a, b) => Number(a.source.field === 'mood') - Number(b.source.field === 'mood'))
+  const rest = result.nodes.filter(node => !dynamic.includes(node))
+  rest.splice(rest.findLastIndex(node => node.role === 'system' || node.messageRoles?.includes('system')) + 1, 0, ...dynamic)
+  const reordered = rest.some((node, index) => node !== result.nodes[index])
+  if (reordered) {
+    const movedIds = new Set(dynamic.flatMap(node => node.requestMessageIds))
+    const byId = new Map(result.messages.filter(message => movedIds.has(message.id)).map(message => [message.id, message]))
+    const messages = result.messages.filter(message => !movedIds.has(message.id))
+    messages.splice(messages.findLastIndex(message => message.role === 'system') + 1, 0,
+      ...dynamic.flatMap(node => node.requestMessageIds.map(id => byId.get(id))))
+    const messageIndices = new Map(messages.map((message, index) => [message.id, index]))
+    result.nodes = rest
+    result.messages = messages
+    for (const node of rest) node.start = messageIndices.get(node.requestMessageIds[0]) ?? -1
+  }
+  const layout = result.resourceLayout
+  const completedConflict = row => row.code === 'POSITION_CONFLICT' && row.sourceId === PERSONALITY_SOURCE_ID
+    && row.winner === 'runtime' && row.requested === 'list' && dynamic.some(node => node.positionId === row.positionId)
+    && !result.nodes.some(node => node.source?.module === PERSONALITY_SOURCE_ID && node.positionId === row.positionId && node.positionOverride)
+  result.diagnostics = result.diagnostics.filter(row => !completedConflict(row))
+  result.resourceLayout = { ...layout, ...(reordered ? describeResourceLayout(rest, preset, layout.slots) : {}),
+    positionDecisions: layout.positionDecisions.filter(row => !completedConflict(row)) }
+  result.diagnostics.push({ code: 'TAVERN_PERSONALITY_NATIVE_SYSTEM_TAIL', sourceId: PERSONALITY_SOURCE_ID,
+    scope: 'current-system-snapshot', requestOnly: false })
+}
+
+// Native DSH owns the system snapshot and history. This changes the order
+// inside that snapshot; it never manufactures a user/context message.
+export function orderNativePersonalitySections(sections, personalitySections) {
+  const names = new Set(personalitySections.filter(section => isDynamicField(section.sources?.[0]?.field)).map(section => section.name))
+  return [...sections.filter(section => !names.has(section.name)), ...sections.filter(section => names.has(section.name))]
+}
 
 const cardPositions = [
   ['name', '名称', 'Name'],
@@ -56,7 +105,7 @@ export function registerPersonalitySource(registry, cards) {
       // The card already applied its own macro scope. Assembler scans block.text
       // for cross-source references before renderText, even for literal state.
       return { type: 'text', id: field, name: personalityFieldName(field), positionId, role: 'system', text: field,
-        renderedText: text, source: { field, resourceId } }
+        renderedText: text, stability: isDynamicField(field) ? 'assembly' : 'asset', source: { field, resourceId } }
     }) }),
     renderText: ({ block }) => block.renderedText,
   })
@@ -70,7 +119,14 @@ export function withPersonalityRule(preset) {
   const rules = [...preset.rules]
   rules.splice(rules.findIndex(rule => rule.kind === 'character') + 1, 0,
     { id: 'personality-card', kind: PERSONALITY_SOURCE_ID, enabled: true, role: 'system' })
-  return { ...preset, rules }
+  if (preset.backend !== 'native' || !['builtin-native-slots', 'builtin-native-roles'].includes(preset.id)) return { ...preset, rules }
+  const layout = preset.layout ?? { version: 1, source: 'preset-slots', identity: 'preserve', fallback: 'source-order', overrides: [] }
+  const positions = layout.positions ?? [
+    ...['card', ...cardPositions.map(position => position.id)].map(positionId => ({ sourceId: PERSONALITY_SOURCE_ID, positionId, enabled: true, placement: 'source' })),
+    ...['evolution', 'mood'].map(positionId => ({ sourceId: PERSONALITY_SOURCE_ID, positionId, enabled: true, placement: 'list',
+      anchor: { sourceId: 'history', positionId: 'content', side: 'before' } })),
+  ]
+  return { ...preset, rules, layout: { ...layout, positions } }
 }
 
 // The raw DSH preview does not receive the candidate policy. It includes the

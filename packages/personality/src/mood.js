@@ -76,8 +76,9 @@ export class PersonalityMood {
     const recent = (record.assessments ?? []).filter(row => row.at > now - 3600000)
     // Sample bounds for the opt-in scheduler: four model calls/hour per card;
     // repeated user input in the same context is coalesced for fifteen minutes.
-    if (mode === 'assess' && (recent.length >= 4 || recent.some(r => r.scope === scope && r.signature === signature && r.at > now - 900000))) return false
-    record.assessments = mode === 'assess' ? [...recent, { at: now, scope, signature }] : recent
+    const assesses = mode === 'assess' || mode === 'resolve'
+    if (assesses && (recent.length >= 4 || recent.some(r => r.scope === scope && r.signature === signature && r.at > now - 900000))) return false
+    record.assessments = assesses ? [...recent, { at: now, scope, signature }] : recent
     record.reviewed[key] = endSeq
     atomicJson(this.file(id), record, LIMIT)
     return true

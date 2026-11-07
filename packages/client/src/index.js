@@ -9,6 +9,7 @@ import { presentationCss } from './presentation-styles.js'
 import { AssemblyPanel, ASSEMBLY_REFRESH_EVENT } from '../../request-assembler/client.js'
 import { BubbleEditor } from './bubble-editor.js'
 import { PersonalityPanel, PersonalityUpdateNotice, usePersonalitySelection } from './personality-panel.js'
+import { installPersonalityInheritance } from './personality-inheritance.js'
 import { tavernFetch as fetch } from './api-fetch.js'
 import {
   createElement,
@@ -1264,7 +1265,7 @@ function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, creat
         },
         h('span', { key: chromeAnimation, className: 'dtv-ball-face', 'data-animate': chromeAnimation > 0, 'aria-hidden': 'true' }),
         h('span', { className: 'dtv-ball-label' }, 'DT'))),
-      h('div', { className: 'dtv-menu', role: 'menu' },
+      menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
         h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: bindingTarget?.label || sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),
         h('button', {
           className: 'dtv-menu-item',
@@ -1320,7 +1321,7 @@ function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, creat
             : item.available ? null : h('span', { className: 'dtv-item-planned' }, uiMessage('common.planned')),
           )
         }),
-      ),
+      ) : null,
     ),
   )
 }
@@ -1343,6 +1344,7 @@ export function apply(ctx, { conversationPhase }) {
   installStyles()
   registerTavernTraceView(ctx)
   installRpPermission(ctx)
+  const personalityInheritance = installPersonalityInheritance(ctx)
   const playClient = createLivePlayClient()
   let diagnosticStorage
   try { diagnosticStorage = window.sessionStorage } catch { /* Optional dismissal preference. */ }
@@ -1397,7 +1399,7 @@ export function apply(ctx, { conversationPhase }) {
         workspaceId,
         source,
         preview: selectedSource => sessionConfigurationRequest('/session-configurations/preview', { source: selectedSource }),
-        connectWorkspace: id => ctx.uiWorkspace.connectWorkspace(id),
+        connectWorkspace: id => personalityInheritance.connect(id),
         applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest('/session-configurations/apply', {
           targetSessionId,
           source: selectedSource,

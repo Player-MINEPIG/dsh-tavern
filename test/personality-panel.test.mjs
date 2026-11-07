@@ -10,6 +10,7 @@ import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { PersonalityEvolution } from '../packages/personality/src/evolution.js'
 import { PersonalityMood } from '../packages/personality/src/mood.js'
+import { PersonalityMoodReply } from '../packages/personality/src/mood-reply.js'
 import { moodApi, isMoodApiPath } from '../packages/personality/src/mood-http.js'
 import { PersonalityPanel, usePersonalitySelection } from '../packages/client/src/personality-panel.js'
 import { PersonalityStore } from '../packages/personality/src/store.js'
@@ -21,7 +22,9 @@ test('native panel imports, explicitly applies and edits a card without affectin
   const store = new PersonalityStore(directory)
   const evolution = new PersonalityEvolution(directory, store)
   const moods = new PersonalityMood(directory)
-  const mood = moodApi(store, moods, () => {})
+  const replies = new PersonalityMoodReply(directory)
+  const sessions = new Map(['A', 'B'].map(id => [id, { id, header: { id, createdAt: 1 }, snapshotEvents: () => [] }]))
+  const mood = moodApi(store, moods, () => {}, { replies, sessionFor: id => sessions.get(id) })
   const api = createPersonalityApiHandler(store, { evolution })
   const original = { spec: 'chara_card_v2', spec_version: '2.0', data: {
     name: 'Glass', personality: 'Direct', extensions: { imported: true },
@@ -79,9 +82,16 @@ test('native panel imports, explicitly applies and edits a card without affectin
   await perform(() => Simulate.click(button('Save mood')))
   assert.equal(moods.read(card.id, 'A').mood.feeling, 'wary')
   assert.equal(moods.read(card.id, 'A').automatic, false)
+  await perform(() => Simulate.click(button('Skip mood for the next reply')))
+  assert.equal(replies.view(sessions.get('A'), card.id).status, 'pending')
+  assert.ok(document.body.textContent.includes('You can cancel before it starts'))
+  assert.equal(moods.read(card.id, 'A').mood.feeling, 'wary')
+  assert.equal(moods.read(card.id, 'A').automatic, false)
+  await perform(() => Simulate.click(button('Cancel skipping mood')))
+  assert.equal(replies.view(sessions.get('A'), card.id).status, 'idle')
   const origin = { kind: 'original', sessionId: 'A', sessionCreatedAt: 1, startSeq: 3, endSeq: 8 }
   evolution.enqueue(card.id, origin)
-  evolution.finish(card.id, 0, evolution.batch(card.id, origin), origin, { before: 'Explain everything', after: 'Prioritize evidence', behavior: 'Name uncertainty', boundary: 'In reviews', reason: 'Unverified conclusion' })
+  evolution.finish(card.id, 0, evolution.batch(card.id, origin, { urgent: true }), origin, { before: 'Explain everything', after: 'Prioritize evidence', behavior: 'Name uncertainty', boundary: 'In reviews', reason: 'Unverified conclusion' }, { partial: true })
   await perform(() => Simulate.click(button('Growth')))
   assert.ok(document.body.textContent.includes('Prioritize evidence'))
   assert.ok(document.body.textContent.includes('events 3–8'))

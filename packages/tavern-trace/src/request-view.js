@@ -94,3 +94,14 @@ export function recordedPersonalityLoadState(record, result = recordedRequestRes
     && result && !result.nodes.some(hasPersonalityNode)) return 'notLoaded'
   return 'unverifiable'
 }
+
+/** A field label or today's resource name cannot identify a historical card. */
+export function recordedPersonalityName(record, result = recordedRequestResult(record)) {
+  if (record.status !== 'request-observed') return null
+  const card = record.audit?.resources?.personalityCard
+  if (typeof card?.id !== 'string' || !card.id || card.id.endsWith('…') || typeof card.name !== 'string' || !card.name.trim()) return null
+  const selection = record.selection ?? record.audit?.selection ?? {}
+  if (Object.hasOwn(selection, 'personalityCardId') && selection.personalityCardId !== card.id) return null
+  const ids = new Set(recordedPersonalityPositions(record, result).map(position => position.source.resourceId))
+  return ids.size === 1 && ids.has(card.id) ? card.name : null
+}

@@ -1,6 +1,7 @@
-import { hasPersonalityRule, reconcilePersonalityPreview, registerPersonalitySource, withPersonalityRule } from './personality-source.js'
+import { orderNativePersonalitySections, orderPersonalityDynamicTail, hasPersonalityRule, reconcilePersonalityPreview, registerPersonalitySource, withPersonalityRule } from './personality-source.js'
 import { installMoodHost } from '../../personality/src/mood-host.js'
 import { PersonalityMood } from '../../personality/src/mood.js'
+import { PersonalityMoodReply, installMoodReplyHost } from '../../personality/src/mood-reply.js'
 import { isMoodApiPath, moodApi } from '../../personality/src/mood-http.js'
 import { PersonalityStore } from '../../personality/src/store.js'
 import { PersonalityEvolution } from '../../personality/src/evolution.js'
@@ -342,6 +343,7 @@ export function apply(ctx, config = {}) {
   const inspectSession = createSessionReader(ctx)
   const sessionReads = createSessionReadContext(id => ctx.get('sessions')?.get?.(id))
   const personalityMood = new PersonalityMood(personalityStore.storageDir, { contextFor: id => sessionReads.getSession(id)?.header?.cwd ?? id })
+  const personalityMoodReply = new PersonalityMoodReply(personalityStore.storageDir)
   const withSessionRead = async ({ sessionId, signal } = {}, callback) => {
     signal?.throwIfAborted()
     if (!sessionId || sessionReads.getSession(sessionId)) return callback()
@@ -423,6 +425,7 @@ export function apply(ctx, config = {}) {
     personalityStore,
     personalityEvolution,
     personalityMood,
+    personalityMoodReply,
     sessionFor: sessionReads.getSession,
     selections,
     userWorldBooks,
@@ -465,7 +468,7 @@ export function apply(ctx, config = {}) {
   const requestAssembler = sharedAssembler.runtime
   ctx.effect(() => registerTavernSources(registry, sourceOptions))
   ctx.effect(() => registerPersonalitySource(registry, personalityStore))
-  ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS].map(withPersonalityRule), defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly(assembly, context) { reconcilePersonalityPreview(assembly, context); diagnoseTavernAssembly(assembly, context) },
+  ctx.effect(() => sharedAssembler.attachTavern({ resources: runtime, sessionReads, mode: () => chromeStore.get().mode, builtins: [...NATIVE_ASSEMBLY_BUILTINS, ...ASSEMBLY_BUILTINS].map(withPersonalityRule), defaultPresetId: 'builtin-native-slots', readActual: id => nativeRequests.readActual(id), afterAssembly(assembly, context) { reconcilePersonalityPreview(assembly, context); orderPersonalityDynamicTail(assembly, context); diagnoseTavernAssembly(assembly, context) },
       validateResult: (result, agent) => { const nativeContext = runtime.assembledFor(agent)?.memoryContext; if (nativeContext) memorySources.worldBooks.validateResolved(nativeContext); memorySources.validateAssembly(result.metadata?.assembly) } }))
   installMemorySources(ctx, memorySources, registry)
   store.assemblyPresets = assemblyPresets
@@ -725,6 +728,8 @@ export function apply(ctx, config = {}) {
   })
   const personalityMoodHost = installMoodHost(ctx, { cards: personalityStore, moods: personalityMood, notify: notifyChange, nativeLease: nativePersonalityLease,
     report: (error, sessionId) => recordFailure('personality.mood', error, { sessionId }) })
+  installMoodReplyHost(ctx, { cards: personalityStore, replies: personalityMoodReply, notify: notifyChange,
+    report: (error, sessionId) => recordFailure('personality.mood-reply', error, { sessionId }) })
   registerRpCommands(ctx, rpMode)
   registerRpWriteGuard(ctx, rpMode)
 
@@ -817,7 +822,8 @@ export function apply(ctx, config = {}) {
       : sections
     // Publish our named contributions before downstream listeners execute.
     // Keep the official shared assembly object so later plugins can transform it.
-    assembly.sections = selected
+    assembly.sections = !context.tavernAssemblyPreview && !runtime.hasPersonalityRule(snapshot.audit.sessionId)
+      ? orderNativePersonalitySections(selected, snapshot.officialPersonalitySections) : selected
     assembly.contexts = contexts
     const result = await next()
     if (snapshot.memoryContext) memorySources.worldBooks.validateResolved(snapshot.memoryContext)
@@ -837,7 +843,8 @@ export function apply(ctx, config = {}) {
       (sessionId) => runtime.activeView(sessionId),
       selectionPolicy,
     )
-    const handleMood = moodApi(personalityStore, personalityMood, notifyChange)
+    const handleMood = moodApi(personalityStore, personalityMood, notifyChange, { replies: personalityMoodReply,
+      sessionFor: id => sessionReads.getSession(id), isRunning: id => ctx.get('agents')?.get?.(id)?.status === 'running' })
     const personalityApi = createPersonalityApiHandler(personalityStore, {
       evolution: personalityEvolution, inspectSession,
       clearSidecars(id) { personalityEvolution.remove(id); personalityMood.remove(id) },
@@ -1005,6 +1012,7 @@ export function apply(ctx, config = {}) {
     sessionSelections: { value: selections, enumerable: false },
     characterStore: { value: characterStore, enumerable: false },
     personalityMood: { value: personalityMood, enumerable: false },
+    personalityMoodReply: { value: personalityMoodReply, enumerable: false },
     personalityMoodHost: { value: personalityMoodHost, enumerable: false },
     personalityStore: { value: personalityStore, enumerable: false },
     personalityEvolution: { value: personalityEvolution, enumerable: false },

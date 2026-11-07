@@ -41,5 +41,6 @@ async function readReference(store, id, ref, inspectSession, signal) {
   const turn = readOriginalTurn({ id: record.meta.id, header: record.meta, inheritedEventCount: record.inheritedEventCount,
     snapshotEvents: () => record.events }, ref)
   if (!turn) return missing('source-version-unavailable')
-  return { available: true, kind: 'original', text: [...turn.users.map(t => `user: ${t}`),`assistant: ${turn.assistant}`].join('\n\n') }
+  const selectedTools = turn.tools?.filter(tool => ref.toolEvidence?.some(reference => reference.seq === tool.seq)) ?? []
+  return { available: true, kind: 'original', text: [...turn.users.map(t => `user: ${t}`), ...selectedTools.map(tool => `tool ${tool.name} (event ${tool.seq}): ${tool.text}`), `assistant: ${turn.assistant}`].join('\n\n') }
 }

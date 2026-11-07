@@ -58,16 +58,19 @@ export function createPersonalityApiHandler(store, { onChange = () => {}, isRunn
         return sendJson(res, 200, selectionPayload(store, url.searchParams.get('sessionId'), evolution))
       }
       if (url.pathname === selectionPath && method === 'POST') {
-        const { sessionId, personalityId } = await readJson(req)
+        const { sessionId, personalityId, defaultIfUnbound } = await readJson(req)
         if (typeof sessionId !== 'string' || (personalityId !== null && typeof personalityId !== 'string')) {
           throw new TypeError('sessionId and a personalityId or null are required')
         }
         if (isRunning(sessionId)) {
           return sendJson(res, 409, { ok: false, error: { code: 'PERSONALITY_AGENT_RUNNING', message: 'Change the personality after the current turn finishes.' } })
         }
-        store.select(sessionId, personalityId === null ? null : { characterCardId: personalityId })
-        onChange()
-        return sendJson(res, 200, selectionPayload(store, sessionId, evolution))
+        if (defaultIfUnbound !== undefined && typeof defaultIfUnbound !== 'boolean') throw new TypeError('defaultIfUnbound must be a boolean')
+        const applied = defaultIfUnbound === true
+          ? store.selectDefault(sessionId, personalityId)
+          : (store.select(sessionId, personalityId === null ? null : { characterCardId: personalityId }), true)
+        if (applied) onChange()
+        return sendJson(res, 200, { ...selectionPayload(store, sessionId, evolution), applied })
       }
       const ref = url.pathname.match(evidenceRoute)
       if (ref && evolution && method === 'GET') {

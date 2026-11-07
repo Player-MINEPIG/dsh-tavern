@@ -671,17 +671,21 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 | POST | `/personalities/import?filename=…` | 请求体为 JSON 或 PNG 文件字节；201 返回 `{ok,personality,compatibility}`。 |
 | GET / PATCH / DELETE | `/personalities/:id` | 读取完整资源；PATCH 接受角色卡已有的可编辑字段，返回 `{ok,personality}`；DELETE 删除卡并清理其会话绑定。 |
 | GET | `/personalities/:id/json`、`/personalities/:id/png` | 当前卡面附件。 |
-| GET / POST | `/personality-selection` | GET 用 `?sessionId=…`；POST 用 `{sessionId,personalityId}`，传 null 解绑。返回 `{ok,personalityId,personality,notice}`，其中 personality 为摘要或 null，notice 为最近修订/回滚摘要或 null。运行中的会话切换返回 409 `PERSONALITY_AGENT_RUNNING`。 |
+| GET / POST | `/personality-selection` | GET 用 `?sessionId=…`。POST 用 `{sessionId,personalityId}`，传 null 显式解绑。新建会话可加 `defaultIfUnbound:true` 设置或刷新继承值，保留显式选卡、解绑以及旧数据中的已有绑定。返回 `{ok,personalityId,personality,notice}`，POST 另含 `applied`。运行中切换返回 409 `PERSONALITY_AGENT_RUNNING`。 |
 | GET / PUT | `/personalities/:id/evolution` | GET 返回 `{ok,evolution:{revision,config,current,history,availableSources,pendingCount,deferredCount,deferredReasons}}`。PUT 用 `{enabled,referenceSource?,assessmentInterval?,refreshMode?,expectedRevision,operationId}` 修改配置，返回同形状。 |
 | POST | `/personalities/:id/evolution/rollback` | `{targetRevision,expectedRevision,operationId}`；0 恢复卡面基线，其它值须对应已有历史条目。回滚本身是新修订。 |
 | GET | `/personalities/:id/evolution/:revision/evidence` | 按记录的 DSH 身份/事件或外部固定版本取证；检查 `evidence.available` 后使用 `evidence.text`。无法核对时显示不可用。 |
-| GET / POST | `/personality-mood` | GET 用 `?sessionId=…`；POST 用 `{sessionId,personalityId,expectedRevision,mood?,automatic?}`。mood 为 `{feeling,intensity,reason}` 或 null，强度为整数 1–5。返回 `{ok,personalityId,revision,automatic,mood}`。 |
+| GET / POST | `/personality-mood` | GET 用 `?sessionId=…`。POST 用 `{sessionId,personalityId,expectedRevision,mood?,automatic?}` 设置心情或自动判断。mood 为 `{feeling,intensity,reason}` 或 null，强度为整数 1–5。返回 `{ok,personalityId,revision,automatic,mood}`。已打开的原生会话另返回 `reply:{revision,status,skipNextReply}`。 |
+
+用单独的 POST `{sessionId,personalityId,expectedReplyRevision,skipNextReply}` 预约（true）或取消（false）下一次回复暂停心情。`expectedReplyRevision` 取自最新的 `reply.revision`。生命周期为 `idle → pending → active → idle`。人工输入开始该轮时生效，工具步骤和重试共用一个决定。冲突返回 409，应重新读取状态。暂停仅影响本次表达，心情强度和后台判断继续使用已有设置。
 
 成长默认开启，`referenceSource` 默认为 `original`。合格的非 RP 普通用户回合完成后，由 Host 异步调用该回合的模型，判断是否修订人格对自身的认识。无实质变化时不生成历史条目。有效修订包含 `before/after/behavior/boundary/reason` 和证据引用。
 
-`assessmentInterval` 为同一人格、同一会话凑齐后评估的合格回合数（1–8，默认 1）。单个回合参与评估的用户与助手正文合计上限为 24,000 UTF-16 码元，超过时跳过。待评估批次仅保留事件引用与内容哈希；禁用学习、切换依据或回滚会清理待评估批次。
+`assessmentInterval` 为同一人格、同一会话凑齐后评估的合格回合数（1–8，新记录默认 4，旧记录保留其间隔）。明确要求记住教训或重新认识自身职责可提前触发判断。单个回合参与评估的用户与助手正文合计上限为 24,000 UTF-16 码元，超过时跳过。待评估批次仅保留事件引用与内容哈希；禁用学习、切换依据或回滚会清理待评估批次。
 
 `pendingCount` 是该人格所有会话尚待评估的回合总数，含暂时无法取证的 `deferredCount` 个回合。`deferredReasons` 按原因计数。后续同会话的合格回合按 1、2、4、8、最多 16 回合的间隔重试，重启保留进度。每次最多核查 16 个引用、发起 2 次模型评估。有足够可核对的引用时先处理这些回合；外部来源不可用时保留原引用。
+
+后台评估有依据的自我修订时，需说明适用边界和反例，并引用可核对的用户原话、实际工具结果或外部条目。工具证据来自同一回合、可和调用对应的追加结果，最多取 4 段，各最多 1,200 个码元，计入 24,000 个码元的总预算。持久记录只含所引工具事件的位置、名称和哈希。格式无效的评估按 4、8、16、最多 32 个后续回合退避。相同外部条目的重复摘要不会增加独立支持。
 
 `refreshMode` 默认 `immediate`，下次请求读当前版本。选 `session-compaction` 时，活动 DSH Session 首次正式装配固定当时的自我认识，直到收到成功的 `compaction/end`。已打开的会话可能显示库里有新版，而实际发送的是旧版。预览只读；会话对象重新建立、卡面被编辑或重新绑定、用户改配置或回滚时会重新取版。冻结仅作用于自我修订，不冻结人物卡文本、心情或 provider 缓存。成长写入使用人格自己的 revision 与 operationId，同操作同参数可重放，过期 revision 或异参复用返回 409。心情有独立 revision，冲突后先重新读取当前值。
 

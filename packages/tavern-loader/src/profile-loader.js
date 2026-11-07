@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { PERSONALITY_SOURCE_ID, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
 import { assemblePresetParts, projectPresetCallConfig } from './profile-compiler.js'
 import { composeWorldBookSelection } from './user-world-book-policy.js'
+import { renderMoodExpression } from '../../personality/src/mood-expression.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
 
 const DEFAULT_MAX_PROFILE_BYTES = 512 * 1024
@@ -130,6 +131,7 @@ export class TavernProfileLoader {
     personalityStore = null,
     personalityEvolution = null,
     personalityMood = null,
+    personalityMoodReply = null,
     sessionFor = () => undefined,
     maxProfileBytes,
     previewSelection,
@@ -143,6 +145,7 @@ export class TavernProfileLoader {
     this.personalityStore = personalityStore
     this.personalityEvolution = personalityEvolution
     this.personalityMood = personalityMood
+    this.personalityMoodReply = personalityMoodReply
     this.sessionFor = sessionFor
     this.personalitySnapshots = new WeakMap()
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
@@ -287,9 +290,13 @@ export class TavernProfileLoader {
     const personality = shared.sessionId ? this.personalityStore?.selectedCharacter(shared.sessionId) : null
     const evolution = personality ? this.effectiveSelfRevision(personality.character.id,
       options.agent?.session ?? this.sessionFor(shared.sessionId), shared.sessionId, options.pinPersonality === true) : null
+    const suppressed = personality && this.personalityMoodReply?.suppressed(
+      options.agent?.session ?? this.sessionFor(shared.sessionId), personality.character.id,
+      { preview: Boolean(options.resolveOnly || options.context?.tavernAssemblyPreview || options.context?.dshAssemblerRaw) })
     const mood = personality ? this.personalityMood?.read(personality.character.id, shared.sessionId) : null
+    const moodView = suppressed ? { ...mood, suppressed: true, mood: null } : mood
     const personalitySections = personality
-      ? assemblePersonality(personality, macroContext.user, assemblyInput.includeGreetingReference, evolution, mood)
+      ? assemblePersonality(personality, macroContext.user, assemblyInput.includeGreetingReference, evolution, moodView)
       : []
     assemblyInput.personalitySections = personalitySections
     const officialPersonalitySections = !options.context?.dshAssemblerRaw && this.hasPersonalityRule?.(shared.sessionId) ? [] : personalitySections
@@ -306,7 +313,7 @@ export class TavernProfileLoader {
     const resources = {
       preset: preset === null ? null : { id: preset.id, name: preset.name, updatedAt: preset.updatedAt },
       ...(personality ? { personalityCard: { id: personality.character.id, name: personality.character.name, updatedAt: personality.character.updatedAt,
-        selfRevision: evolution?.revision ?? null, moodRevision: mood?.mood ? mood.revision : null } } : { personalityCard: null }),
+        selfRevision: evolution?.revision ?? null, moodRevision: mood?.mood ? mood.revision : null, moodSuppressed: Boolean(suppressed) } } : { personalityCard: null }),
       characterCard: characterResult.character === null ? null : {
         id: characterResult.character.id,
         name: characterResult.character.name ?? characterResult.character.data?.name ?? '',
@@ -579,10 +586,13 @@ function assemblePersonality({ character, selection }, user, firstTurn, evolutio
       if (evolution[key]) parts.push(personalityField(character, `evolution/${key}`, evolution[key], `${label}: ${evolution[key]}`, evolution.revision))
     }
   }
-  if (moodView?.mood) {
+  if (moodView?.suppressed) {
+    parts.push(personalityField(character, 'mood', JSON.stringify({ suppressed: true }),
+      'Current mood: paused only when this instruction is present in the latest system snapshot for this reply. Use the personality card’s ordinary voice and ignore temporary mood from earlier snapshots; follow the task and requested format.', moodView.revision))
+  } else if (moodView?.mood) {
     const { feeling, intensity, reason } = moodView.mood
     const value = JSON.stringify({ feeling, intensity, reason })
-    parts.push(personalityField(character, 'mood', value, `Current mood (temporary; respect the requested task and format): ${value}`, moodView.revision))
+    parts.push(personalityField(character, 'mood', value, `Current mood (temporary; applies only if present in the latest system snapshot for this response; ignore earlier mood snapshots): ${renderMoodExpression(moodView.mood)}`, moodView.revision))
   }
   return parts
 }

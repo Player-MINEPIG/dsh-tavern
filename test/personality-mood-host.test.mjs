@@ -32,9 +32,12 @@ test('stock AgentLoop mood judges an actual tool failure once across reworded re
       async *stream(req) {
         let text = 'Completed task'
         if (req.purpose === 'tavern-personality-mood') {
-          judgments.push(JSON.parse(req.messages[0].content[0].text))
+          const input = JSON.parse(req.messages[0].content[0].text)
+          judgments.push(input)
           if (blocked) { blocked.entered(); await blocked.wait }
-          text = JSON.stringify({ mood: { feeling: 'concerned', intensity: 3, reason: 'The check could not complete.' } })
+          text = JSON.stringify(input.eventKind === 'repair-or-clarification'
+            ? { resolution: 'current', mood: null }
+            : { mood: { feeling: 'concerned', intensity: 3, reason: 'The unavailable probe check could not complete.' } })
         } else if (triggerTool) {
           triggerTool = false
           const block = { type:'tool-call', id:'probe-'+(++callNumber), name:'probe', arguments:'{}' }
@@ -82,9 +85,9 @@ test('stock AgentLoop mood judges an actual tool failure once across reworded re
     assert.equal(judgments.length,1)
     assert.equal(judgments[0].toolFailed,true)
     assert.equal(moods.read(id,agent.id).mood.source,'event')
-    await turn('问题解决了。')
+    await turn('The unavailable probe issue is resolved.')
     await store.personalityMoodHost.idle()
-    assert.equal(judgments.length,1)
+    assert.equal(judgments.length,2)
     assert.equal(moods.read(id,agent.id).mood,null)
     const late = barrier()
     await turn('我有些担心这份承诺。')
@@ -94,7 +97,7 @@ test('stock AgentLoop mood judges an actual tool failure once across reworded re
     late.release()
     await store.personalityMoodHost.idle()
     assert.equal(moods.read(id,agent.id).mood.feeling,'calm')
-    assert.equal(judgments.length,2)
+    assert.equal(judgments.length,3)
     assert.equal(agent.session.snapshotEvents().filter(e => e.type==='tool/result' && e.data.message.isError).length,2)
   } finally { blocked?.release(); await root.fiber.dispose() }
 })

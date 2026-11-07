@@ -1,7 +1,7 @@
 import { installTavernStyle } from '../../client-style.js'
 import { MvuRoundSection, mvuStyles } from './mvu-view.js'
 import { worldBookRequestOutcome } from './world-book-request.js'
-import { recordedMessageNodes, recordedPersonalityLoadState, recordedRequestResult, recordedSystemModules } from './request-view.js'
+import { recordedMessageNodes, recordedPersonalityLoadState, recordedPersonalityName, recordedRequestResult, recordedSystemModules } from './request-view.js'
 import { isPersonalitySource } from './personality-source.js'
 import {
   createElement,
@@ -355,6 +355,7 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
   const resourceKnown = (key, selectionKey) => Object.hasOwn(resources, key) || Object.hasOwn(selection, selectionKey)
   const result = recordedRequestResult(record)
   const personalityState = recordedPersonalityLoadState(record, result)
+  const personalityName = personalityState === 'loaded' ? recordedPersonalityName(record, result) : null
   return h('div', { className: 'dttrace-section' },
     h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.configuration')),
     h('div', { className: 'dttrace-grid' },
@@ -362,7 +363,9 @@ export function TraceRecordContent({ record, sessionId, turn, latest = false, ru
       resourceCard('trace.resource.character', resources.characterCard, selection.characterCardId, resourceKnown('characterCard', 'characterCardId')),
       h('div', { className: 'dttrace-card dttrace-personality', 'data-personality-state': personalityState, 'data-state': personalityState },
         h('div', { className: 'dttrace-label' }, uiMessage('trace.resource.personality')),
-        h('div', { className: 'dttrace-value' }, uiMessage(`trace.personality.${personalityState}`))),
+        h('div', { className: 'dttrace-value' }, personalityState === 'loaded'
+          ? uiMessage('trace.personality.loadedName', { name: personalityName ?? translate('trace.personality.nameUnverifiable') })
+          : uiMessage(`trace.personality.${personalityState}`))),
       resourceCard('trace.resource.user', resources.userProfile, selection.userId ?? selection.userProfileId,
         resourceKnown('userProfile', 'userId') || Object.hasOwn(selection, 'userProfileId')),
       summaryCard('trace.v3.worldBooks', bookResources === undefined ? unavailable() : bookResources.length

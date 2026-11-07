@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url'
 import { CharacterStore } from '../packages/character/src/store.js'
 import { assembleRequest, configurePosition, positionRows } from 'dsh-prompt-assembler'
 import { BUILTINS as CORE_BUILTINS, createDefaultRegistry, NATIVE_BUILTINS } from 'dsh-prompt-assembler/adapters/tavern'
-import { reconcilePersonalityPreview, registerPersonalitySource, withPersonalityRule } from '../packages/tavern-loader/src/personality-source.js'
+import { reconcilePersonalityPreview, registerPersonalitySource, withPersonalityRule, orderPersonalityDynamicTail } from '../packages/tavern-loader/src/personality-source.js'
 import { PersonalityStore } from '../packages/personality/src/store.js'
 import { TavernProfileLoader } from '../packages/tavern-loader/src/profile-loader.js'
 import * as tavern from '../packages/tavern-loader/src/index.js'
@@ -38,7 +38,7 @@ test('a per-session personality supplies independent static CCv2 fields and sele
   assert.ok(!sections.some(s => /CHECK CLAIMS|EDITOR ONLY/.test(s.text)))
 })
 
-test('only the selected self revision and applicable temporary mood enter the next snapshot as literal text', t => {
+test('effective self revisions stay literal while mood expression keeps raw provenance off wire', t => {
   const cards = new CharacterStore(temporary(t)), card = cards.import(JSON.stringify(input))
   cards.select('work', { characterCardId: card.id })
   let active = { revision: 3, after: 'I can change my mind', behavior: 'Say {{user}} verbatim.', boundary: 'While reviewing evidence' }
@@ -49,7 +49,7 @@ test('only the selected self revision and applicable temporary mood enter the ne
     selections: { get: () => ({ presetId: null, worldBookIds: [], character: {} }) } })
   const frozen = runtime.compile({ sessionId: 'work' }).personalitySections
   assert.ok(frozen.some(s => s.sources[0].field === 'evolution/behavior' && s.text.includes('{{user}}') && s.interpolate === false && s.sources[0].resourceRevision === 3))
-  assert.ok(frozen.some(s => s.sources[0].field === 'mood' && s.text.includes('{{do_not_expand}}') && s.sources[0].resourceRevision === 5))
+  assert.ok(frozen.some(s => s.sources[0].field === 'mood' && !s.text.includes('{{do_not_expand}}') && s.sources[0].text.includes('{{do_not_expand}}') && s.sources[0].resourceRevision === 5))
   active = null; mood = null
   assert.deepEqual(runtime.compile({ sessionId: 'other' }).personalitySections, [])
   assert.ok(!runtime.compile({ sessionId: 'work' }).personalitySections.some(s => /my mind|do_not_expand/.test(s.text)))
@@ -72,7 +72,9 @@ test('Assembler resource positions resolve personality literals independently of
     const result = assembleRequest({ registry, assets, sessionId:'work', preset:withPersonalityRule(preset), preview:true })
     const nodes = result.nodes.filter(node => node.module === 'tavern.personality')
     const mood = nodes.find(node => node.positionId === 'mood')
-    assert.ok(mood.text.includes('Keep {{description}} literal'))
+    assert.ok(!mood.text.includes('Keep {{description}} literal'))
+    assert.ok(assets.personalitySections.find(s => s.sources[0].field === 'mood').sources[0].text.includes('Keep {{description}} literal'))
+    assert.ok(mood.text.includes('engaged and exploratory'))
     assert.equal(nodes.find(node => node.source.field === 'personality').name, '人格卡 · 性格 / Personality traits')
     assert.equal(nodes.find(node => node.source.field === 'description').name, '人格卡 · 描述 / Personality description')
     assert.ok(nodes.every(node => node.name.startsWith('人格卡 · ')))
@@ -96,7 +98,7 @@ test('personality field positions preserve default order, selected openings and 
   const { assemblyInput: assets } = runtime.compile({ sessionId: 'work' })
   for (const builtin of [NATIVE_BUILTINS[0], CORE_BUILTINS[0]]) {
     const preset = withPersonalityRule(builtin), sources = registry.list({ sessionId: 'work' })
-    const assemble = candidate => assembleRequest({ registry, assets, sessionId: 'work', preset: candidate, preview: true })
+    const assemble = candidate => assembleRequest({ registry, assets, sessionId: 'work', preset: candidate, preview: true, afterAssembly: orderPersonalityDynamicTail })
     const nodes = candidate => assemble(candidate).nodes.filter(node => node.module === 'tavern.personality')
     const baseline = nodes(preset)
     assert.deepEqual(baseline.map(node => node.source.field), [...cardFields.map(field => field === 'first_mes' ? 'alternate_greetings/0' : field), 'evolution/after', 'mood'])
@@ -223,7 +225,7 @@ test('stock DSH sends one personality with native instructions and records its f
         if (request.purpose === 'tavern-personality-evolution') {
           text = JSON.stringify({ change: requests.length === 1 || revisedAgain ? {
             before:'I valued quick answers', after: revisedAgain ? 'I distinguish observed and inferred facts' : 'I value verifiable answers', behavior:'I check before I claim', boundary:'When a claim is testable', reason:'A counterexample disproved the quick answer'
-          } : null })
+          } : null, basis: { kind: 'self-understanding', supports: [{ index: 1, quote: JSON.parse(request.messages[0].content[0].text).evidence.users[0].slice(0, 80) }], counterevidence: 'No contrary evidence was supplied.' } })
           revisedAgain = false
         } else if (request.purpose === 'compaction') {
           text = 'Checkpoint.'
@@ -241,8 +243,9 @@ test('stock DSH sends one personality with native instructions and records its f
     await root.plugin({ name:tavern.name, inject:tavern.inject, apply(ctx) { store = tavern.apply(ctx,{storageDir:directory}) } })
     const {agent} = await root.agents.create({sessionId:'work',meta:{cwd:directory},agentOptions:{provider:'offline',model:'test'}})
     const cards = store.personalityStore, card = cards.import(JSON.stringify(input))
+    store.personalityEvolution.mutate(card.id, 'config', { operationId: 'immediate-assessment-test', expectedRevision: 0, enabled: true, assessmentInterval: 1 })
     cards.select(agent.id, {characterCardId:card.id})
-    async function turn(current = agent, prompt = 'Hello') {
+    async function turn(current = agent, prompt = 'A counterexample disproved the quick answer.') {
       current.followup(llm.createUserMessage({content:[{type:'text',text:prompt}], source:{kind:'user'}}))
       await current.whenIdle()
       assert.deepEqual(errors,[])
@@ -261,7 +264,7 @@ test('stock DSH sends one personality with native instructions and records its f
       assert.ok(sys.includes('CHECK CLAIMS'))
       assert.equal(sys.includes('GREETING'),index === 0)
       assert.equal(sys.includes('I value verifiable answers'),index === 1)
-      assert.equal(sys.includes('New counterexample'),index === 1)
+      assert.equal(sys.includes('engaged and exploratory'),index === 1)
       const summary = store.assemblyStore.list(agent.id)[index], trace = store.assemblyStore.get(agent.id,summary.id)
       assert.equal(trace.delivery.assemblyVerified,true)
       assert.ok(trace.sections.some(s => s.sources?.some(source => source.kind === 'personality' && source.field === 'description' && source.resourceId === card.id && source.resourceRevision)))
@@ -276,7 +279,7 @@ test('stock DSH sends one personality with native instructions and records its f
     cards.select(fresh.id, {characterCardId:card.id})
     await turn(fresh)
     assert.ok(requests.at(-1).includes('I value verifiable answers'), 'a new session can use the committed personality without the original conversation')
-    assert.ok(requests.at(-1).includes('New counterexample'), 'manual mood travels with the personality')
+    assert.ok(requests.at(-1).includes('engaged and exploratory'), 'manual mood travels with the personality')
     await store.personalityEvolutionHost.idle()
     const ledger = store.personalityEvolution
     ledger.mutate(card.id, 'config', { enabled: true, refreshMode: 'session-compaction', expectedRevision: ledger.view(card.id).revision, operationId: 'freeze' })
@@ -292,6 +295,9 @@ test('stock DSH sends one personality with native instructions and records its f
     assert.ok(compact, 'public DSH compaction completed')
     await turn()
     assert.ok(requests.at(-1).includes('I distinguish observed and inferred facts'), 'real compaction end admits the newer revision')
+    const stablePrefix = text => text.split(/Current self-understanding|Current mood/)[0]
+    assert.equal(stablePrefix(requests[1]), stablePrefix(requests.at(-1)), 'growth refresh leaves the static personality/Host prefix unchanged')
+    t.diagnostic(JSON.stringify({ stableSystemPrefixBytesAcrossGrowthRefresh: Buffer.byteLength(stablePrefix(requests[1])), refreshModes: ['immediate', 'session-compaction'], includesProviderCacheEvidence: false }))
     store.personalityMood.change(card.id, agent.id, { expectedRevision: store.personalityMood.read(card.id,agent.id).revision,
       mood: { feeling:'focused', intensity:4, reason:'WORKSPACE ONLY' } }, 'event')
     for (const [id,cwd,same] of [['cold-work',directory,true],['cold-other',join(directory,'other'),false]]) {
@@ -299,8 +305,12 @@ test('stock DSH sends one personality with native instructions and records its f
       cards.select(id,{characterCardId:card.id})
       const view = await face.runtime.preview({ agent:{id,session},sessionId:id,preset:face.store.get('builtin-native-slots') })
       const system = view.messages.filter(m => m.role === 'system').map(m => m.content[0].text).join('\n')
-      assert.equal(system.includes('WORKSPACE ONLY'),same)
-      assert.equal(view.nodes.some(node => node.module === 'tavern.personality' && node.positionId === 'mood' && node.text.includes('WORKSPACE ONLY')), same)
+      const snapshot = await face.runtime.sessionReads.run(session, () => face.runtime.resources.compile({ agent: { id, session }, sessionId: id, resolveOnly: true }))
+      const raw = snapshot.assemblyInput.personalitySections.find(section => section.sources[0].field === 'mood').sources[0].text
+      assert.equal(JSON.parse(raw).reason === 'WORKSPACE ONLY', same)
+      assert.ok(view.nodes.some(node => node.module === 'tavern.personality' && node.positionId === 'mood'))
+      assert.ok(system.includes('Current mood'))
+      assert.ok(!system.includes('WORKSPACE ONLY'), 'raw mood reasons remain source data rather than instructions')
       assert.equal(root.sessions.get(id),undefined, 'preview did not activate the detached session')
     }
     const reader = createNativeRequestReader({ assemblies: store.assemblyStore, sessions: () => root.sessions,
@@ -346,7 +356,7 @@ test('stock DSH sends one personality with native instructions and records its f
       }
       assert.ok(delivered.includes('HOST BASE'))
       if (candidate === onlyCard) {
-        assert.ok(!delivered.includes('WORKSPACE ONLY'))
+        assert.ok(!delivered.includes('emotional color recognizable'))
         assert.ok(!delivered.includes('I distinguish observed and inferred facts'))
       }
       if (candidate === beforeBase) assert.ok(delivered.indexOf('Economical with words') < delivered.indexOf('HOST BASE'))

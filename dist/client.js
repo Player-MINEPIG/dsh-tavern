@@ -10252,6 +10252,13 @@ var zh_CN_default = Object.freeze({
   "personality.setMood": "\u4FDD\u5B58\u5FC3\u60C5",
   "personality.clearMood": "\u6E05\u9664\u5FC3\u60C5",
   "personality.automaticMood": "\u81EA\u52A8\u66F4\u65B0\u5FC3\u60C5",
+  "personality.skipMoodReply": "\u4E0B\u4E00\u6B21\u56DE\u590D\u8DF3\u8FC7\u5FC3\u60C5",
+  "personality.skipMoodActive": "\u672C\u6B21\u56DE\u590D\u5DF2\u8DF3\u8FC7\u5FC3\u60C5",
+  "personality.cancelSkipMood": "\u53D6\u6D88\u8DF3\u8FC7\u5FC3\u60C5",
+  "personality.moodReplyScope": "\u53EF\u8BA9\u4E0B\u4E00\u6B21\u56DE\u590D\u6CBF\u7528\u5361\u9762\u8BED\u6C14\u3002\u5DE5\u5177\u6B65\u9AA4\u4E5F\u9002\u7528\uFF0C\u81EA\u52A8\u66F4\u65B0\u8BBE\u7F6E\u4E0D\u53D8\u3002",
+  "personality.learningScope": "\u53EA\u4FDD\u7559\u6709\u4F9D\u636E\u7684\u81EA\u6211\u804C\u8D23\u3001\u4EF7\u503C\u548C\u80FD\u529B\u8FB9\u754C\u4FEE\u8BA2\uFF1B\u4E8B\u5B9E\u3001\u7528\u6237\u504F\u597D\u3001\u9879\u76EE\u89C4\u7EA6\u548C\u77ED\u671F\u5FC3\u60C5\u4E0D\u5199\u6210\u4EBA\u683C\u3002\u65B0\u5361\u9ED8\u8BA4\u6BCF 4 \u4E2A\u5408\u683C\u56DE\u5408\u8BC4\u4F30\u4E00\u6B21\uFF1B\u660E\u786E\u7684\u81EA\u6211\u7EA0\u6B63\u6216\u201C\u8BB0\u4F4F\u8FD9\u4E2A\u6559\u8BAD\u201D\u53EF\u63D0\u524D\u89E6\u53D1\u8BC4\u4F30\uFF0C\u5199\u5165\u4ECD\u9700\u6838\u5BF9\u8BC1\u636E\u4E0E\u53CD\u4F8B\u3002",
+  "personality.moodReplyPending": "\u4E0B\u4E00\u6B21\u56DE\u590D\u5C06\u8DF3\u8FC7\u5FC3\u60C5\uFF0C\u5F00\u59CB\u524D\u53EF\u4EE5\u53D6\u6D88\u3002",
+  "personality.moodReplyActive": "\u672C\u6B21\u56DE\u590D\u6B63\u5728\u8DF3\u8FC7\u5FC3\u60C5\uFF0C\u5305\u542B\u5DE5\u5177\u6B65\u9AA4\u548C\u91CD\u8BD5\uFF1B\u4E0B\u4E00\u6B21\u56DE\u590D\u6062\u590D\u3002",
   "nav.personality": "\u4EBA\u683C\u5361",
   "nav.personality.empty": "\u672C\u4F1A\u8BDD\u672A\u542F\u7528\u4EBA\u683C\u5361",
   "personality.create": "\u65B0\u5EFA\u4EBA\u683C\u5361",
@@ -11042,6 +11049,8 @@ var zh_CN_default = Object.freeze({
   "trace.resource.characterPersonality": "\u89D2\u8272\u6027\u683C",
   "trace.resource.personality": "\u4EBA\u683C\u5361",
   "trace.personality.loaded": "\u5DF2\u52A0\u8F7D",
+  "trace.personality.loadedName": "\u5DF2\u52A0\u8F7D \xB7 {name}",
+  "trace.personality.nameUnverifiable": "\u540D\u79F0\u672A\u80FD\u6838\u9A8C",
   "trace.personality.notLoaded": "\u672A\u52A0\u8F7D",
   "trace.personality.unverifiable": "\u672A\u80FD\u6838\u9A8C",
   "trace.resource.user": "\u7528\u6237\u8BBE\u5B9A",
@@ -11475,6 +11484,13 @@ var en_default = Object.freeze({
   "personality.setMood": "Save mood",
   "personality.clearMood": "Clear mood",
   "personality.automaticMood": "Update mood automatically",
+  "personality.skipMoodReply": "Skip mood for the next reply",
+  "personality.skipMoodActive": "Mood skipped for this reply",
+  "personality.cancelSkipMood": "Cancel skipping mood",
+  "personality.moodReplyScope": "You can use the card\u2019s usual tone for the next reply, including tool steps. Automatic mood settings stay unchanged.",
+  "personality.learningScope": "Growth keeps grounded revisions of responsibility, values and capability limits. Facts, user preferences, project rules and passing moods stay outside personality. New cards assess every 4 eligible turns; an explicit self-correction or \u201Cremember this lesson\u201D can trigger an earlier assessment. Writes still require evidence and consideration of counterevidence.",
+  "personality.moodReplyPending": "The next reply will skip mood. You can cancel before it starts.",
+  "personality.moodReplyActive": "This reply is skipping mood, including tool steps and retries. Mood resumes on the next reply.",
   "nav.personality": "Personality cards",
   "nav.personality.empty": "No personality in this session",
   "personality.create": "New personality",
@@ -12265,6 +12281,8 @@ var en_default = Object.freeze({
   "trace.resource.characterPersonality": "Character personality",
   "trace.resource.personality": "Personality card",
   "trace.personality.loaded": "Loaded",
+  "trace.personality.loadedName": "Loaded \xB7 {name}",
+  "trace.personality.nameUnverifiable": "Name unverifiable",
   "trace.personality.notLoaded": "Not loaded",
   "trace.personality.unverifiable": "Unverifiable",
   "trace.resource.user": "User",
@@ -25645,6 +25663,7 @@ function PersonalityMood({ sessionId, personalityId }) {
   const [draft, setDraft] = (0, import_react15.useState)(empty2);
   const [busy2, setBusy] = (0, import_react15.useState)(false);
   const [error, setError] = (0, import_react15.useState)("");
+  const writes = (0, import_react15.useRef)(0);
   const read = (signal) => resourceApi(`/personality-mood?sessionId=${encodeURIComponent(sessionId)}`, { signal });
   const receive = (result) => {
     if (result.personalityId !== personalityId) {
@@ -25657,22 +25676,48 @@ function PersonalityMood({ sessionId, personalityId }) {
   };
   (0, import_react15.useEffect)(() => {
     const controller2 = new AbortController();
-    read(controller2.signal).then(
-      (result) => {
-        if (!controller2.signal.aborted) receive(result);
-      },
-      (failure) => {
+    let timer, request2 = 0, initialized = false;
+    setState(null);
+    setError("");
+    const refresh = async () => {
+      clearTimeout(timer);
+      if (document.hidden) return;
+      const current4 = ++request2;
+      const generation = writes.current;
+      try {
+        const result = await read(controller2.signal);
+        if (controller2.signal.aborted || request2 !== current4 || generation !== writes.current) return;
+        if (!initialized) {
+          receive(result);
+          initialized = true;
+        } else if (result.personalityId === personalityId) setState(result);
+        else {
+          setState(null);
+          setError(translate("personality.bindingChanged"));
+        }
+      } catch (failure) {
         if (!controller2.signal.aborted) setError(failure.message);
       }
-    );
-    return () => controller2.abort();
+      if (!controller2.signal.aborted) timer = setTimeout(refresh, 3e3);
+    };
+    refresh();
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      controller2.abort();
+      clearTimeout(timer);
+      window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [sessionId, personalityId]);
   async function commit(fields2) {
+    writes.current++;
     setBusy(true);
     setError("");
     try {
-      const result = await resourceApi("/personality-mood", { method: "POST", body: JSON.stringify({ sessionId, personalityId, expectedRevision: state.revision, ...fields2 }) });
-      receive(result);
+      const result = await resourceApi("/personality-mood", { method: "POST", body: JSON.stringify({ sessionId, personalityId, expectedRevision: state.revision, expectedReplyRevision: state.reply?.revision, ...fields2 }) });
+      if (Object.hasOwn(fields2, "skipNextReply") && result.personalityId === personalityId) setState(result);
+      else receive(result);
     } catch (failure) {
       if (failure.status === 409) {
         try {
@@ -25697,6 +25742,12 @@ function PersonalityMood({ sessionId, personalityId }) {
       { className: "dcc-detail-body" },
       (0, import_react15.createElement)("p", { className: "dcc-meta" }, state.mood ? translate("personality.currentMood", { feeling: state.mood.feeling, intensity: state.mood.intensity }) : translate("personality.noMood")),
       (0, import_react15.createElement)("p", { className: "dcc-note" }, translate("personality.moodScope")),
+      state.reply && (0, import_react15.createElement)(
+        "div",
+        { className: "dcc-detail-body" },
+        (0, import_react15.createElement)("p", { role: "status", className: "dcc-note" }, translate(state.reply.status === "active" ? "personality.moodReplyActive" : state.reply.skipNextReply ? "personality.moodReplyPending" : "personality.moodReplyScope")),
+        (0, import_react15.createElement)("button", { type: "button", className: "dcc-button", disabled: busy2 || state.reply.status === "active", onClick: () => commit({ skipNextReply: !state.reply.skipNextReply }) }, translate(state.reply.status === "active" ? "personality.skipMoodActive" : state.reply.skipNextReply ? "personality.cancelSkipMood" : "personality.skipMoodReply"))
+      ),
       (0, import_react15.createElement)("label", { className: "dcc-field" }, translate("personality.feeling"), (0, import_react15.createElement)("input", { className: "dcc-input", maxLength: 80, disabled: busy2, value: draft.feeling, onChange: (event) => setDraft({ ...draft, feeling: event.target.value }) })),
       (0, import_react15.createElement)("label", { className: "dcc-field" }, translate("personality.intensity", { intensity: draft.intensity }), (0, import_react15.createElement)("input", { type: "range", min: 1, max: 5, disabled: busy2, value: draft.intensity, onChange: (event) => setDraft({ ...draft, intensity: Number(event.target.value) }) })),
       (0, import_react15.createElement)("label", { className: "dcc-field" }, translate("personality.moodReason"), (0, import_react15.createElement)("textarea", { className: "dcc-textarea", maxLength: 500, disabled: busy2, value: draft.reason, onChange: (event) => setDraft({ ...draft, reason: event.target.value }) })),
@@ -25814,7 +25865,7 @@ function PersonalityEvolution({ personalityId, focusRevision, observedRevision }
       translate("personality.interval"),
       (0, import_react16.createElement)(
         "select",
-        { className: "dcc-select", value: snapshot.config.assessmentInterval ?? 1, disabled: busy2, onChange: (event) => configure({ assessmentInterval: Number(event.target.value) }) },
+        { className: "dcc-select", value: snapshot.config.assessmentInterval ?? 4, disabled: busy2, onChange: (event) => configure({ assessmentInterval: Number(event.target.value) }) },
         Array.from({ length: 8 }, (_2, i3) => (0, import_react16.createElement)("option", { key: i3, value: i3 + 1 }, String(i3 + 1)))
       )
     ),
@@ -25835,6 +25886,7 @@ function PersonalityEvolution({ personalityId, focusRevision, observedRevision }
       translate("personality.pendingCount", { count: snapshot.pendingCount ?? 0 }),
       snapshot.deferredCount > 0 && " \xB7 " + translate("personality.deferredCount", { count: snapshot.deferredCount })
     ),
+    (0, import_react16.createElement)("p", { className: "dcc-note" }, translate("personality.learningScope")),
     (0, import_react16.createElement)("button", { className: "dcc-button", type: "button", disabled: busy2, onClick: () => setRefresh((value) => value + 1) }, translate("common.refresh")),
     error && (0, import_react16.createElement)("p", { role: "alert", className: "dcc-status", "data-error": true }, error),
     row ? (0, import_react16.createElement)(
@@ -26198,6 +26250,196 @@ function PersonalityPanel({ sessionId, selection, workspaceId, workspaces = [], 
       )
     )
   );
+}
+
+// packages/client/src/personality-inheritance.js
+var memoryKey = `${PLUGIN_ID}:last-focused-personality:v1`;
+var connectionKey = (options) => JSON.stringify([options?.workspaceId ?? null, options?.agentPreset ?? null]);
+function createPersonalityInheritance({ sessions, navigation, readSelection, applyDefault, storage, active = () => true, changed = () => {
+}, report = () => {
+} }) {
+  let alive = true, focused = null, mainIds = /* @__PURE__ */ new Set(), epoch = 0, scope = null;
+  let focusedRead = null, explicitFocus = false, initialFocus = true;
+  const pending2 = /* @__PURE__ */ new Map();
+  const originalCreate = sessions.create, originalOpen = navigation.openWorkspace, originalOpenSession = navigation.openSession;
+  const stored = () => {
+    try {
+      return storage?.getItem(memoryKey) ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const previous = () => {
+    try {
+      const value = JSON.parse(stored() ?? "null");
+      if (typeof value?.sessionId !== "string") return null;
+      if (Object.hasOwn(value, "personalityId")) return value.personalityId === null || typeof value.personalityId === "string" ? value : null;
+      return { sessionId: value.sessionId };
+    } catch {
+      return null;
+    }
+  };
+  let remembered = previous();
+  let protectRestore = remembered !== null;
+  const remember = (sessionId, personalityId, baseline) => {
+    if (!alive || stored() !== baseline) return;
+    remembered = { sessionId, personalityId };
+    try {
+      storage?.setItem(memoryKey, JSON.stringify(remembered));
+    } catch {
+    }
+  };
+  const refresh = () => {
+    const sessionId = focused;
+    if (!sessionId || protectRestore || !active()) return;
+    const request2 = ++epoch;
+    const baseline = stored();
+    const read = Promise.resolve().then(() => readSelection(sessionId)).then((value) => {
+      const personalityId = typeof value?.personalityId === "string" ? value.personalityId : null;
+      if (request2 === epoch) remember(sessionId, personalityId, baseline);
+      return personalityId;
+    });
+    focusedRead = { sessionId, request: request2, baseline, promise: read };
+    void read.catch(report);
+  };
+  const sync = () => {
+    const snapshot = sessions.list.getSnapshot();
+    if (snapshot.phase === "pending") return;
+    const ids = Object.values(snapshot.byId ?? {}).filter((row) => row.retainedBy?.mainView > 0).map((row) => row.id);
+    const added = ids.filter((id) => !mainIds.has(id));
+    mainIds = new Set(ids);
+    const next = added.at(-1) ?? (mainIds.has(focused) ? focused : ids.at(-1) ?? null);
+    if (next !== focused) {
+      if (next && !initialFocus && !protectRestore) explicitFocus = true;
+      focused = next;
+      if (focused && explicitFocus) protectRestore = false;
+      if (focused) {
+        initialFocus = false;
+        refresh();
+      }
+    }
+  };
+  const source = () => {
+    if (focused && !protectRestore && active()) return Promise.resolve(readSelection(focused)).then((value2) => value2.personalityId);
+    if (!focused && focusedRead?.request === epoch && !protectRestore && stored() === focusedRead.baseline) return focusedRead.promise;
+    const value = previous() ?? remembered;
+    if (!value) return Promise.resolve(null);
+    if (Object.hasOwn(value, "personalityId")) return Promise.resolve(value.personalityId);
+    return Promise.resolve(readSelection(value.sessionId)).then((selection) => selection.personalityId);
+  };
+  function openSession(...args) {
+    if (alive && active()) {
+      explicitFocus = true;
+      protectRestore = false;
+    }
+    const result = originalOpenSession.apply(this, args);
+    sync();
+    refresh();
+    return result;
+  }
+  const prepare = async (record) => {
+    const id = await record.created;
+    while (alive && record.source) {
+      const selection = record.source;
+      const personalityId = await selection;
+      if (selection !== record.source) continue;
+      if (!alive) return id;
+      await applyDefault(id, personalityId);
+      changed();
+      if (selection !== record.source) continue;
+      break;
+    }
+    return id;
+  };
+  function create2(options = {}) {
+    if (!alive) return originalCreate.call(this, options);
+    const record = { source: scope, created: originalCreate.call(this, options) };
+    const key2 = connectionKey(options);
+    pending2.set(key2, record);
+    const result = prepare(record);
+    void result.finally(() => {
+      if (pending2.get(key2) === record) pending2.delete(key2);
+    }).catch(() => {
+    });
+    return result;
+  }
+  function open2(workspaceId, beforeOpen, options) {
+    if (!alive) return originalOpen.call(this, workspaceId, beforeOpen, options);
+    const selection = source();
+    void selection.catch(() => {
+    });
+    const before = scope;
+    if (active()) {
+      explicitFocus = true;
+      protectRestore = false;
+    }
+    scope = selection;
+    let result;
+    try {
+      result = originalOpen.call(this, workspaceId, beforeOpen, options);
+    } finally {
+      scope = before;
+    }
+    const shared = pending2.get(connectionKey({ workspaceId, ...options }));
+    if (shared) shared.source = selection;
+    return result;
+  }
+  sessions.create = create2;
+  navigation.openWorkspace = open2;
+  if (typeof originalOpenSession === "function") navigation.openSession = openSession;
+  const unsubscribe = sessions.list.subscribe(sync);
+  sync();
+  return {
+    refresh,
+    async connect(workspaceId, options) {
+      const selection = source();
+      void selection.catch(() => {
+      });
+      const id = await navigation.connectWorkspace(workspaceId, options);
+      if (alive) {
+        await applyDefault(id, await selection);
+        changed();
+      }
+      return id;
+    },
+    dispose() {
+      alive = false;
+      ++epoch;
+      unsubscribe();
+      if (sessions.create === create2) sessions.create = originalCreate;
+      if (navigation.openWorkspace === open2) navigation.openWorkspace = originalOpen;
+      if (navigation.openSession === openSession) navigation.openSession = originalOpenSession;
+    }
+  };
+}
+function installPersonalityInheritance(ctx) {
+  let storage;
+  try {
+    storage = window.localStorage;
+  } catch {
+  }
+  const controller2 = createPersonalityInheritance({
+    sessions: ctx.sessions,
+    navigation: ctx.uiWorkspace,
+    storage,
+    active: () => document.visibilityState !== "hidden" && (typeof document.hasFocus !== "function" || document.hasFocus()),
+    readSelection: (id) => resourceApi(`/personality-selection?sessionId=${encodeURIComponent(id)}`),
+    applyDefault: (sessionId, personalityId) => resourceApi("/personality-selection", {
+      method: "POST",
+      body: JSON.stringify({ sessionId, personalityId, defaultIfUnbound: true })
+    }),
+    changed: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
+    report: (error) => console.warn("Tavern personality focus could not be read:", error)
+  });
+  const refresh = () => controller2.refresh();
+  window.addEventListener("focus", refresh);
+  window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+  ctx.effect(() => () => {
+    window.removeEventListener("focus", refresh);
+    window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+    controller2.dispose();
+  }, "Tavern: native personality defaults");
+  return controller2;
 }
 
 // packages/client/src/index.js
@@ -28901,6 +29143,15 @@ function recordedPersonalityLoadState(record, result = recordedRequestResult(rec
   if (record.requestAssembly?.metadata?.owner === "dsh-prompt-assembler" && (decisions.length && decisions.every((item) => item.decision === "disabled") || result?.diagnostics.some((item) => item.code === "TAVERN_PERSONALITY_POLICY_DISABLED" && item.sourceId === "tavern.personality")) && result && !result.nodes.some(hasPersonalityNode)) return "notLoaded";
   return "unverifiable";
 }
+function recordedPersonalityName(record, result = recordedRequestResult(record)) {
+  if (record.status !== "request-observed") return null;
+  const card = record.audit?.resources?.personalityCard;
+  if (typeof card?.id !== "string" || !card.id || card.id.endsWith("\u2026") || typeof card.name !== "string" || !card.name.trim()) return null;
+  const selection = record.selection ?? record.audit?.selection ?? {};
+  if (Object.hasOwn(selection, "personalityCardId") && selection.personalityCardId !== card.id) return null;
+  const ids = new Set(recordedPersonalityPositions(record, result).map((position) => position.source.resourceId));
+  return ids.size === 1 && ids.has(card.id) ? card.name : null;
+}
 
 // packages/tavern-trace/src/client.js
 var import_react24 = require("react");
@@ -29277,6 +29528,7 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
   const resourceKnown = (key2, selectionKey) => Object.hasOwn(resources, key2) || Object.hasOwn(selection, selectionKey);
   const result = recordedRequestResult(record);
   const personalityState = recordedPersonalityLoadState(record, result);
+  const personalityName = personalityState === "loaded" ? recordedPersonalityName(record, result) : null;
   return h24(
     "div",
     { className: "dttrace-section" },
@@ -29290,7 +29542,7 @@ function TraceRecordContent({ record, sessionId, turn, latest = false, running =
         "div",
         { className: "dttrace-card dttrace-personality", "data-personality-state": personalityState, "data-state": personalityState },
         h24("div", { className: "dttrace-label" }, uiMessage("trace.resource.personality")),
-        h24("div", { className: "dttrace-value" }, uiMessage(`trace.personality.${personalityState}`))
+        h24("div", { className: "dttrace-value" }, personalityState === "loaded" ? uiMessage("trace.personality.loadedName", { name: personalityName ?? translate("trace.personality.nameUnverifiable") }) : uiMessage(`trace.personality.${personalityState}`))
       ),
       resourceCard(
         "trace.resource.user",
@@ -60474,7 +60726,7 @@ function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, creat
         h38("span", { key: chromeAnimation, className: "dtv-ball-face", "data-animate": chromeAnimation > 0, "aria-hidden": "true" }),
         h38("span", { className: "dtv-ball-label" }, "DT")
       )),
-      h38(
+      menuOpen ? h38(
         "div",
         { className: "dtv-menu", role: "menu" },
         h38("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: bindingTarget?.label || sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
@@ -60532,7 +60784,7 @@ function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, creat
             status.count >= (isDiagnostics ? 1 : 2) ? h38("span", { className: "dtv-item-count", "aria-label": uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count }) }, uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count })) : item.available ? null : h38("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
-      )
+      ) : null
     )
   );
 }
@@ -60554,6 +60806,7 @@ function apply3(ctx, { conversationPhase: conversationPhase2 }) {
   installStyles6();
   registerTavernTraceView(ctx);
   installRpPermission(ctx);
+  const personalityInheritance = installPersonalityInheritance(ctx);
   const playClient = createLivePlayClient();
   let diagnosticStorage;
   try {
@@ -60613,7 +60866,7 @@ function apply3(ctx, { conversationPhase: conversationPhase2 }) {
         workspaceId,
         source,
         preview: (selectedSource) => sessionConfigurationRequest("/session-configurations/preview", { source: selectedSource }),
-        connectWorkspace: (id) => ctx.uiWorkspace.connectWorkspace(id),
+        connectWorkspace: (id) => personalityInheritance.connect(id),
         applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest("/session-configurations/apply", {
           targetSessionId,
           source: selectedSource
