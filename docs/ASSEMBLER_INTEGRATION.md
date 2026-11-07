@@ -73,12 +73,12 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-memory-manager#v1.0.0
 
 生产安装图为独立 Assembler 与 Tavern 两个 profile 直接依赖。Tavern 的 `peerDependencies` 声明兼容要求，不把 GitHub URL 放入普通子依赖，也不声明 `bundleDependencies`。目标 pnpm 默认限制 Git/URL 子依赖；两个独立直接安装不依赖放宽该限制。
 
-开发与构建使用 lockfile 固定的 Assembler 源码归档。`npm ci --legacy-peer-deps` 安装已审查的修订与完整性，不依赖 npm 上存在 1.2.0。单独开发 Assembler 时检出其对应源码，并运行该项目的 `npm ci` 与 `npm run check`。本地联调可在临时 checkout 通过 `npm install --no-save --package-lock=false --legacy-peer-deps /path/to/assembler` 使用本地版本，不提交临时路径。
+开发与构建使用 lockfile 固定的 Assembler GitHub Release 安装包。`npm ci --legacy-peer-deps` 按锁定的完整性校验值安装，不依赖 npm 上存在 1.2.0。单独开发 Assembler 时检出其对应源码，并运行该项目的 `npm ci` 与 `npm run check`。本地联调可在临时 checkout 通过 `npm install --no-save --package-lock=false --legacy-peer-deps /path/to/assembler` 使用本地版本，不提交临时路径。
 
 ```sh
 npm run pack:release -- --assembler node_modules/dsh-prompt-assembler
 ```
 
-打包命令重建两个前端，输出独立的 Assembler 与 Tavern tgz。Tavern 编辑器编入本次受检的前端 SDK，但安装包不包含第二份 Assembler 包或 Host。构建前先准备两个源码目录所需的开发依赖。冻结进阶版的安装与回退见 [v1.1.0 文档](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION.md)。标准后端与旧进阶诊断见 [Assembler 1.2.0 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.2.0/docs/BACKENDS.md)。
+打包命令构建 Tavern 前端，并输出独立的 Assembler 与 Tavern tgz。Assembler 有 build 脚本时运行它；否则必须已有预构建的 `dist/client.js`。Tavern 编辑器编入本次受检的前端 SDK，但安装包不包含第二份 Assembler 包或 Host。若指定 Assembler 源码目录，先安装其构建所需的开发依赖。冻结进阶版的安装与回退见 [v1.1.0 文档](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.1.0/docs/INSTALLATION.md)。标准后端与旧进阶诊断见 [Assembler 1.2.0 后端规则](https://github.com/Player-MINEPIG/dsh-prompt-assembler/blob/v1.2.0/docs/BACKENDS.md)。
 
 [接口索引](API_SURFACES.md) · [Tavern 架构图](assets/architecture/tavern.zh-CN.html) · [组合架构图](assets/architecture/ecosystem.zh-CN.html)。

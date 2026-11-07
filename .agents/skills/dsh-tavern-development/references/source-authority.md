@@ -5,11 +5,11 @@ Use this reference when the task needs release status, development intent, or re
 | Claim | Evidence |
 | --- | --- |
 | Released product | Published artifact, or a project-designated release corroborated by its matching tag and documents |
-| Public development | Public remote `main` at an identified SHA |
+| Day-to-day integration and ordinary deployment baseline | Remote `dev` at an identified SHA; a deployed build requires separate deployment evidence |
 | Current implementation | Task branch or worktree code and tests |
 | Active intent | Applicable development-plan decisions; label proposals as proposals |
 
-An immutable tag is an evidence snapshot unless the project designates it as a release. If a claim requires remote state and it cannot be checked, identify the local ref and its possible staleness; ordinary local edits do not require remote verification.
+An immutable tag is an evidence snapshot unless the project designates it as a release. If a claim requires remote state and it cannot be checked, identify the local ref and its possible staleness; if remote `dev` is absent, report the actual starting SHA and do not present `main` as the integration branch.
 
 Plans describe intent; code and tests show implementation. Archived or older-version material is historical context unless a current decision adopts it. Documentation and local-record placement follow [AGENTS.md](../../../../AGENTS.md#documentation); reusable verification procedures are in [TESTING.md](../../../../docs/TESTING.md).
 
@@ -21,4 +21,4 @@ Guidance-only or explanatory documentation changes do not by themselves require 
 
 Preserve published tag targets and release assets as the released snapshot. Later documentation enters a future release tag; do not move an existing tag to make it follow the branch. Release-note wording or links may be corrected within the authorized scope without implying that the tagged code changed.
 
-When publishing, reconcile the package and lockfile versions, tag commit, published Release state, and version-pinned installation instructions and announcement links. Verify each external action before reporting completion. Keep the source commit, relevant installed-build identity, environment, validation scope and gaps, and delivery links in a local record. Existing validation remains usable when its affected implementation and environment still match; rerun checks justified by subsequent changes or unresolved gaps, rather than repeating runtime checks for guidance-only edits.
+Follow the [release workflow](../../../../AGENTS.md#development-and-release). When publishing, verify that remote `main` and the version tag resolve to the confirmed candidate commit. Check the package and lockfile versions, published Release state, and version-pinned installation instructions and announcement links. Verify each external action before reporting completion. Keep the source commit, relevant installed-build identity, environment, validation scope and gaps, and delivery links in a local record. Existing validation remains usable when its affected implementation and environment still match; rerun checks justified by subsequent changes or unresolved gaps, rather than repeating runtime checks for guidance-only edits.

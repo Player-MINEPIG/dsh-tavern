@@ -102,7 +102,7 @@ Produce both independent prebuilt packages:
 npm run pack:release -- --assembler node_modules/dsh-prompt-assembler
 ```
 
-The command rebuilds both clients and writes separate Tavern and Assembler tarballs. Tavern compiles the reusable frontend SDK for its editor, but starts no additional Assembler Host or standalone client. The Tavern package must not contain `node_modules/dsh-prompt-assembler`. Validate final tarballs or actual Release attachments, rather than relying on dependencies available in the source checkout.
+The command builds the Tavern client and writes two separate tarballs. If Assembler has a build script, the command runs it; otherwise it uses the prebuilt `dist/client.js` from the package. Tavern compiles the reusable frontend SDK for its editor, but starts no additional Assembler Host or standalone client. The Tavern package must not contain `node_modules/dsh-prompt-assembler`. Validate final tarballs or actual Release attachments, rather than relying on dependencies available in the source checkout.
 
 ### Data and the source installer
 
