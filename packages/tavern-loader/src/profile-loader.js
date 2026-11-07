@@ -1,6 +1,6 @@
 import { assemblyBody, digest, namedParts, source } from './assembly-parts.js'
 import { createHash } from 'node:crypto'
-import { PROFILE_SECTION } from '../../identity.js'
+import { PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
 import { assemblePresetParts, projectPresetCallConfig } from './profile-compiler.js'
 import { composeWorldBookSelection } from './user-world-book-policy.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
@@ -27,6 +27,14 @@ export class TavernProfileLimitError extends Error {
     this.actualBytes = actualBytes
     this.maxBytes = maxBytes
   }
+}
+
+export function includePersonalitySections(systemText, sections, maxBytes) {
+  if (!sections.length) return systemText
+  const text = [systemText, ...sections.map(section => section.text)].filter(Boolean).join('\n\n')
+  const bytes = profileBytes(text)
+  if (bytes > maxBytes) throw new TavernProfileLimitError(bytes, maxBytes)
+  return text
 }
 
 function isRecord(value) {
@@ -119,6 +127,10 @@ export class TavernProfileLoader {
     userWorldBooks = null,
     resourceWorldBooks = null,
     sessionWorldBooks = null,
+    personalityStore = null,
+    personalityEvolution = null,
+    personalityMood = null,
+    sessionFor = () => undefined,
     maxProfileBytes,
     previewSelection,
   }) {
@@ -128,6 +140,11 @@ export class TavernProfileLoader {
     this.userWorldBooks = userWorldBooks
     this.resourceWorldBooks = resourceWorldBooks
     this.sessionWorldBooks = sessionWorldBooks
+    this.personalityStore = personalityStore
+    this.personalityEvolution = personalityEvolution
+    this.personalityMood = personalityMood
+    this.sessionFor = sessionFor
+    this.personalitySnapshots = new WeakMap()
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
@@ -166,6 +183,25 @@ export class TavernProfileLoader {
     return agent === undefined
       ? this.previewSelection?.({ sessionId }) ?? this.selections.get(sessionId)
       : this.selections.ensureAgent(agent)
+  }
+
+  effectiveSelfRevision(cardId, session, sessionId, pin) {
+    const ledger = this.personalityEvolution
+    if (!ledger) return null
+    const state = ledger.record?.(cardId)
+    if (!session || state?.config?.refreshMode !== 'session-compaction') return ledger.current(cardId)
+    const previous = this.personalitySnapshots.get(session)
+    if (previous?.cardId === cardId && previous.generation === state.generation && previous.bound()) return previous.row
+    const row = ledger.current(cardId)
+    if (pin) {
+      this.personalitySnapshots.set(session, { cardId, generation: state.generation, row,
+        bound: this.personalityStore.bindingLease(sessionId, cardId) })
+    }
+    return row
+  }
+
+  observeCompaction(session, event) {
+    if (event?.type === 'compaction/end' && event.data?.error === undefined) this.personalitySnapshots.delete(session)
   }
 
   compile(options = {}) {
@@ -248,13 +284,24 @@ export class TavernProfileLoader {
       context: { ...baseContext, ...macroContext },
       maxProfileBytes: this.maxProfileBytes,
     }
+    const personality = shared.sessionId ? this.personalityStore?.selectedCharacter(shared.sessionId) : null
+    const evolution = personality ? this.effectiveSelfRevision(personality.character.id,
+      options.agent?.session ?? this.sessionFor(shared.sessionId), shared.sessionId, options.pinPersonality === true) : null
+    const mood = personality ? this.personalityMood?.read(personality.character.id, shared.sessionId) : null
+    const personalitySections = personality
+      ? assemblePersonality(personality, macroContext.user, assemblyInput.includeGreetingReference, evolution, mood)
+      : []
     const compiled = options.resolveOnly || this.requestAssemblyEnabled?.(shared.sessionId)
       ? { systemText: '', sections: [], runtimeContexts: [], activeLoreEntries: assemblyInput.loreEntries.map(e => e.id), diagnostics: [], callConfig: preset ? projectPresetCallConfig(preset) : {}, systemPromptMode: 'append' }
-      : compileTavernProfile(assemblyInput)
+      : compileTavernProfile(assemblyInput, personalitySections)
     diagnostics.push(...compiled.diagnostics)
+
+    const systemText = includePersonalitySections(compiled.systemText, personalitySections, this.maxProfileBytes)
 
     const resources = {
       preset: preset === null ? null : { id: preset.id, name: preset.name, updatedAt: preset.updatedAt },
+      ...(personality ? { personalityCard: { id: personality.character.id, name: personality.character.name, updatedAt: personality.character.updatedAt,
+        selfRevision: evolution?.revision ?? null, moodRevision: mood?.mood ? mood.revision : null } } : {}),
       characterCard: characterResult.character === null ? null : {
         id: characterResult.character.id,
         name: characterResult.character.name ?? characterResult.character.data?.name ?? '',
@@ -266,8 +313,8 @@ export class TavernProfileLoader {
     const audit = {
       schemaVersion: 1,
       sessionId: shared.sessionId,
-      selection: clone(effectiveSelection),
-      sessionSelection: clone(selection),
+      selection: { ...clone(effectiveSelection), ...(personality ? { personalityCardId: personality.character.id } : {}) },
+      sessionSelection: { ...clone(selection), ...(personality ? { personalityCardId: personality.character.id } : {}) },
       worldBookSelection: clone(worldBookSelection),
       resources,
       diagnostics: clone(diagnostics),
@@ -288,13 +335,15 @@ export class TavernProfileLoader {
       composition: {
         section: { name: PROFILE_SECTION, order: 10 },
         systemPromptMode: compiled.systemPromptMode,
-        profileCharacters: compiled.systemText.length,
+        profileCharacters: systemText.length,
         callConfigFields: Object.keys(compiled.callConfig),
       },
     }
 
     return {
       ...compiled,
+      systemText,
+      personalitySections,
       assemblyInput,
       macroContext,
       diagnostics,
@@ -307,7 +356,8 @@ export class TavernProfileLoader {
     if (!isRecord(context)) return this.compile()
     const cached = this.contextCache.get(context)
     if (cached !== undefined) return cached
-    const snapshot = this.compile({ agent: context.agent, context, resolveOnly: context.tavernAssemblyPreview === true })
+    const snapshot = this.compile({ agent: context.agent, context, resolveOnly: context.tavernAssemblyPreview === true,
+      pinPersonality: Boolean(context.agent) && !context.tavernAssemblyPreview && !context.dshAssemblerRaw })
     this.contextCache.set(context, snapshot)
     if (isRecord(context.agent) && !context.tavernAssemblyPreview) this.assembledByAgent.set(context.agent, snapshot)
     return snapshot
@@ -492,6 +542,51 @@ function normalizedUserFields(user) {
   }
 }
 
+// Personality fields are additive guidance for the working agent. System/PHI
+// never replace native instructions, and examples/openings are labelled as
+// references rather than replayed as dialogue.
+function assemblePersonality({ character, selection }, user, firstTurn, evolution, moodView) {
+  const data = character.data
+  const options = selection.character
+  const context = { user, character: characterMacroName(character) }
+  const revision = digest(character)
+  const index = options.greetingIndex
+  const fields = [
+    ['name', 'Personality', data.name || character.name],
+    ['system_prompt', 'Personality guidance', options.preferCharacterSystemPrompt && data.systemPrompt],
+    ['description', 'Description', data.description],
+    ['personality', 'Traits', data.personality],
+    ['scenario', 'Background', data.scenario],
+    ['mes_example', 'Example dialogue (style reference)', data.messageExample],
+    [index > 0 ? `alternate_greetings/${index - 1}` : 'first_mes', 'Greeting (first-turn style reference)', firstTurn && selectedGreeting(data, options)],
+    ['post_history_instructions', 'Additional response guidance', options.preferCharacterPostHistory && data.postHistoryInstructions],
+  ]
+  const parts = fields.flatMap(([field, label, raw]) => {
+    if (typeof raw !== 'string' || !raw.trim()) return []
+    const text = renderSillyTavernMacros(raw, context)
+    if (!text) return []
+    return [personalityField(character, field, raw, `${label}: ${text}`, revision)]
+  })
+  // Evolved self-understanding and mood are literal state, never ST macros.
+  if (evolution) {
+    for (const [key, label] of [['after', 'Current self-understanding'], ['behavior', 'How this changes my choices'], ['boundary', 'When this applies']]) {
+      if (evolution[key]) parts.push(personalityField(character, `evolution/${key}`, evolution[key], `${label}: ${evolution[key]}`, evolution.revision))
+    }
+  }
+  if (moodView?.mood) {
+    const { feeling, intensity, reason } = moodView.mood
+    const value = JSON.stringify({ feeling, intensity, reason })
+    parts.push(personalityField(character, 'mood', value, `Current mood (temporary; respect the requested task and format): ${value}`, moodView.revision))
+  }
+  return parts
+}
+
+function personalityField(card, field, raw, text, revision) {
+  return { name: `${PLUGIN_ID}:part:personality:${field.replaceAll('/', ':')}`,
+    text, interpolate: false, provenance: 'section-contributors',
+    sources: [source('personality', card, field, raw, { plugin: PLUGIN_ID, module: 'personality', resourceRevision: revision })] }
+}
+
 function stringField(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
@@ -607,11 +702,13 @@ function applyOriginal(override, original) {
  * bypass this byte limit. Static preset/character/user content is never cut in
  * the middle: if it alone is too large, compilation fails explicitly.
  */
-export function compileTavernProfile(options = {}) {
+export function compileTavernProfile(options = {}, personalitySections = []) {
   const maxBytes = profileByteLimit(options.maxProfileBytes)
   const loreEntries = Array.isArray(options.loreEntries) ? options.loreEntries : []
   const withoutLore = compileTavernProfileUnbounded({ ...options, loreEntries: [] })
-  const baseBytes = profileBytes(withoutLore.systemText)
+  const personalityBytes = profileBytes(personalitySections.map(part => part.text).join('\n\n'))
+  const combinedBytes = text => profileBytes(text) + personalityBytes + (text && personalityBytes ? 2 : 0)
+  const baseBytes = combinedBytes(withoutLore.systemText)
   if (baseBytes > maxBytes) {
     throw new TavernProfileLimitError(baseBytes, maxBytes)
   }
@@ -633,7 +730,7 @@ export function compileTavernProfile(options = {}) {
   }
 
   let compiled = compileTavernProfileUnbounded({ ...options, loreEntries: loreEntries.slice(0, candidateCount) })
-  const measuredBytes = profileBytes(compiled.systemText)
+  const measuredBytes = combinedBytes(compiled.systemText)
   if (candidateCount === loreEntries.length && measuredBytes <= maxBytes) return compiled
 
   let lower = 0
@@ -643,7 +740,7 @@ export function compileTavernProfile(options = {}) {
   while (lower <= upper) {
     const count = Math.floor((lower + upper) / 2)
     const candidate = compileTavernProfileUnbounded({ ...options, loreEntries: loreEntries.slice(0, count) })
-    if (profileBytes(candidate.systemText) <= maxBytes) {
+    if (combinedBytes(candidate.systemText) <= maxBytes) {
       accepted = candidate
       acceptedCount = count
       lower = count + 1

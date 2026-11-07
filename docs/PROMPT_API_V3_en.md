@@ -33,7 +33,7 @@ associated official section returns its assembled result, not necessarily one or
 `{{original}}` mixtures cannot be split back into source fields using names or counts. Not storing original
 source bodies is the schema 4 design, not an unfinished placeholder.
 
-Current section names follow `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` as documented here.
+Preset, RP character and world-book section names follow `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` as documented here.
 The ordinal is padded to at least four digits and follows the current section order; kind/field name the
 first source, not all contributors. Names can identify Tavern sections in this version, but are not
 resource identities across requests or versions and do not guarantee one field per section. A plugin
@@ -231,6 +231,12 @@ Official assembly objects do not retain numeric registration order. `index` is t
 array position. `offsetUtf16` includes two-newline separators and locates official content only
 after assembly and reference verification. `characters` counts Unicode code points;
 `utf16Units` and `utf8Bytes` are not token counts.
+
+### Personality cards
+
+A selected personality uses `pmp-dsh-tavern:part:personality:<field>`. Slashes in a field path become colons in the section name. Each section records its card ID, source field and `resourceRevision`; `index` gives its actual order. For example, `mes_example` identifies the source field even when the assembled body has a style label and expanded macros. Effective self-revisions supply `evolution/after`, `evolution/behavior` and `evolution/boundary`; applicable temporary state supplies `mood`. These literal contributions carry the revision of their respective growth or mood store. When refresh waits for compaction, Trace records the pinned self-revision used in that request. The selection ID records the binding; consult the recorded fields and delivery evidence when a policy omits native instructions or a complete section overrides the result.
+
+Ordinary requests also record named sections and DSH history references when no assembly policy is selected. The Standard Assembler’s full actual-request projection requires a native request reference captured under a native policy. When that reference is absent, v3 can still return verified ordinary sections. Growth and automatic mood assessments are auxiliary model calls; their results enter subsequent ordinary requests. For independent access to revision evidence see the [personality API](API_en.md#personality-cards).
 
 ### World-book entry identity
 

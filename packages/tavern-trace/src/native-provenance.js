@@ -2,7 +2,7 @@ import { digest } from '../../prompt-metadata.js'
 
 const textOf = message => (message?.content ?? []).filter(block => block.type === 'text').map(block => block.text).join('')
 const contentHash = message => digest(message.content)
-const sourceKeys = ['plugin', 'module', 'sourceId', 'version', 'resourceId', 'field', 'sourceKind', 'section', 'providedBy', 'generationRequiresPlugin', 'recordedContentSurvivesRemoval']
+const sourceKeys = ['plugin', 'module', 'sourceId', 'version', 'resourceId', 'resourceRevision', 'field', 'sourceKind', 'section', 'providedBy', 'generationRequiresPlugin', 'recordedContentSurvivesRemoval']
 const sourceMetadata = source => Object.fromEntries(sourceKeys.filter(key => source?.[key] !== undefined).map(key => [key, structuredClone(source[key])]))
 const uniqueRange = (text, part) => {
   if (!part) return null
@@ -78,7 +78,10 @@ export function nativeRequestProvenance(record, request, { resolveSourceName } =
     const anchor = partAnchor(part, messages)
     if (!anchor || candidates.some(n => n.reference.messageId === anchor.messageId
       && n.reference.startUtf16 === anchor.startUtf16 && n.reference.endUtf16 === anchor.endUtf16)) continue
+    // A personality section has one recorded input field. The label and ST
+    // macro expansion can make its assembled hash differ from its raw field.
     const source = (part.sources ?? []).find(s => s.hash === part.hash)
+      ?? (part.sources?.length === 1 && part.sources[0].kind === 'personality' ? part.sources[0] : null)
     const module = source?.module ?? source?.sourceId ?? 'native-section'
     const node = hydrateNode({ version: 1, id: `recorded-section-${index}`, module,
       name: source?.field ? `${module}:${source.field}` : part.name,

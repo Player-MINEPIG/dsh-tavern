@@ -33,6 +33,14 @@ Do one full turn in this order the first time. The screenshot version is in the 
 
 This path does not write greeting as history and does not copy a DSH session. Import other resources, display regex, swipe, branch, rollback, imported records, and export after the first turn works.
 
+## Use a personality in a native work session
+
+1. Left-click the `DT` orb and choose **Personality cards**. Create a card, import character-card JSON/PNG, or make an independent copy from the character library. Edit the name, traits, description and dialogue examples in **Card**, then save.
+2. Select **Use in this session**. With no session open, choose a DSH workspace and select **Use in a new session**. Send work requests through the normal composer. Other sessions can select the same personality to use its current self-understanding. **Turn off for this session** ends new contributions; earlier DSH conversation records remain available.
+3. Open **Growth** to choose an evidence source and inspect revisions. Automatic application of substantiated self-revisions defaults to on. Set an interval of 1–8 eligible turns per session (default 1) before making an additional model assessment. Apply revisions on the next request, or hold a live session’s self-understanding until successful context compaction. Editing or rebinding the card, or explicitly rolling it back, refreshes the snapshot. Original evidence records DSH event coordinates. External evidence requires a registered provider and records its entry ID and version. Select `hindsight` if your Host has configured it and your session has been retained there. Select **View revision evidence** to reread the original turn or external entry, or see why the version is unavailable. A revision shows the prior and new understanding, behavioral effect, boundary and reason. Restore a recorded revision or the original personality. JSON/PNG exports carry the editable card; growth history and mood live in the local personality library.
+4. In **Mood** for the active personality, set or clear a feeling, intensity and reason. Manual mood follows the personality. Optional automatic mood is scoped to the work context and has a separate switch; extra model assessments may incur provider costs.
+
+With no assembly policy, Tavern adds the personality as named system sections. With a Standard Assembler policy, keep **Native instructions** enabled to carry those sections. Inspect **Tavern Trace** for actual fields and versions. Post-history instructions contribute system guidance, and the greeting is a first-turn style reference. See the [personality API](API_en.md#personality-cards).
 ## 1. Open and switch panels
 
 After install and DSH Web restart, the page shows an orb always labeled `DT`: native (Lingzhu) is blue-white, play (Mowan) is red-black.

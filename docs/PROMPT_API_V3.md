@@ -30,7 +30,7 @@ API v3、Tavern 软件版本与 DSH 日志格式 V4 是三个独立版本号。
 装配结果，并不等于取回某一个来源字段的原文。特别是 `{{original}}` 混合段，不能按名字或
 字符数把正文重新拆成来源字段。schema 4 选择不再保存来源正文；这不是等待完成的占位能力。
 
-当前具名段落遵循本文说明的 `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` 形式。
+角色卡、预设和世界书的具名段落遵循本文说明的 `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` 形式。
 ordinal 至少补齐四位，随本次实际段落顺序变化；kind/field 来自首个来源，不是所有贡献者的清单。
 名字可用于识别本版本的 Tavern 段，但不是跨轮次、跨版本的资源身份，也不保证一段只含一个字段。
 按字段调整段落的插件应识别目标版本/合同，检查匹配结果；零匹配或歧义时明确提示，不能静默
@@ -203,6 +203,12 @@ system section。
 官方装配对象不保留注册时的数字 order；记录的 `index` 是实际数组位置。`offsetUtf16` 包含段间
 两个换行，只有 `delivery.assemblyVerified` 为 true 且引用验证成功时才能定位官方系统消息。
 characters 是 Unicode 码点数；utf16Units 与 utf8Bytes 也不是 token 数。
+
+### 人格卡
+
+已绑定人格卡使用 `pmp-dsh-tavern:part:personality:<field>`，字段路径中的斜线在段名里显示为冒号。每段保留当时的卡 ID、来源字段与 `resourceRevision`；`index` 给出实际顺序。例如 `mes_example` 的历史来源仍是卡片字段，装配正文可以含文风标签和已展开的宏。`evolution/after`、`evolution/behavior`、`evolution/boundary` 取有效自我修订，`mood` 取适用的临时状态。这些状态按字面装配，来源 revision 分别归成长历史与心情状态。选择按压缩边界刷新时，Trace 记录本次实际固定使用的自我修订版本。选择 ID 表示当时的绑定；策略省略、complete 覆盖等情况下，应看记录的字段和交付证据来确认模型实际收到什么。
+
+无装配策略也会记录普通请求的具名段和 DSH 历史引用。Assembler 的 Standard「实际请求」完整投影视图需要 native 策略产生的请求引用；没有该引用时，可从 v3 查看经验证的普通段落。成长评估和自动心情判断是后台辅助调用，各自的结果通过后续普通请求生效。请求 Trace 与人格修订依据在[人格卡 API](API.md#personality-cards) 中分别读取。
 
 ### 世界书条目标识
 

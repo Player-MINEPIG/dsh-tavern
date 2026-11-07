@@ -33,6 +33,7 @@ Compatibility range: `>=0.2.2-rc.1 <0.2.3-0`. The target is DSH 0.2.2-rc.1; late
 pmp-dsh-tavern does not replace DSH with another UI, and it does not copy conversation history. It adds a testable, auditable, uninstallable Tavern compatibility layer on top of public DSH extension points and atomic APIs:
 
 - **Lingzhu / DSH native mode**: keep native DSH sessions, sidebar, and plugin ecosystem.
+- **Personality cards** work in native DSH sessions. Import a character card, inspect revisions shared across sessions, open their evidence, or restore a previous version. See the [usage guide](docs/USAGE_en.md).
 - **Mowan / RP mode**: regroup the RP sidebar by character card and playthrough, and provide greeting, display regex, swipe, branch, rollback, import, and export.
 - **DSH remains authoritative**: durable history, tools, permissions, and the final model request stay owned by DSH.
 - **Minimal change, maximum compatibility**: reuse public DSH seams first; do not replace the native frontend or depend on private DOM.

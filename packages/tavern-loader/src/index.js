@@ -1,3 +1,11 @@
+import { installMoodHost } from '../../personality/src/mood-host.js'
+import { PersonalityMood } from '../../personality/src/mood.js'
+import { isMoodApiPath, moodApi } from '../../personality/src/mood-http.js'
+import { PersonalityStore } from '../../personality/src/store.js'
+import { PersonalityEvolution } from '../../personality/src/evolution.js'
+import { installHindsightEvidence } from '../../personality/src/hindsight.js'
+import { installEvolutionHost } from '../../personality/src/evolution-host.js'
+import { createPersonalityApiHandler, isPersonalityApiPath } from '../../personality/src/server.js'
 import { createSessionReader } from 'dsh-prompt-assembler/session-reader'
 import { requireSharedAssembler } from './assembler-compatibility.js'
 import {createRenderingCache} from '../../rendering-cache/store.js'
@@ -38,7 +46,7 @@ import {
 } from '../../user/src/index.js'
 import { PresetParameterFallback } from './preset-parameter-fallback.js'
 import { PresetRuntime } from './preset-runtime.js'
-import { TavernProfileLoader, compileTavernProfile } from './profile-loader.js'
+import { TavernProfileLoader, includePersonalitySections, compileTavernProfile } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
 import { UserWorldBookBindingStore, composeWorldBookSelection } from './user-world-book-policy.js'
 import { ResourceWorldBookBindingStore } from './resource-world-book-policy.js'
@@ -313,6 +321,8 @@ export function apply(ctx, config = {}) {
   const recordFailure = (operation, error, meta) => recordDiagnosticFailure({ logger: ctx.logger, journal: operationJournal, operation, meta }, error)
   const store = new PresetStore(storageDir)
   const characterStore = new CharacterStore(storageDir)
+  const personalityStore = new PersonalityStore(storageDir)
+  const personalityEvolution = new PersonalityEvolution(personalityStore.storageDir, personalityStore)
   const worldBookStore = new WorldBookStore(storageDir)
   const userStore = new UserStore(storageDir)
   const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
@@ -330,6 +340,7 @@ export function apply(ctx, config = {}) {
   })
   const inspectSession = createSessionReader(ctx)
   const sessionReads = createSessionReadContext(id => ctx.get('sessions')?.get?.(id))
+  const personalityMood = new PersonalityMood(personalityStore.storageDir, { contextFor: id => sessionReads.getSession(id)?.header?.cwd ?? id })
   const withSessionRead = async ({ sessionId, signal } = {}, callback) => {
     signal?.throwIfAborted()
     if (!sessionId || sessionReads.getSession(sessionId)) return callback()
@@ -408,6 +419,10 @@ export function apply(ctx, config = {}) {
   importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
     presetStore: store,
+    personalityStore,
+    personalityEvolution,
+    personalityMood,
+    sessionFor: sessionReads.getSession,
     selections,
     userWorldBooks,
     resourceWorldBooks,
@@ -684,6 +699,23 @@ export function apply(ctx, config = {}) {
     return decision
   })
 
+  function nativePersonalityLease(session) {
+    if (rpMode.isActive({ id: session.id, session })) return null
+    const catalogLease = playMemberships.captureContextLease()
+    const catalog = playMemberships.readCatalog({ allowMissing: true })?.catalog
+    if (catalog?.playthroughs.some(play => play.ext?.pmpDshTavern?.rootSessionId === session.id ||
+      playMemberships.readTimeline(play).timeline.nodes.some(n => n.variants.some(v => v.sessionId === session.id)))) return null
+    const selectRevision = selections.selectionRevision(session.id)
+    return () => catalogLease() && ctx.get('sessions')?.get?.(session.id) === session &&
+      selections.selectionRevision(session.id) === selectRevision && !rpMode.isActive({ id: session.id, session })
+  }
+  installHindsightEvidence(ctx, personalityEvolution.sources, config.personalityHindsight)
+  const personalityEvolutionHost = installEvolutionHost(ctx, {
+    cards: personalityStore, evolution: personalityEvolution, notify: notifyChange, nativeLease: nativePersonalityLease,
+    report: (error, sessionId) => recordFailure('personality.evolution', error, { sessionId }),
+  })
+  const personalityMoodHost = installMoodHost(ctx, { cards: personalityStore, moods: personalityMood, notify: notifyChange, nativeLease: nativePersonalityLease,
+    report: (error, sessionId) => recordFailure('personality.mood', error, { sessionId }) })
   registerRpCommands(ctx, rpMode)
   registerRpWriteGuard(ctx, rpMode)
 
@@ -717,6 +749,7 @@ export function apply(ctx, config = {}) {
   ctx.effect(() => () => traceSafely(() => assemblyRecorder.dispose()))
 
   ctx.on('session/event', (session, event) => {
+    runtime.observeCompaction(session, event)
     pendingInput.observeSessionEvent(session, event)
     traceSafely(() => assemblyRecorder.observeSessionEvent(session, event))
     if (event?.type === 'turn/end') {
@@ -750,7 +783,8 @@ export function apply(ctx, config = {}) {
       const sourceContext = { sessionId: snapshot.audit.sessionId, assets: snapshot.assemblyInput, preview: context.tavernAssemblyPreview === true,
         turn: turn ?? null, step: null, signal: context.signal }
       const loreEntries = await memorySources.worldBooks.prepareNative(sourceContext)
-      const compiled = compileTavernProfile({ ...snapshot.assemblyInput, loreEntries })
+      const compiled = compileTavernProfile({ ...snapshot.assemblyInput, loreEntries }, snapshot.personalitySections)
+      snapshot.systemText = includePersonalitySections(compiled.systemText, snapshot.personalitySections, runtime.maxProfileBytes)
       const literalEntries = new Set(loreEntries.filter(entry => entry.literalMacros).map(entry => entry.id))
       contributions = compiled.sections.map(section => ({ ...section,
         ...(section.sources?.some(source => source.kind === 'worldbook' && literalEntries.has(source.qualifiedEntryId)) ? { interpolate: false } : {}) }))
@@ -766,7 +800,7 @@ export function apply(ctx, config = {}) {
       if (section.name !== PROFILE_SECTION) return [section]
       if (section.text !== snapshot.registeredProfileText) return [section]
       const imported = snapshot.importedContext
-      return [...contributions.map(({ name, text, interpolate }) => ({ name, text, ...(interpolate === false ? { interpolate } : {}) })),
+      return [...[...contributions, ...snapshot.personalitySections].map(({ name, text, interpolate }) => ({ name, text, ...(interpolate === false ? { interpolate } : {}) })),
         ...(imported ? [{ name: PROFILE_SECTION, text: imported }] : [])]
     })
     const selected = snapshot.systemPromptMode === 'replace'
@@ -794,6 +828,13 @@ export function apply(ctx, config = {}) {
       (sessionId) => runtime.activeView(sessionId),
       selectionPolicy,
     )
+    const handleMood = moodApi(personalityStore, personalityMood, notifyChange)
+    const personalityApi = createPersonalityApiHandler(personalityStore, {
+      evolution: personalityEvolution, inspectSession,
+      clearSidecars(id) { personalityEvolution.remove(id); personalityMood.remove(id) },
+      onChange: notifyChange,
+      isRunning: sessionId => ctx.get('agents')?.get?.(sessionId)?.status === 'running',
+    })
     const characterApi = createCharacterApiHandler(characterStore, {
       onChange: notifyChange,
       logger: ctx.logger,
@@ -911,6 +952,10 @@ export function apply(ctx, config = {}) {
           ? rpModeApi(req, res)
         : isSessionTemplateApiPath(req.url)
           ? sessionTemplateApi(req, res)
+        : isMoodApiPath(req.url)
+        ? handleMood(req, res)
+        : isPersonalityApiPath(req.url)
+        ? personalityApi(req, res)
         : isUserApiPath(req.url)
         ? userApi(req, res)
         : isTavernTraceApiPath(req.url)
@@ -950,6 +995,11 @@ export function apply(ctx, config = {}) {
     profileLoader: { value: runtime, enumerable: false },
     sessionSelections: { value: selections, enumerable: false },
     characterStore: { value: characterStore, enumerable: false },
+    personalityMood: { value: personalityMood, enumerable: false },
+    personalityMoodHost: { value: personalityMoodHost, enumerable: false },
+    personalityStore: { value: personalityStore, enumerable: false },
+    personalityEvolution: { value: personalityEvolution, enumerable: false },
+    personalityEvolutionHost: { value: personalityEvolutionHost, enumerable: false },
     worldBookStore: { value: worldBookStore, enumerable: false },
     userStore: { value: userStore, enumerable: false },
     userWorldBooks: { value: userWorldBooks, enumerable: false },

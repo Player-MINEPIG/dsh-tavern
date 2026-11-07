@@ -39,6 +39,7 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
   assert.deepEqual(TAVERN_MENU_ITEMS.map(item => item.id), [
     'assembly',
     'preset',
+    'personality',
     'character',
     'world-info',
     'user',

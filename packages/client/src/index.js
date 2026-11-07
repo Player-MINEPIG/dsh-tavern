@@ -8,6 +8,7 @@ import { ConversationSettingsPanel } from './conversation-panel.js'
 import { presentationCss } from './presentation-styles.js'
 import { AssemblyPanel, ASSEMBLY_REFRESH_EVENT } from '../../request-assembler/client.js'
 import { BubbleEditor } from './bubble-editor.js'
+import { PersonalityPanel, PersonalityUpdateNotice, usePersonalitySelection } from './personality-panel.js'
 import { tavernFetch as fetch } from './api-fetch.js'
 import {
   createElement,
@@ -100,7 +101,9 @@ const css = `
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 /* Resource editors share the preset panel layer, above the earlier assembly stage. */
+.dtv-personality-notice{position:absolute;bottom:12px;left:12px;z-index:3;max-width:calc(100% - 24px);box-sizing:border-box;pointer-events:auto;display:flex;align-items:center;gap:4px;padding:4px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:10px;box-shadow:var(--ds-shadow-3)}.dtv-personality-notice .dtv-button{white-space:normal;overflow-wrap:anywhere}.dtv-personality-tabs{display:flex;gap:4px}.dtv-personality-tabs>.dcc-button{flex:1;min-width:0}.dtv-personality-tabs>[aria-current=page]{font-weight:700;border-color:var(--dsw-alias-state-business-primary)}
 .dtv-layer>:where(.dcc-panel,.dwb-panel,.dtu-panel){z-index:1}
+.dtv-layer>.dtv-personality-panel{z-index:3}.dtv-personality-panel .dcc-note{color:var(--dsw-alias-label-secondary)}
 .dtv-layer>:is(.dtv-panel,.dcc-panel,.dwb-panel,.dtu-panel){top:calc(max(var(--dsh-frame-chrome-top,0px),env(titlebar-area-height,0px))/var(--dtv-ui-scale,1))}
 :fullscreen .dtv-layer>:is(.dtv-panel,.dcc-panel,.dwb-panel,.dtu-panel){top:0}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
@@ -651,8 +654,9 @@ export function createSurfaceNavigation(commit) {
   }
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
+function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [noticeTarget, setNoticeTarget] = useState(null)
   const [surface, setSurface] = useState(null)
   const surfaceNavigation = useRef(null)
   if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation(next => { setSurface(next); setMenuOpen(false) })
@@ -714,6 +718,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const rpAlertRef = useRef(null)
   const dismissedRpAlerts = useRef(new Set())
   const sessionId = useSessions(mainSessionId)
+  const personalitySession = bindingTarget ? null : sessionId
+  const personalitySelection = usePersonalitySelection(personalitySession, chromeMode === 'native' || menuOpen || surface === 'personality', menuOpen)
   const sessionBlank = useSessions(mainSessionBlank)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
   const workspaceItems = useWorkspaces(state => state.items)
@@ -1110,6 +1116,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const open = id => {
     if (id === 'assembly') { requestAssembly(true); setMenuOpen(false); return }
     if (!requestSurface(id)) return
+    if (id === 'personality' && surface !== 'personality') setNoticeTarget(null)
     if (id === 'diagnostics') setDiagnosticPlaythroughId(null)
     setMenuOpen(false)
     // Navigation does not mutate resources; each editor loads on mount.
@@ -1135,6 +1142,16 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       hasConversationHistory,
       detachPlaythroughSession: (playthroughId, targetSessionId) => playClient.detachPlaythroughSession(playthroughId, targetSessionId),
       close,
+    })
+  } else if (surface === 'personality') {
+    panel = h(PersonalityPanel, {
+      key: `${personalitySession ?? ''}:${noticeTarget?.revision ?? ''}:${noticeTarget?.personalityId ?? ''}`,
+      sessionId: personalitySession,
+      selection: personalitySelection,
+      noticeTarget: noticeTarget?.sessionId === personalitySession ? noticeTarget : null,
+      workspaceId, workspaces: workspaceItems,
+      openPersonalitySession: !bindingTarget && chromeMode === 'native' ? openPersonalitySession : null,
+      close, registerBeforeLeave,
     })
   } else if (surface === 'regex' && chromeMode === 'play') {
     panel = h(ConversationSettingsPanel, { settings: conversationSettings, status: conversationSettingsStatus, busy: conversationSettingsBusy, update: persistConversationSettings, reset: resetConversationSettings, client: playClient, activeSnapshot, registerBeforeLeave, initialTab: 'regex', close })
@@ -1186,7 +1203,21 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
 
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale)
   const statuses = launcherResourceStatuses(activeSnapshot)
+  statuses.personality = {
+    bound: Boolean(personalitySelection?.personalityId),
+    title: personalitySelection?.personality?.name ?? personalitySelection?.personalityId,
+    titleKey: !personalitySession ? 'personality.noSession' : personalitySelection?.error ? 'common.unavailable' : personalitySelection ? 'nav.personality.empty' : 'common.loading',
+    count: personalitySelection?.personalityId ? 1 : 0,
+  }
   statuses.assembly = { bound: Boolean(assemblyState.selection), title: assemblyState.selection?.name, titleKey: 'nav.assembly.empty', count: assemblyState.selection ? 1 : 0 }
+  const viewNotice = notice => {
+    if (surface === 'personality' && !requestSurface(null)) return false
+    if (!requestSurface('personality')) return false
+    setSurface('personality')
+    setNoticeTarget({ ...notice, sessionId: personalitySession })
+    setMenuOpen(false)
+    return true
+  }
   const chromeSwitchLabel = chromeMode === 'play'
     ? uiMessage('chrome.switchToNative')
     : uiMessage('chrome.switchToPlay')
@@ -1199,6 +1230,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null || assemblyOpen, style: { '--dtv-ui-scale': uiSettings.scale } },
     assemblyOpen && h(AssemblyPanel, { sessionId: bindingTarget ? null : sessionId, selectionTarget: bindingTarget, sessionLabel: bindingTarget?.label, close: () => requestAssembly(false), registerBeforeLeave: registerAssemblyBeforeLeave, chromeMode }),
     panel,
+    chromeMode === 'native' && h(PersonalityUpdateNotice, { selection: personalitySelection, onOpen: viewNotice }),
     importFailure === null ? null : h(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
     rpAlert === null ? null : h(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
     workspaceAdmissionOpen ? h(WorkspaceAdmission, {
@@ -1356,6 +1388,11 @@ export function apply(ctx, { conversationPhase }) {
       diagnostics,
       chromeService: chrome.face,
       playSlots,
+      openPersonalitySession: async (workspaceId, applyPersonality) => {
+        const id = await ctx.uiWorkspace.connectWorkspace(workspaceId)
+        await applyPersonality(id)
+        ctx.uiWorkspace.openSession(id)
+      },
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
         source,

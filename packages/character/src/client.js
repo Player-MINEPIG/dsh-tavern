@@ -1,6 +1,6 @@
 import { installTavernStyle } from '../../client-style.js'
 import {offerRenderingDependencies} from '../../client/src/play/rendering-dependencies.js'
-import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
+import { resourceApi } from '../../client/src/resource-api.js'
 import {
   createElement,
   useCallback,
@@ -38,32 +38,6 @@ function announceTavernRefresh() {
 const css = `
 .dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions,.dcc-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled):not([data-disabled=true]){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled,.dcc-button[data-disabled=true]{opacity:.5;cursor:default;pointer-events:none}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-card-head>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dcc-modal-backdrop{position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);pointer-events:auto}.dcc-modal{width:min(520px,calc(100vw - 32px));max-height:min(640px,calc(100vh - 40px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-4,0 18px 56px rgba(0,0,0,.32));padding:18px;display:flex;flex-direction:column;gap:12px}.dcc-modal h3,.dcc-modal p{margin:0}.dcc-modal-list{margin:0;padding-left:20px;font-size:13px;line-height:1.5}.dcc-modal-actions{display:flex;justify-content:flex-end;gap:8px}
 `
-
-function errorMessage(data, status) {
-  if (typeof data?.error === 'string') return data.error
-  if (typeof data?.error?.message === 'string') return data.error.message
-  return `HTTP ${status}`
-}
-
-async function resourceApi(path, options = {}) {
-  const method = String(options.method ?? 'GET').toUpperCase()
-  const response = await fetch(`${API_ROOT}${path}`, {
-    ...options,
-    headers: {
-      ...(method === 'GET' || method === 'HEAD' ? {} : { 'Content-Type': 'application/json' }),
-      ...options.headers,
-    },
-  })
-  const data = await response.json().catch(() => null)
-  if (!response.ok || data?.ok === false) {
-    const error = new Error(errorMessage(data, response.status))
-    error.status = response.status
-    error.code = data?.code ?? data?.error?.code
-    error.details = data?.details ?? data?.error?.details
-    throw error
-  }
-  return data
-}
 
 function Field({ label, children }) {
   return h('label', { className: 'dcc-field' }, h('span', { className: 'dcc-label' }, label), children)
@@ -197,13 +171,11 @@ export function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConv
   const importFile = useCallback((file) => run(async () => {
     let data
     try {
-      const response = await fetch(`${API_ROOT}/characters/import?filename=${encodeURIComponent(file.name)}`, {
+      data = await resourceApi(`/characters/import?filename=${encodeURIComponent(file.name)}`, {
         method: 'POST',
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,
       })
-      data = await response.json().catch(() => null)
-      if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
     } catch (error) {
       announceImportFailure(error)
       throw error

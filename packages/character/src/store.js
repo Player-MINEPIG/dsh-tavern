@@ -534,9 +534,13 @@ export class CharacterStore {
     atomicJson(this.statePath, this.state)
   }
 
-  selection(sessionId) {
+  binding(sessionId) {
     validateSessionId(sessionId)
-    const selection = this.state.selectedBySessionId[sessionId]
+    return this.state.selectedBySessionId[sessionId] ?? null
+  }
+
+  selection(sessionId) {
+    const selection = this.binding(sessionId)
     if (!isRecord(selection)) return null
     try {
       const character = this.get(selection.characterCardId)

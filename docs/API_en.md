@@ -678,6 +678,51 @@ Under the v2 Play base, `POST /drafts` saves `{ characterId, source?, selection?
 
 `POST /drafts/:id/materialize` takes `{ expectedRevision, operationId, text }`, prepares one durably reserved Session and returns `{ sessionId, requestId, accepted }`; it does not send a model request. Call the existing `/sessions/:id/user-message` with the same text and requestId unless already accepted. `POST /drafts/:id/cancel` either releases a cleared unbound blank and restores the draft with `draft.lastInput` retained for reopening, or stops an already admitted real Session while preserving history. Draft scope for MVU is `{ mode:"draft", playthroughId, characterId, greetingIndex, selectionToken? }`, with no sessionId. Card write grants require the exact current selection token and ready source execution.
 
+<a id="personality-cards"></a>
+
+## Personality cards
+
+Paths are relative to `/pmp-dsh-tavern/api/v1` and use Tavern's existing HTTP admission and mutation protections. Personality and RP character cards have independent resource IDs and session bindings. Sessions using the same personality share its growth history. Imports, edits and exports use the character-card document and format limits. JSON/PNG attachments contain the editable card. Revisions, evidence references and mood are stored separately.
+
+| Method | Path | Input and result |
+| --- | --- | --- |
+| GET / POST | `/personalities` | GET returns summaries in `{ok,personalities}`. POST takes `{name}` and returns the full resource in `{ok,personality}` (201). |
+| POST | `/personalities/import?filename=…` | Raw JSON or PNG bytes. Returns `{ok,personality,compatibility}` (201). |
+| GET / PATCH / DELETE | `/personalities/:id` | GET returns the document. PATCH accepts the existing editable character-card fields and returns `{ok,personality}`. DELETE removes the resource and clears its session bindings. |
+| GET | `/personalities/:id/json`, `/personalities/:id/png` | Download the current card. |
+| GET / POST | `/personality-selection` | GET takes `?sessionId=…`. POST takes `{sessionId,personalityId}`; null clears the binding. Returns `{ok,personalityId,personality,notice}` with a nullable summary and latest revision/rollback notice. Changing a running session returns 409 `PERSONALITY_AGENT_RUNNING`. |
+| GET / PUT | `/personalities/:id/evolution` | GET returns `{ok,evolution:{revision,config,current,history,availableSources,pendingCount,deferredCount,deferredReasons}}`. PUT takes `{enabled,referenceSource?,assessmentInterval?,refreshMode?,expectedRevision,operationId}` and returns the same shape. |
+| POST | `/personalities/:id/evolution/rollback` | `{targetRevision,expectedRevision,operationId}`. Zero restores the original card. Other targets must identify a history entry. Rollback creates a new revision. |
+| GET | `/personalities/:id/evolution/:revision/evidence` | Resolves the recorded DSH identity and events or exact external entry version. Check `evidence.available` before using `evidence.text`. Unverifiable evidence is reported as unavailable. |
+| GET / POST | `/personality-mood` | GET takes `?sessionId=…`. POST takes `{sessionId,personalityId,expectedRevision,mood?,automatic?}`, where mood is `{feeling,intensity,reason}` or null and intensity is an integer from 1 to 5. Returns `{ok,personalityId,revision,automatic,mood}`. |
+
+Learning defaults to enabled and `referenceSource` defaults to `original`. After a qualifying native, non-RP human turn completes, the Host asynchronously asks that turn's model whether the personality's self-understanding changed. A no-change decision adds no history entry. A revision contains `before/after/behavior/boundary/reason` and an evidence reference.
+
+`assessmentInterval` is the number of eligible turns to accumulate per personality and session (1–8, default 1). A turn over 24,000 UTF-16 code units of combined user and final assistant text is skipped. Pending batches retain event references and content hashes. Disabling learning, switching evidence sources or rolling back clears pending batches.
+
+`pendingCount` counts pending turns across this personality’s sessions, including `deferredCount` turns whose evidence could not be verified. `deferredReasons` groups that subset by reason. Retries are spaced 1, 2, 4, 8 and then 16 qualifying turns apart in the same session. Retry state survives a restart. Each eligible turn checks up to 16 references and makes up to two model assessments. Enough verifiable turns can be processed while unavailable external references await retry.
+
+`refreshMode` defaults to `immediate`, which reads the current revision for each new request. In `session-compaction` mode, the first live assembly pins the session’s effective self-understanding until a successful DSH `compaction/end`. The library may show a newer revision than an open session uses. Preview is read-only. Rebuilding the Session object, editing or rebinding the card, changing its growth configuration or explicitly rolling it back refreshes the view. Only the self-revision is pinned; card fields, mood and provider cache entries have independent lifetimes. Evolution writes use the personality's revision and operationId; retry the same operation with the same arguments. A stale revision or reused ID with different arguments returns 409. Mood has its own revision; reread its state on conflict.
+
+Trusted Host plugins can use `ctx.get('tavernPersonalityEvidence')` (protocol 1). `list()` returns selectable source IDs; `register({id,resolve,read?})` returns an unregister function. `resolve({personalityId,origin,signal})` returns a fixed entry as `{id,version,text,checkCurrent}` or no result. The synchronous `checkCurrent()` confirms that the entry version and access scope are still valid. Optional `read({personalityId,id,version,origin,signal})` is used to reread historical evidence. External references record the source and entry IDs, version and DSH event coordinates; the provider retains the body. If the provider is unavailable, or the original version or content hash cannot be verified, evidence readback reports it as unavailable.
+
+To use Hindsight, set the following options in the Tavern Host configuration. Reload and select `hindsight` in **Growth**. Supply the authorized personality and DSH session IDs. Omit `apiKeyEnv` when the service does not require authentication.
+
+```json
+{
+  "personalityHindsight": {
+    "baseUrl": "http://127.0.0.1:8888",
+    "bankId": "example-bank",
+    "apiKeyEnv": "HINDSIGHT_API_KEY",
+    "bindings": [{ "personalityId": "example-personality", "sessionIds": ["example-session"] }]
+  }
+}
+```
+
+The adapter reads existing memories. It lists up to 16 candidates for `conversation:<sessionId>`, then checks the entry and source chunk for up to eight candidates. A valid `world` or `experience` entry must carry both `harness:dsh` and `source:chat`, and its chunk must verify one complete DSH exchange. Historical reads revalidate the version. Summaries without a source exchange, mixed-turn chunks and invalidated entries are ineligible. Configure the Hindsight DSH writer separately to supply the bank. [Official DSH writer](https://github.com/vectorize-io/hindsight/blob/0bd55015393d224deec1073d63b24bcc0faad164/hindsight-integrations/coding-agents/src/core/chat.ts)
+
+Manual mood follows the personality. Automatic mood defaults to off. When enabled, qualifying native work events are filtered by rules before an optional extra model assessment. Inferred mood is local to the working directory, or the session if no directory is available. Reads compute strength from elapsed time with a provisional four-hour half-life; values decayed to zero are omitted. For delivery and attribution see [Prompt Trace](PROMPT_API_V3_en.md).
+
 ## v3 prompt assembly audit
 
 Prefix: `/pmp-dsh-tavern/api/v3`. Read-only prompt assembly records and provenance.

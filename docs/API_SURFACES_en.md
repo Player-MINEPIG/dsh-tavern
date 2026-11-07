@@ -44,6 +44,7 @@ All Tavern paths below are relative to `/pmp-dsh-tavern/api`. Identifiers and JS
 
 | Method | Path | Input and result |
 | --- | --- | --- |
+| GET/POST/PATCH/PUT/DELETE | `/v1/personalities` and resource subpaths, `/v1/personality-selection`, `/v1/personality-mood` | Card resources, independent bindings, revisions and mood. See the [personality API](API_en.md#personality-cards) for supported methods and responses. |
 | GET | `/request-token` | Embedded client header `X-Tavern-Client: embedded`; returns memory-only token for the existing desktop mutation transport |
 | GET | `/v1/assembly-presets?sessionId=…` | Preset library, applied selection, capability and descriptors |
 | POST | `/v1/assembly-presets` | Preset JSON or `{preset}`; saves library only |
@@ -80,6 +81,7 @@ See [MVU](MVU_en.md) for complete scope/binding/error definitions, [assembly](RE
 | `tavernRequestSources` | Protocol 1 compatibility alias, not a second registry |
 | `tavernMvu` | [MVU](MVU_en.md): list/read/update/history/facts, scoped snapshots/bindings, prompt dependencies, source-owned command processors |
 | `tavernMemorySources` | [Templates/source management](PROMPT_TEMPLATE_en.md): world-book/template adapters, metadata-only listBound and source default leases |
+| `tavernPersonalityEvidence` | [Personality API](API_en.md#personality-cards): host evidence sources, fixed entry versions and access-scope revalidation. |
 | `tavernScopeCatalog` | [API](API_en.md): searchScopes and resolveScopeContext; identity only, synchronous Host-only checkCurrent |
 | `tavernOpeningWorldBooks` | prepare/commit; explicit separate world-book confirmation |
 | `tavernRenderingAuthority` | Trusted renderer execution grants; no arbitrary guest Host calls |

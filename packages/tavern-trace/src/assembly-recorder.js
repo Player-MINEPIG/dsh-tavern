@@ -54,7 +54,8 @@ export class AssemblyRecorder {
       sections: [], contexts: [], captureStage: 'tavern-waterfall-return', entersModelHistory: false }
     try {
       if (!assembly) throw new Error('No captured assembly')
-      record.sections = assembly.sections.map((s, i) => sectionSnapshot(s, assembly.variables, snapshot.sections ?? [], i)).filter(s => s.text !== '')
+      const known = [...(snapshot.personalitySections ?? []), ...(snapshot.sections ?? [])]
+      record.sections = assembly.sections.map((s, i) => sectionSnapshot(s, assembly.variables, known, i)).filter(s => s.text !== '')
       record.contexts = assembly.contexts.map((s, i) => sectionSnapshot(s, assembly.variables, [], i)).filter(s => s.text !== '')
       record.assemblyHash = digest(record.sections.map(section => section.text).join('\n\n'))
       let offset = 0

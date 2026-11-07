@@ -6,6 +6,10 @@ This guide explains how to verify the current implementation; it does not record
 
 Run admission and standard Host checks against 0.2.2-rc.1 dependency roots. Future RC and final-release values in range tests exercise policy, not those runtimes. Web acceptance also covers opening and unpinning RP / Trace entries folded into More in narrow windows, session switching, returning to blank drafts and restoration after removal.
 
+## Native personality cards
+
+Run `node --test test/personality-*.test.mjs`. Set `DSH_TAVERN_PROMPT_COMPAT_ROOT` as described below to include the official AgentLoop, revision refresh after successful compaction, and a real tool-failure event. For Web acceptance, bind a card in an isolated workspace and check the fields in the actual request. Open the growth notice in another session, inspect verified evidence, restore the baseline and check a strict JSON task. To evaluate mood, hold the card, model, question and learning settings fixed. Randomize repeated trials across mood conditions, score anonymous responses before revealing the key, and check the effective fields in each request.
+
 <a id="backend-compatibility"></a>
 ## 3.2.0 compatibility
 

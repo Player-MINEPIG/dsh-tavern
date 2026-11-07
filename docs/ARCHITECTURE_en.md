@@ -13,6 +13,23 @@ This page records the current architecture and release-review gates.
 
 [Interactive Tavern architecture](assets/architecture/tavern.en.html) · [Three-plugin architecture](assets/architecture/ecosystem.en.html). Editable Archify JSON is stored alongside each HTML. DSH durable history remains authoritative; Tavern stores resources, state, drafts, configuration and bounded trace references.
 
+## Personality in native work sessions
+
+The personality library shares the CCv2 parser, editor and export format with character cards. It has separate resource IDs and session bindings. Named system sections contribute the selected card, effective self-revision and applicable mood. Trace records the fields used for a request. When learning is enabled, the Host assesses completed native user turns in the background and stores supported revisions with evidence references. A session can refresh the effective revision on the next request or when its prompt is rebuilt after successful compaction. Manual mood follows the card. Inferred mood follows the work context.
+
+```mermaid
+flowchart LR
+  event[Completed DSH turn] --> evidence[Original text or selected memory source]
+  evidence --> judge[Background assessment]
+  judge --> revision[Self-revision with evidence]
+  revision --> panel[Update notice and growth sidebar]
+  card[Selected personality card] --> request[DSH request assembly]
+  revision --> request
+  mood[Current mood] --> request
+```
+
+[Usage](USAGE_en.md) · [Personality API](API_en.md#personality-cards)
+
 ## Operation diagnostics and compatibility
 
 The operation journal is bounded Tavern-owned diagnostic storage, separate from current-problem projection, Prompt Trace and DSH authoritative history. Route declarations own operation names and fixed path templates; a shared boundary records starts/terminals. Business code and the existing play-host.js adapter report a few confirmed checkpoints. The journal depends on no DSH service, event or history format and adds no DSH listener. A DSH upgrade should normally change the existing compatibility layer; changed business semantics require an event contract change. Queries and UI consume the [operation log contract](OPERATION_LOGS_en.md), not internal function stages.

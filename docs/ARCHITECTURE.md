@@ -12,6 +12,23 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 
 [Tavern 交互架构图](assets/architecture/tavern.zh-CN.html) · [三插件组合架构图](assets/architecture/ecosystem.zh-CN.html)。同目录 JSON 是可编辑的 Archify 规格。DSH durable history 为权威历史；Tavern 保存资源、状态、草稿、配置与有界 Trace 引用。
 
+## 原生工作会话中的人格
+
+人格库复用 CCv2 卡片解析、编辑和导出，有独立的资源 ID 和会话绑定。DSH 原生 system 段承载卡面、有效的人格修订和适用心情，Trace 中可按字段查到本次贡献。学习开启时，后台在已完成的原生用户回合评估自我认识，保存有依据的版本。当前正文可按下一请求或会话重建／成功压缩刷新。手动心情跟随卡，自动心情按工作情境取用。
+
+```mermaid
+flowchart LR
+  event[DSH 已完成回合] --> evidence[原文或选定的记忆来源]
+  evidence --> judge[后台人格评估]
+  judge --> revision[人格修订与证据引用]
+  revision --> panel[通知与成长侧栏]
+  card[选定的人格卡] --> request[DSH 请求装配]
+  revision --> request
+  mood[当前心情] --> request
+```
+
+[使用指南](USAGE_zh-CN.md#在原生工作会话使用人格卡) · [人格 API](API.md#personality-cards)
+
 ## 操作诊断与兼容边界
 
 操作 journal 是 Tavern 自有的有界诊断存储，与当前问题投影、Prompt Trace 和 DSH 权威历史各自独立。API 路由声明拥有操作名和固定路径模板，统一边界负责开始／终态；业务与既有 `play-host.js` 适配器只报告少量已确认检查点。journal 不依赖 DSH 服务、事件或历史格式，不新增 DSH 监听器。DSH 升级优先只改已有兼容层；只有业务语义改变才调整事件合同。查询与 UI 依赖 [操作日志合同](OPERATION_LOGS.md)，不依赖内部函数阶段名。

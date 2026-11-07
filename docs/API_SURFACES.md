@@ -44,6 +44,7 @@ Factory handler 是可组合原语，需挂到文档规定的 Host admission/安
 
 | 方法 | 路径 | 输入与结果 |
 | --- | --- | --- |
+| GET/POST/PATCH/PUT/DELETE | `/v1/personalities` 及资源子路径、`/v1/personality-selection`、`/v1/personality-mood` | 人格卡面、独立绑定、修订与心情；具体方法与返回值见[人格卡 API](API.md#personality-cards)。 |
 | GET | `/request-token` | `X-Tavern-Client: embedded`；取得现有桌面 mutation transport 的内存 token |
 | GET | `/v1/assembly-presets?sessionId=…` | 策略库、已应用 selection、capability 与来源 descriptor |
 | POST | `/v1/assembly-presets` | 策略 JSON 或 `{preset}`；只保存库 |
@@ -80,6 +81,7 @@ Factory handler 是可组合原语，需挂到文档规定的 Host admission/安
 | `tavernRequestSources` | 协议 1 兼容别名，不是第二个 registry |
 | `tavernMvu` | [MVU](MVU.md)：list/read/update/history/facts、scope 快照/绑定、prompt 依赖、来源命令处理器 |
 | `tavernMemorySources` | [模板与来源管理](PROMPT_TEMPLATE.md)：世界书/模板 adapter、无正文 listBound 与来源默认租约 |
+| `tavernPersonalityEvidence` | [人格卡 API](API.md#personality-cards)：可选原文/外部条目依据；注册、固定版本与访问范围复核。 |
 | `tavernScopeCatalog` | [API](API.md)：searchScopes / resolveScopeContext，只给身份与同步 Host-only checkCurrent |
 | `tavernOpeningWorldBooks` | prepare/commit；世界书另行显式确认 |
 | `tavernRenderingAuthority` | 可信渲染执行 grant；不开放任意 guest Host 调用 |

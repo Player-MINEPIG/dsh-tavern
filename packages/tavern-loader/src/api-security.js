@@ -62,7 +62,8 @@ function requestMediaType(req) {
 
 export function isCharacterImport(url, apiRoot = API_V1) {
   try {
-    return new URL(url ?? '/', 'http://localhost').pathname === `${apiRoot}/characters/import`
+    const path = new URL(url ?? '/', 'http://localhost').pathname
+    return path === `${apiRoot}/characters/import` || path === `${apiRoot}/personalities/import`
   } catch {
     return false
   }

@@ -5,6 +5,7 @@ import { join } from 'node:path'
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const fail = () => { throw Object.assign(new Error('Source metadata changed; reload the source to rebuild its index'), { code: 'SCOPE_CATALOG_STALE' }) }
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
+const fingerprint = stat => `${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`
 /** Source-owned persistent summaries. Queries inspect filesystem metadata, never resource bodies. */
 export class ScopeMetadataIndex {
   #epoch = 0; #instance = randomUUID(); #unavailable = false
@@ -35,7 +36,7 @@ export class ScopeMetadataIndex {
       if (!idPattern.test(id)) continue
       if (files.size >= 4096) throw Object.assign(new Error('Scope metadata catalog exceeds 4096 resources'), { code: 'SCOPE_CATALOG_LIMIT' })
       const stat = lstatSync(join(this.directory, entry.name), { bigint: true })
-      if (stat.isFile() && !stat.isSymbolicLink()) files.set(id, `${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`)
+      if (stat.isFile() && !stat.isSymbolicLink()) files.set(id, fingerprint(stat))
     }
     return new Map([...files].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0))
   }
@@ -57,11 +58,19 @@ export class ScopeMetadataIndex {
       else {
         const stat = lstatSync(join(this.directory, `${row.id}.json`), { bigint: true })
         if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Source file is unavailable')
-        this.files.set(row.id, `${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`)
+        this.files.set(row.id, fingerprint(stat))
       }
       this.files = new Map([...this.files].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0))
       this.persist()
     } catch { this.#unavailable = true }
+  }
+  /** Snapshot one row for launcher/status reads without scanning all resources. */
+  summary(id) {
+    if (!idPattern.test(id)) return null
+    const stat = lstatSync(join(this.directory, `${id}.json`), { bigint: true, throwIfNoEntry: false })
+    if (!stat?.isFile() || this.files.get(id) !== fingerprint(stat)) return null
+    const row = this.rows.get(id)
+    return row ? { ...row } : null
   }
   current() {
     try { return !this.#unavailable && hash([...this.inventory()]) === hash([...this.files]) } catch { return false }

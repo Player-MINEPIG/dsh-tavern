@@ -659,6 +659,51 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 `GET /pmp-dsh-tavern/api/v2/operation-logs` 提供筛选、分页和单页 JSONL 导出。查询字段、记录格式、稳定事件、容量与升级规则统一见 [操作日志合同](OPERATION_LOGS.md)。
 
+<a id="personality-cards"></a>
+
+## 人格卡
+
+路径相对 `/pmp-dsh-tavern/api/v1`，沿用 Tavern 的 HTTP 准入与 mutation 保护。人格库与 RP 角色库各自分配资源 ID，按会话单独绑定。一张人格卡的多个绑定共享成长历史。导入、编辑与导出沿用现有角色卡文档和格式限制。JSON/PNG 附件包含当前可编辑卡面；修订历史、证据引用与心情另行存储。
+
+| 方法 | 路径 | 输入与响应 |
+| --- | --- | --- |
+| GET / POST | `/personalities` | GET 返回 `{ok,personalities}` 摘要数组；POST 接收 `{name}`，201 返回 `{ok,personality}` 完整资源。 |
+| POST | `/personalities/import?filename=…` | 请求体为 JSON 或 PNG 文件字节；201 返回 `{ok,personality,compatibility}`。 |
+| GET / PATCH / DELETE | `/personalities/:id` | 读取完整资源；PATCH 接受角色卡已有的可编辑字段，返回 `{ok,personality}`；DELETE 删除卡并清理其会话绑定。 |
+| GET | `/personalities/:id/json`、`/personalities/:id/png` | 当前卡面附件。 |
+| GET / POST | `/personality-selection` | GET 用 `?sessionId=…`；POST 用 `{sessionId,personalityId}`，传 null 解绑。返回 `{ok,personalityId,personality,notice}`，其中 personality 为摘要或 null，notice 为最近修订/回滚摘要或 null。运行中的会话切换返回 409 `PERSONALITY_AGENT_RUNNING`。 |
+| GET / PUT | `/personalities/:id/evolution` | GET 返回 `{ok,evolution:{revision,config,current,history,availableSources,pendingCount,deferredCount,deferredReasons}}`。PUT 用 `{enabled,referenceSource?,assessmentInterval?,refreshMode?,expectedRevision,operationId}` 修改配置，返回同形状。 |
+| POST | `/personalities/:id/evolution/rollback` | `{targetRevision,expectedRevision,operationId}`；0 恢复卡面基线，其它值须对应已有历史条目。回滚本身是新修订。 |
+| GET | `/personalities/:id/evolution/:revision/evidence` | 按记录的 DSH 身份/事件或外部固定版本取证；检查 `evidence.available` 后使用 `evidence.text`。无法核对时显示不可用。 |
+| GET / POST | `/personality-mood` | GET 用 `?sessionId=…`；POST 用 `{sessionId,personalityId,expectedRevision,mood?,automatic?}`。mood 为 `{feeling,intensity,reason}` 或 null，强度为整数 1–5。返回 `{ok,personalityId,revision,automatic,mood}`。 |
+
+成长默认开启，`referenceSource` 默认为 `original`。合格的非 RP 普通用户回合完成后，由 Host 异步调用该回合的模型，判断是否修订人格对自身的认识。无实质变化时不生成历史条目。有效修订包含 `before/after/behavior/boundary/reason` 和证据引用。
+
+`assessmentInterval` 为同一人格、同一会话凑齐后评估的合格回合数（1–8，默认 1）。单个回合参与评估的用户与助手正文合计上限为 24,000 UTF-16 码元，超过时跳过。待评估批次仅保留事件引用与内容哈希；禁用学习、切换依据或回滚会清理待评估批次。
+
+`pendingCount` 是该人格所有会话尚待评估的回合总数，含暂时无法取证的 `deferredCount` 个回合。`deferredReasons` 按原因计数。后续同会话的合格回合按 1、2、4、8、最多 16 回合的间隔重试，重启保留进度。每次最多核查 16 个引用、发起 2 次模型评估。有足够可核对的引用时先处理这些回合；外部来源不可用时保留原引用。
+
+`refreshMode` 默认 `immediate`，下次请求读当前版本。选 `session-compaction` 时，活动 DSH Session 首次正式装配固定当时的自我认识，直到收到成功的 `compaction/end`。已打开的会话可能显示库里有新版，而实际发送的是旧版。预览只读；会话对象重新建立、卡面被编辑或重新绑定、用户改配置或回滚时会重新取版。冻结仅作用于自我修订，不冻结人物卡文本、心情或 provider 缓存。成长写入使用人格自己的 revision 与 operationId，同操作同参数可重放，过期 revision 或异参复用返回 409。心情有独立 revision，冲突后先重新读取当前值。
+
+可信 Host 插件可以注册 `ctx.get('tavernPersonalityEvidence')`（协议 1）。`list()` 返回可选来源 ID；`register({id,resolve,read?})` 返回注销函数。`resolve({personalityId,origin,signal})` 返回固定条目的 `{id,version,text,checkCurrent}` 或空结果。`checkCurrent()` 同步复核此条目版本与访问范围仍然有效。可选 `read({personalityId,id,version,origin,signal})` 供历史证据回读使用。外部来源的历史引用包含来源 ID、条目 ID、版本与 DSH 事件坐标；正文保留在提供方。来源未注册、原始版本或内容哈希无法核对时，历史回读报告不可用。
+
+要使用 Hindsight，在 Tavern Host 配置中设置以下选项，重载后在「成长」选择 `hindsight`。填写已经授权读取的人格 ID 和 DSH 会话 ID，可省略不需要鉴权的 `apiKeyEnv`。
+
+```json
+{
+  "personalityHindsight": {
+    "baseUrl": "http://127.0.0.1:8888",
+    "bankId": "example-bank",
+    "apiKeyEnv": "HINDSIGHT_API_KEY",
+    "bindings": [{ "personalityId": "example-personality", "sessionIds": ["example-session"] }]
+  }
+}
+```
+
+该适配器只读已入库的记忆。它按 `conversation:<sessionId>` 查找最多 16 条候选，再核对最多 8 条的正文与来源块。有效的 `world` 或 `experience` 条目必须带 `harness:dsh` 和 `source:chat`，来源块须能对应到一次完整 DSH 交互。历史读取会重新核对版本。纯摘要、混合多回合的块及失效条目无法用作本轮依据。适配器不会代用户写入记忆；接入方需先配置 Hindsight 的 DSH 会话采集。[官方采集实现](https://github.com/vectorize-io/hindsight/blob/0bd55015393d224deec1073d63b24bcc0faad164/hindsight-integrations/coding-agents/src/core/chat.ts)
+
+手动心情跟随人格；自动心情默认关闭。开启后，候选事件来自合格普通工作回合，规则筛选后可作一次额外模型判断。推断心情以工作目录划定范围，取不到目录时限于当前会话。读取按距上次设置的时间计算强度，当前试行半衰期为 4 小时；降至零的状态不装配。装配详情和证据边界见 [Prompt Trace](PROMPT_API_V3.md)。
+
 ## v3 提示词装配审计
 
 前缀 `/pmp-dsh-tavern/api/v3`。提供只读提示词装配记录与来源追踪。

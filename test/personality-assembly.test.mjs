@@ -1,0 +1,198 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
+import { CharacterStore } from '../packages/character/src/store.js'
+import { PersonalityStore } from '../packages/personality/src/store.js'
+import { TavernProfileLoader } from '../packages/tavern-loader/src/profile-loader.js'
+import * as tavern from '../packages/tavern-loader/src/index.js'
+import { installIndependentAssembler } from './helpers/assembler-host.mjs'
+
+const input = { spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Aster', description: '{{char}} works with {{user}}', personality: 'Economical with words', mes_example: '{{user}}: Question? {{char}}: Evidence first.', first_mes: 'GREETING', alternate_greetings: ['ALT GREETING'], creator_notes: 'EDITOR ONLY', system_prompt: 'GIVE STEPS', post_history_instructions: 'CHECK CLAIMS' } }
+function temporary(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'personality-assembly-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  return dir
+}
+test('a per-session personality supplies independent static CCv2 fields and selection flags', t => {
+  const cards = new CharacterStore(temporary(t)), card = cards.import(JSON.stringify(input))
+  cards.select('A', { characterCardId: card.id, character: { greetingIndex: 1, preferCharacterPostHistory: false } })
+  const runtime = new TavernProfileLoader({ presetStore: {}, personalityStore: cards,
+    selections: { get: () => ({ presetId: null, worldBookIds: [], character: {} }) } })
+  assert.deepEqual(runtime.compile({ sessionId: 'B' }).personalitySections, [])
+  const result = runtime.compile({ sessionId: 'A' })
+  const sections = result.personalitySections
+  assert.equal(result.audit.sessionSelection.personalityCardId, card.id)
+  assert.ok(sections.some(s => s.text.includes('Aster works with User')))
+  assert.ok(sections.some(s => s.sources[0].field === 'alternate_greetings/0' && s.text.includes('ALT GREETING')))
+  assert.ok(sections.some(s => s.sources[0].field === 'system_prompt' && s.text.includes('GIVE STEPS')))
+  assert.ok(!sections.some(s => /CHECK CLAIMS|EDITOR ONLY/.test(s.text)))
+})
+
+test('only the selected self revision and applicable temporary mood enter the next snapshot as literal text', t => {
+  const cards = new CharacterStore(temporary(t)), card = cards.import(JSON.stringify(input))
+  cards.select('work', { characterCardId: card.id })
+  let active = { revision: 3, after: 'I can change my mind', behavior: 'Say {{user}} verbatim.', boundary: 'While reviewing evidence' }
+  let mood = { feeling: 'concerned', intensity: 2, reason: '{{do_not_expand}}' }
+  const runtime = new TavernProfileLoader({ presetStore: {}, personalityStore: cards,
+    personalityEvolution: { current(id) { assert.equal(id, card.id); return active } },
+    personalityMood: { read(id, sessionId) { assert.equal(id, card.id); assert.equal(sessionId, 'work'); return { revision: 5, mood } } },
+    selections: { get: () => ({ presetId: null, worldBookIds: [], character: {} }) } })
+  const frozen = runtime.compile({ sessionId: 'work' }).personalitySections
+  assert.ok(frozen.some(s => s.sources[0].field === 'evolution/behavior' && s.text.includes('{{user}}') && s.interpolate === false && s.sources[0].resourceRevision === 3))
+  assert.ok(frozen.some(s => s.sources[0].field === 'mood' && s.text.includes('{{do_not_expand}}') && s.sources[0].resourceRevision === 5))
+  active = null; mood = null
+  assert.deepEqual(runtime.compile({ sessionId: 'other' }).personalitySections, [])
+  assert.ok(!runtime.compile({ sessionId: 'work' }).personalitySections.some(s => /my mind|do_not_expand/.test(s.text)))
+  assert.ok(frozen.some(s => s.text.includes('I can change my mind')))
+})
+
+test('a read-only preview never pins growth; live snapshots refresh at successful compaction, rollback or rebinding', t => {
+  const cards = new PersonalityStore(temporary(t)), card = cards.import(JSON.stringify(input))
+  const session = { id: 'work', header: {}, deriveMessages: () => [] }, agent = { id: session.id, session }
+  cards.select(session.id, { characterCardId: card.id })
+  let after = 'initial', generation = 0
+  const state = { config: { refreshMode: 'session-compaction' }, get generation() { return generation } }
+  const runtime = new TavernProfileLoader({ presetStore: {}, personalityStore: cards,
+    personalityEvolution: { current: () => after && { after, revision: 1 }, record: () => state }, sessionFor: () => session,
+    selections: { get: () => ({ presetId: null, worldBookIds: [], character: {} }), ensureAgent() { return this.get() } } })
+  const text = result => result.personalitySections.find(p => p.sources[0].field === 'evolution/after')?.text
+  const assemble = () => text(runtime.forAssembleContext({ agent }))
+  const preview = () => text(runtime.forAssembleContext({ agent, tavernAssemblyPreview: true, dshAssemblerRaw: true }))
+  assert.match(preview(), /initial/)
+  after = 'first live version'
+  assert.match(assemble(), /first live version/)
+  after = 'learned later'
+  assert.match(preview(), /first live version/)
+  assert.match(text(runtime.compile({ sessionId: 'work' })), /first live version/)
+  runtime.observeCompaction(session, { type: 'compaction/end', data: { error: 'interrupted' } })
+  assert.match(assemble(), /first live version/)
+  runtime.observeCompaction(session, { type: 'compaction/end', data: {} })
+  assert.match(assemble(), /learned later/)
+  cards.select(session.id, null)
+  cards.select(session.id, { characterCardId: card.id })
+  after = 'reselected'
+  assert.match(assemble(), /reselected/)
+  after = null
+  generation++
+  assert.equal(assemble(), undefined)
+})
+
+test('static personality fields get their share of the legacy profile budget before ranked lore', t => {
+  const cards = new CharacterStore(temporary(t)), card = cards.import(JSON.stringify({ ...input, data: { name: 'Short', personality: 'precise' } }))
+  cards.select('work', { characterCardId: card.id })
+  const runtime = new TavernProfileLoader({ presetStore: {}, personalityStore: cards, maxProfileBytes: 140,
+    selections: { get: () => ({ presetId: null, worldBookIds: [], character: {} }) } })
+  runtime.registerWorldBookAdapter({ resolve: () => ({ loreEntries: [
+    { id: 'small', content: 'x'.repeat(45) }, { id: 'large', content: 'y'.repeat(70) },
+  ] }) })
+  const result = runtime.compile({ sessionId: 'work' })
+  assert.ok(Buffer.byteLength(result.systemText) <= 140)
+  assert.match(result.systemText, /precise/)
+  assert.deepEqual(result.activeLoreEntries, ['small'])
+})
+
+const compat = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
+test('stock DSH sends one personality with native instructions and records its fields before and after a policy change', { skip: !compat, timeout: 30000 }, async t => {
+  const require = createRequire(join(resolve(compat), 'package.json'))
+  const load = name => import(pathToFileURL(require.resolve('@deepseek-ai/' + name)))
+  const { Context } = await load('cordis'), { SystemPrompt } = await load('dsh-system-prompt'), llm = await load('dsh-llm')
+  const root = new Context(), directory = temporary(t), requests = [], errors = []
+  try {
+    for (const name of ['sessionController','workspaceController','directoryPickerController']) root.provide(name,{})
+    await root.plugin(SystemPrompt, { personaPrefix: 'HOST BASE' })
+    for (const suffix of ['session','agent','session-projection','llm','tools','tool-executor-native','agent-loop']) {
+      const module = await load('dsh-' + suffix)
+      await root.plugin(module.default ?? module, suffix === 'agent-loop' ? { agents: [] } : {})
+    }
+    root.on('agent/error', event => errors.push(event.error))
+    let revisedAgain = false
+    class Adapter extends llm.LlmAdapter {
+      async *stream(request) {
+        let text = 'ANSWER'
+        if (request.purpose === 'tavern-personality-evolution') {
+          text = JSON.stringify({ change: requests.length === 1 || revisedAgain ? {
+            before:'I valued quick answers', after: revisedAgain ? 'I distinguish observed and inferred facts' : 'I value verifiable answers', behavior:'I check before I claim', boundary:'When a claim is testable', reason:'A counterexample disproved the quick answer'
+          } : null })
+          revisedAgain = false
+        } else if (request.purpose === 'compaction') {
+          text = 'Checkpoint.'
+        } else {
+          requests.push(request.messages.filter(m => m.role === 'system').at(-1).content.map(b => b.text ?? '').join(''))
+        }
+        yield { type:'block-start', index:0, blockType:'text' }
+        yield { type:'block-end', index:0, block:{ type:'text',text } }
+        yield { type:'finish', reason:{ kind:'stop' } }
+      }
+    }
+    root.llm.registerAdapter(['offline'],new Adapter())
+    await installIndependentAssembler(root,directory)
+    let store
+    await root.plugin({ name:tavern.name, inject:tavern.inject, apply(ctx) { store = tavern.apply(ctx,{storageDir:directory}) } })
+    const {agent} = await root.agents.create({sessionId:'work',meta:{cwd:directory},agentOptions:{provider:'offline',model:'test'}})
+    const cards = store.personalityStore, card = cards.import(JSON.stringify(input))
+    cards.select(agent.id, {characterCardId:card.id})
+    async function turn(current = agent, prompt = 'Hello') {
+      current.followup(llm.createUserMessage({content:[{type:'text',text:prompt}], source:{kind:'user'}}))
+      await current.whenIdle()
+      assert.deepEqual(errors,[])
+    }
+    await turn()
+    await store.personalityEvolutionHost.idle()
+    assert.equal(store.personalityEvolution.current(card.id)?.after, 'I value verifiable answers')
+    store.personalityMood.change(card.id, agent.id, { expectedRevision: 0, mood: { feeling: 'curious', intensity: 2, reason: 'New counterexample' } })
+    const face = root.get('dshPromptAssembler')
+    face.store.apply(agent.id,'builtin-native-slots')
+    await turn()
+    for (const [index, sys] of requests.entries()) {
+      assert.equal(sys.split('Economical with words').length,2)
+      assert.ok(sys.includes('Aster works with User'))
+      assert.ok(sys.includes('HOST BASE'))
+      assert.ok(sys.includes('CHECK CLAIMS'))
+      assert.equal(sys.includes('GREETING'),index === 0)
+      assert.equal(sys.includes('I value verifiable answers'),index === 1)
+      assert.equal(sys.includes('New counterexample'),index === 1)
+      const summary = store.assemblyStore.list(agent.id)[index], trace = store.assemblyStore.get(agent.id,summary.id)
+      assert.equal(trace.delivery.assemblyVerified,true)
+      assert.ok(trace.sections.some(s => s.sources?.some(source => source.kind === 'personality' && source.field === 'description' && source.resourceId === card.id && source.resourceRevision)))
+    }
+    assert.equal(requests.length,2)
+    const fresh = (await root.agents.create({sessionId:'another-workspace',agentOptions:{provider:'offline',model:'test'}})).agent
+    cards.select(fresh.id, {characterCardId:card.id})
+    await turn(fresh)
+    assert.ok(requests.at(-1).includes('I value verifiable answers'), 'a new session can use the committed personality without the original conversation')
+    assert.ok(requests.at(-1).includes('New counterexample'), 'manual mood travels with the personality')
+    await store.personalityEvolutionHost.idle()
+    const ledger = store.personalityEvolution
+    ledger.mutate(card.id, 'config', { enabled: true, refreshMode: 'session-compaction', expectedRevision: ledger.view(card.id).revision, operationId: 'freeze' })
+    revisedAgain = true
+    await turn(agent, 'Evidence '.repeat(500))
+    await store.personalityEvolutionHost.idle()
+    assert.equal(ledger.current(card.id).after, 'I distinguish observed and inferred facts')
+    await turn()
+    assert.ok(requests.at(-1).includes('I value verifiable answers'), 'active session keeps its previous snapshot')
+    await root.plugin((await load('dsh-token-meter')).default)
+    await root.plugin((await load('dsh-compaction-basic')).default, { auto: false })
+    const compact = await root.compaction.compactNow(agent,new AbortController().signal)
+    assert.ok(compact, 'public DSH compaction completed')
+    await turn()
+    assert.ok(requests.at(-1).includes('I distinguish observed and inferred facts'), 'real compaction end admits the newer revision')
+    store.personalityMood.change(card.id, agent.id, { expectedRevision: store.personalityMood.read(card.id,agent.id).revision,
+      mood: { feeling:'focused', intensity:4, reason:'WORKSPACE ONLY' } }, 'event')
+    for (const [id,cwd,same] of [['cold-work',directory,true],['cold-other',join(directory,'other'),false]]) {
+      const session = root.sessions.prepare(id,{meta:{ ...agent.session.header, id, cwd },seed:[],eventState:'detached'})
+      cards.select(id,{characterCardId:card.id})
+      const view = await face.runtime.preview({ agent:{id,session},sessionId:id,preset:face.store.get('builtin-native-slots') })
+      const system = view.messages.find(m => m.role === 'system')
+      assert.equal(system.content[0].text.includes('WORKSPACE ONLY'),same)
+      assert.equal(root.sessions.get(id),undefined, 'preview did not activate the detached session')
+    }
+    cards.select(agent.id,null)
+    await turn()
+    assert.ok(!requests.at(-1).includes('Economical with words'))
+    assert.ok(requests.at(-1).includes('HOST BASE'))
+  } finally { await root.fiber.dispose() }
+})
