@@ -75,7 +75,7 @@ function button(label, onClick, disabled, primary = false) {
   return h('button', { type: 'button', className: 'dcc-button' + (primary ? ' dcc-primary' : ''), disabled, onClick }, translate(label))
 }
 
-export function PersonalityPanel({ sessionId, selection, workspaceId, workspaces = [], openPersonalitySession, noticeTarget, close, registerBeforeLeave }) {
+export function PersonalityPanel({ sessionId, selection, workspaceId, workspaces = [], openPersonalitySession, noticeTarget, close, registerBeforeLeave, loadModels }) {
   const [items, setItems] = useState([])
   const [detail, setDetail] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -246,7 +246,7 @@ export function PersonalityPanel({ sessionId, selection, workspaceId, workspaces
           disabled: busy || (id === 'mood' && (!sessionId || selectedId !== detail.id)),
           onClick: () => setPage(id),
         }, translate('personality.tab.' + id)))),
-      detail && page === 'evolution' && h(PersonalityEvolution, { key: detail.id, personalityId: detail.id,
+      detail && page === 'evolution' && h(PersonalityEvolution, { key: detail.id, personalityId: detail.id, loadModels,
         observedRevision: selectedId === detail.id ? selection?.notice?.revision : null,
         focusRevision: noticeTarget?.personalityId === detail.id ? noticeTarget.revision : null }),
       detail && page === 'mood' && (sessionId && selectedId === detail.id

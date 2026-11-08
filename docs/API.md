@@ -672,7 +672,7 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 | GET / PATCH / DELETE | `/personalities/:id` | 读取完整资源；PATCH 接受角色卡已有的可编辑字段，返回 `{ok,personality}`；DELETE 删除卡并清理其会话绑定。 |
 | GET | `/personalities/:id/json`、`/personalities/:id/png` | 当前卡面附件。 |
 | GET / POST | `/personality-selection` | GET 用 `?sessionId=…`。POST 用 `{sessionId,personalityId}`，传 null 显式解绑。新建会话可加 `defaultIfUnbound:true` 设置或刷新继承值，保留显式选卡、解绑以及旧数据中的已有绑定。返回 `{ok,personalityId,personality,notice}`，POST 另含 `applied`。运行中切换返回 409 `PERSONALITY_AGENT_RUNNING`。 |
-| GET / PUT | `/personalities/:id/evolution` | GET 返回 `{ok,evolution:{revision,config,current,history,availableSources,pendingCount,deferredCount,deferredReasons}}`。PUT 用 `{enabled,referenceSource?,assessmentInterval?,refreshMode?,expectedRevision,operationId}` 修改配置，返回同形状。 |
+| GET / PUT | `/personalities/:id/evolution` | GET 返回 `{ok,evolution:{revision,config,current,history,availableSources,pendingCount,deferredCount,deferredReasons}}`。PUT 用 `{enabled,referenceSource?,assessmentInterval?,refreshMode?,assessmentModel?,assessmentInstructions?,expectedRevision,operationId}` 修改配置，返回同形状。 |
 | POST | `/personalities/:id/evolution/rollback` | `{targetRevision,expectedRevision,operationId}`；0 恢复卡面基线，其它值须对应已有历史条目。回滚本身是新修订。 |
 | GET | `/personalities/:id/evolution/:revision/evidence` | 按记录的 DSH 身份/事件或外部固定版本取证；检查 `evidence.available` 后使用 `evidence.text`。无法核对时显示不可用。 |
 | GET / POST | `/personality-mood` | GET 用 `?sessionId=…`。POST 用 `{sessionId,personalityId,expectedRevision,mood?,automatic?}` 设置心情或自动判断。mood 为 `{feeling,intensity,reason}` 或 null，强度为整数 1–5。返回 `{ok,personalityId,revision,automatic,mood}`。已打开的原生会话另返回 `reply:{revision,status,skipNextReply}`。 |
@@ -682,6 +682,10 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 成长默认开启，`referenceSource` 默认为 `original`。合格的非 RP 普通用户回合完成后，由 Host 异步调用该回合的模型，判断是否修订人格对自身的认识。无实质变化时不生成历史条目。有效修订包含 `before/after/behavior/boundary/reason` 和证据引用。
 
 `assessmentInterval` 为同一人格、同一会话凑齐后评估的合格回合数（1–8，新记录默认 4，旧记录保留其间隔）。明确要求记住教训或重新认识自身职责可提前触发判断。单个回合参与评估的用户与助手正文合计上限为 24,000 UTF-16 码元，超过时跳过。待评估批次仅保留事件引用与内容哈希；禁用学习、切换依据或回滚会清理待评估批次。
+
+原生 `/grow` 将当前人格在本会话有据可查的未处理回合送入同一个后台评估队列，也可在关闭自动成长时使用。Host 核对会话、人格绑定、原始回合和证据版本。DSH 保留命令执行审计，命令自身不作为学习依据。`/grow status` 仅查询当前 Host 最近的手动评估结果；已保存的修订可在成长历史中长期查看。旧会话若没有能核验人格绑定的待评估回合，先使用当前人格完成一轮新对话。
+
+`assessmentModel` 为 null 时跟随已完成回合的 provider 和模型，也可保存 `{provider,model}` 作为本卡的成长判断模型。选择的路由失败时会延后评估。`assessmentInstructions` 为最多 6,000 个 UTF-16 码元的判断准则；空字符串恢复默认。最终判断提示词还包括固定的证据和 JSON 输出协议。
 
 `pendingCount` 是该人格所有会话尚待评估的回合总数，含暂时无法取证的 `deferredCount` 个回合。`deferredReasons` 按原因计数。后续同会话的合格回合按 1、2、4、8、最多 16 回合的间隔重试，重启保留进度。每次最多核查 16 个引用、发起 2 次模型评估。有足够可核对的引用时先处理这些回合；外部来源不可用时保留原引用。
 

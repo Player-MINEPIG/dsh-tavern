@@ -16,6 +16,7 @@ import { PersonalityPanel, usePersonalitySelection } from '../packages/client/sr
 import { PersonalityStore } from '../packages/personality/src/store.js'
 import { createPersonalityApiHandler } from '../packages/personality/src/server.js'
 import { getClientUiSettings, setClientUiSettings } from '../packages/client/src/i18n.js'
+import { DEFAULT_EVOLUTION_INSTRUCTIONS } from '../packages/personality/src/evolution-prompt.js'
 
 test('native panel imports, explicitly applies and edits a card without affecting other sessions', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'personality-panel-'))
@@ -43,9 +44,10 @@ test('native panel imports, explicitly applies and edits a card without affectin
     return result
   }
   setClientUiSettings({ locale: 'en' }, { announce: false })
+  const loadModels = async () => ({ ok: true, value: { groups: [{ id: 'offline-judge', name: 'Offline judge', models: [{ id: 'review', name: 'Review' }] }], failures: [] } })
   function View({ sessionId }) {
     const selection = usePersonalitySelection(sessionId, true)
-    return h(PersonalityPanel, { key: sessionId, sessionId, selection, close() {} })
+    return h(PersonalityPanel, { key: sessionId, sessionId, selection, loadModels, close() {} })
   }
   const root = createRoot(document.getElementById('root'))
   t.after(async () => {
@@ -102,6 +104,21 @@ test('native panel imports, explicitly applies and edits a card without affectin
   const interval = [...document.querySelectorAll('label')].find(label => label.textContent.includes('Completed turns per assessment')).querySelector('select')
   await perform(() => Simulate.change(interval, { target: { value: '4' } }))
   assert.equal(evolution.view(card.id).config.assessmentInterval, 4)
+  const judge = [...document.querySelectorAll('label')].find(label => label.textContent.includes('Growth judging model')).querySelector('select')
+  assert.ok(judge.textContent.includes('Offline judge · Review'))
+  await perform(() => Simulate.change(judge, { target: { value: JSON.stringify({ provider: 'offline-judge', model: 'review' }) } }))
+  assert.deepEqual(evolution.view(card.id).config.assessmentModel, { provider: 'offline-judge', model: 'review' })
+  const criteria = [...document.querySelectorAll('label')].find(label => label.textContent.includes('Growth judging criteria')).querySelector('textarea')
+  assert.equal(criteria.value, DEFAULT_EVOLUTION_INSTRUCTIONS)
+  await perform(() => Simulate.change(criteria, { target: { value: 'Consider only testable changes.' } }))
+  await perform(() => Simulate.click(button('Save judging criteria')))
+  assert.equal(evolution.view(card.id).config.assessmentInstructions, 'Consider only testable changes.')
+  assert.ok(document.querySelector('details pre').textContent.startsWith('Consider only testable changes.'))
+  await perform(() => Simulate.click(button('Restore default criteria')))
+  assert.equal(evolution.view(card.id).config.assessmentInstructions, '')
+  assert.equal(criteria.value, DEFAULT_EVOLUTION_INSTRUCTIONS)
+  await perform(() => Simulate.change(judge, { target: { value: '' } }))
+  assert.equal(evolution.view(card.id).config.assessmentModel, null)
   const refresh = [...document.querySelectorAll('label')].find(label => label.textContent.includes('Apply accepted revisions')).querySelector('select')
   await perform(() => Simulate.change(refresh, { target: { value: 'session-compaction' } }))
   assert.equal(evolution.view(card.id).config.refreshMode, 'session-compaction')

@@ -48,10 +48,11 @@ export function completedHumanTurn(session, end) {
 }
 
 /** An auxiliary provider call leaves the foreground session log and request Trace untouched. */
-export async function requestAssessment(llm, { turn, system, input, signal, purpose }) {
-  if (!llm || !turn?.provider || !turn.model) throw assessmentFailure('PERSONALITY_ASSESSMENT_MODEL', 'Personality assessment model unavailable')
+export async function requestAssessment(llm, { turn, system, input, signal, purpose, modelSelection }) {
+  const selected = modelSelection ?? turn
+  if (!llm || !selected?.provider || !selected.model) throw assessmentFailure('PERSONALITY_ASSESSMENT_MODEL', 'Personality assessment model unavailable')
   const deadline = AbortSignal.any([signal, AbortSignal.timeout(90000)])
-  const route = { provider: turn.provider, model: turn.model, maxTokens: 1200 }
+  const route = { provider: selected.provider, model: selected.model, maxTokens: 1200 }
   // DSH orders supported reasoning efforts from least to greatest for this exact model.
   const call = llm.prepareCall ? await llm.prepareCall(route, deadline, (controls, model) => {
     const effort = model.reasoning?.efforts?.[0]?.id

@@ -2,6 +2,7 @@ import { createElement as h, useEffect, useState } from 'react'
 import { CLIENT_REFRESH_EVENT } from '../../identity.js'
 import { translate as t } from './i18n.js'
 import { resourceApi } from './resource-api.js'
+import { DEFAULT_EVOLUTION_INSTRUCTIONS, evolutionAssessmentSystem } from '../../personality/src/evolution-prompt.js'
 
 function Evidence({ path, revision, evidence }) {
   const [result, setResult] = useState(null)
@@ -33,13 +34,16 @@ function Evidence({ path, revision, evidence }) {
     result && h('p', { className: 'dcc-status', style: { whiteSpace: 'pre-wrap' }, role: 'status' }, result.available ? result.text : t('personality.evidenceUnavailable', { reason: reasonLabels[result.reason] ? t(reasonLabels[result.reason]) : result.reason || '—' })))
 }
 
-export function PersonalityEvolution({ personalityId, focusRevision, observedRevision }) {
+export function PersonalityEvolution({ personalityId, focusRevision, observedRevision, loadModels }) {
   const path = `/personalities/${encodeURIComponent(personalityId)}/evolution`
   const [snapshot, setSnapshot] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [selected, setSelected] = useState(focusRevision ?? null)
   const [refresh, setRefresh] = useState(0)
+  const [models, setModels] = useState(null)
+  const [modelError, setModelError] = useState('')
+  const [instructions, setInstructions] = useState('')
   useEffect(() => {
     const controller = new AbortController()
     resourceApi(path, { signal: controller.signal }).then(({ evolution }) => {
@@ -48,6 +52,16 @@ export function PersonalityEvolution({ personalityId, focusRevision, observedRev
     return () => controller.abort()
   }, [path, refresh, focusRevision, observedRevision])
   useEffect(() => { setSelected(focusRevision ?? null) }, [focusRevision])
+  useEffect(() => { if (snapshot) setInstructions(snapshot.config.assessmentInstructions || DEFAULT_EVOLUTION_INSTRUCTIONS) }, [snapshot?.config.assessmentInstructions])
+  useEffect(() => {
+    let active = true
+    setModels(null); setModelError('')
+    if (loadModels) Promise.resolve().then(loadModels).then(result => {
+      if (!result.ok) throw new Error(result.error.message)
+      if (active) { setModels(result.value); if (result.value.failures?.length) setModelError(t('personality.judgeCatalogPartial')) }
+    }).catch(failure => { if (active) setModelError(failure.message) })
+    return () => { active = false }
+  }, [loadModels, refresh])
   const modify = async (op, payload) => {
     setBusy(true); setError('')
     try {
@@ -68,6 +82,10 @@ export function PersonalityEvolution({ personalityId, focusRevision, observedRev
   const originLabel = id => id === 'original' ? t('personality.original')
     : snapshot.availableSources.includes(id) ? id : t('personality.unavailableProvider', { source: id })
   const configure = fields => modify(null, { ...snapshot.config, ...fields })
+  const modelValue = snapshot.config.assessmentModel ? JSON.stringify(snapshot.config.assessmentModel) : ''
+  const modelOptions = (models?.groups ?? []).flatMap(group => group.models.map(model => ({ value: JSON.stringify({ provider: group.id, model: model.id }), label: `${group.name} · ${model.name}` })))
+  const missingModel = modelValue && !modelOptions.some(option => option.value === modelValue)
+  const savedInstructions = snapshot.config.assessmentInstructions || DEFAULT_EVOLUTION_INSTRUCTIONS
   return h('div', { className: 'dcc-card' },
     h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: snapshot.config.enabled, disabled: busy, onChange: event => configure({ enabled: event.target.checked }) }), t('personality.learning')),
     h('label', { className: 'dcc-field' }, t('personality.reference'),
@@ -80,6 +98,21 @@ export function PersonalityEvolution({ personalityId, focusRevision, observedRev
       h('select', { className: 'dcc-select', value: snapshot.config.refreshMode ?? 'immediate', disabled: busy, onChange: event => configure({ refreshMode: event.target.value }) },
         h('option', { value: 'immediate' }, t('personality.immediate')),
         h('option', { value: 'session-compaction' }, t('personality.compaction')))),
+    h('label', { className: 'dcc-field' }, t('personality.judgeModel'),
+      h('select', { className: 'dcc-select', value: modelValue, disabled: busy, onChange: event => configure({ assessmentModel: event.target.value ? JSON.parse(event.target.value) : null }) },
+        h('option', { value: '' }, t('personality.judgeFollowTurn')),
+        missingModel && h('option', { value: modelValue, disabled: true }, t('personality.judgeUnavailable', snapshot.config.assessmentModel)),
+        modelOptions.map(option => h('option', { key: option.value, value: option.value }, option.label)))),
+    h('p', { className: 'dcc-note' }, t('personality.judgeModelHelp')),
+    (!loadModels || modelError || (!models && loadModels)) && h('p', { className: 'dcc-note', role: 'status' }, modelError || t(loadModels ? 'common.loading' : 'personality.judgeCatalogUnavailable')),
+    h('label', { className: 'dcc-field' }, t('personality.judgeInstructions'),
+      h('textarea', { className: 'dcc-textarea', rows: 10, maxLength: 6000, value: instructions, disabled: busy, onChange: event => setInstructions(event.target.value) })),
+    h('p', { className: 'dcc-note' }, t('personality.judgeInstructionsHelp')),
+    h('div', { className: 'dcc-actions' },
+      h('button', { className: 'dcc-button', type: 'button', disabled: busy || instructions === savedInstructions, onClick: () => { const value = instructions.trim(); setInstructions(value || DEFAULT_EVOLUTION_INSTRUCTIONS); configure({ assessmentInstructions: value === DEFAULT_EVOLUTION_INSTRUCTIONS ? '' : value }) } }, t('personality.judgeSave')),
+      h('button', { className: 'dcc-button', type: 'button', disabled: busy || (!snapshot.config.assessmentInstructions && instructions === DEFAULT_EVOLUTION_INSTRUCTIONS), onClick: () => { setInstructions(DEFAULT_EVOLUTION_INSTRUCTIONS); configure({ assessmentInstructions: '' }) } }, t('personality.judgeReset'))),
+    h('details', { className: 'dcc-note' }, h('summary', null, t('personality.judgeActualPrompt')),
+      h('pre', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, evolutionAssessmentSystem(snapshot.config.assessmentInstructions))),
     h('p', { className: 'dcc-note' }, t('personality.pendingCount', { count: snapshot.pendingCount ?? 0 }),
       snapshot.deferredCount > 0 && ' · ' + t('personality.deferredCount', { count: snapshot.deferredCount })),
     h('p', { className: 'dcc-note' }, t('personality.learningScope')),

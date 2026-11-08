@@ -7,7 +7,7 @@ const MAX_LEDGER_BYTES = 16 * 1024 * 1024
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const scopeKey = ref => digest([ref.sessionId, ref.sessionCreatedAt])
 const refKey = ref => scopeKey(ref) + ':' + ref.endSeq
-const initial = () => ({ version: 1, revision: 0, config: { enabled: true, referenceSource: 'original', assessmentInterval: 4, refreshMode: 'immediate' },
+const initial = () => ({ version: 1, revision: 0, config: { enabled: true, referenceSource: 'original', assessmentInterval: 4, refreshMode: 'immediate', assessmentModel: null, assessmentInstructions: '' },
   generation: 0, history: [], receipts: [], observed: {}, pending: {}, attempts: {}, turnCounts: {} })
 
 function reject(message, code = 'INVALID_EVOLUTION', status = 400) {
@@ -52,6 +52,7 @@ export function validateChange(value) {
 
 export class PersonalityEvolution {
   #cache = new Map()
+  #manual = new WeakMap()
   constructor(directory, cards, sources = new PersonalityEvidenceSources()) {
     this.directory = join(directory, 'revisions')
     this.cards = cards
@@ -68,6 +69,8 @@ export class PersonalityEvolution {
         !Array.isArray(data.receipts) || !data.config || !data.observed) reject('Invalid personality ledger', 'EVOLUTION_STORAGE', 500)
       data.config.assessmentInterval ??= 1
       data.config.refreshMode ??= 'immediate'
+      data.config.assessmentModel ??= null
+      data.config.assessmentInstructions ??= ''
       data.pending ??= {}
       data.attempts ??= {}
       data.turnCounts ??= {}
@@ -109,7 +112,9 @@ export class PersonalityEvolution {
     const state = this.record(id)
     const op = bounded(body?.operationId, 180, 'operationId')
     if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 0) reject('Invalid expectedRevision')
-    const signature = digest([kind, body.expectedRevision, body.enabled, body.referenceSource, body.assessmentInterval, body.refreshMode, body.targetRevision])
+    const signatureFields = [kind, body.expectedRevision, body.enabled, body.referenceSource, body.assessmentInterval, body.refreshMode, body.targetRevision]
+    if (body.assessmentModel !== undefined || body.assessmentInstructions !== undefined) signatureFields.push(body.assessmentModel == null ? body.assessmentModel : [body.assessmentModel.provider, body.assessmentModel.model], body.assessmentInstructions)
+    const signature = digest(signatureFields)
     const previous = state.receipts.find(r => r.id === op)
     if (previous) {
       if (previous.signature !== signature) reject('Operation ID reused', 'EVOLUTION_CONFLICT', 409)
@@ -127,14 +132,23 @@ export class PersonalityEvolution {
       if (!Number.isSafeInteger(assessmentInterval) || assessmentInterval < 1 || assessmentInterval > 8) reject('Assessment interval must be 1–8 turns')
       const refreshMode = body.refreshMode ?? state.config.refreshMode
       if (!['immediate', 'session-compaction'].includes(refreshMode)) reject('Invalid personality refresh mode')
-      next.config = { enabled: body.enabled, referenceSource: source, assessmentInterval, refreshMode }
-      if (!body.enabled || source !== state.config.referenceSource) { next.pending = {}; next.attempts = {} }
+      const requestedModel = body.assessmentModel === undefined ? state.config.assessmentModel : body.assessmentModel
+      let assessmentModel = null
+      if (requestedModel !== null) {
+        if (!requestedModel || typeof requestedModel !== 'object' || Array.isArray(requestedModel) || Object.keys(requestedModel).some(key => !['provider', 'model'].includes(key))) reject('Invalid assessment model')
+        assessmentModel = { provider: bounded(requestedModel.provider, 180, 'assessment provider'), model: bounded(requestedModel.model, 300, 'assessment model') }
+      }
+      const instructions = body.assessmentInstructions === undefined ? state.config.assessmentInstructions : body.assessmentInstructions
+      if (typeof instructions !== 'string' || instructions.length > 6000) reject('Assessment instructions must be at most 6000 characters')
+      next.config = { enabled: body.enabled, referenceSource: source, assessmentInterval, refreshMode, assessmentModel, assessmentInstructions: instructions.trim() }
+      if ((state.config.enabled && !body.enabled) || source !== state.config.referenceSource) { next.pending = {}; next.attempts = {} }
 
     } else if (kind === 'rollback') {
       const target = state.history.find(row => row.revision === body.targetRevision)
       if (body.targetRevision !== 0 && !target) reject('Unknown target revision')
       next.pending = {}
       next.attempts = {}
+      next.authorized = {}
       next.history = [...state.history, { revision: next.revision, kind, targetRevision: body.targetRevision,
         before: this.current(id)?.after ?? '', after: target?.after ?? '', behavior: target?.behavior ?? '',
         boundary: target?.boundary ?? '', reason: '用户回滚', evidence: target?.evidence ?? null, at: Date.now() }]
@@ -142,15 +156,43 @@ export class PersonalityEvolution {
     this.save(id, next)
     return this.view(id)
   }
-  enqueue(id, origin) {
+  authorize(id, origin) {
+    const state = this.record(id), key = scopeKey(origin)
+    if ((state.authorized?.[key]?.origin.endSeq ?? -1) >= origin.endSeq) return
+    this.save(id, { ...state, authorized: { ...state.authorized, [key]: { origin, reviewed: false } } })
+  }
+  authorizedTurn(id, session) {
+    const state = this.record(id), key = scopeKey({ sessionId: session.id, sessionCreatedAt: session.header.createdAt })
+    // Existing pending records were captured while this personality was bound to
+    // a native turn. New records also capture that provenance with auto off.
+    return state.authorized?.[key]?.origin ?? state.pending[key]?.at(-1) ?? null
+  }
+  manualAuthorization(id, origin) {
+    const state = this.record(id), key = scopeKey(origin)
+    if (digest(state.authorized?.[key]?.origin ?? state.pending[key]?.at(-1)) !== digest(origin)) return null
+    const token = Object.freeze({})
+    this.#manual.set(token, { id, generation: state.generation, key })
+    return token
+  }
+  allowsManual(id, token, origin) {
+    const grant = token && this.#manual.get(token)
+    return !!grant && grant.id === id && grant.generation === this.record(id).generation && (!origin || grant.key === scopeKey(origin))
+  }
+  revokeManual(token) { this.#manual.delete(token) }
+  enqueue(id, origin, { manual } = {}) {
     const state = this.record(id)
     const key = scopeKey(origin)
-    if (!state.config.enabled || (state.observed[key] ?? -1) >= origin.endSeq) return
+    const permitted = this.allowsManual(id, manual, origin)
+    if ((!state.config.enabled && !permitted) ||
+      ((state.observed[key] ?? -1) >= origin.endSeq && (!permitted || this.hasEvidence(id, origin)))) return
     const queue = state.pending[key] ?? []
+    if (queue.some(ref => ref.endSeq === origin.endSeq)) return
     this.save(id, { ...state, pending: { ...state.pending, [key]: [...queue, origin] },
+      authorized: { ...state.authorized, [key]: state.authorized?.[key]?.origin.endSeq === origin.endSeq
+        ? state.authorized[key] : { origin, reviewed: false } },
       observed: { ...state.observed, [key]: origin.endSeq }, turnCounts: { ...state.turnCounts, [key]: (state.turnCounts[key] ?? 0) + 1 } })
   }
-  batch(id, origin, { urgent = false } = {}) {
+  batch(id, origin, { urgent = false, manual } = {}) {
     const state = this.record(id)
     const key = scopeKey(origin)
     const queue = state.pending[key] ?? []
@@ -159,7 +201,7 @@ export class PersonalityEvolution {
     for (const entry of queue) {
       const attempt = state.attempts[refKey(entry)]
       if (!attempt) fresh.push(entry)
-      else if (attempt.nextTurn <= state.turnCounts[key]) retry.push(entry)
+      else if (this.allowsManual(id, manual, origin) || attempt.nextTurn <= state.turnCounts[key]) retry.push(entry)
     }
     // New evidence continues behind missing records, while due retries receive
     // a share of every bounded wake. On a large backlog, always try this turn.
@@ -178,14 +220,18 @@ export class PersonalityEvolution {
     this.save(id, { ...state, attempts: { ...state.attempts, [token]: { reason, count, nextTurn } } })
   }
   hasEvidence(id, reference) {
+    if (reference?.kind === 'original') {
+      const authorized = this.record(id).authorized?.[scopeKey(reference)]
+      return authorized?.origin.endSeq === reference.endSeq && authorized.reviewed === true
+    }
     return evidenceKeys(reference).some(key => this.record(id).reviewedEvidence?.[key])
   }
-  finish(id, revision, batch, evidence, candidate, { partial = false, reviewed = [evidence] } = {}) {
+  finish(id, revision, batch, evidence, candidate, { partial = false, reviewed = [evidence], manual } = {}) {
     const origin = batch[0]
     const state = this.record(id)
     const key = scopeKey(origin)
     const queue = state.pending[key] ?? []
-    if (state.revision !== revision || !state.config.enabled || !batch.length ||
+    if (state.revision !== revision || (!state.config.enabled && !this.allowsManual(id, manual, origin)) || !batch.length ||
       (partial ? batch.length > state.config.assessmentInterval : batch.length !== state.config.assessmentInterval) || batch.some(ref => !queue.includes(ref))) return false
     const pending = { ...state.pending }
     const included = new Set(batch)
@@ -194,7 +240,9 @@ export class PersonalityEvolution {
     for (const ref of batch) delete attempts[refKey(ref)]
     if (rest.length) pending[key] = rest
     else delete pending[key]
-    const next = { ...state, pending, attempts, reviewedEvidence: { ...state.reviewedEvidence, ...Object.fromEntries(reviewed.flatMap(evidenceKeys).map(key => [key, true])) } }
+    const authorized = { ...state.authorized }
+    if (authorized[key] && batch.some(ref => ref.endSeq === authorized[key].origin.endSeq)) authorized[key] = { ...authorized[key], reviewed: true }
+    const next = { ...state, pending, attempts, authorized, reviewedEvidence: { ...state.reviewedEvidence, ...Object.fromEntries(reviewed.flatMap(evidenceKeys).map(key => [key, true])) } }
     if (candidate) {
       const value = validateChange(candidate)
       const previous = this.current(id)

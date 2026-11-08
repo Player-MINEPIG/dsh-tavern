@@ -655,7 +655,7 @@ export function createSurfaceNavigation(commit) {
   }
 }
 
-function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
+function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics, loadPersonalityModels }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [noticeTarget, setNoticeTarget] = useState(null)
   const [surface, setSurface] = useState(null)
@@ -1148,6 +1148,7 @@ function TavernShell({ useSessions, useWorkspaces, openPersonalitySession, creat
     panel = h(PersonalityPanel, {
       key: `${personalitySession ?? ''}:${noticeTarget?.revision ?? ''}:${noticeTarget?.personalityId ?? ''}`,
       sessionId: personalitySession,
+      loadModels: loadPersonalityModels,
       selection: personalitySelection,
       noticeTarget: noticeTarget?.sessionId === personalitySession ? noticeTarget : null,
       workspaceId, workspaces: workspaceItems,
@@ -1389,6 +1390,7 @@ export function apply(ctx, { conversationPhase }) {
       playClient,
       diagnostics,
       chromeService: chrome.face,
+      loadPersonalityModels: () => ctx.remote.session.modelCatalog(),
       playSlots,
       openPersonalitySession: async (workspaceId, applyPersonality) => {
         const id = await ctx.uiWorkspace.connectWorkspace(workspaceId)
