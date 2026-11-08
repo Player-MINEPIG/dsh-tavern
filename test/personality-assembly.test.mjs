@@ -317,6 +317,7 @@ test('stock DSH sends one personality with native instructions and records its f
       sessionController: { inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) } })
     const sourceList = face.runtime.sources(agent.id)
     const preset = face.store.get('builtin-native-slots')
+    assert.deepEqual(sourceList.find(source => source.id === 'tavern.personality').positions.filter(position => position.parentId === 'card').map(position => position.id), cardFields)
     assert.deepEqual(positionRows(preset, sourceList).filter(row => row.sourceId === 'tavern.personality')
       .map(({positionId, enabled}) => [positionId, enabled]), ['card', ...cardFields, 'evolution', 'mood'].map(id => [id, true]))
     const descriptor = sourceList.find(source => source.id === 'tavern.personality')

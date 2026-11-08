@@ -62,7 +62,7 @@ const cardPositions = [
   ['mes_example', '对话示例', 'Dialogue examples'],
   ['first_mes', '开场参考', 'Opening reference'],
   ['post_history_instructions', '补充指引', 'Additional guidance'],
-].map(([id, zh, en]) => ({ id, name: [`人格卡 · ${zh}`, `Personality · ${en}`],
+].map(([id, zh, en]) => ({ id, parentId: 'card', name: [`人格卡 · ${zh}`, `Personality · ${en}`],
   note: ['关闭仅排除本字段。未单独拖动或用作锚点时，继承整张卡面的自定义位置；整张卡面关闭时本字段也被排除。',
     'Turning this off excludes this field. Unless moved separately or used as an anchor, it inherits a custom whole-card position. Turning the whole card off also excludes this field.'] }))
 
@@ -85,7 +85,7 @@ export function registerPersonalitySource(registry, cards) {
     id: PERSONALITY_SOURCE_ID, pluginId: 'pmp-dsh-tavern', name: '人格卡 / Personality card',
     roles: ['preserve', 'system'], lifetimes: ['request'], depth: false, stability: 'conversation',
     positions: [
-      { id: 'card', name: ['整张卡面（兼容）', 'Whole card (compatibility)'],
+      { id: 'card', name: ['卡面总开关与共同位置', 'Card master and shared position'],
         note: ['启用卡面字段也须启用此总开关；拖动设置未单独拖动或用作锚点字段的共同位置。自我修订和心情独立。',
           'Enable this master switch as well as the desired card fields. Moving it sets the shared position of fields that have not been moved separately or used as anchors. Self-revisions and mood remain independent.'] },
       ...cardPositions,

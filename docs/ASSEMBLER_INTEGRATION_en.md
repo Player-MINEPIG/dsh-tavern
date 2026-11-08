@@ -51,6 +51,8 @@ The UI uses Assembler's `/dsh-prompt-assembler/api/v1/assembly-presets`, secure 
 
 Assembler owns **Plugins → Installed plugins → dsh-prompt-assembler → Configure current session**. Tavern's embedded assembly panel retains the reusable frontend SDK and edits the same strategy library and session binding through public APIs. Tavern starts no additional standalone Assembler client. The last successful application determines future request snapshots. Editing a draft or saving a strategy leaves the applied snapshot unchanged. Both panels use the Assembler refresh event to synchronize applied state while preserving their own unsaved drafts.
 
+Personality card field positions declare `parentId: "card"` for the shared editor. The card master and its field selections remain independent; self-revisions and mood have separate controls. This UI metadata leaves assembly filtering with the personality source, preserving compatibility with Assembler 1.2.0.
+
 ## Modules and text parsers
 
 The module menu lists only sources supplying current independent content. Dispersed content remains usable through the provider's `parseText(context, rule)` and `inputMode:'text'`. Both modes share placement, depth, role and snapshot behavior.

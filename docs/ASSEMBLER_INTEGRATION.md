@@ -51,6 +51,8 @@ Tavern 不再创建本地 Assembler fallback。旧 `tavernRequestSources` 名称
 
 独立的“插件 → 已安装插件 → dsh-prompt-assembler → 配置当前会话”入口归 Assembler 所有。Tavern 的装配面板继续复用前端 SDK，通过公共 API 编辑同一策略库和会话绑定。Tavern 不启动另一个独立 Assembler 客户端。最后一次成功应用决定后续请求快照；编辑草稿或保存策略不改变已应用快照。两个面板通过 Assembler 刷新事件同步应用状态，各自保留未保存草稿。
 
+人格卡字段位置通过 `parentId: "card"` 向共享编辑器声明分组。卡面总开关与字段选择分别保留，自我修订和心情独立设置。此界面元数据不接管正文过滤，仍由人格来源执行，保持 Assembler 1.2.0 兼容。
+
 ## 模块与文本解析器
 
 模块菜单仅列出当前能提供独立内容的来源。分散内容可通过来源的 `parseText(context, rule)` 和 `inputMode:'text'` 解析用户手填文本，两种模式共用位置、深度、角色与快照机制。
