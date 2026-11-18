@@ -13,7 +13,7 @@ import { migrateTimelineCoordinates, migrateImportCoordinates } from '../package
 import { migrateTraceCoordinates } from '../packages/tavern-trace/src/coordinate-migration.js'
 import { resolvePlayPath, assertSafeRoot } from '../packages/play/src/paths.js'
 
-const help = `Usage: node scripts/migrate-session-coordinates.mjs --manifest <json> [--stamp-only] [--apply]
+const help = `Usage: node scripts/migrate-session-coordinates.mjs --manifest <json> [--stamp-only | --auto-v3-v4] [--apply]
 
 Stop DSH before --apply. The default only validates and previews changes.
 Manifest: { "dshRoot": "/path/to/dsh-install", "workspace": "/path/to/rp",
@@ -31,6 +31,10 @@ log paths (or [] when none are available). Trace references are upgraded too.
 With --stamp-only, use { dshRoot, workspace, timeline, sessions: [{ target }],
   variants: [{ nodeId, variantId, sessionId, userMessageId, assistantMessageId }] }.
 Supply independently verified message IDs for each variant; see docs/DSH_0.1.7_MIGRATION_en.md.
+For a timeline known to contain only V3/V4 coordinates, --auto-v3-v4 uses the
+same workspace, timeline, dshRoot and sessions, without a variants list.
+Optional sessions[].postUpgradeUserMessageId identifies a confirmed new message
+appended to that Session after upgrade. Uncertain coordinates remain listed.
 DSH logs and unrelated plugin data are never rewritten.
 `
 
@@ -54,14 +58,18 @@ function readLogRows(path, evidence) {
   return bytes.toString('utf8').trimEnd().split('\n').map(line => JSON.parse(line))
 }
 
-export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, children) {
-  const require = createRequire(join(resolve(dshRoot), 'package.json'))
-  const load = name => import(pathToFileURL(require.resolve(name)).href)
+function requireVerifiedFormatLibrary(require) {
   const manifest = require('@deepseek-ai/dsh-session-format-v3-to-v4/package.json')
   // Explicitly verified codec releases; later prereleases may change migration semantics.
   if (!['0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1', '0.2.0-rc.2', '0.2.1-rc.2', '0.2.1-rc.3', '0.2.2-rc.1'].includes(manifest.version)) {
     throw new Error(`Migration requires DSH format library 0.1.7-alpha.1, 0.1.7-alpha.2, 0.1.7-rc.1, 0.2.0-rc.2, 0.2.1-rc.2, 0.2.1-rc.3 or 0.2.2-rc.1; found ${manifest.version}`)
   }
+}
+
+export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, children) {
+  const require = createRequire(join(resolve(dshRoot), 'package.json'))
+  const load = name => import(pathToFileURL(require.resolve(name)).href)
+  requireVerifiedFormatLibrary(require)
   const { releasedV2SessionFormatCodec, releasedV3SessionFormatCodec, sessionFormatV2ToV3 } = await load('@deepseek-ai/dsh-session-format-v2-to-v3')
   const { releasedV0SessionFormatCodec, releasedV1SessionFormatCodec, sessionFormatV0ToV1 } = await load('@deepseek-ai/dsh-session-format-v0-to-v1')
   const { sessionFormatV1ToV2 } = await load('@deepseek-ai/dsh-session-format-v1-to-v2')
@@ -197,45 +205,101 @@ function publishPlans(plans, evidence, backupSuffix) {
   }
 }
 
-// A missing marker cannot identify a coordinate generation. The operator supplies
-// independent endpoint message identities for each selected node and variant.
-export async function stampTimelineManifest(manifest, { apply = false } = {}) {
+function uniqueMessageCoordinates(events) {
+  const messages = new Map()
+  for (const event of events) {
+    const message = event.data?.message ?? event.data
+    const isUser = message?.role === 'user' && (event.type === 'steering/message'
+      || (event.type === 'user/message' && (message.source == null || message.source.kind === 'user')))
+    if (!isUser && !(event.type === 'assistant/message' && message?.role === 'assistant')) continue
+    if (typeof message.id !== 'string' || !message.id) continue
+    // A reused message ID cannot identify a unique endpoint.
+    messages.set(message.id, messages.has(message.id) ? null : { role: message.role, seq: event.seq })
+  }
+  return messages
+}
+
+function automaticStampBounds(artifact, messages, postUpgradeUserMessageId) {
+  // V3→V4 emits each source event once in order. It may insert an interrupted
+  // closer before a restart. Treat every interrupted closer as a possible
+  // insertion. Child catalog additions follow all source events.
+  const firstInsertion = artifact.events.findIndex(event => event.type === 'turn/end' && event.data?.reason?.kind === 'interrupted')
+  const firstPossibleShift = firstInsertion < 0 ? Infinity : firstInsertion
+  let postUpgradeStart = Infinity
+  if (postUpgradeUserMessageId !== undefined) {
+    const anchor = messages.get(postUpgradeUserMessageId)
+    if (anchor?.role !== 'user' || anchor.seq < artifact.inheritedEventCount) {
+      throw new Error(`Expected a unique, non-inherited post-upgrade user message in ${artifact.header.id}`)
+    }
+    postUpgradeStart = anchor.seq
+  }
+  const endpoints = new Map()
+  for (const message of messages.values()) {
+    if (message) endpoints.set(message.seq, message.role)
+  }
+  return { firstPossibleShift, postUpgradeStart, endpoints }
+}
+
+function automaticStampRefusal(variant, log) {
+  if (variantFormatVersion(variant) !== undefined) return 'explicit-historical-version'
+  if (!log) return 'missing-session-log'
+  if (log.endpoints.get(variant.startEventId) !== 'user' || log.endpoints.get(variant.endEventId) !== 'assistant') {
+    return 'unverified-message-range'
+  }
+  if (variant.endEventId >= log.firstPossibleShift && variant.startEventId < log.postUpgradeStart) return 'possible-v3-offset'
+  return null
+}
+
+// Explicit recovery checks independent message IDs. Automatic recovery assumes
+// valid same-Session references originally recorded in V3 or V4.
+export async function stampTimelineManifest(manifest, { apply = false, autoV3V4 = false } = {}) {
   const { workspace, timeline, sessions, variants, dshRoot } = manifest
   if (typeof timeline !== 'string' || timeline.split('/').at(-1) !== 'timeline.json'
-    || !Array.isArray(sessions) || !sessions.length || !Array.isArray(variants) || !variants.length) {
-    throw new Error('Expected one timeline.json, V4 sessions and explicit variant message identities')
+    || !Array.isArray(sessions) || !sessions.length
+    || (autoV3V4 ? variants !== undefined : !Array.isArray(variants) || !variants.length)) {
+    throw new Error('Expected a timeline.json and V4 sessions. Provide variants for --stamp-only and omit variants for --auto-v3-v4.')
   }
   const path = resolvePlayPath(resolve(workspace), timeline, { mustExist: true })
   const original = readFileSync(path, 'utf8'), value = JSON.parse(original)
   normalizeTimeline(value)
   const require = createRequire(join(resolve(dshRoot), 'package.json'))
+  if (autoV3V4) requireVerifiedFormatLibrary(require)
   const { createSessionFormatCatalogWithChildren } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-session-format-catalog')))
   const catalog = createSessionFormatCatalogWithChildren([])
   const evidence = new Map(), logs = new Map()
-  for (const { target } of sessions) {
+  for (const { target, postUpgradeUserMessageId } of sessions) {
     const rows = readLogRows(resolve(target), evidence)
     if (rows[0].version !== 4) throw new Error('Stamp-only requires a V4 log')
     const reader = catalog.createRestore(rows[0], { recovery: 'strict', validation: 'current' })
     for (const row of rows.slice(1)) reader.decodeRow(row)
     const artifact = reader.finish()
     if (artifact.header.version !== 4 || logs.has(artifact.header.id)) throw new Error('Unexpected or duplicate Session')
-    const messages = new Map()
-    for (const event of artifact.events) {
-      const message = event.data?.message ?? event.data
-      const isUser = message?.role === 'user' && (event.type === 'steering/message'
-        || (event.type === 'user/message' && (message.source == null || message.source.kind === 'user')))
-      if (!isUser && !(event.type === 'assistant/message' && message?.role === 'assistant')) continue
-      if (typeof message.id !== 'string' || !message.id) continue
-      // A reused message ID cannot identify a unique endpoint.
-      messages.set(message.id, messages.has(message.id) ? null : { role: message.role, seq: event.seq })
-    }
-    logs.set(artifact.header.id, messages)
+    const messages = uniqueMessageCoordinates(artifact.events)
+    const bounds = autoV3V4 ? automaticStampBounds(artifact, messages, postUpgradeUserMessageId) : {}
+    logs.set(artifact.header.id, { messages, ...bounds })
   }
-  const selected = new Set(), stamped = []
-  for (const { nodeId, variantId, sessionId, userMessageId, assistantMessageId } of variants) {
+  const stamped = [], skipped = []
+  if (autoV3V4) {
+    for (const node of value.nodes) {
+      for (const [index, variant] of node.variants.entries()) {
+        const version = variantFormatVersion(variant)
+        if (version === 4) continue
+        const ref = { nodeId: node.id, variantId: variant.id }
+        const log = logs.get(variant.sessionId)
+        const reason = automaticStampRefusal(variant, log)
+        if (reason) skipped.push({ ...ref, reason })
+        else {
+          node.variants[index] = withVariantFormat(variant, 4)
+          stamped.push(ref)
+        }
+      }
+    }
+  }
+  const selected = new Set()
+  for (const { nodeId, variantId, sessionId, userMessageId, assistantMessageId } of variants ?? []) {
     const node = value.nodes.find(item => item.id === nodeId)
     const index = node?.variants.findIndex(item => item.id === variantId) ?? -1
-    const variant = node?.variants[index], messages = logs.get(sessionId)
+    const variant = node?.variants[index], messages = logs.get(sessionId)?.messages
     const key = JSON.stringify([nodeId, variantId])
     if (!variant || !messages || variant.sessionId !== sessionId || selected.has(key)) {
       throw new Error(`Unknown, duplicate or mismatched variant: ${nodeId}/${variantId}`)
@@ -252,7 +316,7 @@ export async function stampTimelineManifest(manifest, { apply = false } = {}) {
     node.variants[index] = withVariantFormat(variant, 4)
     stamped.push({ nodeId, variantId })
   }
-  const remaining = value.nodes.flatMap(node => node.variants.filter(v => variantFormatVersion(v) !== 4)
+  const remaining = autoV3V4 ? skipped : value.nodes.flatMap(node => node.variants.filter(v => variantFormatVersion(v) !== 4)
     .map(v => ({ nodeId: node.id, variantId: v.id })))
   if (apply && stamped.length) {
     publishPlans([{ path, original, content: JSON.stringify(value, null, 2) + '\n' }], [evidence],
@@ -301,10 +365,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     if (args.includes('--help') || args.length === 0) console.log(help)
     else {
       const index = args.indexOf('--manifest')
-      if (index < 0 || !args[index + 1] || args.some((arg, i) => i !== index + 1 && !['--manifest', '--stamp-only', '--apply'].includes(arg))) throw new Error(help)
+      if (index < 0 || !args[index + 1] || args.some((arg, i) => i !== index + 1 && !['--manifest', '--stamp-only', '--auto-v3-v4', '--apply'].includes(arg))) throw new Error(help)
       const manifest = JSON.parse(readFileSync(resolve(args[index + 1]), 'utf8'))
-      const migrate = args.includes('--stamp-only') ? stampTimelineManifest : migrateManifest
-      console.log(JSON.stringify(await migrate(manifest, { apply: args.includes('--apply') }), null, 2))
+      const autoV3V4 = args.includes('--auto-v3-v4')
+      if (autoV3V4 && args.includes('--stamp-only')) throw new Error('Choose one recovery mode')
+      const migrate = autoV3V4 || args.includes('--stamp-only') ? stampTimelineManifest : migrateManifest
+      console.log(JSON.stringify(await migrate(manifest, { apply: args.includes('--apply'), autoV3V4 }), null, 2))
     }
   } catch (error) { console.error(error.message); process.exitCode = 1 }
 }

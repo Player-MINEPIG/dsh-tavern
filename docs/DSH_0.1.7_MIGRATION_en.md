@@ -28,6 +28,32 @@ If an unversioned file already mixes coordinates from different generations, fir
 
 ## Recovering missing V4 markers without a predecessor log
 
+### Batch repair after a V3→V4 upgrade
+
+Use automatic repair when the unmarked ranges were valid references from the same Session in either V3 or V4. The command scans the entire timeline, including inactive replies. List the corresponding V4 logs in the manifest. Preview first, then stop DSH before applying the reviewed changes.
+
+```json
+{
+  "dshRoot": "/path/to/dsh-install",
+  "workspace": "/path/to/rp-workspace",
+  "timeline": "character-id/playthrough-id/timeline.json",
+  "sessions": [{ "target": "/path/to/session/session.v4.jsonl.zstd" }]
+}
+```
+
+```sh
+node scripts/migrate-session-coordinates.mjs --auto-v3-v4 --manifest recovery.json
+node scripts/migrate-session-coordinates.mjs --auto-v3-v4 --manifest recovery.json --apply
+```
+
+V3→V4 preserves source events in order and can insert an interrupted turn closer. The command checks question and reply endpoints before the first possible insertion. When the log has no interrupted closer, this covers the full history.
+
+`stamped` lists eligible variants. `remaining` gives a reason for each unresolved variant. For `possible-v3-offset`, you can supply one `postUpgradeUserMessageId` in that Session’s manifest entry if native history or a saved record independently identifies a question newly sent to that Session after the upgrade. The command can then verify ranges starting at or after that question in one batch. Its ID alone cannot establish when it was written relative to the upgrade. A remaining unverified V4 reference can still cause a 409 when opening the playthrough.
+
+If unmarked ranges could use V0–V2 coordinates, the log was manually truncated, or Session ownership is uncertain, use retained source logs for migration or verify individual message identities below.
+
+### Repair by message identity
+
 If a timeline returns `409 PLAY_COORDINATES_MIGRATION_REQUIRED` after recent turns, inspect the workspace copy of its `timeline.json`, including inactive swipes. For each unmarked variant, identify the original question and reply independently, for example from a saved messages response for that turn or by recognizing the exact pair in the native Session history and confirming its message IDs. Looking up the two integers in the current log alone cannot establish which messages the variant originally referenced. Leave uncertain variants for historical migration or recovery from backup.
 
 Use this manifest for one timeline. Supply the V4 log for each selected Session, including the child's own log for a forked variant.

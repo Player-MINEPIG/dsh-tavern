@@ -21737,7 +21737,7 @@ function requireCoordinates(version3, current4) {
   if (version3 !== void 0 && version3 !== current4.sessionFormatVersion || version3 === void 0 && (current4.migratedFromV2 || current4.sessionFormatVersion >= 4)) {
     throw httpError(
       409,
-      "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained logs. For verified V4 message identities with missing version markers, see its --stamp-only mode.",
+      "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs. For missing markers after a V3-to-V4 upgrade, preview --auto-v3-v4. Use --stamp-only for independently verified message IDs.",
       "PLAY_COORDINATES_MIGRATION_REQUIRED"
     );
   }
