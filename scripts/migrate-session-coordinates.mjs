@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 // Offline, explicit historical reference migration. Never writes a DSH session log.
 import { readFileSync, writeFileSync, renameSync, unlinkSync, lstatSync, existsSync, realpathSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { resolve, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
 import * as zlib from 'node:zlib'
+import { normalizeTimeline } from '../packages/play/src/timeline.js'
+import { variantFormatVersion, withVariantFormat } from '../packages/play/src/session-coordinates.js'
 import { migrateTimelineCoordinates, migrateImportCoordinates } from '../packages/play/src/coordinate-migration.js'
 import { migrateTraceCoordinates } from '../packages/tavern-trace/src/coordinate-migration.js'
 import { resolvePlayPath, assertSafeRoot } from '../packages/play/src/paths.js'
 
-const help = `Usage: node scripts/migrate-session-coordinates.mjs --manifest <json> [--apply]
+const help = `Usage: node scripts/migrate-session-coordinates.mjs --manifest <json> [--stamp-only] [--apply]
 
 Stop DSH before --apply. The default only validates and previews changes.
 Manifest: { "dshRoot": "/path/to/dsh-install", "workspace": "/path/to/rp",
@@ -25,8 +28,31 @@ Raw JSONL and .zstd are supported. Original plugin files are backed up next to
 the file as .pre-v4-coordinates; reruns skip references already marked V4.
 Each pair must supply children: an explicit complete list of retained direct-child
 log paths (or [] when none are available). Trace references are upgraded too.
+With --stamp-only, use { dshRoot, workspace, timeline, sessions: [{ target }],
+  variants: [{ nodeId, variantId, sessionId, userMessageId, assistantMessageId }] }.
+Supply independently verified message IDs for each variant; see docs/DSH_0.1.7_MIGRATION_en.md.
 DSH logs and unrelated plugin data are never rewritten.
 `
+
+function readLogRows(path, evidence) {
+  if (!lstatSync(path).isFile()) throw new Error(`Expected a regular log file: ${path}`)
+  let bytes = readFileSync(path)
+  evidence.set(path, bytes)
+  if (path.endsWith('.zstd')) {
+    // DSH appends independent zstd frames. Node's sync API decodes only the
+    // first frame; consume every frame, including the final strict EOF check.
+    const frames = []
+    for (let offset = 0; offset < bytes.length;) {
+      const decoded = zlib.zstdDecompressSync(bytes.subarray(offset), { info: true })
+      const consumed = decoded.engine.bytesWritten
+      if (!Number.isSafeInteger(consumed) || consumed <= 0) throw new Error('Invalid compressed log frame')
+      frames.push(decoded.buffer)
+      offset += consumed
+    }
+    bytes = Buffer.concat(frames)
+  }
+  return bytes.toString('utf8').trimEnd().split('\n').map(line => JSON.parse(line))
+}
 
 export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, children) {
   const require = createRequire(join(resolve(dshRoot), 'package.json'))
@@ -44,25 +70,6 @@ export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, childr
   const { createSessionFormatV3ToV4, releasedV4SessionFormatCodec, historicalChildCatalogSource } = await load('@deepseek-ai/dsh-session-format-v3-to-v4')
   if (!Array.isArray(children) || children.some(path => typeof path !== 'string')) throw new Error('Explicit children log paths are required (use [] when none are available)')
   const evidence = new Map()
-  function rows(path) {
-    if (!lstatSync(path).isFile()) throw new Error(`Expected a regular log file: ${path}`)
-    let bytes = readFileSync(path)
-    evidence.set(path, bytes)
-    if (path.endsWith('.zstd')) {
-      // DSH appends independent zstd frames. Node's sync API decodes only the
-      // first frame; consume every frame, including the final strict EOF check.
-      const frames = []
-      for (let offset = 0; offset < bytes.length;) {
-        const decoded = zlib.zstdDecompressSync(bytes.subarray(offset), { info: true })
-        const consumed = decoded.engine.bytesWritten
-        if (!Number.isSafeInteger(consumed) || consumed <= 0) throw new Error('Invalid compressed log frame')
-        frames.push(decoded.buffer)
-        offset += consumed
-      }
-      bytes = Buffer.concat(frames)
-    }
-    return bytes.toString('utf8').trimEnd().split('\n').map(line => JSON.parse(line))
-  }
   function decode(rows, codec) {
     const decoder = codec.createDecoder(rows[0], 'strict')
     const collector = new SessionFormatEventCollector()
@@ -70,7 +77,7 @@ export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, childr
     const inheritedEventCount = decoder.finish(collector)
     return { header: decoder.header, events: collector.values, inheritedEventCount }
   }
-  const oldRows = rows(sourcePath), newRows = rows(targetPath)
+  const oldRows = readLogRows(sourcePath, evidence), newRows = readLogRows(targetPath, evidence)
   const sourceVersion = oldRows[0].version
   if (![0, 1, 2, 3].includes(sourceVersion) || newRows[0].version !== 4) throw new Error('Expected a V0/V1/V2/V3 source and V4 target')
   const source = decode(oldRows, [releasedV0SessionFormatCodec, releasedV1SessionFormatCodec, releasedV2SessionFormatCodec, releasedV3SessionFormatCodec][sourceVersion])
@@ -84,7 +91,7 @@ export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, childr
   }
   const childIds = new Set()
   const facts = children.map(path => {
-    const childRows = rows(resolve(path))
+    const childRows = readLogRows(resolve(path), evidence)
     const catalog = childRows[0].version === 4 ? createSessionFormatCatalogWithChildren([]) : historicalSessionFormatCatalog
     const child = restore(childRows, catalog)
     if (child.header.parentSession !== source.header.id || childIds.has(child.header.id)) throw new Error('Child evidence must identify unique direct children of the source Session')
@@ -162,6 +169,98 @@ export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, childr
 
 }
 
+function publishPlans(plans, evidence, backupSuffix) {
+  const checkEvidence = () => {
+    for (const entries of evidence) for (const [path, bytes] of entries) {
+      if (!lstatSync(path).isFile() || !readFileSync(path).equals(bytes)) throw new Error('Session log changed while planning; stop DSH and retry')
+    }
+  }
+  checkEvidence()
+  for (const item of plans) {
+    if (readFileSync(item.path, 'utf8') !== item.original) throw new Error('Plugin file changed while planning; stop DSH and retry')
+    const backup = item.path + backupSuffix
+    if (existsSync(backup) && (!lstatSync(backup).isFile() || readFileSync(backup, 'utf8') !== item.original)) throw new Error(`Conflicting backup: ${backup}`)
+  }
+  for (const item of plans) {
+    const backup = item.path + backupSuffix
+    if (!existsSync(backup)) writeFileSync(backup, item.original, { flag: 'wx', mode: 0o600 })
+  }
+  // Retain every pre-upgrade plugin file before publishing the first change.
+  for (const item of plans) {
+    checkEvidence()
+    const temporary = item.path + `.coordinate-migration-${process.pid}.tmp`
+    try {
+      writeFileSync(temporary, item.content, { flag: 'wx', mode: 0o600 })
+      if (!lstatSync(item.path).isFile() || readFileSync(item.path, 'utf8') !== item.original) throw new Error('Plugin file changed before commit')
+      renameSync(temporary, item.path)
+    } finally { if (existsSync(temporary)) unlinkSync(temporary) }
+  }
+}
+
+// A missing marker cannot identify a coordinate generation. The operator supplies
+// independent endpoint message identities for each selected node and variant.
+export async function stampTimelineManifest(manifest, { apply = false } = {}) {
+  const { workspace, timeline, sessions, variants, dshRoot } = manifest
+  if (typeof timeline !== 'string' || timeline.split('/').at(-1) !== 'timeline.json'
+    || !Array.isArray(sessions) || !sessions.length || !Array.isArray(variants) || !variants.length) {
+    throw new Error('Expected one timeline.json, V4 sessions and explicit variant message identities')
+  }
+  const path = resolvePlayPath(resolve(workspace), timeline, { mustExist: true })
+  const original = readFileSync(path, 'utf8'), value = JSON.parse(original)
+  normalizeTimeline(value)
+  const require = createRequire(join(resolve(dshRoot), 'package.json'))
+  const { createSessionFormatCatalogWithChildren } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-session-format-catalog')))
+  const catalog = createSessionFormatCatalogWithChildren([])
+  const evidence = new Map(), logs = new Map()
+  for (const { target } of sessions) {
+    const rows = readLogRows(resolve(target), evidence)
+    if (rows[0].version !== 4) throw new Error('Stamp-only requires a V4 log')
+    const reader = catalog.createRestore(rows[0], { recovery: 'strict', validation: 'current' })
+    for (const row of rows.slice(1)) reader.decodeRow(row)
+    const artifact = reader.finish()
+    if (artifact.header.version !== 4 || logs.has(artifact.header.id)) throw new Error('Unexpected or duplicate Session')
+    const messages = new Map()
+    for (const event of artifact.events) {
+      const message = event.data?.message ?? event.data
+      const isUser = message?.role === 'user' && (event.type === 'steering/message'
+        || (event.type === 'user/message' && (message.source == null || message.source.kind === 'user')))
+      if (!isUser && !(event.type === 'assistant/message' && message?.role === 'assistant')) continue
+      if (typeof message.id !== 'string' || !message.id) continue
+      // A reused message ID cannot identify a unique endpoint.
+      messages.set(message.id, messages.has(message.id) ? null : { role: message.role, seq: event.seq })
+    }
+    logs.set(artifact.header.id, messages)
+  }
+  const selected = new Set(), stamped = []
+  for (const { nodeId, variantId, sessionId, userMessageId, assistantMessageId } of variants) {
+    const node = value.nodes.find(item => item.id === nodeId)
+    const index = node?.variants.findIndex(item => item.id === variantId) ?? -1
+    const variant = node?.variants[index], messages = logs.get(sessionId)
+    const key = JSON.stringify([nodeId, variantId])
+    if (!variant || !messages || variant.sessionId !== sessionId || selected.has(key)) {
+      throw new Error(`Unknown, duplicate or mismatched variant: ${nodeId}/${variantId}`)
+    }
+    selected.add(key)
+    const user = messages.get(userMessageId), assistant = messages.get(assistantMessageId)
+    if (user?.role !== 'user' || user.seq !== variant.startEventId
+      || assistant?.role !== 'assistant' || assistant.seq !== variant.endEventId) {
+      throw new Error(`V4 message identities do not match ${nodeId}/${variantId}`)
+    }
+    const version = variantFormatVersion(variant)
+    if (version === 4) continue
+    if (version !== undefined) throw new Error(`Historical coordinates require migration: ${nodeId}/${variantId}`)
+    node.variants[index] = withVariantFormat(variant, 4)
+    stamped.push({ nodeId, variantId })
+  }
+  const remaining = value.nodes.flatMap(node => node.variants.filter(v => variantFormatVersion(v) !== 4)
+    .map(v => ({ nodeId: node.id, variantId: v.id })))
+  if (apply && stamped.length) {
+    publishPlans([{ path, original, content: JSON.stringify(value, null, 2) + '\n' }], [evidence],
+      '.pre-v4-stamp-' + createHash('sha256').update(original).digest('hex'))
+  }
+  return { applied: apply, timeline, stamped, remaining }
+}
+
 export async function migrateManifest(manifest, { apply = false } = {}) {
   const workspace = assertSafeRoot(resolve(manifest.workspace))
   const storage = assertSafeRoot(resolve(manifest.storageDir))
@@ -192,33 +291,7 @@ export async function migrateManifest(manifest, { apply = false } = {}) {
   }
   // Validate every input and destination before the first write. Files are
   // individually atomic; version markers make a partially applied run resumable.
-  if (apply) {
-    const checkEvidence = () => {
-      for (const map of maps.values()) for (const [path, bytes] of map.evidence) {
-        if (!lstatSync(path).isFile() || !readFileSync(path).equals(bytes)) throw new Error('Session log changed while planning; stop DSH and retry')
-      }
-    }
-    checkEvidence()
-    for (const item of plans) {
-      if (readFileSync(item.path, 'utf8') !== item.original) throw new Error('Plugin file changed while planning; stop DSH and retry')
-      const backup = item.path + '.pre-v4-coordinates'
-      if (existsSync(backup) && (!lstatSync(backup).isFile() || readFileSync(backup, 'utf8') !== item.original)) throw new Error(`Conflicting backup: ${backup}`)
-    }
-    for (const item of plans) {
-      const backup = item.path + '.pre-v4-coordinates'
-      if (!existsSync(backup)) writeFileSync(backup, item.original, { flag: 'wx', mode: 0o600 })
-    }
-    // Retain every pre-upgrade plugin file before publishing the first change.
-    for (const item of plans) {
-      checkEvidence()
-      const temporary = item.path + `.coordinate-migration-${process.pid}.tmp`
-      try {
-        writeFileSync(temporary, item.content, { flag: 'wx', mode: 0o600 })
-        if (!lstatSync(item.path).isFile() || readFileSync(item.path, 'utf8') !== item.original) throw new Error('Plugin file changed before commit')
-        renameSync(temporary, item.path)
-      } finally { if (existsSync(temporary)) unlinkSync(temporary) }
-    }
-  }
+  if (apply) publishPlans(plans, [...maps.values()].map(map => map.evidence), '.pre-v4-coordinates')
   return { applied: apply, sessions: [...maps.keys()], files: plans.map(item => item.path) }
 }
 
@@ -228,9 +301,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     if (args.includes('--help') || args.length === 0) console.log(help)
     else {
       const index = args.indexOf('--manifest')
-      if (index < 0 || !args[index + 1] || args.some((arg, i) => i !== index + 1 && !['--manifest', '--apply'].includes(arg))) throw new Error(help)
+      if (index < 0 || !args[index + 1] || args.some((arg, i) => i !== index + 1 && !['--manifest', '--stamp-only', '--apply'].includes(arg))) throw new Error(help)
       const manifest = JSON.parse(readFileSync(resolve(args[index + 1]), 'utf8'))
-      console.log(JSON.stringify(await migrateManifest(manifest, { apply: args.includes('--apply') }), null, 2))
+      const migrate = args.includes('--stamp-only') ? stampTimelineManifest : migrateManifest
+      console.log(JSON.stringify(await migrate(manifest, { apply: args.includes('--apply') }), null, 2))
     }
   } catch (error) { console.error(error.message); process.exitCode = 1 }
 }

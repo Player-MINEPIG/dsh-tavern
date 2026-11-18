@@ -21715,6 +21715,44 @@ function bubbleCss(style, role2 = "assistant") {
 // packages/client/src/play/turn-actions.js
 var import_react5 = require("react");
 
+// packages/play/src/http.js
+function httpError(status, message, code) {
+  const error = new Error(message);
+  error.status = status;
+  if (code !== void 0) error.code = code;
+  return error;
+}
+
+// packages/play/src/session-coordinates.js
+function requireSnapshotVersion(version3) {
+  if (!Number.isSafeInteger(version3) || version3 < 0) {
+    throw httpError(503, "The Host did not provide the Session format version for this history snapshot. Retry when Session metadata is available.", "PLAY_COORDINATES_UNAVAILABLE");
+  }
+}
+function requireCoordinates(version3, current4) {
+  if (version3 !== void 0 && (!Number.isSafeInteger(version3) || version3 < 0)) {
+    throw httpError(400, "Invalid Session coordinate format version", "PLAY_COORDINATES_INVALID");
+  }
+  requireSnapshotVersion(current4?.sessionFormatVersion);
+  if (version3 !== void 0 && version3 !== current4.sessionFormatVersion || version3 === void 0 && (current4.migratedFromV2 || current4.sessionFormatVersion >= 4)) {
+    throw httpError(
+      409,
+      "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained logs. For verified V4 message identities with missing version markers, see its --stamp-only mode.",
+      "PLAY_COORDINATES_MIGRATION_REQUIRED"
+    );
+  }
+}
+function variantFormatVersion(variant2) {
+  return variant2.ext?.pmpDshTavern?.sessionFormatVersion;
+}
+function withVariantFormat(variant2, version3) {
+  requireSnapshotVersion(version3);
+  return { ...variant2, ext: { ...variant2.ext, pmpDshTavern: {
+    ...variant2.ext?.pmpDshTavern,
+    sessionFormatVersion: version3
+  } } };
+}
+
 // packages/client/src/play/pending-swipe.js
 var clients = /* @__PURE__ */ new WeakMap();
 var key = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
@@ -21951,13 +21989,12 @@ async function commitSwipeReply(client, pending2, pair, {
   variantId = `swipe-${pending2.sessionId}-${pair.user.seq}-${pair.assistant.seq}`,
   writeTimeline = (transform) => updateTimeline(client, pending2.playthrough, transform)
 } = {}) {
-  const variant2 = {
+  const variant2 = withVariantFormat({
     id: variantId,
     sessionId: pending2.sessionId,
     startEventId: pair.user.seq,
-    endEventId: pair.assistant.seq,
-    ...Number.isSafeInteger(pair.sessionFormatVersion) ? { ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } } } : {}
-  };
+    endEventId: pair.assistant.seq
+  }, pair.sessionFormatVersion);
   const next = await writeTimeline((timeline) => {
     const node = timeline.nodes.find((n) => n.id === pending2.nodeId);
     if (!node || !node.variants.some((v2) => v2.sessionId === pending2.sourceSessionId && (!pending2.sourceVariantId || v2.id === pending2.sourceVariantId))) throw Error("Swipe source reply is no longer in this playthrough");
@@ -22221,6 +22258,7 @@ function normalizeSessionMessages(value, label = "messages") {
     messages,
     incompleteTurn: value.incompleteTurn,
     ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {},
+    ...value.migratedFromV2 === true ? { migratedFromV2: true } : {},
     ...stopped === void 0 ? {} : { stoppedRequest: stopped === null ? null : { userEventId: stopped.userEventId, turnStartEventId: stopped.turnStartEventId, turnEndEventId: stopped.turnEndEventId } }
   };
 }
@@ -23075,7 +23113,7 @@ function nodeById(timeline, nodeId) {
   if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
   return { index, node: timeline.nodes[index] };
 }
-function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
+function forkedTimeline(source, nodeIndex, adoptedId, sessionId, version3) {
   const entries2 = activeTimelineEntries(source);
   const activeIndex = entries2.findIndex((entry) => entry.node.id === source.nodes[nodeIndex].id);
   if (activeIndex < 0) throw new TypeError("Fork target is not on the active timeline branch");
@@ -23085,7 +23123,7 @@ function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
       ...node,
       parentVariantId,
       adoptedVariantId: variant2.id,
-      variants: node.variants.map((item) => item.id === adoptedId ? { ...item, sessionId } : { ...item })
+      variants: node.variants.map((item) => node.id === source.nodes[nodeIndex].id && item.id === adoptedId ? withVariantFormat({ ...item, sessionId }, version3) : { ...item })
     };
     parentVariantId = variant2.id;
     return copy2;
@@ -23109,7 +23147,7 @@ async function branchPlaythroughAtNode(client, { playthrough, nodeId } = {}) {
   const active = activeTimelineEntries(source).find((entry) => entry.node.id === nodeId);
   if (active === void 0) throw new TypeError("Branch target is not on the active timeline branch");
   const adopted = active.variant;
-  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, adopted.ext?.pmpDshTavern?.sessionFormatVersion);
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, variantFormatVersion(adopted));
   const sessionId = safeSessionId2(branch?.sessionId);
   const inherited = await client.getMessages(sessionId);
   if (!inheritedRangeExists(inherited, adopted)) {
@@ -23125,13 +23163,14 @@ async function forkPlaythroughAtNode(client, {
 } = {}) {
   if (client == null) throw new TypeError("playClient.required");
   const characterId = safeSegment2(playthroughCharacterId(playthrough), "character.id");
-  const { source, index, node, adopted, sessionId } = await branchPlaythroughAtNode(client, { playthrough, nodeId });
+  const { source, index, node, adopted, sessionId, inherited } = await branchPlaythroughAtNode(client, { playthrough, nodeId });
   const value = now();
   if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
   const playthroughId = safeSegment2(`playthrough-${randomUUID()}`, "playthrough.id");
   const directory = `${characterId}/${playthroughId}`;
   const path3 = `${directory}/timeline.json`;
-  const timeline = forkedTimeline(source, index, adopted.id, sessionId);
+  requireCoordinates(variantFormatVersion(adopted), inherited);
+  const timeline = forkedTimeline(source, index, adopted.id, sessionId, inherited.sessionFormatVersion);
   const draft = {
     id: playthroughId,
     path: path3,
@@ -23308,7 +23347,7 @@ function createPlayNodeController(client, {
         }
         const parent = sourceIndex > 0 ? entries2[sourceIndex - 1] : null;
         const forkEventId = parent?.variant.endEventId ?? -1;
-        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId, { beforeReplyEventId: adopted.endEventId }) : await client.postBranch(adopted.sessionId, forkEventId, void 0, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId });
+        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId, { beforeReplyEventId: adopted.endEventId }) : await client.postBranch(adopted.sessionId, forkEventId, variantFormatVersion(parent.variant), { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId });
         const newSessionId = branch?.sessionId;
         if (typeof newSessionId !== "string" || newSessionId === "") {
           throw new TypeError("Branch response has no sessionId");
@@ -23347,7 +23386,7 @@ function createPlayNodeController(client, {
         const parent = entries2.at(-1), boundary = parent?.variant.endEventId ?? -1;
         if (boundary >= userEventId) throw Error("The stopped request is already represented by a reply");
         const stateSource = { sessionId, beforeUserEventId: userEventId };
-        const branch = parent ? await client.postBranch(sessionId, boundary, source.sessionFormatVersion, stateSource) : await createRootSwipeSession(client, sessionId, { beforeUserEventId: userEventId });
+        const branch = parent ? await client.postBranch(sessionId, boundary, variantFormatVersion(parent.variant), stateSource) : await createRootSwipeSession(client, sessionId, { beforeUserEventId: userEventId });
         const newSessionId = branch?.sessionId;
         if (typeof newSessionId !== "string" || !newSessionId) throw Error("Retry created no session");
         const pending2 = beginPendingSwipe(client, { kind: "request-retry", playthrough, sessionId: newSessionId, sourceSessionId: sessionId, nodeId: `live-${userEventId}`, timeline: pendingSwipeTimeline(timeline, entries2, entries2.length, newSessionId) });
@@ -23356,7 +23395,12 @@ function createPlayNodeController(client, {
           await client.postUserMessage(newSessionId, user.text);
           const pair = await waitForReply(newSessionId, boundary);
           const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId), nodeId = `qa-${variantId}`.slice(0, 200);
-          const variant2 = { id: variantId, sessionId: newSessionId, startEventId: pair.user.seq, endEventId: pair.assistant.seq, ...Number.isSafeInteger(pair.sessionFormatVersion) ? { ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } } } : {} };
+          const variant2 = withVariantFormat({
+            id: variantId,
+            sessionId: newSessionId,
+            startEventId: pair.user.seq,
+            endEventId: pair.assistant.seq
+          }, pair.sessionFormatVersion);
           const next = await writeTimeline(playthrough, (current4) => {
             if (JSON.stringify(current4.head) !== JSON.stringify(timeline.head)) throw Error("Active reply changed during request retry");
             return timelineWithHead({ ...current4, nodes: [...current4.nodes, { id: nodeId, kind: "qa", displayOverride: null, parentVariantId: parent?.variant.id ?? null, adoptedVariantId: variantId, variants: [variant2] }] }, { sessionId: newSessionId, nodeId, variantId });
@@ -54090,7 +54134,7 @@ function isRealUserMessage(message) {
   const origin2 = messageOriginKind3(message);
   return message?.role === "user" && (origin2 === "user" || origin2 === "steering");
 }
-function extendHeadVariant(timeline, sessionId, endEventId) {
+function extendHeadVariant(timeline, sessionId, endEventId, messageState) {
   const head = timelineHead(timeline);
   if (head === null || head.sessionId !== sessionId) return { timeline, changed: false };
   let changed = false;
@@ -54098,8 +54142,9 @@ function extendHeadVariant(timeline, sessionId, endEventId) {
     if (node.id !== head.nodeId) return node;
     const variants = (node.variants ?? []).map((variant2) => {
       if (variant2.id !== head.variantId || variant2.sessionId !== sessionId || endEventId <= variant2.endEventId) return variant2;
+      requireCoordinates(variantFormatVersion(variant2), messageState);
       changed = true;
-      return { ...variant2, endEventId };
+      return withVariantFormat({ ...variant2, endEventId }, messageState.sessionFormatVersion);
     });
     return changed ? { ...node, variants } : node;
   });
@@ -54133,15 +54178,12 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
       displayOverride: null,
       parentVariantId,
       adoptedVariantId: variantId,
-      variants: [{
+      variants: [withVariantFormat({
         id: variantId,
         sessionId,
         startEventId: user.seq,
-        endEventId: assistant.seq,
-        ...Number.isSafeInteger(messageState.sessionFormatVersion) ? {
-          ext: { pmpDshTavern: { sessionFormatVersion: messageState.sessionFormatVersion } }
-        } : {}
-      }]
+        endEventId: assistant.seq
+      }, messageState.sessionFormatVersion)]
     });
     parentVariantId = variantId;
   };
@@ -54151,7 +54193,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
         appendPair();
       }
       if (user === null && continuationAssistant !== null) {
-        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq, messageState);
         nextTimeline = extended.timeline;
         changed ||= extended.changed;
         parentVariantId = timelineHead(nextTimeline)?.variantId ?? parentVariantId;
@@ -54167,7 +54209,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
   }
   appendPair();
   if (user === null && continuationAssistant !== null) {
-    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq, messageState);
     nextTimeline = extended.timeline;
     changed ||= extended.changed;
   }
@@ -58088,7 +58130,6 @@ function createLivePlayClient({
   const v1 = createRequester(fetchImpl, v1Root);
   const v2 = createRequester(fetchImpl, apiRoot);
   const managedRevisions = /* @__PURE__ */ new Map();
-  const coordinateVersions = /* @__PURE__ */ new Map();
   function invalidateRevision(path3) {
     managedRevisions.delete(path3);
   }
@@ -58250,7 +58291,6 @@ function createLivePlayClient({
     },
     async getMessages(sessionId) {
       const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
-      if (Number.isSafeInteger(response.sessionFormatVersion)) coordinateVersions.set(sessionId, response.sessionFormatVersion);
       return normalizeSessionMessages(response);
     },
     async getImportContextBinding(sessionId) {
@@ -58299,7 +58339,7 @@ function createLivePlayClient({
     cancelDraft(id) {
       return v2("POST", `/drafts/${encodeURIComponent(id)}/cancel`, {});
     },
-    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
+    postBranch(sessionId, atEventId, sessionFormatVersion, stateSource) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError("atEventId must be a non-negative integer");
       }

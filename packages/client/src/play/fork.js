@@ -1,3 +1,4 @@
+import { requireCoordinates, variantFormatVersion, withVariantFormat } from '../../../play/src/session-coordinates.js'
 import { nextPlaythroughNumber } from './create.js'
 import { updateCatalog } from './mutations.js'
 import { playthroughCharacterId } from './schema.js'
@@ -26,7 +27,7 @@ function nodeById(timeline, nodeId) {
   return { index, node: timeline.nodes[index] }
 }
 
-function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
+function forkedTimeline(source, nodeIndex, adoptedId, sessionId, version) {
   const entries = activeTimelineEntries(source)
   const activeIndex = entries.findIndex(entry => entry.node.id === source.nodes[nodeIndex].id)
   if (activeIndex < 0) throw new TypeError('Fork target is not on the active timeline branch')
@@ -36,8 +37,8 @@ function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
       ...node,
       parentVariantId,
       adoptedVariantId: variant.id,
-      variants: node.variants.map(item => item.id === adoptedId
-        ? { ...item, sessionId }
+      variants: node.variants.map(item => node.id === source.nodes[nodeIndex].id && item.id === adoptedId
+        ? withVariantFormat({ ...item, sessionId }, version)
         : { ...item }),
     }
     parentVariantId = variant.id
@@ -68,7 +69,7 @@ export async function branchPlaythroughAtNode(client, { playthrough, nodeId } = 
   const active = activeTimelineEntries(source).find(entry => entry.node.id === nodeId)
   if (active === undefined) throw new TypeError('Branch target is not on the active timeline branch')
   const adopted = active.variant
-  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, adopted.ext?.pmpDshTavern?.sessionFormatVersion)
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, variantFormatVersion(adopted))
   const sessionId = safeSessionId(branch?.sessionId)
   const inherited = await client.getMessages(sessionId)
   if (!inheritedRangeExists(inherited, adopted)) {
@@ -85,14 +86,15 @@ export async function forkPlaythroughAtNode(client, {
 } = {}) {
   if (client == null) throw new TypeError('playClient.required')
   const characterId = safeSegment(playthroughCharacterId(playthrough), 'character.id')
-  const { source, index, node, adopted, sessionId } = await branchPlaythroughAtNode(client, { playthrough, nodeId })
+  const { source, index, node, adopted, sessionId, inherited } = await branchPlaythroughAtNode(client, { playthrough, nodeId })
 
   const value = now()
   if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError('now must return a valid Date')
   const playthroughId = safeSegment(`playthrough-${randomUUID()}`, 'playthrough.id')
   const directory = `${characterId}/${playthroughId}`
   const path = `${directory}/timeline.json`
-  const timeline = forkedTimeline(source, index, adopted.id, sessionId)
+  requireCoordinates(variantFormatVersion(adopted), inherited)
+  const timeline = forkedTimeline(source, index, adopted.id, sessionId, inherited.sessionFormatVersion)
   const draft = {
     id: playthroughId,
     path,

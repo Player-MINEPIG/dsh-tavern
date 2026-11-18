@@ -230,6 +230,7 @@ export function normalizeSessionMessages(value, label = 'messages') {
   })
   return { messages, incompleteTurn: value.incompleteTurn,
     ...(Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {}),
+    ...(value.migratedFromV2 === true ? { migratedFromV2: true } : {}),
     ...(stopped===undefined?{}:{stoppedRequest:stopped===null?null:{userEventId:stopped.userEventId,turnStartEventId:stopped.turnStartEventId,turnEndEventId:stopped.turnEndEventId}}),
   }
 }

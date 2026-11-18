@@ -26,6 +26,34 @@ DSH migrates references it owns inside its logs. It does not rewrite Tavern's ex
 
 If an unversioned file already mixes coordinates from different generations, first establish each reference's source from retained evidence. The manifest declares that unversioned references belong to its source log; it cannot discover that fact from integers.
 
+## Recovering missing V4 markers without a predecessor log
+
+If a timeline returns `409 PLAY_COORDINATES_MIGRATION_REQUIRED` after recent turns, inspect the workspace copy of its `timeline.json`, including inactive swipes. For each unmarked variant, identify the original question and reply independently, for example from a saved messages response for that turn or by recognizing the exact pair in the native Session history and confirming its message IDs. Looking up the two integers in the current log alone cannot establish which messages the variant originally referenced. Leave uncertain variants for historical migration or recovery from backup.
+
+Use this manifest for one timeline. Supply the V4 log for each selected Session, including the child's own log for a forked variant.
+
+```json
+{
+  "dshRoot": "/path/to/dsh-install",
+  "workspace": "/path/to/rp-workspace",
+  "timeline": "character-id/playthrough-id/timeline.json",
+  "sessions": [{ "target": "/path/to/session/session.v4.jsonl.zstd" }],
+  "variants": [{
+    "nodeId": "qa-id", "variantId": "variant-id", "sessionId": "session-id",
+    "userMessageId": "original-question-id", "assistantMessageId": "original-reply-id"
+  }]
+}
+```
+
+Run the first command to preview. Review `stamped` and `remaining` (variants still lacking a V4 marker). To apply, stop DSH and run the second command.
+
+```sh
+node scripts/migrate-session-coordinates.mjs --stamp-only --manifest stamp.json
+node scripts/migrate-session-coordinates.mjs --stamp-only --manifest stamp.json --apply
+```
+
+The command verifies both message IDs at the stored endpoints in the named Session and refuses selected variants with an explicit older version. It backs up the timeline beside the original as `timeline.json.pre-v4-stamp-<sha256>` before replacing it. Repeating the same manifest skips matching V4 markers. To undo a repair, stop DSH and restore the corresponding backup. Stamp-only changes the selected markers. Historical event remapping, import bindings and Trace use the migration procedure below.
+
 ## Preparing the upgrade
 
 Back up the DSH data directory and RP workspace. Use the normal DSH upgrade path to create V4 successors, retaining the old logs and inheritance dependencies. Stop all DSH processes that can write the selected files before applying Tavern's upgrade. The command neither creates nor rewrites DSH logs.

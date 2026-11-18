@@ -244,6 +244,8 @@ The value describes the **logical Session format currently read by the Host**; i
 
 If messages are already needed, use the top-level `sessionFormatVersion` and `migratedFromV2` from `GET /sessions/:id/messages` instead of making another request. Those message fields are optional, and older plugins may lack the standalone endpoint; missing/null means unknown. The endpoint avoids returning message bodies but still inspects the Session, so its cost is not guaranteed to be independent of history length.
 
+New turns, swipes and retry variants require the format version from the same message snapshot. Coordinate validation returns `503 PLAY_COORDINATES_UNAVAILABLE` when the Host cannot report a usable version. Branch callers must use the version of the referenced coordinate. See the [coordinate migration guide](DSH_0.1.7_MIGRATION_en.md) for locked timelines.
+
 #### Save, compare, and branch
 
 1. When creating a QA range from messages, save the version from **that same response** in `variant.ext.pmpDshTavern.sessionFormatVersion`. For example: `startEventId: 9`, `endEventId: 16`, version `4`. Never query a version after an upgrade and use it to relabel old integers with unknown provenance.

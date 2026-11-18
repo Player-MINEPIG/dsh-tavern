@@ -14,7 +14,7 @@ function sourceTimeline() {
       adoptedVariantId: 'v-2b',
       variants: [
         { id: 'v-2a', sessionId: 'ancestor-a', startEventId: 4, endEventId: 6 },
-        { id: 'v-2b', sessionId: 'ancestor-b', startEventId: 4, endEventId: 7 },
+        { id: 'v-2b', sessionId: 'ancestor-b', startEventId: 4, endEventId: 7, ext: { pmpDshTavern: { sessionFormatVersion: 4 } } },
       ],
     },
     {
@@ -37,7 +37,7 @@ test('Tavern fork branches durable history and rebases only the copied focus var
     async postBranch(sessionId, eventId) { calls.push(`branch:${sessionId}:${eventId}`); return { sessionId: 'child' } },
     async getMessages() {
       calls.push('messages:child')
-      return { incompleteTurn: false, messages: [{ role: 'user', seq: 4 }, { role: 'assistant', seq: 7 }] }
+      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 4 }, { role: 'assistant', seq: 7 }] }
     },
     async createDirs(path) { calls.push(`dirs:${path}`) },
     async putTimeline(playthrough, timeline) {
@@ -72,6 +72,7 @@ test('Tavern fork branches durable history and rebases only the copied focus var
   assert.equal(savedTimeline.nodes[0].variants[0].sessionId, 'ancestor-a')
   assert.equal(savedTimeline.nodes[1].variants[0].sessionId, 'ancestor-a')
   assert.equal(savedTimeline.nodes[1].variants[1].sessionId, 'child')
+  assert.equal(savedTimeline.nodes[1].variants[1].ext.pmpDshTavern.sessionFormatVersion, 4)
   assert.equal(sourceTimeline().nodes[1].variants[1].sessionId, 'ancestor-b')
   assert.deepEqual(calls, [
     'timeline:read',
@@ -89,7 +90,7 @@ test('Tavern fork rejects a branch without the adopted durable range before work
   const client = {
     async getTimeline() { return sourceTimeline() },
     async postBranch() { return { sessionId: 'child' } },
-    async getMessages() { return { incompleteTurn: false, messages: [{ role: 'user', seq: 4 }] } },
+    async getMessages() { return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 4 }] } },
     async createDirs() { writes += 1 },
     async putTimeline() { writes += 1 },
     async updateCatalog() { writes += 1 },
@@ -113,7 +114,7 @@ test('catalog CAS replay recomputes the playthrough number without repeating bra
     async getTimeline() { return sourceTimeline() },
     async postBranch() { branchCalls += 1; return { sessionId: 'child' } },
     async getMessages() {
-      return { incompleteTurn: false, messages: [{ role: 'user', seq: 4 }, { role: 'assistant', seq: 7 }] }
+      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 4 }, { role: 'assistant', seq: 7 }] }
     },
     async createDirs() {},
     async putTimeline(_playthrough, timeline) { savedTimeline = timeline },

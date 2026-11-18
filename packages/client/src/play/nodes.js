@@ -1,3 +1,4 @@
+import { variantFormatVersion, withVariantFormat } from '../../../play/src/session-coordinates.js'
 import { beginPendingSwipe, finishPendingSwipe, pendingSwipeTimeline } from './pending-swipe.js'
 import { completedSwipePair, commitSwipeReply } from './swipe-completion.js'
 import { updateTimeline } from './mutations.js'
@@ -162,7 +163,7 @@ export function createPlayNodeController(client, {
         const forkEventId = parent?.variant.endEventId ?? -1
         const branch = parent === null
           ? await createRootSwipeSession(client, adopted.sessionId, {beforeReplyEventId:adopted.endEventId})
-          : await client.postBranch(adopted.sessionId, forkEventId, undefined, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId })
+          : await client.postBranch(adopted.sessionId, forkEventId, variantFormatVersion(parent.variant), { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId })
         const newSessionId = branch?.sessionId
         if (typeof newSessionId !== 'string' || newSessionId === '') {
           throw new TypeError('Branch response has no sessionId')
@@ -199,7 +200,7 @@ export function createPlayNodeController(client, {
         const parent=entries.at(-1),boundary=parent?.variant.endEventId??-1
         if(boundary>=userEventId)throw Error('The stopped request is already represented by a reply')
         const stateSource={sessionId,beforeUserEventId:userEventId}
-        const branch=parent?await client.postBranch(sessionId,boundary,source.sessionFormatVersion,stateSource):await createRootSwipeSession(client,sessionId,{beforeUserEventId:userEventId})
+        const branch=parent?await client.postBranch(sessionId,boundary,variantFormatVersion(parent.variant),stateSource):await createRootSwipeSession(client,sessionId,{beforeUserEventId:userEventId})
         const newSessionId=branch?.sessionId
         if(typeof newSessionId!=='string'||!newSessionId)throw Error('Retry created no session')
         const pending=beginPendingSwipe(client,{kind:'request-retry',playthrough,sessionId:newSessionId,sourceSessionId:sessionId,nodeId:`live-${userEventId}`,timeline:pendingSwipeTimeline(timeline,entries,entries.length,newSessionId)})
@@ -208,7 +209,9 @@ export function createPlayNodeController(client, {
           await client.postUserMessage(newSessionId,user.text)
           const pair=await waitForReply(newSessionId,boundary)
           const variantId=idFactory(pair.user.seq,pair.assistant.seq,newSessionId),nodeId=`qa-${variantId}`.slice(0,200)
-          const variant={id:variantId,sessionId:newSessionId,startEventId:pair.user.seq,endEventId:pair.assistant.seq,...(Number.isSafeInteger(pair.sessionFormatVersion)?{ext:{pmpDshTavern:{sessionFormatVersion:pair.sessionFormatVersion}}}:{})}
+          const variant = withVariantFormat({
+            id: variantId, sessionId: newSessionId, startEventId: pair.user.seq, endEventId: pair.assistant.seq,
+          }, pair.sessionFormatVersion)
           const next=await writeTimeline(playthrough,current=>{
             if(JSON.stringify(current.head)!==JSON.stringify(timeline.head))throw Error('Active reply changed during request retry')
             return timelineWithHead({...current,nodes:[...current.nodes,{id:nodeId,kind:'qa',displayOverride:null,parentVariantId:parent?.variant.id??null,adoptedVariantId:variantId,variants:[variant]}]},{sessionId:newSessionId,nodeId,variantId})

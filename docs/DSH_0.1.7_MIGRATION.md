@@ -26,6 +26,34 @@ DSH 负责迁移日志内其拥有的引用，不负责 Tavern 外部 JSON。Tav
 
 若未标记文件已经混有多代坐标，应先依据保留证据确认各引用来源。manifest 声明未标记引用属于 source 日志格式，命令不能从整数发现这个事实。
 
+## 没有旧日志时恢复缺失的 V4 标记
+
+若游玩后周目时间线返回 `409 PLAY_COORDINATES_MIGRATION_REQUIRED`，可直接检查工作区中的 `timeline.json`，包括未选中的 swipe。对每个无标记变体，先独立确认它原本对应的提问和回复。例如使用该轮保存的消息响应，或在原生会话历史中辨认出确切的问答并核对消息 ID。仅按时间线里的两个数字去当前日志反查，无法证明它们原本指向哪条消息。无法确认的变体应留待历史迁移或从备份恢复。
+
+每份清单指定一份时间线，列出所选变体所属会话的 V4 日志。分支变体使用对应子会话的日志。
+
+```json
+{
+  "dshRoot": "/path/to/dsh-install",
+  "workspace": "/path/to/rp-workspace",
+  "timeline": "character-id/playthrough-id/timeline.json",
+  "sessions": [{ "target": "/path/to/session/session.v4.jsonl.zstd" }],
+  "variants": [{
+    "nodeId": "qa-id", "variantId": "variant-id", "sessionId": "session-id",
+    "userMessageId": "original-question-id", "assistantMessageId": "original-reply-id"
+  }]
+}
+```
+
+第一条命令只预览。`stamped` 列出将补标的变体，`remaining` 列出其余仍缺少 V4 标记的变体。核对结果并停止 DSH 后，再执行第二条命令。
+
+```sh
+node scripts/migrate-session-coordinates.mjs --stamp-only --manifest stamp.json
+node scripts/migrate-session-coordinates.mjs --stamp-only --manifest stamp.json --apply
+```
+
+脚本在指定会话中逐一核对起止事件的消息 ID。所选变体若明确标有旧版本，校验会拒绝。应用前会在原文件旁备份为 `timeline.json.pre-v4-stamp-<sha256>`，再原子替换时间线。重复执行同一清单会跳过已核验的 V4 标记。如需撤销，请停止 DSH 并恢复对应备份。补标仅更新所选变体的版本字段。历史事件号重映射、导入绑定和 Trace 仍使用下文的迁移流程。
+
 ## 准备升级
 
 备份 DSH 数据目录与 RP 工作区。通过 DSH 正常升级流程生成 V4 后继，保留旧日志及继承依赖。在应用 Tavern 升级前停止所有可能写入所选文件的 DSH 进程。命令不会创建或改写 DSH 日志。

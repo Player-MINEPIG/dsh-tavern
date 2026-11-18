@@ -229,6 +229,8 @@ async function queryCoordinates(sessionId) {
 
 若本来就需要消息，直接读取 `GET /sessions/:id/messages` 的顶层 `sessionFormatVersion`、`migratedFromV2` 即可，不必再查此接口。消息响应中这两个字段可缺省，旧插件可能没有独立接口；缺失或 `null` 应视为未知。独立接口减少返回正文的需要，但实现仍会 inspect 会话，不能假定查询成本与历史长度无关。
 
+创建楼层、swipe 或重试变体时须使用同一次消息快照中的格式版本。Host 无法提供可用版本时，坐标校验返回 `503 PLAY_COORDINATES_UNAVAILABLE`。分支请求须传入所引用坐标自身的版本。已锁定时间线的恢复方式见[坐标迁移指南](DSH_0.1.7_MIGRATION.md)。
+
 #### 保存、比较和分支
 
 1. 从消息响应获取新的 QA 范围时，把**同一响应**的 `sessionFormatVersion` 与范围一起保存到 `variant.ext.pmpDshTavern.sessionFormatVersion`。例如 `startEventId: 9`、`endEventId: 16`、版本 `4`。不要在升级后查询一次版本，再用它补标来源不明的旧整数。

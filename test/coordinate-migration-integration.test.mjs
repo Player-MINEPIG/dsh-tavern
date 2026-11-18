@@ -5,9 +5,10 @@ import { pathToFileURL, fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs'
 import * as zlib from 'node:zlib'
-import { buildCoordinateMap, migrateManifest } from '../scripts/migrate-session-coordinates.mjs'
+import { validateTimelineCoordinates } from '../packages/play/src/session-coordinates.js'
+import { buildCoordinateMap, migrateManifest, stampTimelineManifest } from '../scripts/migrate-session-coordinates.mjs'
 
 test('migration refuses unverified format releases before reading or writing session data', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'tavern-unverified-codecs-'))
@@ -128,4 +129,68 @@ test('migration CLI executes through a symlinked installation path', () => {
     const output = execFileSync(process.execPath, [join(linkedRoot, 'scripts/migrate-session-coordinates.mjs'), '--help'], { encoding: 'utf8' })
     assert.match(output, /Usage: node scripts\/migrate-session-coordinates\.mjs/)
   } finally { rmSync(directory, { recursive: true, force: true }) }
+})
+
+test('stamp-only CLI repairs a verified V4 swipe without a source log or a gated timeline read', { skip: !dshRoot }, async t => {
+  const workspace = mkdtempSync(join(tmpdir(), 'tavern-v4-stamp-'))
+  t.after(() => rmSync(workspace, { recursive: true, force: true }))
+  const require = createRequire(join(resolve(dshRoot), 'package.json'))
+  const { releasedV4SessionFormatCodec: codec } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-session-format-v3-to-v4')))
+  const header = { id: 'child', version: 4, createdAt: 1, isSeeded: false, delegationDepth: 0 }
+  const content = [{ type: 'text', text: 'fixture' }]
+  const events = [
+    { type: 'turn/start', data: { turn: 1 } }, { type: 'step/start', data: { turn: 1, step: 1 } },
+    { type: 'user/message', surfaceOp: 'append', data: { id: 'prompt', role: 'user', source: { kind: 'user' }, content } },
+    { type: 'assistant/message', surfaceOp: 'append', data: { turn: 1, step: 1, stream: [], message: {
+      id: 'reply', role: 'assistant', source: { kind: 'model', provider: 'mock', model: 'mock' }, content,
+    } } },
+    { type: 'step/end', data: { turn: 1, step: 1 } }, { type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+  ].map((event, seq) => ({ ...event, seq, time: 42 }))
+  const log = Buffer.concat([codec.encodeHeader(header, 0), ...events.map(codec.encodeEvent)]
+    .map(row => zlib.zstdCompressSync(JSON.stringify(row) + '\n')))
+  const target = join(workspace, 'session.v4.jsonl.zstd')
+  writeFileSync(target, log)
+  const marker = { sessionFormatVersion: 4 }
+  const variant = { id: 'v', sessionId: 'child', startEventId: 2, endEventId: 3, ext: { external: 'keep', pmpDshTavern: { other: true } } }
+  const active = { ...variant, id: 'active', sessionId: 'parent', ext: { pmpDshTavern: marker } }
+  const original = { head: { sessionId: 'parent', nodeId: 'qa', variantId: 'active' },
+    nodes: [{ id: 'qa', kind: 'qa', adoptedVariantId: 'active', variants: [active, variant] }] }
+  const timeline = 'timeline.json', path = join(workspace, timeline)
+  const input = JSON.stringify(original)
+  writeFileSync(path, input)
+  const reference = { nodeId: 'qa', variantId: 'v', sessionId: 'child', userMessageId: 'prompt', assistantMessageId: 'reply' }
+  const manifest = { workspace, timeline, dshRoot, sessions: [{ target }], variants: [reference] }
+  const manifestPath = join(workspace, 'stamp.json')
+  writeFileSync(manifestPath, JSON.stringify(manifest))
+  const run = (...args) => JSON.parse(execFileSync(process.execPath, [
+    fileURLToPath(new URL('../scripts/migrate-session-coordinates.mjs', import.meta.url)),
+    '--stamp-only', '--manifest', manifestPath, ...args,
+  ]))
+  const plan = run()
+  assert.deepEqual(plan.stamped, [{ nodeId: 'qa', variantId: 'v' }])
+  const backups = () => readdirSync(workspace).filter(name => name.startsWith('timeline.json.pre-v4-stamp-'))
+  assert.deepEqual(backups(), [])
+  for (const invalid of [[reference, reference], [{ ...reference, sessionId: 'parent' }],
+    [reference, { ...reference, variantId: 'unknown' }]]) {
+    await assert.rejects(stampTimelineManifest({ ...manifest, variants: invalid }, { apply: true }), /mismatched variant/)
+    assert.equal(readFileSync(path, 'utf8'), input)
+    assert.deepEqual(backups(), [])
+  }
+  const stale = structuredClone(original)
+  stale.nodes[0].variants[1].ext.pmpDshTavern.sessionFormatVersion = 3
+  writeFileSync(path, JSON.stringify(stale))
+  await assert.rejects(stampTimelineManifest(manifest, { apply: true }), /require migration/)
+  writeFileSync(path, input)
+  await assert.rejects(stampTimelineManifest({ ...manifest, variants: [{ ...reference, assistantMessageId: 'wrong' }] },
+    { apply: true }), /message identities/)
+  assert.deepEqual(run('--apply').remaining, [])
+  const expected = structuredClone(original)
+  expected.nodes[0].variants[1].ext.pmpDshTavern.sessionFormatVersion = 4
+  const repaired = JSON.parse(readFileSync(path))
+  assert.deepEqual(repaired, expected)
+  await validateTimelineCoordinates(repaired, async () => ({ sessionFormatVersion: 4 }))
+  assert.deepEqual(run('--apply').stamped, [])
+  assert.equal(backups().length, 1)
+  assert.equal(readFileSync(join(workspace, backups()[0]), 'utf8'), input)
+  assert.deepEqual(readFileSync(target), log)
 })

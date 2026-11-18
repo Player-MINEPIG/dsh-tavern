@@ -26,8 +26,8 @@ function fixture({ first = false } = {}) {
     postSession: async () => ({ sessionId: 'new' }),
     postBranch: async () => ({ sessionId: 'new' }),
     postUserMessage: async () => ({ accepted: true }),
-    getMessages: async id => id === 'old' ? { incompleteTurn: false, messages: oldMessages } : {
-      incompleteTurn: phase === 'open', messages: [
+    getMessages: async id => id === 'old' ? { sessionFormatVersion: 4, incompleteTurn: false, messages: oldMessages } : {
+      sessionFormatVersion: 4, incompleteTurn: phase === 'open', messages: [
         ...oldMessages.filter(m => m.seq < userSeq),
         { role: 'user', seq: userSeq, text: `Q${sourceIndex}` },
         ...(['done','interrupted'].includes(phase) ? [{ role: 'assistant', seq: userSeq+1, text: 'New reply', interrupted: phase==='interrupted' }] : []),

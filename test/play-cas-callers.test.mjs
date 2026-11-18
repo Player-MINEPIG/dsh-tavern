@@ -101,8 +101,8 @@ test('first-QA swipe creates one clean session, preserves import context and app
   const client = {
     async getTimeline() { return structuredClone(value) },
     async getMessages(sessionId) {
-      if (sessionId === 'session-a') return { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 3, text: '旧回复' }] }
-      return { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 4, text: '新回复' }] }
+      if (sessionId === 'session-a') return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 3, text: '旧回复' }] }
+      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 4, text: '新回复' }] }
     },
     async getImportContextBinding() { return { path: 'character-a/pt-a/import-context.json' } },
     async postSession(sourceSessionId, importContextRef, stateSource) {
@@ -151,11 +151,11 @@ test('later swipe branches the current continuation exactly after the previous a
   const client = {
     async getTimeline() { return structuredClone(value) },
     async getMessages(sessionId) {
-      if (sessionId === 'session-current') return { incompleteTurn: false, messages: [
+      if (sessionId === 'session-current') return { sessionFormatVersion: 4, incompleteTurn: false, messages: [
         { role: 'user', seq: 4, text: '第二问' },
         { role: 'assistant', seq: 6, text: '旧回复' },
       ] }
-      return { incompleteTurn: false, messages: [
+      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [
         { role: 'user', seq: 4, text: '第二问' },
         { role: 'assistant', seq: 7, text: '新回复' },
       ] }
@@ -184,7 +184,7 @@ test('turn reconcile CAS replay does not duplicate an already recorded QA', asyn
   let value = { nodes: [] }
   let captured
   const client = {
-    async getMessages() { return { incompleteTurn: false, messages: [{ role: 'user', seq: 1 }, { role: 'assistant', seq: 2 }] } },
+    async getMessages() { return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 1 }, { role: 'assistant', seq: 2 }] } },
     async getTimeline() { return structuredClone(value) },
     async updateTimeline(_playthrough, mutator) {
       captured = await mutator(structuredClone(value))

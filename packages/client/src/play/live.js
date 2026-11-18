@@ -67,7 +67,6 @@ export function createLivePlayClient({
   const v1 = createRequester(fetchImpl, v1Root)
   const v2 = createRequester(fetchImpl, apiRoot)
   const managedRevisions = new Map()
-  const coordinateVersions = new Map()
 
   function invalidateRevision(path) {
     managedRevisions.delete(path)
@@ -257,7 +256,6 @@ export function createLivePlayClient({
 
     async getMessages(sessionId) {
       const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/messages`)
-      if (Number.isSafeInteger(response.sessionFormatVersion)) coordinateVersions.set(sessionId, response.sessionFormatVersion)
       return normalizeSessionMessages(response)
     },
 
@@ -303,7 +301,7 @@ export function createLivePlayClient({
     materializeDraft(id, body, options) { return v2('POST', `/drafts/${encodeURIComponent(id)}/materialize`, body, options) },
     cancelDraft(id) { return v2('POST', `/drafts/${encodeURIComponent(id)}/cancel`, {}) },
 
-    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
+    postBranch(sessionId, atEventId, sessionFormatVersion, stateSource) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError('atEventId must be a non-negative integer')
       }

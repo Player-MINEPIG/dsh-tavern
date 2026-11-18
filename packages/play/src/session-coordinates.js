@@ -3,10 +3,16 @@ import { httpError } from './http.js'
 export function sessionCoordinates(inspection) {
   const version = inspection?.meta?.version
   return {
-    sessionFormatVersion: Number.isSafeInteger(version) ? version : null,
+    sessionFormatVersion: Number.isSafeInteger(version) && version >= 0 ? version : null,
     // Conservative detection only: this marker never authorizes a guessed remap.
     migratedFromV2: (inspection?.events ?? []).some(event => event.type === 'system/message'
       && /^v2-to-v3-system-[a-f0-9]{64}$/.test(event.data?.message?.id ?? '')),
+  }
+}
+
+function requireSnapshotVersion(version) {
+  if (!Number.isSafeInteger(version) || version < 0) {
+    throw httpError(503, 'The Host did not provide the Session format version for this history snapshot. Retry when Session metadata is available.', 'PLAY_COORDINATES_UNAVAILABLE')
   }
 }
 
@@ -14,11 +20,11 @@ export function requireCoordinates(version, current) {
   if (version !== undefined && (!Number.isSafeInteger(version) || version < 0)) {
     throw httpError(400, 'Invalid Session coordinate format version', 'PLAY_COORDINATES_INVALID')
   }
-  if (current?.sessionFormatVersion == null) return
+  requireSnapshotVersion(current?.sessionFormatVersion)
   if ((version !== undefined && version !== current.sessionFormatVersion)
     || (version === undefined && (current.migratedFromV2 || current.sessionFormatVersion >= 4))) {
     throw httpError(409,
-      'Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V4 logs.',
+      'Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained logs. For verified V4 message identities with missing version markers, see its --stamp-only mode.',
       'PLAY_COORDINATES_MIGRATION_REQUIRED')
   }
 }
@@ -28,7 +34,7 @@ export function variantFormatVersion(variant) {
 }
 
 export function withVariantFormat(variant, version) {
-  if (version == null) return variant
+  requireSnapshotVersion(version)
   return { ...variant, ext: { ...variant.ext, pmpDshTavern: {
     ...variant.ext?.pmpDshTavern, sessionFormatVersion: version,
   } } }
