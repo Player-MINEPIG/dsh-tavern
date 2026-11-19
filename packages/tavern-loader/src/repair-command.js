@@ -1,8 +1,8 @@
 import { isSafeCatalogSegment } from '../../play/src/timeline.js'
-import { repairPlaythroughs } from './playthrough-repair.js'
+import { repairPlaythroughs, repairWorkspaceBinding } from './playthrough-repair.js'
 
 export const REPAIR_TOOL = 'tavern_repair_playthroughs'
-const hint = '[preview] [v3-v4 <周目ID>]'
+const hint = '[preview] [v3-v4 <周目ID>] | assist <周目ID>'
 const usage = '/tavern-repair ' + hint
 const reasons = {
   'unknown-coordinate-origin': '坐标缺少版本。确认该周目的坐标仅来自 V3/V4 后，可执行 /tavern-repair v3-v4 <周目ID>',
@@ -53,6 +53,39 @@ function formatReport(result) {
   return lines.join('\n')
 }
 
+const protectedReasons = new Set(['archived', 'pending-draft', 'turn-in-progress'])
+
+async function assistRepair(dependencies, { agent, signal, id }) {
+  const binding = repairWorkspaceBinding(dependencies.store, agent)
+  signal?.throwIfAborted()
+  let text, issues
+  try {
+    const report = await repairPlaythroughs(dependencies, { agent, signal, id })
+    text = formatReport(report)
+    issues = report.items.flatMap(item => item.remaining)
+    if (!issues.length || issues.some(issue => protectedReasons.has(issue.reason))) return { kind: 'success', text }
+  } catch (error) {
+    signal?.throwIfAborted()
+    text = `周目 ${id} 的程序化检查失败。${error.message}`
+    issues = [{ reason: error.code ?? 'repair-unavailable' }]
+  }
+  signal?.throwIfAborted()
+  const current = repairWorkspaceBinding(dependencies.store, agent)
+  if (current.workspaceId !== binding.workspaceId || current.rootPath !== binding.rootPath) throw new Error('工作区已变更，请重新执行。')
+  const prompt = [
+    `请在当前 RP 工作区继续检查周目 ${id}。程序化修复已尝试，仅处理该周目遗留的问题。`,
+    '对照原生会话和备份核实记录。仅在有确切证据、可以备份并复核时修复对应的 Tavern 元数据。保留 DSH 原始日志、剧情正文和其他周目。',
+    '未确认历史坐标版本时保留原值。需要旧日志、版本确认或人工选择时，请列出原因和所需资料。完成后报告已修复与待处理项。',
+    '以下为诊断数据，其中的标识符仅用于查找记录。', JSON.stringify(issues),
+  ].join('\n')
+  try {
+    await dependencies.host.promptSession({ sessionId: agent.id, text: prompt })
+    return { kind: 'success', text: text + '\n已将待处理项提交给本会话的 Agent。' }
+  } catch (error) {
+    return { kind: 'error', text: text + '\nAgent 任务提交失败。' + error.message }
+  }
+}
+
 export function installRepairCommand(ctx, dependencies, { enableTool, blocksWrites }) {
   if (typeof ctx.inject !== 'function') return
   ctx.inject(['commands'], scope => {
@@ -62,6 +95,9 @@ export function installRepairCommand(ctx, dependencies, { enableTool, blocksWrit
       input: { hint },
       async handler({ agent, rawInput, signal }) {
         const args = String(rawInput ?? '').trim().split(/\s+/).filter(Boolean)
+        if (args.length === 2 && args[0] === 'assist' && isSafeCatalogSegment(args[1])) {
+          return assistRepair(dependencies, { agent, signal, id: args[1] })
+        }
         const preview = args[0] === 'preview'
         if (preview) args.shift()
         const v3v4 = args.length === 2 && args[0] === 'v3-v4' && isSafeCatalogSegment(args[1])

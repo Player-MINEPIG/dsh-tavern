@@ -112,7 +112,7 @@ function characterInsertionBoundary(event) {
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
 }
 
-function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, repairPlaythrough, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
   const count = character.playthroughs.length + character.unassigned.length
   return h('section', {
     className: 'dtv-play-section',
@@ -175,7 +175,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
     h(PlayIoMenu, {
       playClient,
       playthrough,
-      openSession,
+      onRepair: () => repairPlaythrough(playthrough),
       trigger: '⋯',
       placement: 'sidebar',
       onRelink: () => beginPlaythroughRelink(playthrough, character),
@@ -206,7 +206,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
   )
 }
 
-function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
+function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, repairPlaythrough, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
   return h('section', { className: 'dtv-play-section dtv-play-missing-card', 'data-open': !collapsed },
     h('div', { className: 'dtv-play-group-line' },
       h('button', {
@@ -248,7 +248,7 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
     h(PlayIoMenu, {
       playClient,
       playthrough,
-      openSession,
+      onRepair: () => repairPlaythrough(playthrough),
       trigger: '⋯',
       placement: 'sidebar',
       onRelink: () => beginPlaythroughRelink(playthrough, character),
@@ -267,6 +267,7 @@ export function PlayWorkspaceBrowser({
   playthroughController,
   openSession,
   switchToNative,
+  startRepair,
   getActivePlaythroughId,
   subscribeActivePlaythroughId,
 }) {
@@ -463,6 +464,8 @@ export function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
     }
   }
+
+  const repairPlaythrough = playthrough => startRepair(resources.workspace, playthrough)
 
   const restorePlaythrough = async playthrough => {
     if (restoringId !== null) return
@@ -666,6 +669,7 @@ export function PlayWorkspaceBrowser({
         toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
         openPlaythrough,
         openSession,
+        repairPlaythrough,
         beginPlaythroughRelink,
         diagnostics,
         diagnosticIds,
@@ -694,7 +698,7 @@ export function PlayWorkspaceBrowser({
         beginPlaythroughRelink,
         relinkDisabled: (resources?.characters.length ?? 0) === 0 || relinkBusy,
         openPlaythrough,
-        openSession,
+        repairPlaythrough,
         playClient,
         diagnostics,
         diagnosticIds,

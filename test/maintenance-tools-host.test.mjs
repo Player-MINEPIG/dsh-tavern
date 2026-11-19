@@ -1,7 +1,7 @@
 import { createSessionReader } from 'dsh-prompt-assembler/session-reader'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
@@ -129,6 +129,22 @@ test('official Host runs chat repair, scoped maintenance tools and plugin dispos
     const repaired = JSON.parse(store.playWorkspaceStore.readFile(rows[1].path).content)
     assert.deepEqual(repaired.nodes[0].variants[0].ext.pmpDshTavern, { sessionFormatVersion: 4 })
     assert.deepEqual((await createSessionReader(ctx)(created.sessionId)).events.slice(beforeCommand.length).map(event => event.type), ['command/run', 'command/done'])
+    const repairChat = await ctx.sessionController.create({ workspaceId: store.playWorkspaceStore.get().workspaceId })
+    const { agent: repairAgent } = await ctx.sessionController.resolveAgent(repairChat.sessionId)
+    assert.notEqual(repairChat.sessionId, created.sessionId)
+    assert.equal(realpathSync(repairAgent.session.header.cwd), realpathSync(rp))
+    const executeRepair = id => ctx.commands.execute(repairAgent, `/tavern-repair assist ${id}`, [], new AbortController().signal)
+    const offset = repairAgent.session.snapshotEvents().length
+    assert.match((await executeRepair(rows[1].id)).result.text, /已检查 1 个周目，已修复 0 个/)
+    assert.deepEqual(repairAgent.session.snapshotEvents().slice(offset).map(event => event.type), ['command/run', 'command/done'])
+    const unresolved = await executeRepair(rows[0].id)
+    assert.equal(unresolved.result.kind, 'success', unresolved.result.text)
+    assert.match(unresolved.result.text, /已将待处理项提交/)
+    const queued = repairAgent.session.snapshotEvents().filter(event => event.type === 'agent/inbox/spliced').flatMap(event => event.data.inserted ?? [])
+    assert.equal(queued.length, 1)
+    assert.match(queued[0].content[0].text, /playthrough-missing/)
+    assert.deepEqual(agent.inbox.nextTurn, [])
+    assert.deepEqual(session.snapshotEvents().slice(beforeCommand.length).map(event => event.type), ['command/run', 'command/done'])
     await handle.dispose()
     assert.equal(ctx.commands.list(agent).some(item => item.name === 'tavern-repair'), false)
   } finally {

@@ -172,6 +172,8 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 
 ### 周目修复命令与 Agent 工具
 
+`/tavern-repair assist <周目ID>` 先对该周目执行程序化修复。若仍有待处理的问题，Host 将诊断信息作为普通提示提交给调用会话的 Agent。遇到归档、待完成草稿或正在生成的回复时，仅返回报告。侧栏的修复入口会先在绑定的工作区新建普通会话，再调用此命令。
+
 DSH 聊天命令 `/tavern-repair [preview] [v3-v4 <周目ID>]` 在调用会话所属的已绑定扮演工作区内运行。默认检查整个 catalog 并应用可核实的修复。`v3-v4` 表示操作者确认所选周目的旧坐标仅来自 V3/V4，检查范围随之缩小到该 ID。
 
 启用 `maintenanceTools: true` 后，Agent 可调用 `tavern_repair_playthroughs`。可选参数为 `action`（默认 `preview`，或 `apply`）、单个周目 `id` 和布尔值 `knownV3V4`。将 `knownV3V4` 设为 true 需要明确的来源确认及 `id`。RP 安全模式和只读 Agent 可以预览。结果含 `applied`（执行模式）、`checked`（检查的周目数），以及存在改动或待处理项的 `items`。每个条目含 `id`、`changes`、`remaining` 及写入时的相对 `backup` 路径。每个待处理项有 `reason` 和已知的目标 ID。

@@ -187,6 +187,8 @@ The `availability` response above is the cleanup tool's strict absence check, no
 
 ### Playthrough repair command and agent tool
 
+`/tavern-repair assist <playthrough-id>` applies programmatic repair to that run first. If issues remain, the Host submits the diagnostics as a prompt to the invoking session’s agent. Archived runs, pending drafts and ongoing turns produce a report only. The sidebar action creates a new native session in the bound workspace before invoking this command.
+
 The DSH command `/tavern-repair [preview] [v3-v4 <playthrough-id>]` runs in a chat belonging to the bound RP workspace. By default it checks the full catalog and applies verifiable repairs. The `v3-v4` form checks only the given ID and asserts the operator knows the old coordinates come exclusively from V3/V4.
 
 With `maintenanceTools: true`, agents can call `tavern_repair_playthroughs`. Optional inputs are `action` (default `preview`, or `apply`), one playthrough `id`, and boolean `knownV3V4`. Setting `knownV3V4` to true requires an ID and explicit confirmation of provenance. RP-secured and read-only agents can preview. Results contain `applied` (execution mode), `checked` (playthrough count), and `items` for runs with changes or outstanding findings. Each item carries `id`, `changes`, `remaining`, and a relative `backup` path when written. Each outstanding finding includes a `reason` and known target IDs.

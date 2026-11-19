@@ -187,6 +187,8 @@ Import files and binding summaries live under the selected play workspace root. 
 
 ### Repair playthroughs from chat
 
+In the sidebar, choose **⋯ → Repair playthrough** on the affected run. Tavern opens a new chat in the normal interface in the bound RP workspace and checks only that run. The command backs up and fixes verifiable records first. If that resolves everything, the chat contains the report. If issues remain, the agent investigates them in that chat and explains any missing evidence. Archived runs, pending drafts and turns in progress are reported and skipped.
+
 Enter `/tavern-repair` in a DSH chat in the bound RP workspace. The command checks that workspace’s catalog, saves an exact backup beside each changed `timeline.json`, and reports repairs, backup paths and outstanding issues. Use `/tavern-repair preview` for a read-only preview. Archived runs and pending drafts are reported as skipped.
 
 | Symptom | Action |
@@ -197,7 +199,7 @@ Enter `/tavern-repair` in a DSH chat in the bound RP workspace. The command chec
 | Unknown origin, possible coordinate shift, or old import-context references | Report the affected references and reasons. Independent question/reply message IDs or an original log can support [offline migration](DSH_0.1.7_MIGRATION_en.md) |
 | Missing card, native session or timeline file | Report the affected ID. Relink the card, check the original data directory or restore a backup as appropriate |
 
-To delegate, enable `maintenanceTools: true` and ask the agent in a write-enabled maintenance chat in that workspace to repair verifiable records and list the remaining reasons. The agent uses `tavern_repair_playthroughs`. The slash command works with the tool disabled and runs without a model call.
+To delegate, enable `maintenanceTools: true` and ask the agent in a write-enabled maintenance chat in that workspace to repair verifiable records and list the remaining reasons. The agent uses `tavern_repair_playthroughs`. The base `/tavern-repair` command works with the tool disabled and runs without a model call.
 
 ### Archive and restore playthroughs
 

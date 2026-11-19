@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { PlayWorkspaceStore } from '../packages/play/src/workspace.js'
 import { messagesFromEvents } from '../packages/play/src/sessions.js'
 import { variantFormatVersion, withVariantFormat } from '../packages/play/src/session-coordinates.js'
+import { installRepairCommand } from '../packages/tavern-loader/src/repair-command.js'
 import { repairPlaythroughs } from '../packages/tavern-loader/src/playthrough-repair.js'
 
 function turn(number, reason = 'completed', role = 'both') {
@@ -156,4 +157,38 @@ test('a matching version cannot hide a missing endpoint or a non-unique message 
   const { items } = await w.run()
   assert.deepEqual(items.map(item => item.remaining[0].reason), ['unverified-message-range', 'unverified-message-range'])
   assert.ok(items.every(item => !item.backup && !item.changes.length))
+})
+
+test('assisted repair targets one run and queues only outstanding issues in the invoking chat', async t => {
+  const w = await workspace(t)
+  w.add('fixed'); w.record('fixed', turn(1))
+  const other = w.add('other'); w.record('other', turn(1))
+  w.add('mixed', { nodes: [] }, { characterId: 'absent' }); w.record('mixed', turn(1))
+  w.add('draft')
+  w.save()
+  w.dependencies.getCharacter = () => { throw Object.assign(Error(), { code: 'CHARACTER_NOT_FOUND' }) }
+  let command
+  installRepairCommand({ inject: (_, register) => register({ commands: { register: value => { command = value } } }) }, w.dependencies, { enableTool: false })
+  const agent = { id: 'repair-chat', session: { header: { cwd: w.root } } }
+  const run = (id, options = {}) => command.handler({ agent, rawInput: 'assist ' + id, ...options })
+  const prompts = []
+  w.dependencies.host.promptSession = async request => prompts.push(request)
+  assert.match((await run('fixed')).text, /已修复 1 个/)
+  assert.match((await run('fixed')).text, /已修复 0 个/)
+  assert.match((await run('draft')).text, /草稿尚未完成/)
+  assert.equal((await run('fixed other')).kind, 'error')
+  await assert.rejects(run('mixed', { agent: { session: { header: { cwd: tmpdir() } } } }), /工作区/)
+  await assert.rejects(run('mixed', { signal: AbortSignal.abort() }))
+  assert.deepEqual(prompts, [])
+  const partial = await run('mixed')
+  assert.match(partial.text, /已修复 1 个/)
+  assert.match(partial.text, /角色卡缺失/)
+  assert.equal(prompts.length, 1)
+  assert.equal(prompts[0].sessionId, agent.id)
+  assert.match(prompts[0].text, /mixed/)
+  assert.match(prompts[0].text, /CHARACTER_NOT_FOUND/)
+  assert.doesNotMatch(prompts[0].text, /other|private question/)
+  w.dependencies.host.promptSession = async () => { throw Error('offline') }
+  assert.match((await run('mixed')).text, /角色卡缺失[\s\S]*提交失败。offline/)
+  assert.deepEqual(JSON.parse(w.store.readFile(other).content).nodes, [])
 })

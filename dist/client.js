@@ -10429,6 +10429,10 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.archiveHint": "\u5DF2\u5F52\u6863\u5468\u76EE\u4FDD\u7559\u5168\u90E8\u8BB0\u5F55\u548C\u7ED1\u5B9A\uFF0C\u53EF\u968F\u65F6\u67E5\u770B\u6216\u6062\u590D\u3002",
   "play.sidebar.archiveEmpty": "\u6682\u65E0\u5DF2\u5F52\u6863\u5468\u76EE\u3002",
   "play.sidebar.restoreNamed": "\u6062\u590D\u5468\u76EE\u300C{title}\u300D",
+  "play.io.repair": "\u4FEE\u590D\u5468\u76EE",
+  "play.io.repairSessionTitle": "\u4FEE\u590D\u5468\u76EE \xB7 {title}",
+  "play.io.repairSelectionChanged": "\u6240\u9009 RP \u5DE5\u4F5C\u533A\u6216\u5468\u76EE\u5DF2\u53D8\u66F4\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u5468\u76EE\u83DC\u5355\u3002",
+  "play.io.repairDispatchFailed": "\u672A\u80FD\u5728\u4F1A\u8BDD {id} \u542F\u52A8\u4FEE\u590D\u3002\u53EF\u5728\u8BE5\u4F1A\u8BDD\u8F93\u5165 {command} \u91CD\u8BD5\u3002{error}",
   "play.io.rename": "\u91CD\u547D\u540D\u5468\u76EE",
   "play.io.relinkCharacter": "\u91CD\u65B0\u7ED1\u5B9A\u89D2\u8272\u5361",
   "play.io.renamePrompt": "\u8F93\u5165\u65B0\u7684\u5468\u76EE\u540D\u79F0\uFF1A",
@@ -11576,6 +11580,10 @@ var en_default = Object.freeze({
   "play.sidebar.archiveHint": "Archived playthroughs retain their history and bindings. View or restore them at any time.",
   "play.sidebar.archiveEmpty": "No archived playthroughs.",
   "play.sidebar.restoreNamed": 'Restore playthrough "{title}"',
+  "play.io.repair": "Repair playthrough",
+  "play.io.repairSessionTitle": "Repair \xB7 {title}",
+  "play.io.repairSelectionChanged": "The selected RP workspace or playthrough has changed. Reopen its menu.",
+  "play.io.repairDispatchFailed": "Could not start the repair in chat {id}. Run {command} there to retry. {error}",
   "play.io.rename": "Rename playthrough",
   "play.io.relinkCharacter": "Relink character card",
   "play.io.renamePrompt": "Enter a new playthrough name:",
@@ -55118,6 +55126,59 @@ function MowanChatView({ sessionId, useSession, useChat, useInput, inputActions,
   );
 }
 
+// packages/play/src/timeline.js
+var SAFE_SEGMENT3 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+function isSafeCatalogSegment(value) {
+  return typeof value === "string" && SAFE_SEGMENT3.test(value);
+}
+
+// packages/client/src/play/title.js
+function playthroughNumber(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+function isLegacyAutomaticTitle(title, number2) {
+  return title === "\u5468\u76EE" || title === `${number2}\u5468\u76EE` || title === `Playthrough ${number2}`;
+}
+function hasAutomaticPlaythroughTitle(playthrough) {
+  const number2 = playthroughNumber(playthrough);
+  if (number2 === null) return false;
+  const declared = playthrough?.ext?.pmpDshTavern?.autoTitle;
+  if (declared === true) return true;
+  if (declared === false) return false;
+  return isLegacyAutomaticTitle(playthrough?.title, number2);
+}
+function playthroughDisplayTitle(playthrough) {
+  const number2 = playthroughNumber(playthrough);
+  if (number2 !== null && hasAutomaticPlaythroughTitle(playthrough)) {
+    return translate("play.sidebar.defaultTitle", { number: number2 });
+  }
+  const title = playthrough?.title;
+  return typeof title === "string" && title !== "" ? title : String(playthrough?.id ?? "");
+}
+
+// packages/client/src/play/repair-session.js
+async function openRepairSession(ctx, playClient, switchToNative, workspace, playthrough) {
+  const current4 = await playClient.getWorkspace();
+  if (!workspace?.workspaceId || current4.workspaceId !== workspace.workspaceId || current4.rootPath !== workspace.rootPath || !isSafeCatalogSegment(playthrough.id)) throw new Error(translate("play.io.repairSelectionChanged"));
+  const command = `/tavern-repair assist ${playthrough.id}`;
+  const id = await ctx.sessions.create({ workspaceId: workspace.workspaceId });
+  try {
+    await switchToNative();
+    await ctx.uiWorkspace.openSession(id);
+    await ctx.sessions.using(id, { source: "controllerOperation" }, async (ref2) => {
+      const { session } = await ref2.ready;
+      await session.rename(translate("play.io.repairSessionTitle", { title: playthroughDisplayTitle(playthrough) }).slice(0, 120)).catch(() => {
+      });
+      const result = await session.command(command);
+      if (!result.ok || !result.value.matched) throw new Error(result.error?.message ?? command);
+    });
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+  } catch (error) {
+    window.alert(translate("play.io.repairDispatchFailed", { id, command, error: error.message }));
+  }
+}
+
 // packages/client/src/play/workspace-notice.js
 var import_react33 = require("react");
 var h28 = createLocalizedElement(import_react33.createElement);
@@ -55145,31 +55206,6 @@ var import_react36 = require("react");
 
 // packages/client/src/play/diagnostics.js
 var import_react34 = require("react");
-
-// packages/client/src/play/title.js
-function playthroughNumber(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
-}
-function isLegacyAutomaticTitle(title, number2) {
-  return title === "\u5468\u76EE" || title === `${number2}\u5468\u76EE` || title === `Playthrough ${number2}`;
-}
-function hasAutomaticPlaythroughTitle(playthrough) {
-  const number2 = playthroughNumber(playthrough);
-  if (number2 === null) return false;
-  const declared = playthrough?.ext?.pmpDshTavern?.autoTitle;
-  if (declared === true) return true;
-  if (declared === false) return false;
-  return isLegacyAutomaticTitle(playthrough?.title, number2);
-}
-function playthroughDisplayTitle(playthrough) {
-  const number2 = playthroughNumber(playthrough);
-  if (number2 !== null && hasAutomaticPlaythroughTitle(playthrough)) {
-    return translate("play.sidebar.defaultTitle", { number: number2 });
-  }
-  const title = playthrough?.title;
-  return typeof title === "string" && title !== "" ? title : String(playthrough?.id ?? "");
-}
 
 // packages/client/src/play/diagnostics-state.js
 var DISMISSED_KEY = `${PLUGIN_ID}:workspace-diagnostics-dismissed:v1`;
@@ -56045,7 +56081,7 @@ function downloadDocument(playthrough, document2) {
   anchor.remove();
   queueMicrotask(() => URL.revokeObjectURL(url));
 }
-function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRelink }) {
+function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRepair, onRelink }) {
   installStyles2();
   const root = (0, import_react35.useRef)(null);
   const [open2, setOpen] = (0, import_react35.useState)(false);
@@ -56069,6 +56105,19 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       const snapshot = await loadPlaythroughExport(playClient, playthrough);
       const localizedPlaythrough = { ...snapshot.playthrough, title: displayTitle };
       downloadDocument(localizedPlaythrough, playthroughExportDocument({ ...snapshot, playthrough: localizedPlaythrough }, format));
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const repair = async () => {
+    if (busy2) return;
+    setBusy(true);
+    setError("");
+    try {
+      await onRepair();
       setOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -56128,6 +56177,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       "div",
       { className: "dtv-play-io-menu" },
       h30("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: rename }, uiMessage("play.io.rename")),
+      typeof onRepair !== "function" ? null : h30("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: repair }, uiMessage("play.io.repair")),
       typeof onRelink !== "function" ? null : h30("button", {
         type: "button",
         className: "dtv-play-io-item",
@@ -56216,7 +56266,7 @@ function characterInsertionBoundary(event) {
   const bounds = target.getBoundingClientRect();
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
 }
-function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, repairPlaythrough, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
   const count = character.playthroughs.length + character.unassigned.length;
   return h31(
     "section",
@@ -56287,7 +56337,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
       h31(PlayIoMenu, {
         playClient,
         playthrough,
-        openSession,
+        onRepair: () => repairPlaythrough(playthrough),
         trigger: "\u22EF",
         placement: "sidebar",
         onRelink: () => beginPlaythroughRelink(playthrough, character)
@@ -56323,7 +56373,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
     )
   );
 }
-function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
+function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, repairPlaythrough, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
   return h31(
     "section",
     { className: "dtv-play-section dtv-play-missing-card", "data-open": !collapsed },
@@ -56375,7 +56425,7 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
       h31(PlayIoMenu, {
         playClient,
         playthrough,
-        openSession,
+        onRepair: () => repairPlaythrough(playthrough),
         trigger: "\u22EF",
         placement: "sidebar",
         onRelink: () => beginPlaythroughRelink(playthrough, character)
@@ -56393,6 +56443,7 @@ function PlayWorkspaceBrowser({
   playthroughController,
   openSession,
   switchToNative,
+  startRepair,
   getActivePlaythroughId,
   subscribeActivePlaythroughId
 }) {
@@ -56579,6 +56630,7 @@ function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
   };
+  const repairPlaythrough = (playthrough) => startRepair(resources.workspace, playthrough);
   const restorePlaythrough = async (playthrough) => {
     if (restoringId !== null) return;
     setRestoringId(playthrough.id);
@@ -56776,6 +56828,7 @@ function PlayWorkspaceBrowser({
         toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
         openPlaythrough,
         openSession,
+        repairPlaythrough,
         beginPlaythroughRelink,
         diagnostics,
         diagnosticIds
@@ -56806,7 +56859,7 @@ function PlayWorkspaceBrowser({
         beginPlaythroughRelink,
         relinkDisabled: (resources?.characters.length ?? 0) === 0 || relinkBusy,
         openPlaythrough,
-        openSession,
+        repairPlaythrough,
         playClient,
         diagnostics,
         diagnosticIds
@@ -57670,6 +57723,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
         diagnostics,
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
+        startRepair: (workspace, row) => openRepairSession(ctx, playClient, switchToNative, workspace, row),
         getActivePlaythroughId: () => preferredPlaythroughId,
         switchToNative,
         subscribeActivePlaythroughId: (listener) => {

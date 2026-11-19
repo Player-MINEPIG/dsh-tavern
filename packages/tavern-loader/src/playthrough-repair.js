@@ -183,13 +183,18 @@ async function repairRow(row, { store, host, isDraftProtected, getCharacter, der
   return result
 }
 
-export async function repairPlaythroughs(dependencies, { agent, signal, apply = true, v3v4 = false, id } = {}) {
-  if (v3v4 && !id) throw new Error('Specify the playthrough ID with v3-v4.')
-  const { store } = dependencies
+export function repairWorkspaceBinding(store, agent) {
   const binding = store.get()
   if (!binding.rootPath) throw new Error('请先绑定 Tavern 扮演工作区。')
   const cwd = agent?.session?.header?.cwd
   if (!cwd || realpathSync(cwd) !== realpathSync(binding.rootPath)) throw new Error('请在已绑定的 Tavern 扮演工作区会话中运行。')
+  return binding
+}
+
+export async function repairPlaythroughs(dependencies, { agent, signal, apply = true, v3v4 = false, id } = {}) {
+  if (v3v4 && !id) throw new Error('Specify the playthrough ID with v3-v4.')
+  const { store } = dependencies
+  const binding = repairWorkspaceBinding(store, agent)
   const scope = JSON.stringify([binding.workspaceId, binding.rootPath])
   let file
   try { file = store.readFile('catalog.json') } catch (error) {
