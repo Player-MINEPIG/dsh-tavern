@@ -185,6 +185,14 @@ File writes optionally accept `expectedWorkspaceScope`, the JSON string for the 
 
 The `availability` response above is the cleanup tool's strict absence check, not the one-click archive filter. Archive can collect corrupt or temporarily unavailable runs. Cleanup still requires confirmation that every reference is missing.
 
+### Playthrough repair command and agent tool
+
+The DSH command `/tavern-repair [preview] [v3-v4 <playthrough-id>]` runs in a chat belonging to the bound RP workspace. By default it checks the full catalog and applies verifiable repairs. The `v3-v4` form checks only the given ID and asserts the operator knows the old coordinates come exclusively from V3/V4.
+
+With `maintenanceTools: true`, agents can call `tavern_repair_playthroughs`. Optional inputs are `action` (default `preview`, or `apply`), one playthrough `id`, and boolean `knownV3V4`. Setting `knownV3V4` to true requires an ID and explicit confirmation of provenance. RP-secured and read-only agents can preview. Results contain `applied` (execution mode), `checked` (playthrough count), and `items` for runs with changes or outstanding findings. Each item carries `id`, `changes`, `remaining`, and a relative `backup` path when written. Each outstanding finding includes a `reason` and known target IDs.
+
+The repair writes playthrough timelines, verifies workspace identity and catalog/file revisions, and preserves the original in an adjacent `timeline.json.pre-repair-<original SHA256>`. A repeat invocation rechecks the evidence. See the [usage guide](USAGE_en.md#repair-playthroughs-from-chat).
+
 ### Optional agent cleanup tool
 
 Set `maintenanceTools: true` in the Tavern plugin configuration to register `tavern_cleanup_invalid_playthroughs`. It defaults to disabled and adds no required DSH service. Registration uses public `tools` and is disposed with the plugin. Card scripts cannot call this tool.

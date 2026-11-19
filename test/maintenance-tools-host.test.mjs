@@ -8,11 +8,12 @@ import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import assembler from 'dsh-prompt-assembler/plugin'
 import * as tavern from '../packages/tavern-loader/src/index.js'
+import { REPAIR_TOOL } from '../packages/tavern-loader/src/repair-command.js'
 import { MAINTENANCE_TOOL } from '../packages/tavern-loader/src/maintenance-tools.js'
 
 const root = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 
-test('official Host tools opt in, preview, clean, restore, remount and dispose without changing native sessions', { skip: !root }, async () => {
+test('official Host runs chat repair, scoped maintenance tools and plugin disposal', { skip: !root }, async () => {
   const require = createRequire(join(resolve(root), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis')
@@ -49,8 +50,10 @@ test('official Host tools opt in, preview, clean, restore, remount and dispose w
     await ctx.plugin((await load('@deepseek-ai/dsh-api-gateway')).TypertGatewayService, {})
     await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
     await ctx.plugin((await load('@deepseek-ai/dsh-api-workspace-controller')).WorkspaceController)
+    await ctx.plugin((await load('@deepseek-ai/dsh-commands')).CommandRuntime)
     await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') })
     await mount(false)
+    assert.equal(ctx.tools.schemas().some(tool => tool.name === REPAIR_TOOL), false)
     assert.equal(ctx.tools.schemas().some(tool => tool.name === MAINTENANCE_TOOL), false)
     await handle.dispose()
     await mount(true)
@@ -65,17 +68,21 @@ test('official Host tools opt in, preview, clean, restore, remount and dispose w
     for (const row of rows) store.playWorkspaceStore.writeFile(row.path, '{"nodes":[]}', { expectedRevision: null, expectedRevisionPresent: true })
     store.playWorkspaceStore.writeFile('catalog.json', JSON.stringify({ playthroughs: rows }), { expectedRevision: null, expectedRevisionPresent: true })
     let seq = 0
-    const call = async arguments_ => {
+    const call = async (arguments_, name = MAINTENANCE_TOOL, expectError = false) => {
       const { agent } = await ctx.sessionController.resolveAgent(created.sessionId)
       const signal = new AbortController().signal
       const toolSet = await ctx.tools.resolve({ agent, modelSelection: agent.model.current(), signal })
       try {
-        const batch = await ctx.tools.execute({ agent, signal, toolSet, calls: [{ id: `maintenance-${++seq}`, name: MAINTENANCE_TOOL, arguments: arguments_ }] })
+        const batch = await ctx.tools.execute({ agent, signal, toolSet, calls: [{ id: `maintenance-${++seq}`, name, arguments: arguments_ }] })
         const result = batch.results[0].result
-        assert.equal(result.isError, false, JSON.stringify(result))
+        assert.equal(result.isError, expectError, JSON.stringify(result))
         return result.value
       } finally { toolSet.dispose() }
     }
+    const repair = await call({}, REPAIR_TOOL)
+    assert.deepEqual(repair.items, [{ id: rows[0].id, changes: [], remaining: [{
+      reason: 'PLAY_SESSION_NOT_FOUND', sessionId: 'missing-session-fixture',
+    }] }])
     const preview = await call({})
     assert.equal(preview.items.find(item => item.id === rows[0].id).status, 'invalid')
     assert.equal(preview.items.find(item => item.id === rows[1].id).status, 'available')
@@ -89,6 +96,41 @@ test('official Host tools opt in, preview, clean, restore, remount and dispose w
     await handle.dispose()
     assert.equal(ctx.tools.schemas().some(tool => tool.name === MAINTENANCE_TOOL), false)
     assert.deepEqual(await createSessionReader(ctx)(created.sessionId), nativeBefore)
+    await mount(true)
+    const { agent } = await ctx.sessionController.resolveAgent(created.sessionId)
+    assert.equal(ctx.commands.list(agent).filter(item => item.name === 'tavern-repair').length, 1)
+    const { session } = agent
+    session.append('turn/start', { turn: 1 })
+    session.append('step/start', { turn: 1, step: 1 })
+    const content = [{ type: 'text', text: 'offline fixture' }]
+    session.append('user/message', { role: 'user', id: 'question', content, source: { kind: 'user' } }, { surfaceOp: 'append' })
+    session.append('assistant/message', { turn: 1, step: 1, stream: [], message: {
+      role: 'assistant', id: 'reply', content, source: { kind: 'model', provider: 'offline', model: 'maintenance' },
+    } }, { surfaceOp: 'append' })
+    session.append('step/end', { turn: 1, step: 1 })
+    session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+    const beforeRepair = store.playWorkspaceStore.readFile(rows[1].path)
+    const fromTool = await call({ action: 'apply', id: rows[1].id }, REPAIR_TOOL)
+    assert.equal(fromTool.items[0].changes[0].added, 1)
+    store.playWorkspaceStore.writeFile(rows[1].path, beforeRepair.content, {
+      expectedRevision: store.playWorkspaceStore.readFile(rows[1].path).revision, expectedRevisionPresent: true,
+    })
+    session.append('sandbox/mode', { mode: 'read-only' })
+    await call({ action: 'apply' }, REPAIR_TOOL, true)
+    assert.equal(store.playWorkspaceStore.readFile(rows[1].path).content, beforeRepair.content)
+    await handle.dispose()
+    await mount(false)
+    const beforeCommand = session.snapshotEvents()
+    const command = await ctx.commands.execute(agent, '/tavern-repair', [], new AbortController().signal)
+    assert.equal(command.result.kind, 'success', JSON.stringify(command))
+    assert.match(command.result.text, /已检查 2 个周目/)
+    assert.match(command.result.text, /原生会话缺失/)
+    assert.match(command.result.text, /已修复 1 个/)
+    const repaired = JSON.parse(store.playWorkspaceStore.readFile(rows[1].path).content)
+    assert.deepEqual(repaired.nodes[0].variants[0].ext.pmpDshTavern, { sessionFormatVersion: 4 })
+    assert.deepEqual((await createSessionReader(ctx)(created.sessionId)).events.slice(beforeCommand.length).map(event => event.type), ['command/run', 'command/done'])
+    await handle.dispose()
+    assert.equal(ctx.commands.list(agent).some(item => item.name === 'tavern-repair'), false)
   } finally {
     await ctx.fiber.dispose()
     rmSync(directory, { recursive: true, force: true })

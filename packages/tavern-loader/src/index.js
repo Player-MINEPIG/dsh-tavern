@@ -6,6 +6,7 @@ import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuth
 import { createDraftPreviewContext } from './draft-preview-context.js'
 import { PlayMaintenanceService } from '../../play/src/maintenance.js'
 import { PlayCleanupService } from '../../play/src/cleanup.js'
+import { installRepairCommand } from './repair-command.js'
 import { installMaintenanceTools } from './maintenance-tools.js'
 import { PlaythroughDrafts } from './playthrough-drafts.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
@@ -599,6 +600,20 @@ export function apply(ctx, config = {}) {
         .filter(record => record.id !== playthrough.id && record.rootPath === playWorkspaceStore.get().rootPath)
         .map(record => record.importContextRef?.path).filter(Boolean),
     ],
+  })
+  installRepairCommand(ctx, {
+    store: playWorkspaceStore, host: playHost, isDraftProtected: playMaintenance.isDraftProtected,
+    getCharacter: id => characterStore.get(id),
+    deriveMessages(record) {
+      const sessions = ctx.get('sessions')
+      const session = sessions.get(record.meta.id) ?? sessions.prepare(record.meta.id, {
+        seed: record.events, meta: record.meta, inheritedEventCount: record.inheritedEventCount, eventState: 'detached',
+      })
+      return session.deriveMessages()
+    },
+  }, {
+    enableTool: config.maintenanceTools === true,
+    blocksWrites: agent => rpMode.blocksWrites(agent) || rpMode.currentSandbox(agent?.session) === 'read-only',
   })
   if (config.maintenanceTools === true) installMaintenanceTools(ctx, {
     workspaceStore: playWorkspaceStore, maintenance: playMaintenance, cleanup: playCleanup,

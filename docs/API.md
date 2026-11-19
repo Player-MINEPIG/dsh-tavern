@@ -170,6 +170,14 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 
 上面的 `availability` 是清理工具采用的严格缺失检查，不是一键归档的筛选条件。归档可收纳损坏或暂时不可用的周目；实际清理仍要求全部引用被确认缺失。
 
+### 周目修复命令与 Agent 工具
+
+DSH 聊天命令 `/tavern-repair [preview] [v3-v4 <周目ID>]` 在调用会话所属的已绑定扮演工作区内运行。默认检查整个 catalog 并应用可核实的修复。`v3-v4` 表示操作者确认所选周目的旧坐标仅来自 V3/V4，检查范围随之缩小到该 ID。
+
+启用 `maintenanceTools: true` 后，Agent 可调用 `tavern_repair_playthroughs`。可选参数为 `action`（默认 `preview`，或 `apply`）、单个周目 `id` 和布尔值 `knownV3V4`。将 `knownV3V4` 设为 true 需要明确的来源确认及 `id`。RP 安全模式和只读 Agent 可以预览。结果含 `applied`（执行模式）、`checked`（检查的周目数），以及存在改动或待处理项的 `items`。每个条目含 `id`、`changes`、`remaining` 及写入时的相对 `backup` 路径。每个待处理项有 `reason` 和已知的目标 ID。
+
+修复只写周目时间线。写入时核对工作区、目录和文件修订，并在原文件旁保留 `timeline.json.pre-repair-<原文件SHA256>`。再次运行会重新核实日志。逐类处理说明见[使用说明](USAGE_zh-CN.md#在聊天框修复周目)。
+
 ### 可选 agent 清理工具
 
 在 Tavern 插件配置中设置 `maintenanceTools: true`，Host 才注册 `tavern_cleanup_invalid_playthroughs`。默认关闭，不增加必需的 DSH 服务。启用后通过公开 `tools` 注册，随插件卸载释放。工具不开放给卡片脚本。
