@@ -1,3 +1,7 @@
+import { runSessionMutation } from './session-receipts.js'
+import { uniqueMessageCoordinates } from './coordinate-recovery.js'
+import { sessionCoordinates } from './session-coordinates.js'
+import { generationOutcome } from './generation-evidence.js'
 import { httpError, readBoundedJson, sendJson } from './http.js'
 import { deriveFocus, isSafeCatalogSegment, parseCatalogJson, parseTimelineJson } from './timeline.js'
 import {stateSourceTarget,stoppedRequestFromEvents} from './stopped-request.js'
@@ -12,13 +16,15 @@ export function requireSessionId(value) {
   return value
 }
 
-export async function copyBranchContext(host, sessionId, childSessionId, atEventId, operation, { selectionCopied = false } = {}) {
+export async function copyBranchContext(host, sessionId, childSessionId, atEventId, operation, { selectionCopied = false, check = () => {} } = {}) {
   try {
     if (!selectionCopied && typeof host.copySelection === 'function') {
+      check()
       await host.copySelection(sessionId, childSessionId)
       operation?.checkpoint('session.selection.copied', { sessionId: childSessionId })
     }
     if (typeof host.copyImportContextLineage === 'function') {
+      check()
       await host.copyImportContextLineage(sessionId, childSessionId, atEventId)
       operation?.checkpoint('session.import-lineage.copied', { sessionId: childSessionId })
     }
@@ -199,87 +205,152 @@ async function readTimelineForFocus(workspaceStore, relativePath) {
   return { path: relativePath, timeline: parseTimelineJson(workspaceStore.readFile(relativePath).content) }
 }
 
-export function createSessionApiHandler({ host, workspaceStore, now = () => new Date() } = {}) {
+export async function readSessionEvidence(host, id, { start, end } = {}) {
+  const sessionId = requireSessionId(id)
+  const cut = await host.inspectSession(sessionId)
+  if (cut?.meta?.id !== sessionId || !Array.isArray(cut.events)
+    || !Number.isSafeInteger(cut.inheritedEventCount) || cut.inheritedEventCount < 0
+    || cut.inheritedEventCount > cut.events.length || cut.events.some((event, index) => event?.seq !== index)) {
+    throw httpError(409, 'Incomplete session history for inheritance verification', 'PLAY_SESSION_EVIDENCE_INVALID')
+  }
+  if ((start !== undefined && (!Number.isSafeInteger(start) || start < 0))
+    || (end !== undefined && (!Number.isSafeInteger(end) || end < (start ?? 0)))) {
+    throw httpError(400, 'Invalid endpoint range', 'PLAY_EVENT_INVALID')
+  }
+  const ownTurnTypes = ['turn/start', 'user/message', 'steering/message', 'assistant/message']
+  const hasOwnTurns = cut.events.slice(cut.inheritedEventCount).some(event => ownTurnTypes.includes(event.type))
+  const endpoints = []
+  for (const [messageId, entry] of uniqueMessageCoordinates(cut.events)) {
+    if (entry && entry.seq >= (start ?? 0) && entry.seq <= (end ?? Infinity)) endpoints.push({ ...entry, id: messageId })
+  }
+  return { ok: true, sessionId, inheritedEventCount: cut.inheritedEventCount, ...sessionCoordinates(cut), hasOwnTurns, endpoints }
+}
+
+export function createSessionPrimitives({ host, workspaceStore, now = () => new Date(), waitMs = 30_000 } = {}) {
   if (host === undefined) throw new TypeError('host is required')
   if (workspaceStore === undefined) throw new TypeError('workspaceStore is required')
 
   return {
+    async create(body, operation) {
+      return runSessionMutation(workspaceStore, 'create', null, body, operation, waitMs, async ({ beforeNative, check, operation }) => {
+        const binding = requireBoundWorkspace(workspaceStore)
+        const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
+          ? null
+          : requireSessionId(body.selectionFromSessionId)
+        const stateSource = body?.stateSource
+        if (stateSource !== undefined && (!stateSourceTarget(stateSource) || requireSessionId(stateSource.sessionId) !== sourceId)) {
+          throw httpError(400, 'stateSource requires the selected source session and exactly one reply or stopped-request coordinate', 'PLAY_STATE_SOURCE_INVALID')
+        }
+        const preparedImport = body?.importContextRef === undefined
+          ? null
+          : await host.prepareImportContext(body.importContextRef)
+        const characterName = typeof host.characterName === 'function'
+          ? host.characterName(sourceId)
+          : null
+        const title = typeof characterName === 'string' && characterName.trim() !== ''
+          ? formatPlaySessionTitle(characterName, now())
+          : undefined
+        beforeNative()
+        const created = await host.createSession({
+          workspaceId: binding.workspaceId,
+          cwd: binding.rootPath,
+          title,
+          ...(stateSource === undefined ? {} : { stateSource }),
+        }, { operation })
+        const sessionId = requireSessionId(created?.sessionId)
+        operation?.checkpoint('session.created', { sessionId })
+        if (preparedImport !== null) {
+          check()
+          await host.bindImportContext(sessionId, preparedImport)
+          operation?.checkpoint('session.import-context.bound', { sessionId })
+        }
+        if (sourceId !== null && typeof host.copySelection === 'function') {
+          check()
+          await host.copySelection(sourceId, sessionId)
+          operation?.checkpoint('session.selection.copied', { sessionId })
+        }
+        return title === undefined ? { ok: true, sessionId } : { ok: true, sessionId, title }
+      })
+    },
+
+    async branch(sessionId, body, operation) {
+      return runSessionMutation(workspaceStore, 'branch', sessionId, body, operation, waitMs, async ({ beforeNative, check, operation }) => {
+        requireSessionId(sessionId)
+        operation?.identify({ sessionId })
+        if (!Number.isSafeInteger(body?.atEventId) || body.atEventId < 0) {
+          throw httpError(400, 'atEventId must be a non-negative event seq', 'PLAY_EVENT_INVALID')
+        }
+        const stateSource = body?.stateSource
+        if (stateSource !== undefined && (!stateSourceTarget(stateSource)
+          || requireSessionId(stateSource.sessionId) !== sessionId || stateSourceTarget(stateSource).atEventId <= body.atEventId)) {
+          throw httpError(400, 'stateSource requires the branch source and exactly one later reply or stopped-request coordinate', 'PLAY_STATE_SOURCE_INVALID')
+        }
+        beforeNative()
+        const created = await host.forkSession({ sessionId, atSeq: body.atEventId,
+          ...(body.stateSource === undefined ? {} : { stateSource: body.stateSource }),
+          ...(body.sessionFormatVersion === undefined ? {} : { sessionFormatVersion: body.sessionFormatVersion }),
+        }, { operation })
+        const childSessionId = requireSessionId(created?.sessionId)
+        operation?.checkpoint('session.created', { sessionId: childSessionId })
+        await copyBranchContext(host, sessionId, childSessionId, body.atEventId, operation, { check })
+        return { ok: true, sessionId: childSessionId }
+      })
+    },
+
+    async userMessage(sessionId, body, operation) {
+      return runSessionMutation(workspaceStore, 'user-message', sessionId, body, operation, waitMs, async ({ beforeNative, operation }) => {
+        requireSessionId(sessionId)
+        operation?.identify({ sessionId })
+        if (typeof body?.text !== 'string') throw httpError(400, 'text must be a string', 'PLAY_MESSAGE_INVALID')
+        if (body.requestId !== undefined && (typeof body.requestId !== 'string' || !SESSION_ID_PATTERN.test(body.requestId))) throw httpError(400, 'requestId must be a safe id', 'PLAY_MESSAGE_INVALID')
+        beforeNative()
+        await host.promptSession({
+          sessionId,
+          mode: 'queue',
+          text: body.text,
+          ...(body.requestId === undefined ? {} : { requestId: body.requestId }),
+        })
+        return { ok: true, accepted: true }
+      })
+    },
+
+  }
+}
+
+export function createSessionApiHandler({ host, workspaceStore, now = () => new Date() } = {}) {
+  if (host === undefined) throw new TypeError('host is required')
+  if (workspaceStore === undefined) throw new TypeError('workspaceStore is required')
+
+  const primitives = createSessionPrimitives({ host, workspaceStore, now })
+  return {
     async create(req, res, operation) {
       const body = await readBoundedJson(req, MAX_BODY_BYTES)
-      const binding = requireBoundWorkspace(workspaceStore)
-      const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
-        ? null
-        : requireSessionId(body.selectionFromSessionId)
-      const stateSource = body?.stateSource
-      if (stateSource !== undefined && (!stateSourceTarget(stateSource) || requireSessionId(stateSource.sessionId) !== sourceId)) {
-        throw httpError(400, 'stateSource requires the selected source session and exactly one reply or stopped-request coordinate', 'PLAY_STATE_SOURCE_INVALID')
-      }
-      const preparedImport = body?.importContextRef === undefined
-        ? null
-        : await host.prepareImportContext(body.importContextRef)
-      const characterName = typeof host.characterName === 'function'
-        ? host.characterName(sourceId)
-        : null
-      const title = typeof characterName === 'string' && characterName.trim() !== ''
-        ? formatPlaySessionTitle(characterName, now())
-        : undefined
-      const created = await host.createSession({
-        workspaceId: binding.workspaceId,
-        cwd: binding.rootPath,
-        title,
-        ...(stateSource === undefined ? {} : { stateSource }),
-      }, { operation })
-      const sessionId = requireSessionId(created?.sessionId)
-      operation?.checkpoint('session.created', { sessionId })
-      if (preparedImport !== null) {
-        await host.bindImportContext(sessionId, preparedImport)
-        operation?.checkpoint('session.import-context.bound', { sessionId })
-      }
-      if (sourceId !== null && typeof host.copySelection === 'function') {
-        await host.copySelection(sourceId, sessionId)
-        operation?.checkpoint('session.selection.copied', { sessionId })
-      }
-      return sendJson(res, 201, title === undefined ? { ok: true, sessionId } : { ok: true, sessionId, title })
+      return sendJson(res, 201, await primitives.create(body, operation))
     },
-
     async branch(req, res, sessionId, operation) {
       const body = await readBoundedJson(req, MAX_BODY_BYTES)
-      requireSessionId(sessionId)
-      operation?.identify({ sessionId })
-      if (!Number.isSafeInteger(body?.atEventId) || body.atEventId < 0) {
-        throw httpError(400, 'atEventId must be a non-negative event seq', 'PLAY_EVENT_INVALID')
-      }
-      const stateSource = body?.stateSource
-      if (stateSource !== undefined && (!stateSourceTarget(stateSource)
-        || requireSessionId(stateSource.sessionId) !== sessionId || stateSourceTarget(stateSource).atEventId <= body.atEventId)) {
-        throw httpError(400, 'stateSource requires the branch source and exactly one later reply or stopped-request coordinate', 'PLAY_STATE_SOURCE_INVALID')
-      }
-      const created = await host.forkSession({ sessionId, atSeq: body.atEventId,
-        ...(body.stateSource === undefined ? {} : { stateSource: body.stateSource }),
-        ...(body.sessionFormatVersion === undefined ? {} : { sessionFormatVersion: body.sessionFormatVersion }),
-      }, { operation })
-      const childSessionId = requireSessionId(created?.sessionId)
-      operation?.checkpoint('session.created', { sessionId: childSessionId })
-      await copyBranchContext(host, sessionId, childSessionId, body.atEventId, operation)
-      return sendJson(res, 201, { ok: true, sessionId: childSessionId })
+      return sendJson(res, 201, await primitives.branch(sessionId, body, operation))
     },
-
     async userMessage(req, res, sessionId, operation) {
       const body = await readBoundedJson(req, MAX_BODY_BYTES)
-      requireSessionId(sessionId)
-      operation?.identify({ sessionId })
-      if (typeof body?.text !== 'string') throw httpError(400, 'text must be a string', 'PLAY_MESSAGE_INVALID')
-      if (body.requestId !== undefined && (typeof body.requestId !== 'string' || !SESSION_ID_PATTERN.test(body.requestId))) throw httpError(400, 'requestId must be a safe id', 'PLAY_MESSAGE_INVALID')
-      await host.promptSession({
-        sessionId,
-        mode: 'queue',
-        text: body.text,
-        ...(body.requestId === undefined ? {} : { requestId: body.requestId }),
-      })
-      return sendJson(res, 200, { ok: true, accepted: true })
+      return sendJson(res, 200, await primitives.userMessage(sessionId, body, operation))
     },
-
-    async messages(_req, res, sessionId) {
+    async messages(_req, res, sessionId, _operation, query) {
+      if (query?.get('evidence') === 'inheritance') return sendJson(res, 200, await readSessionEvidence(host, sessionId, {
+        start: query.has('start') ? Number(query.get('start')) : undefined,
+        end: query.has('end') ? Number(query.get('end')) : undefined,
+      }))
+      if (query?.has('requestId')) {
+        const boundary = Number(query.get('boundary')), childVersion = Number(query.get('version')), stage = query.get('stage')
+        const requestId = requireSessionId(query.get('requestId'))
+        if (!query.get('boundary') || !query.get('version') || !Number.isSafeInteger(boundary) || boundary < -1
+          || !Number.isSafeInteger(childVersion) || childVersion < 1 || !['sending', 'accepted'].includes(stage)) {
+          throw httpError(400, 'Invalid request history coordinates', 'PLAY_MESSAGE_INVALID')
+        }
+        return sendJson(res, 200, { ok: true, ...await generationOutcome(host, {
+          sessionId: requireSessionId(sessionId), requestId, boundary, childVersion, stage,
+        }) })
+      }
       return sendJson(res, 200, { ok: true, ...await readSessionMessages(host, sessionId) })
     },
 
