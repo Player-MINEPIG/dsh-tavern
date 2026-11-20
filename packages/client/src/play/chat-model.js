@@ -1,3 +1,4 @@
+import { supportsGenerationRecovery, restorePendingGeneration } from './generation.js'
 import { pendingSwipeForSession } from './pending-swipe.js'
 import { characterGreetingOptions } from '../../../character/src/client-state.js'
 export { applyDisplayNameMacros } from './display-name-macros.js'
@@ -156,7 +157,8 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
   const sessionId = session.id ?? session.sessionId
   const pending = pendingSwipeForSession(client, sessionId)
   const pendingOwner = pending && playthroughs.find(item => item.id === pending.playthrough.id && item.path === pending.playthrough.path)
-  if (pendingOwner) return { workspace, playthrough: pendingOwner, timeline: pending.timeline }
+  const expectedWorkspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath])
+  if (pendingOwner && (!pending.operationKey || pending.expectedWorkspaceScope === expectedWorkspaceScope)) return { workspace, playthrough: pendingOwner, timeline: pending.timeline }
   const preferred = typeof options.preferredPlaythroughId === 'string'
     ? playthroughs.find(item => item.id === options.preferredPlaythroughId)
     : undefined
@@ -167,6 +169,10 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
     if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
       return { workspace, playthrough: preferred, timeline }
     }
+    if (timeline) {
+      const recovered = await restorePendingGeneration(client, preferred, timeline, { sessionId, expectedWorkspaceScope })
+      if (recovered) return { workspace, playthrough: preferred, timeline: recovered.timeline }
+    }
   }
   const root = playthroughs.find(item => rootSessionId(item) === sessionId)
   if (root !== undefined) {
@@ -174,7 +180,16 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
   }
   const timelines = await loadTimelines(client, playthroughs, options.concurrency)
   const match = findPlaythroughForSession(sessionId, catalog, timelines)
-  return match === null ? null : { workspace, ...match }
+  if (match) return { workspace, ...match }
+  if (supportsGenerationRecovery(client)) {
+    for (const row of playthroughs) {
+      const timeline = timelines[row.path]
+      if (!timeline || row === preferred) continue
+      const recovered = await restorePendingGeneration(client, row, timeline, { sessionId, expectedWorkspaceScope })
+      if (recovered) return { workspace, playthrough: row, timeline: recovered.timeline }
+    }
+  }
+  return null
 }
 
 export function projectTimelineVariant(node, variant, messagesBySession = {}) {

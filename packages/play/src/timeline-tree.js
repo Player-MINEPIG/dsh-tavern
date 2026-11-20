@@ -23,8 +23,9 @@ function storedBranchHeads(timeline, variants) {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) continue
     const branch = variants.get(value.branchVariantId)
     const head = variants.get(value.variantId)
+    // A rollback child inherits its anchor from the parent until its first new QA.
     if (branch === undefined || head === undefined || head.node.id !== value.nodeId
-      || head.variant.sessionId !== value.sessionId) continue
+      || typeof value.sessionId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(value.sessionId)) continue
     result.set(value.branchVariantId, {
       sessionId: value.sessionId,
       nodeId: value.nodeId,

@@ -185,6 +185,28 @@ The playthrough ⋯ menu provides **Export static HTML** and **Export SillyTaver
 
 Import files and binding summaries live under the selected play workspace root. The server checks path, hash, and `schemaVersion: 1` / QA structure. The import parser does not summarize, slice QA, or apply a 256 KiB / 2,000 QA artificial cap. Context overflow is left to DSH/provider. Generic workspace files still have a 1 MiB file-layer limit.
 
+### Repair playthroughs from chat
+
+In the sidebar, choose **⋯ → Repair playthrough** on the affected run. Tavern opens a new chat in the normal interface in the bound RP workspace and checks only that run. The command backs up and fixes verifiable records first. If that resolves everything, the chat contains the report. If issues remain, the agent investigates them in that chat and explains any missing evidence. Archived runs, pending drafts and turns in progress are reported and skipped.
+
+When you roll back in the same playthrough, the Host reserves its timeline, verifies the inherited reply, then saves the child as the active session. You can switch replies before the first new QA and return to that child. If reading history times out before a fork starts, retry immediately. An interruption after the fork starts appears in the repair report with a checkpoint and operation ID. Repair can finish a verified pending rollback while the original timeline still matches. If DSH stopped before confirming the fork, inspect the native sessions and operation log. After deciding to abandon that attempt, enter `/tavern-repair dismiss-rollback <playthrough-id> <operation-id>`; this retains the timeline and native sessions.
+
+When generating another reply or retrying a stopped prompt, the Host records the native request identity. Reopening the playthrough can reconnect to the child or register a verified reply. Use `/tavern-repair preview` after an interrupted draft creation, fork into a new playthrough or root-session detach. A draft awaiting publication may be missing from the sidebar. Run the workspace scan in a normal chat in the RP workspace.
+
+After checking native sessions and deciding to abandon an attempt, use `/tavern-repair dismiss-fork <playthrough-id> <operation-id>` for a new fork or `/tavern-repair dismiss-generation <playthrough-id> <operationKey>` for generation and retry. For a root detachment that conflicts with later manual edits, verify the catalog and timeline, then use `/tavern-repair dismiss-detach <playthrough-id> <operation-id>` to abandon that attempt. These commands preserve existing files and sessions.
+
+Enter `/tavern-repair` in a DSH chat in the bound RP workspace. The command checks that workspace’s catalog, saves an exact backup beside each changed `timeline.json`, and reports repairs, backup paths and outstanding issues. Use `/tavern-repair preview` for a read-only preview. Archived runs and pending drafts are reported as skipped.
+
+| Symptom | Action |
+| --- | --- |
+| A saved QA is missing at the active branch tip, or a continuation is missing from its reply | Verify the messages and turn closure, then append the QA or extend the reply range |
+| A cancelled reasoning-only reply appears as a QA | Remove the reference when the durable stop record identifies the single-variant active leaf with no descendants |
+| An old reply reports a coordinate version error | Each variant stores the question and reply event numbers. Its `sessionFormatVersion` identifies their DSH log format. If the run’s coordinates are known to come exclusively from V3/V4, use `/tavern-repair v3-v4 <playthrough-id>`. It stamps only verifiable endpoints whose numbers can be proven stable |
+| Unknown origin, possible coordinate shift, or old import-context references | Report the affected references and reasons. Independent question/reply message IDs or an original log can support [offline migration](DSH_0.1.7_MIGRATION_en.md) |
+| Missing card, native session or timeline file | Report the affected ID. Relink the card, check the original data directory or restore a backup as appropriate |
+
+To delegate, enable `maintenanceTools: true` and ask the agent in a write-enabled maintenance chat in that workspace to repair verifiable records and list the remaining reasons. The agent uses `tavern_repair_playthroughs`. The base `/tavern-repair` command works with the tool disabled and runs without a model call.
+
 ### Archive and restore playthroughs
 
 Choose **Archive playthrough** in a playthrough's `⋯` menu to remove it from the everyday list. **Archived playthroughs** at the bottom of the sidebar is collapsed by default; expand it to view a run or choose **Restore playthrough** to return it to its character. Viewing does not restore it automatically. An already open conversation stays open and any reply in progress continues.

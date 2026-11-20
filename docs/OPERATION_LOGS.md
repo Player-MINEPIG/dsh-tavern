@@ -40,7 +40,9 @@ Host 适配器也识别官方 `session/workspace-attach-failed` 错误：DSH 可
 
 每次变更请求最多一个终态；进程中止、存储故障会让记录不完整。`operation.completed` 不保证浏览器已收到响应，也不保证异步生成已完成。客户端断开不自动取消业务；回读状态再决定是否重试。没有终态不等于失败，也不能自动重放。
 
-`route` 只写固定模板，如 `/sessions/:id/branch`，不含查询串或实际 URL。operation 名保持：`workspace.bind`、`workspace.dir.create`、`workspace.file.write`、`session.create`、`session.branch`、`session.user-message`、`session.import-context.bind`、`session.import-context.unbind`、`playthrough.session.detach`、`playthrough.character.relink`。不承诺覆盖所有 v1/v3 API。检查点更新后续记录的 sessionId/playthroughId；分支的 sessionId 在创建检查点后指向子会话。查完整链条用 operationId，不能只靠 sessionId 筛选得到开始记录。
+`route` 只写固定模板，如 `/sessions/:id/branch`，不含查询串或实际 URL。监控的 operation 包括`workspace.bind`、`workspace.dir.create`、`workspace.file.write`、`session.create`、`session.branch`、`workspace.checkpoint.write`、`session.user-message`、`session.import-context.bind`、`session.import-context.unbind`、`playthrough.session.detach`、`playthrough.character.relink`。不承诺覆盖所有 v1/v3 API。检查点更新后续记录的 sessionId/playthroughId；分支的 sessionId 在创建检查点后指向子会话。查完整链条用 operationId，不能只靠 sessionId 筛选得到开始记录。
+
+组合中的每次变更都有独立的 operationId。跨请求恢复请保存调用方的检查点 key 和每次变更的回执 key。检查点内容和回执输入独立于操作日志。
 
 插件启动和正常停止也使用同一事件语义：`plugin.start` 为 started → completed (`ready`)，`plugin.stop` 为 completed (`disposed`)；异常退出不伪造停止记录。RP／Trace 只保留既有业务处理处捕获的失败，不新增 DSH agent 生命周期或模型执行日志监听。
 

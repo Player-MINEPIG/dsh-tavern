@@ -29,6 +29,16 @@ test('migrated, unversioned coordinates refuse; native V3 and explicit matching 
   await validateTimelineCoordinates(migrateTimelineCoordinates(timeline(), maps), async () => current)
 })
 
+test('missing Host metadata cannot authorize a new QA, a timeline or a native fork', async () => {
+  const unknown = { code: 'PLAY_COORDINATES_UNAVAILABLE' }
+  const messages = { incompleteTurn: false, messages: [{ role: 'user', seq: 1 }, { role: 'assistant', seq: 3 }] }
+  assert.throws(() => appendCompletedTurns({ nodes: [] }, messages, 's'), unknown)
+  const describe = async () => sessionCoordinates({ meta: {}, events: [] })
+  await assert.rejects(validateTimelineCoordinates(timeline(), describe), unknown)
+  const host = createPlayHost({ inspectSession: async () => ({ events: [] }) })
+  await assert.rejects(host.forkSession({ sessionId: 's', atSeq: 3, sessionFormatVersion: 4 }), unknown)
+})
+
 test('migration remaps every swipe without changing IDs, head, or external ext; repeat is idempotent', () => {
   const source = timeline(), copy = structuredClone(source)
   const next = migrateTimelineCoordinates(source, maps)

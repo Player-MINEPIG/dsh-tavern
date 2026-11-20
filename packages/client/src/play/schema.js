@@ -1,3 +1,4 @@
+import { projectContentText } from '../../../play/src/message-content.js'
 import { isArchiveTimestamp } from '../../../play/src/playthrough-state.js'
 
 const CHROME_MODES = new Set(['native', 'play'])
@@ -176,14 +177,7 @@ export function parseJsonDocument(content, normalize, label) {
   return normalize(parsed, label)
 }
 
-export function projectContentText(content) {
-  if (!Array.isArray(content)) return ''
-  return content.map(part => {
-    if (!isRecord(part)) return ''
-    if (typeof part.text === 'string') return part.text
-    return typeof part.type === 'string' && part.type !== 'text' ? `⟦${part.type}⟧` : ''
-  }).join('')
-}
+export { projectContentText }
 
 export function normalizeSessionMessages(value, label = 'messages') {
   if (!isRecord(value)) fail(label, 'must be an object')
@@ -230,6 +224,7 @@ export function normalizeSessionMessages(value, label = 'messages') {
   })
   return { messages, incompleteTurn: value.incompleteTurn,
     ...(Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {}),
+    ...(value.migratedFromV2 === true ? { migratedFromV2: true } : {}),
     ...(stopped===undefined?{}:{stoppedRequest:stopped===null?null:{userEventId:stopped.userEventId,turnStartEventId:stopped.turnStartEventId,turnEndEventId:stopped.turnEndEventId}}),
   }
 }

@@ -1,3 +1,5 @@
+import { runGenerationOperation } from './generation-recovery.js'
+import { rollbackAtNode, runBranchOperation } from './branch-recovery.js'
 import { tavernFetch } from '../api-fetch.js'
 import { API_V1, API_V2 } from '../../../identity.js'
 import {
@@ -67,7 +69,7 @@ export function createLivePlayClient({
   const v1 = createRequester(fetchImpl, v1Root)
   const v2 = createRequester(fetchImpl, apiRoot)
   const managedRevisions = new Map()
-  const coordinateVersions = new Map()
+  const snapshotRevisions = new WeakMap()
 
   function invalidateRevision(path) {
     managedRevisions.delete(path)
@@ -84,10 +86,10 @@ export function createLivePlayClient({
     return v1('GET', `/character-selection${query}`)
   }
 
-  async function getJsonFile(path, normalize, label) {
+  async function getJsonFile(path, normalize, label, options) {
     let response
     try {
-      response = await v2('GET', `/workspace/files${pathQuery(path)}`)
+      response = await v2('GET', `/workspace/files${pathQuery(path)}`, undefined, options)
     } catch (error) {
       if (error?.status === 404 && error?.code === 'PLAY_PATH_NOT_FOUND') {
         managedRevisions.set(path, null)
@@ -98,14 +100,15 @@ export function createLivePlayClient({
     const revision = fileRevision(response, label)
     const parsed = parseJsonDocument(content, normalize, label)
     managedRevisions.set(path, revision)
+    snapshotRevisions.set(parsed, revision)
     return parsed
   }
 
-  async function putJsonFile(path, value, normalize, label, { expectedWorkspaceScope } = {}) {
+  async function putJsonFile(path, value, normalize, label, { expectedWorkspaceScope, revision = expectedRevision(path) } = {}) {
     const normalized = normalize(value, label)
     const body = {
       content: JSON.stringify(normalized),
-      expectedRevision: expectedRevision(path),
+      expectedRevision: revision,
       ...(expectedWorkspaceScope === undefined ? {} : { expectedWorkspaceScope }),
     }
     try {
@@ -139,7 +142,7 @@ export function createLivePlayClient({
       const current = await getFresh()
       const next = await mutator(current)
       try {
-        return await putFresh(next)
+        return await putFresh(next, snapshotRevisions.get(current) ?? null)
       } catch (error) {
         if (error?.status !== 409 || error?.code !== 'PLAY_FILE_REVISION_CONFLICT' || retry >= maxRetries) {
           throw error
@@ -148,7 +151,24 @@ export function createLivePlayClient({
     }
   }
 
-  return {
+  // Bound each HTTP step independently. A queued model turn may take much
+  // longer than a request; generation polls its durable status between steps.
+  function operationOptions(options = {}) {
+    const deadline = AbortSignal.timeout(35_000)
+    return { ...options, signal: options.signal ? AbortSignal.any([options.signal, deadline]) : deadline }
+  }
+
+  async function workspaceScope(options) {
+    const workspace = normalizeWorkspace(await v2('GET', '/workspace', undefined, options))
+    return JSON.stringify([workspace.workspaceId, workspace.rootPath])
+  }
+
+  function mutationIdentity(options) {
+    const { operationKey, expectedWorkspaceScope, checkpointId, checkpointKey } = options ?? {}
+    return { operationKey, expectedWorkspaceScope, checkpointId, checkpointKey }
+  }
+
+  const client = {
     mode: 'live',
     apiRoot,
     chromeEventsUrl: `${apiRoot}/chrome/events`,
@@ -168,8 +188,8 @@ export function createLivePlayClient({
       return normalizeChrome(await v2('PUT', '/chrome', { mode }))
     },
 
-    async getWorkspace() {
-      return normalizeWorkspace(await v2('GET', '/workspace'))
+    async getWorkspace(options) {
+      return normalizeWorkspace(await v2('GET', '/workspace', undefined, operationOptions(options)))
     },
 
     async putWorkspace(path) {
@@ -184,8 +204,8 @@ export function createLivePlayClient({
       return v2('GET', `/workspace/files?list=${encodeURIComponent(prefix)}`)
     },
 
-    async getFile(path) {
-      const response = await v2('GET', `/workspace/files${pathQuery(path)}`)
+    async getFile(path, options) {
+      const response = await v2('GET', `/workspace/files${pathQuery(path)}`, undefined, options)
       return {
         path: response.path,
         content: fileContent(response, path),
@@ -202,7 +222,7 @@ export function createLivePlayClient({
       if (options !== null && typeof options === 'object' && Object.hasOwn(options, 'expectedWorkspaceScope')) {
         body.expectedWorkspaceScope = options.expectedWorkspaceScope
       }
-      return v2('PUT', `/workspace/files${pathQuery(path)}`, body)
+      return v2('PUT', `/workspace/files${pathQuery(path)}`, { ...body, checkpointId: options?.checkpointId, checkpointKey: options?.checkpointKey }, operationOptions(options))
     },
 
     getCatalog() {
@@ -229,15 +249,48 @@ export function createLivePlayClient({
             throw error
           }
         },
-        putFresh: value => putJsonFile('catalog.json', value, normalizeCatalog, 'catalog', options),
+        putFresh: (value, revision) => putJsonFile('catalog.json', value, normalizeCatalog, 'catalog', { ...options, revision }),
         mutator,
         options,
       })
     },
 
-    getTimeline(playthrough) {
+    getTimeline(playthrough, options) {
       const path = timelinePath(playthrough)
-      return getJsonFile(path, normalizeTimeline, 'timeline')
+      return getJsonFile(path, normalizeTimeline, 'timeline', operationOptions(options))
+    },
+
+    getCheckpoint(row, scope, key) {
+      const query = new URLSearchParams({ scope })
+      if (key !== undefined) query.set('key', key)
+      return v2('GET', `/workspace/checkpoints/${encodeURIComponent(row.id)}?${query}`, undefined, operationOptions())
+        .then(result => result.checkpoint)
+    },
+    putCheckpoint(row, body) {
+      return v2('PUT', `/workspace/checkpoints/${encodeURIComponent(row.id)}`, body, operationOptions())
+        .then(result => result.checkpoint)
+    },
+    getSessionReceipt(key, scope) {
+      return v2('GET', `/operation-receipts/${encodeURIComponent(key)}?${new URLSearchParams({ scope })}`, undefined, operationOptions())
+    },
+    getSessionEvidence(id, bounds) {
+      const query = new URLSearchParams({ evidence: 'inheritance', ...bounds })
+      return v2('GET', `/sessions/${encodeURIComponent(id)}/messages?${query}`, undefined, operationOptions())
+    },
+    getCoordinates(id) {
+      return v2('GET', `/sessions/${encodeURIComponent(id)}/coordinates`, undefined, operationOptions())
+    },
+    getRequestOutcome(id, query) {
+      return v2('GET', `/sessions/${encodeURIComponent(id)}/messages?${new URLSearchParams(query)}`, undefined, operationOptions())
+    },
+    rollbackPlaythrough(row, nodeId, variantId) {
+      return rollbackAtNode(client, row, nodeId, variantId)
+    },
+    forkPlaythrough(row, body, options) {
+      return runBranchOperation(client, row, { ...body, kind: 'fork' }, options)
+    },
+    generation(row, body, timeline) {
+      return runGenerationOperation(client, row, { ...body, expectedRevision: body.expectedRevision ?? snapshotRevisions.get(timeline) })
     },
 
     putTimeline(playthrough, timeline) {
@@ -249,20 +302,19 @@ export function createLivePlayClient({
       const path = timelinePath(playthrough)
       return updateJsonFile({
         getFresh: () => getJsonFile(path, normalizeTimeline, 'timeline'),
-        putFresh: value => putJsonFile(path, value, normalizeTimeline, 'timeline'),
+        putFresh: (value, revision) => putJsonFile(path, value, normalizeTimeline, 'timeline', { revision }),
         mutator,
         options,
       })
     },
 
     async getMessages(sessionId) {
-      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/messages`)
-      if (Number.isSafeInteger(response.sessionFormatVersion)) coordinateVersions.set(sessionId, response.sessionFormatVersion)
+      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/messages`, undefined, operationOptions())
       return normalizeSessionMessages(response)
     },
 
     async getImportContextBinding(sessionId) {
-      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/import-context`)
+      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/import-context`, undefined, operationOptions())
       return response?.binding ?? null
     },
 
@@ -281,7 +333,7 @@ export function createLivePlayClient({
       if (typeof playthroughId !== 'string' || playthroughId.trim() === '') {
         throw new TypeError('playthrough.id must be a non-empty string')
       }
-      const focus = normalizeFocus(await v2('GET', `/playthroughs/${encodeURIComponent(playthroughId)}/focus`))
+      const focus = normalizeFocus(await v2('GET', `/playthroughs/${encodeURIComponent(playthroughId)}/focus`, undefined, operationOptions()))
       if (focus.playthroughId !== playthroughId) {
         throw new TypeError('focus.playthroughId does not match playthrough.id')
       }
@@ -295,31 +347,35 @@ export function createLivePlayClient({
     },
 
     postUserMessage(sessionId, text, options) {
-      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text, ...(options?.requestId ? { requestId: options.requestId } : {}) }, options)
+      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text, ...mutationIdentity(options), ...(options?.requestId ? { requestId: options.requestId } : {}) }, operationOptions(options))
     },
-    postDraft(body) { return v2('POST', '/drafts', body) },
+    async postDraft(body, options) {
+      const expectedWorkspaceScope = body.expectedWorkspaceScope ?? await workspaceScope(options)
+      options?.signal?.throwIfAborted()
+      return v2('POST', '/drafts', { ...body, expectedWorkspaceScope }, options)
+    },
     getDraft(id, options) { return v2('GET', `/drafts/${encodeURIComponent(id)}`, undefined, options) },
     putDraft(id, patch) { return v2('PUT', `/drafts/${encodeURIComponent(id)}`, patch) },
     materializeDraft(id, body, options) { return v2('POST', `/drafts/${encodeURIComponent(id)}/materialize`, body, options) },
     cancelDraft(id) { return v2('POST', `/drafts/${encodeURIComponent(id)}/cancel`, {}) },
 
-    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
+    postBranch(sessionId, atEventId, sessionFormatVersion, stateSource, options) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError('atEventId must be a non-negative integer')
       }
-      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId,
+      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId, ...mutationIdentity(options),
         ...(stateSource === undefined ? {} : { stateSource }),
         ...(sessionFormatVersion === undefined ? {} : { sessionFormatVersion }),
-      })
+      }, operationOptions(options))
     },
 
-    postSession(selectionFromSessionId, importContextRef, stateSource) {
-      const body = {
+    postSession(selectionFromSessionId, importContextRef, stateSource, options) {
+      const body = { ...mutationIdentity(options),
         ...(typeof selectionFromSessionId === 'string' && selectionFromSessionId !== '' ? { selectionFromSessionId } : {}),
         ...(importContextRef === undefined ? {} : { importContextRef }),
         ...(stateSource === undefined ? {} : { stateSource }),
       }
-      return v2('POST', '/sessions', body)
+      return v2('POST', '/sessions', body, operationOptions(options))
     },
 
     getCharacterSelection,
@@ -414,4 +470,5 @@ export function createLivePlayClient({
       })
     },
   }
+  return client
 }

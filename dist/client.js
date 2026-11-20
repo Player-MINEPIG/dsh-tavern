@@ -918,8 +918,8 @@ var require_acorn = __commonJS({
       Position3.prototype.offset = function offset2(n) {
         return new Position3(this.line, this.column + n);
       };
-      var SourceLocation4 = function SourceLocation5(p, start, end) {
-        this.start = start;
+      var SourceLocation4 = function SourceLocation5(p, start2, end) {
+        this.start = start2;
         this.end = end;
         if (p.sourceFile !== null) {
           this.source = p.sourceFile;
@@ -1067,18 +1067,18 @@ var require_acorn = __commonJS({
         return options;
       }
       function pushComment2(options, array) {
-        return function(block, text3, start, end, startLoc, endLoc) {
+        return function(block, text3, start2, end, startLoc, endLoc) {
           var comment = {
             type: block ? "Block" : "Line",
             value: text3,
-            start,
+            start: start2,
             end
           };
           if (options.locations) {
             comment.loc = new SourceLocation4(this, startLoc, endLoc);
           }
           if (options.ranges) {
-            comment.range = [start, end];
+            comment.range = [start2, end];
           }
           array.push(comment);
         };
@@ -1211,28 +1211,28 @@ var require_acorn = __commonJS({
       Object.defineProperties(Parser5.prototype, prototypeAccessors2);
       var pp$92 = Parser5.prototype;
       var literal4 = /^(?:'((?:\\[^]|[^'\\])*?)'|"((?:\\[^]|[^"\\])*?)")/;
-      pp$92.strictDirective = function(start) {
+      pp$92.strictDirective = function(start2) {
         if (this.options.ecmaVersion < 5) {
           return false;
         }
         for (; ; ) {
-          skipWhiteSpace2.lastIndex = start;
-          start += skipWhiteSpace2.exec(this.input)[0].length;
-          var match = literal4.exec(this.input.slice(start));
+          skipWhiteSpace2.lastIndex = start2;
+          start2 += skipWhiteSpace2.exec(this.input)[0].length;
+          var match = literal4.exec(this.input.slice(start2));
           if (!match) {
             return false;
           }
           if ((match[1] || match[2]) === "use strict") {
-            skipWhiteSpace2.lastIndex = start + match[0].length;
+            skipWhiteSpace2.lastIndex = start2 + match[0].length;
             var spaceAfter = skipWhiteSpace2.exec(this.input), end = spaceAfter.index + spaceAfter[0].length;
             var next = this.input.charAt(end);
             return next === ";" || next === "}" || lineBreak2.test(spaceAfter[0]) && !(/[(`.[+\-/*%<>=,?^&]/.test(next) || next === "!" && this.input.charAt(end + 1) === "=");
           }
-          start += match[0].length;
-          skipWhiteSpace2.lastIndex = start;
-          start += skipWhiteSpace2.exec(this.input)[0].length;
-          if (this.input[start] === ";") {
-            start++;
+          start2 += match[0].length;
+          skipWhiteSpace2.lastIndex = start2;
+          start2 += skipWhiteSpace2.exec(this.input)[0].length;
+          if (this.input[start2] === ";") {
+            start2++;
           }
         }
       };
@@ -3270,13 +3270,13 @@ var require_acorn = __commonJS({
             this.next();
             return this.finishNode(node, "Literal");
           case types$12.parenL:
-            var start = this.start, expr = this.parseParenAndDistinguishExpression(canBeArrow, forInit);
+            var start2 = this.start, expr = this.parseParenAndDistinguishExpression(canBeArrow, forInit);
             if (refDestructuringErrors) {
               if (refDestructuringErrors.parenthesizedAssign < 0 && !this.isSimpleAssignTarget(expr)) {
-                refDestructuringErrors.parenthesizedAssign = start;
+                refDestructuringErrors.parenthesizedAssign = start2;
               }
               if (refDestructuringErrors.parenthesizedBind < 0) {
-                refDestructuringErrors.parenthesizedBind = start;
+                refDestructuringErrors.parenthesizedBind = start2;
               }
             }
             return expr;
@@ -3610,11 +3610,11 @@ var require_acorn = __commonJS({
         prop.kind = kind;
         var paramCount = prop.kind === "get" ? 0 : 1;
         if (prop.value.params.length !== paramCount) {
-          var start = prop.value.start;
+          var start2 = prop.value.start;
           if (prop.kind === "get") {
-            this.raiseRecoverable(start, "getter should have no params");
+            this.raiseRecoverable(start2, "getter should have no params");
           } else {
-            this.raiseRecoverable(start, "setter should have exactly one param");
+            this.raiseRecoverable(start2, "setter should have exactly one param");
           }
         } else {
           if (prop.kind === "set" && prop.value.params[0].type === "RestElement") {
@@ -3800,33 +3800,33 @@ var require_acorn = __commonJS({
         return elts;
       };
       pp$52.checkUnreserved = function(ref3) {
-        var start = ref3.start;
+        var start2 = ref3.start;
         var end = ref3.end;
         var name2 = ref3.name;
         if (this.inGenerator && name2 === "yield") {
-          this.raiseRecoverable(start, "Cannot use 'yield' as identifier inside a generator");
+          this.raiseRecoverable(start2, "Cannot use 'yield' as identifier inside a generator");
         }
         if (this.inAsync && name2 === "await") {
-          this.raiseRecoverable(start, "Cannot use 'await' as identifier inside an async function");
+          this.raiseRecoverable(start2, "Cannot use 'await' as identifier inside an async function");
         }
         if (!(this.currentThisScope().flags & SCOPE_VAR2) && name2 === "arguments") {
-          this.raiseRecoverable(start, "Cannot use 'arguments' in class field initializer");
+          this.raiseRecoverable(start2, "Cannot use 'arguments' in class field initializer");
         }
         if (this.inClassStaticBlock && (name2 === "arguments" || name2 === "await")) {
-          this.raise(start, "Cannot use " + name2 + " in class static initialization block");
+          this.raise(start2, "Cannot use " + name2 + " in class static initialization block");
         }
         if (this.keywords.test(name2)) {
-          this.raise(start, "Unexpected keyword '" + name2 + "'");
+          this.raise(start2, "Unexpected keyword '" + name2 + "'");
         }
-        if (this.options.ecmaVersion < 6 && this.input.slice(start, end).indexOf("\\") !== -1) {
+        if (this.options.ecmaVersion < 6 && this.input.slice(start2, end).indexOf("\\") !== -1) {
           return;
         }
         var re = this.strict ? this.reservedWordsStrict : this.reservedWords;
         if (re.test(name2)) {
           if (!this.inAsync && name2 === "await") {
-            this.raiseRecoverable(start, "Cannot use keyword 'await' outside an async function");
+            this.raiseRecoverable(start2, "Cannot use keyword 'await' outside an async function");
           }
-          this.raiseRecoverable(start, "The keyword '" + name2 + "' is reserved");
+          this.raiseRecoverable(start2, "The keyword '" + name2 + "' is reserved");
         }
       };
       pp$52.parseIdent = function(liberal) {
@@ -4138,10 +4138,10 @@ var require_acorn = __commonJS({
         this.backReferenceNames = [];
         this.branchID = null;
       };
-      RegExpValidationState3.prototype.reset = function reset2(start, pattern, flags) {
+      RegExpValidationState3.prototype.reset = function reset2(start2, pattern, flags) {
         var unicodeSets = flags.indexOf("v") !== -1;
         var unicode = flags.indexOf("u") !== -1;
-        this.start = start | 0;
+        this.start = start2 | 0;
         this.source = pattern + "";
         this.flags = flags;
         if (unicodeSets && this.parser.options.ecmaVersion >= 15) {
@@ -4341,7 +4341,7 @@ var require_acorn = __commonJS({
         return false;
       };
       pp$12.regexp_eatAssertion = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         state.lastAssertionIsQuantifiable = false;
         if (state.eat(
           94
@@ -4365,7 +4365,7 @@ var require_acorn = __commonJS({
           )) {
             return true;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         if (state.eat(
           40
@@ -4399,7 +4399,7 @@ var require_acorn = __commonJS({
             return true;
           }
         }
-        state.pos = start;
+        state.pos = start2;
         return false;
       };
       pp$12.regexp_eatQuantifier = function(state, noError) {
@@ -4426,7 +4426,7 @@ var require_acorn = __commonJS({
         ) || this.regexp_eatBracedQuantifier(state, noError);
       };
       pp$12.regexp_eatBracedQuantifier = function(state, noError) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           123
           /* { */
@@ -4453,7 +4453,7 @@ var require_acorn = __commonJS({
           if (state.switchU && !noError) {
             state.raise("Incomplete quantifier");
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
@@ -4464,7 +4464,7 @@ var require_acorn = __commonJS({
         ) || this.regexp_eatReverseSolidusAtomEscape(state) || this.regexp_eatCharacterClass(state) || this.regexp_eatUncapturingGroup(state) || this.regexp_eatCapturingGroup(state);
       };
       pp$12.regexp_eatReverseSolidusAtomEscape = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           92
           /* \ */
@@ -4472,12 +4472,12 @@ var require_acorn = __commonJS({
           if (this.regexp_eatAtomEscape(state)) {
             return true;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
       pp$12.regexp_eatUncapturingGroup = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           40
           /* ( */
@@ -4527,7 +4527,7 @@ var require_acorn = __commonJS({
               state.raise("Unterminated group");
             }
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
@@ -4590,12 +4590,12 @@ var require_acorn = __commonJS({
         return ch2 === 36 || ch2 >= 40 && ch2 <= 43 || ch2 === 46 || ch2 === 63 || ch2 >= 91 && ch2 <= 94 || ch2 >= 123 && ch2 <= 125;
       }
       pp$12.regexp_eatPatternCharacters = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         var ch2 = 0;
         while ((ch2 = state.current()) !== -1 && !isSyntaxCharacter2(ch2)) {
           state.advance();
         }
-        return state.pos !== start;
+        return state.pos !== start2;
       };
       pp$12.regexp_eatExtendedPatternCharacter = function(state) {
         var ch2 = state.current();
@@ -4662,7 +4662,7 @@ var require_acorn = __commonJS({
         return false;
       };
       pp$12.regexp_eatRegExpIdentifierStart = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         var forceU = this.options.ecmaVersion >= 11;
         var ch2 = state.current(forceU);
         state.advance(forceU);
@@ -4673,14 +4673,14 @@ var require_acorn = __commonJS({
           state.lastIntValue = ch2;
           return true;
         }
-        state.pos = start;
+        state.pos = start2;
         return false;
       };
       function isRegExpIdentifierStart2(ch2) {
         return isIdentifierStart2(ch2, true) || ch2 === 36 || ch2 === 95;
       }
       pp$12.regexp_eatRegExpIdentifierPart = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         var forceU = this.options.ecmaVersion >= 11;
         var ch2 = state.current(forceU);
         state.advance(forceU);
@@ -4691,7 +4691,7 @@ var require_acorn = __commonJS({
           state.lastIntValue = ch2;
           return true;
         }
-        state.pos = start;
+        state.pos = start2;
         return false;
       };
       function isRegExpIdentifierPart2(ch2) {
@@ -4710,7 +4710,7 @@ var require_acorn = __commonJS({
         return false;
       };
       pp$12.regexp_eatBackReference = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (this.regexp_eatDecimalEscape(state)) {
           var n = state.lastIntValue;
           if (state.switchU) {
@@ -4722,7 +4722,7 @@ var require_acorn = __commonJS({
           if (n <= state.numCapturingParens) {
             return true;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
@@ -4743,7 +4743,7 @@ var require_acorn = __commonJS({
         return this.regexp_eatControlEscape(state) || this.regexp_eatCControlLetter(state) || this.regexp_eatZero(state) || this.regexp_eatHexEscapeSequence(state) || this.regexp_eatRegExpUnicodeEscapeSequence(state, false) || !state.switchU && this.regexp_eatLegacyOctalEscapeSequence(state) || this.regexp_eatIdentityEscape(state);
       };
       pp$12.regexp_eatCControlLetter = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           99
           /* c */
@@ -4751,7 +4751,7 @@ var require_acorn = __commonJS({
           if (this.regexp_eatControlLetter(state)) {
             return true;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
@@ -4806,7 +4806,7 @@ var require_acorn = __commonJS({
       }
       pp$12.regexp_eatRegExpUnicodeEscapeSequence = function(state, forceU) {
         if (forceU === void 0) forceU = false;
-        var start = state.pos;
+        var start2 = state.pos;
         var switchU = forceU || state.switchU;
         if (state.eat(
           117
@@ -4846,7 +4846,7 @@ var require_acorn = __commonJS({
           if (switchU) {
             state.raise("Invalid unicode escape");
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
@@ -4922,7 +4922,7 @@ var require_acorn = __commonJS({
         return ch2 === 100 || ch2 === 68 || ch2 === 115 || ch2 === 83 || ch2 === 119 || ch2 === 87;
       }
       pp$12.regexp_eatUnicodePropertyValueExpression = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (this.regexp_eatUnicodePropertyName(state) && state.eat(
           61
           /* = */
@@ -4934,7 +4934,7 @@ var require_acorn = __commonJS({
             return CharSetOk2;
           }
         }
-        state.pos = start;
+        state.pos = start2;
         if (this.regexp_eatLoneUnicodePropertyNameOrValue(state)) {
           var nameOrValue = state.lastStringValue;
           return this.regexp_validateUnicodePropertyNameOrValue(state, nameOrValue);
@@ -5036,7 +5036,7 @@ var require_acorn = __commonJS({
         }
       };
       pp$12.regexp_eatClassAtom = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           92
           /* \ */
@@ -5051,7 +5051,7 @@ var require_acorn = __commonJS({
             }
             state.raise("Invalid escape");
           }
-          state.pos = start;
+          state.pos = start2;
         }
         var ch2 = state.current();
         if (ch2 !== 93) {
@@ -5062,7 +5062,7 @@ var require_acorn = __commonJS({
         return false;
       };
       pp$12.regexp_eatClassEscape = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           98
           /* b */
@@ -5084,7 +5084,7 @@ var require_acorn = __commonJS({
           if (this.regexp_eatClassControlLetter(state)) {
             return true;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return this.regexp_eatCharacterClassEscape(state) || this.regexp_eatCharacterEscape(state);
       };
@@ -5095,7 +5095,7 @@ var require_acorn = __commonJS({
           if (subResult === CharSetString2) {
             result = CharSetString2;
           }
-          var start = state.pos;
+          var start2 = state.pos;
           while (state.eatChars(
             [38, 38]
             /* && */
@@ -5108,7 +5108,7 @@ var require_acorn = __commonJS({
             }
             state.raise("Invalid character in character class");
           }
-          if (start !== state.pos) {
+          if (start2 !== state.pos) {
             return result;
           }
           while (state.eatChars(
@@ -5120,7 +5120,7 @@ var require_acorn = __commonJS({
             }
             state.raise("Invalid character in character class");
           }
-          if (start !== state.pos) {
+          if (start2 !== state.pos) {
             return result;
           }
         } else {
@@ -5140,7 +5140,7 @@ var require_acorn = __commonJS({
         }
       };
       pp$12.regexp_eatClassSetRange = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (this.regexp_eatClassSetCharacter(state)) {
           var left = state.lastIntValue;
           if (state.eat(
@@ -5153,7 +5153,7 @@ var require_acorn = __commonJS({
             }
             return true;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
@@ -5164,7 +5164,7 @@ var require_acorn = __commonJS({
         return this.regexp_eatClassStringDisjunction(state) || this.regexp_eatNestedClass(state);
       };
       pp$12.regexp_eatNestedClass = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           91
           /* [ */
@@ -5183,7 +5183,7 @@ var require_acorn = __commonJS({
             }
             return result;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         if (state.eat(
           92
@@ -5193,12 +5193,12 @@ var require_acorn = __commonJS({
           if (result$1) {
             return result$1;
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return null;
       };
       pp$12.regexp_eatClassStringDisjunction = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eatChars(
           [92, 113]
           /* \q */
@@ -5217,7 +5217,7 @@ var require_acorn = __commonJS({
           } else {
             state.raise("Invalid escape");
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return null;
       };
@@ -5241,7 +5241,7 @@ var require_acorn = __commonJS({
         return count === 1 ? CharSetOk2 : CharSetString2;
       };
       pp$12.regexp_eatClassSetCharacter = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           92
           /* \ */
@@ -5256,7 +5256,7 @@ var require_acorn = __commonJS({
             state.lastIntValue = 8;
             return true;
           }
-          state.pos = start;
+          state.pos = start2;
           return false;
         }
         var ch2 = state.current();
@@ -5298,7 +5298,7 @@ var require_acorn = __commonJS({
         return false;
       };
       pp$12.regexp_eatHexEscapeSequence = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         if (state.eat(
           120
           /* x */
@@ -5309,32 +5309,32 @@ var require_acorn = __commonJS({
           if (state.switchU) {
             state.raise("Invalid escape");
           }
-          state.pos = start;
+          state.pos = start2;
         }
         return false;
       };
       pp$12.regexp_eatDecimalDigits = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         var ch2 = 0;
         state.lastIntValue = 0;
         while (isDecimalDigit2(ch2 = state.current())) {
           state.lastIntValue = 10 * state.lastIntValue + (ch2 - 48);
           state.advance();
         }
-        return state.pos !== start;
+        return state.pos !== start2;
       };
       function isDecimalDigit2(ch2) {
         return ch2 >= 48 && ch2 <= 57;
       }
       pp$12.regexp_eatHexDigits = function(state) {
-        var start = state.pos;
+        var start2 = state.pos;
         var ch2 = 0;
         state.lastIntValue = 0;
         while (isHexDigit2(ch2 = state.current())) {
           state.lastIntValue = 16 * state.lastIntValue + hexToInt2(ch2);
           state.advance();
         }
-        return state.pos !== start;
+        return state.pos !== start2;
       };
       function isHexDigit2(ch2) {
         return ch2 >= 48 && ch2 <= 57 || ch2 >= 65 && ch2 <= 70 || ch2 >= 97 && ch2 <= 102;
@@ -5379,12 +5379,12 @@ var require_acorn = __commonJS({
         return ch2 >= 48 && ch2 <= 55;
       }
       pp$12.regexp_eatFixedHexDigits = function(state, length) {
-        var start = state.pos;
+        var start2 = state.pos;
         state.lastIntValue = 0;
         for (var i4 = 0; i4 < length; ++i4) {
           var ch2 = state.current();
           if (!isHexDigit2(ch2)) {
-            state.pos = start;
+            state.pos = start2;
             return false;
           }
           state.lastIntValue = 16 * state.lastIntValue + hexToInt2(ch2);
@@ -5470,13 +5470,13 @@ var require_acorn = __commonJS({
       };
       pp2.skipBlockComment = function() {
         var startLoc = this.options.onComment && this.curPosition();
-        var start = this.pos, end = this.input.indexOf("*/", this.pos += 2);
+        var start2 = this.pos, end = this.input.indexOf("*/", this.pos += 2);
         if (end === -1) {
           this.raise(this.pos - 2, "Unterminated comment");
         }
         this.pos = end + 2;
         if (this.options.locations) {
-          for (var nextBreak = void 0, pos = start; (nextBreak = nextLineBreak2(this.input, pos, this.pos)) > -1; ) {
+          for (var nextBreak = void 0, pos = start2; (nextBreak = nextLineBreak2(this.input, pos, this.pos)) > -1; ) {
             ++this.curLine;
             pos = this.lineStart = nextBreak;
           }
@@ -5484,8 +5484,8 @@ var require_acorn = __commonJS({
         if (this.options.onComment) {
           this.options.onComment(
             true,
-            this.input.slice(start + 2, end),
-            start,
+            this.input.slice(start2 + 2, end),
+            start2,
             this.pos,
             startLoc,
             this.curPosition()
@@ -5493,7 +5493,7 @@ var require_acorn = __commonJS({
         }
       };
       pp2.skipLineComment = function(startSkip) {
-        var start = this.pos;
+        var start2 = this.pos;
         var startLoc = this.options.onComment && this.curPosition();
         var ch2 = this.input.charCodeAt(this.pos += startSkip);
         while (this.pos < this.input.length && !isNewLine2(ch2)) {
@@ -5502,8 +5502,8 @@ var require_acorn = __commonJS({
         if (this.options.onComment) {
           this.options.onComment(
             false,
-            this.input.slice(start + startSkip, this.pos),
-            start,
+            this.input.slice(start2 + startSkip, this.pos),
+            start2,
             this.pos,
             startLoc,
             this.curPosition()
@@ -5811,14 +5811,14 @@ var require_acorn = __commonJS({
         return this.finishToken(type, str);
       };
       pp2.readRegexp = function() {
-        var escaped, inClass, start = this.pos;
+        var escaped, inClass, start2 = this.pos;
         for (; ; ) {
           if (this.pos >= this.input.length) {
-            this.raise(start, "Unterminated regular expression");
+            this.raise(start2, "Unterminated regular expression");
           }
           var ch2 = this.input.charAt(this.pos);
           if (lineBreak2.test(ch2)) {
-            this.raise(start, "Unterminated regular expression");
+            this.raise(start2, "Unterminated regular expression");
           }
           if (!escaped) {
             if (ch2 === "[") {
@@ -5834,7 +5834,7 @@ var require_acorn = __commonJS({
           }
           ++this.pos;
         }
-        var pattern = this.input.slice(start, this.pos);
+        var pattern = this.input.slice(start2, this.pos);
         ++this.pos;
         var flagsStart = this.pos;
         var flags = this.readWord1();
@@ -5842,7 +5842,7 @@ var require_acorn = __commonJS({
           this.unexpected(flagsStart);
         }
         var state = this.regexpState || (this.regexpState = new RegExpValidationState3(this));
-        state.reset(start, pattern, flags);
+        state.reset(start2, pattern, flags);
         this.validateRegExpFlags(state);
         this.validateRegExpPattern(state);
         var value = null;
@@ -5855,7 +5855,7 @@ var require_acorn = __commonJS({
       pp2.readInt = function(radix, len, maybeLegacyOctalNumericLiteral) {
         var allowSeparators = this.options.ecmaVersion >= 12 && len === void 0;
         var isLegacyOctalNumericLiteral = maybeLegacyOctalNumericLiteral && this.input.charCodeAt(this.pos) === 48;
-        var start = this.pos, total = 0, lastCode = 0;
+        var start2 = this.pos, total = 0, lastCode = 0;
         for (var i4 = 0, e = len == null ? Infinity : len; i4 < e; ++i4, ++this.pos) {
           var code = this.input.charCodeAt(this.pos), val = void 0;
           if (allowSeparators && code === 95) {
@@ -5889,7 +5889,7 @@ var require_acorn = __commonJS({
         if (allowSeparators && lastCode === 95) {
           this.raiseRecoverable(this.pos - 1, "Numeric separator is not allowed at the last of digits");
         }
-        if (this.pos === start || len != null && this.pos - start !== len) {
+        if (this.pos === start2 || len != null && this.pos - start2 !== len) {
           return null;
         }
         return total;
@@ -5907,14 +5907,14 @@ var require_acorn = __commonJS({
         return BigInt(str.replace(/_/g, ""));
       }
       pp2.readRadixNumber = function(radix) {
-        var start = this.pos;
+        var start2 = this.pos;
         this.pos += 2;
         var val = this.readInt(radix);
         if (val == null) {
           this.raise(this.start + 2, "Expected number in radix " + radix);
         }
         if (this.options.ecmaVersion >= 11 && this.input.charCodeAt(this.pos) === 110) {
-          val = stringToBigInt2(this.input.slice(start, this.pos));
+          val = stringToBigInt2(this.input.slice(start2, this.pos));
           ++this.pos;
         } else if (isIdentifierStart2(this.fullCharCodeAtPos())) {
           this.raise(this.pos, "Identifier directly after number");
@@ -5922,24 +5922,24 @@ var require_acorn = __commonJS({
         return this.finishToken(types$12.num, val);
       };
       pp2.readNumber = function(startsWithDot) {
-        var start = this.pos;
+        var start2 = this.pos;
         if (!startsWithDot && this.readInt(10, void 0, true) === null) {
-          this.raise(start, "Invalid number");
+          this.raise(start2, "Invalid number");
         }
-        var octal = this.pos - start >= 2 && this.input.charCodeAt(start) === 48;
+        var octal = this.pos - start2 >= 2 && this.input.charCodeAt(start2) === 48;
         if (octal && this.strict) {
-          this.raise(start, "Invalid number");
+          this.raise(start2, "Invalid number");
         }
         var next = this.input.charCodeAt(this.pos);
         if (!octal && !startsWithDot && this.options.ecmaVersion >= 11 && next === 110) {
-          var val$1 = stringToBigInt2(this.input.slice(start, this.pos));
+          var val$1 = stringToBigInt2(this.input.slice(start2, this.pos));
           ++this.pos;
           if (isIdentifierStart2(this.fullCharCodeAtPos())) {
             this.raise(this.pos, "Identifier directly after number");
           }
           return this.finishToken(types$12.num, val$1);
         }
-        if (octal && /[89]/.test(this.input.slice(start, this.pos))) {
+        if (octal && /[89]/.test(this.input.slice(start2, this.pos))) {
           octal = false;
         }
         if (next === 46 && !octal) {
@@ -5953,13 +5953,13 @@ var require_acorn = __commonJS({
             ++this.pos;
           }
           if (this.readInt(10) === null) {
-            this.raise(start, "Invalid number");
+            this.raise(start2, "Invalid number");
           }
         }
         if (isIdentifierStart2(this.fullCharCodeAtPos())) {
           this.raise(this.pos, "Identifier directly after number");
         }
-        var val = stringToNumber2(this.input.slice(start, this.pos), octal);
+        var val = stringToNumber2(this.input.slice(start2, this.pos), octal);
         return this.finishToken(types$12.num, val);
       };
       pp2.readCodePoint = function() {
@@ -6505,11 +6505,11 @@ var require_acorn_jsx = __commonJS({
         // Also assumes that first character was already checked
         // by isIdentifierStart in readToken.
         jsx_readWord() {
-          let ch2, start = this.pos;
+          let ch2, start2 = this.pos;
           do {
             ch2 = this.input.charCodeAt(++this.pos);
           } while (isIdentifierChar2(ch2) || ch2 === 45);
-          return this.finishToken(tok.jsxName, this.input.slice(start, this.pos));
+          return this.finishToken(tok.jsxName, this.input.slice(start2, this.pos));
         }
         // Parse next token as JSX identifier
         jsx_parseIdentifier() {
@@ -6766,7 +6766,7 @@ var init_schema = __esm({
 });
 
 // node_modules/dsh-prompt-assembler/src/history-client.js
-function mountHistoryPolicyPanel(container, { sessionId, root = "/dsh-prompt-assembler/api/v1/history-policy", request: request2 = fetch, fragmentPresets = [], onDirtyChange = () => {
+function mountHistoryPolicyPanel(container, { sessionId, root: root2 = "/dsh-prompt-assembler/api/v1/history-policy", request: request2 = fetch, fragmentPresets = [], onDirtyChange = () => {
 }, onSaved = () => {
 }, value, backend, onChange, onInvalid = () => {
 }, onReady = () => {
@@ -6896,8 +6896,8 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     contentTypes: standard ? policy.contentTypes : Object.fromEntries(Object.entries(types2).map(([kind, input]) => [kind, input.checked])),
     fragments: standard ? policy.fragments : JSON.parse(fragments.value)
   });
-  async function call(suffix = "", method = "GET", body2) {
-    const response = await request2(`${root}${suffix}?sessionId=${encodeURIComponent(sessionId)}`, { method, signal: abort.signal, headers: { "Content-Type": "application/json" }, ...body2 ? { body: JSON.stringify(body2) } : {} });
+  async function call2(suffix = "", method = "GET", body2) {
+    const response = await request2(`${root2}${suffix}?sessionId=${encodeURIComponent(sessionId)}`, { method, signal: abort.signal, headers: { "Content-Type": "application/json" }, ...body2 ? { body: JSON.stringify(body2) } : {} });
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error ?? "History API failed");
     return result;
@@ -6913,10 +6913,10 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
       status.textContent = error.message;
     }
   };
-  async function action(button, run) {
+  async function action(button, run2) {
     button.disabled = true;
     try {
-      await run();
+      await run2();
     } catch (error) {
       if (!disposed) status.textContent = error.message;
     } finally {
@@ -6924,7 +6924,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     }
   }
   previewButton.onclick = () => action(previewButton, async () => {
-    const result = await call("/preview", "POST", { policy: draft(), ...embedded ? { backend } : {} });
+    const result = await call2("/preview", "POST", { policy: draft(), ...embedded ? { backend } : {} });
     if (disposed) return;
     show("preview");
     results.replaceChildren();
@@ -6970,7 +6970,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
   });
   if (saveButton) saveButton.onclick = () => action(saveButton, async () => {
     const savingGeneration = editGeneration;
-    const result = await call("", "PUT", { policy: draft(), expectedRevision: revision });
+    const result = await call2("", "PUT", { policy: draft(), expectedRevision: revision });
     if (disposed) return;
     policy = result.policy;
     revision = result.revision;
@@ -6979,7 +6979,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     onSaved();
     status.textContent = `\u5DF2\u4FDD\u5B58\u7248\u672C ${revision}\u3002\u4ECE\u4E0B\u4E00\u6B65${standard ? "\u539F\u751F" : "\u8FDB\u9636"}\u8BF7\u6C42\u751F\u6548\uFF1B\u540C\u4E00\u6B65\u91CD\u8BD5\u548C\u8FC7\u53BB\u7684\u5BA1\u8BA1\u8BB0\u5F55\u4E0D\u53D8\u3002${dirty ? " \u4ECD\u6709\u4FDD\u5B58\u671F\u95F4\u7684\u65B0\u4FEE\u6539\u5F85\u4FDD\u5B58\u3002" : ""}`;
   });
-  const ready = (value !== void 0 ? Promise.resolve({ policy: value, revision: 0 }) : sessionId ? call() : Promise.resolve({ policy: DEFAULT_HISTORY_POLICY, revision: 0 })).then((result) => {
+  const ready = (value !== void 0 ? Promise.resolve({ policy: value, revision: 0 }) : sessionId ? call2() : Promise.resolve({ policy: DEFAULT_HISTORY_POLICY, revision: 0 })).then((result) => {
     if (disposed) return;
     standard = embedded ? backend === "native" : result.capabilities?.mode === "standard";
     title.textContent = `\u6A21\u578B\u5386\u53F2\u7B5B\u9009 \xB7 ${standard ? "\u6807\u51C6\u7248" : "\u8FDB\u9636\u7248"}`;
@@ -7253,8 +7253,8 @@ Lifetime used`) : new QuickJSUseAfterFree("Lifetime not alive");
       }
     };
     StaticLifetime = class extends Lifetime {
-      constructor(value, owner) {
-        super(value, void 0, void 0, owner);
+      constructor(value, owner2) {
+        super(value, void 0, void 0, owner2);
       }
       get dupable() {
         return true;
@@ -7266,8 +7266,8 @@ Lifetime used`) : new QuickJSUseAfterFree("Lifetime not alive");
       }
     };
     WeakLifetime = class extends Lifetime {
-      constructor(value, copier, disposer, owner) {
-        super(value, copier, disposer, owner);
+      constructor(value, copier, disposer, owner2) {
+        super(value, copier, disposer, owner2);
       }
       dispose() {
         this._alive = false;
@@ -7720,9 +7720,9 @@ Lifetime used`) : new QuickJSUseAfterFree("Lifetime not alive");
       setProp(handle, key2, value) {
         this.runtime.assertOwned(handle), this.borrowPropertyKey(key2).consume((quickJSKey) => this.ffi.QTS_SetProp(this.ctx.value, handle.value, quickJSKey.value, value.value));
       }
-      defineProp(handle, key2, descriptor) {
+      defineProp(handle, key2, descriptor2) {
         this.runtime.assertOwned(handle), Scope3.withScope((scope) => {
-          let quickJSKey = scope.manage(this.borrowPropertyKey(key2)), value = descriptor.value || this.undefined, configurable = !!descriptor.configurable, enumerable = !!descriptor.enumerable, hasValue = !!descriptor.value, get = descriptor.get ? scope.manage(this.newFunction(descriptor.get.name, descriptor.get)) : this.undefined, set2 = descriptor.set ? scope.manage(this.newFunction(descriptor.set.name, descriptor.set)) : this.undefined;
+          let quickJSKey = scope.manage(this.borrowPropertyKey(key2)), value = descriptor2.value || this.undefined, configurable = !!descriptor2.configurable, enumerable = !!descriptor2.enumerable, hasValue = !!descriptor2.value, get = descriptor2.get ? scope.manage(this.newFunction(descriptor2.get.name, descriptor2.get)) : this.undefined, set2 = descriptor2.set ? scope.manage(this.newFunction(descriptor2.set.name, descriptor2.set)) : this.undefined;
           this.ffi.QTS_DefineProp(this.ctx.value, handle.value, quickJSKey.value, value.value, get.value, set2.value, configurable, enumerable, hasValue);
         });
       }
@@ -8770,7 +8770,7 @@ var require_dist = __commonJS({
       var column;
       var token;
       var key2;
-      var root;
+      var root2;
       var parse5 = function parse6(text3, reviver) {
         source = String(text3);
         parseState = "start";
@@ -8780,15 +8780,15 @@ var require_dist = __commonJS({
         column = 0;
         token = void 0;
         key2 = void 0;
-        root = void 0;
+        root2 = void 0;
         do {
           token = lex();
           parseStates[parseState]();
         } while (token.type !== "eof");
         if (typeof reviver === "function") {
-          return internalize({ "": root }, "", reviver);
+          return internalize({ "": root2 }, "", reviver);
         }
-        return root;
+        return root2;
       };
       function internalize(holder, name2, reviver) {
         var value = holder[name2];
@@ -9251,7 +9251,7 @@ var require_dist = __commonJS({
           }
           buffer += read();
         },
-        start: function start() {
+        start: function start2() {
           switch (c) {
             case "{":
             case "[":
@@ -9424,7 +9424,7 @@ var require_dist = __commonJS({
         return String.fromCodePoint(parseInt(buffer2, 16));
       }
       var parseStates = {
-        start: function start() {
+        start: function start2() {
           if (token.type === "eof") {
             throw invalidEOF();
           }
@@ -9513,8 +9513,8 @@ var require_dist = __commonJS({
             value = token.value;
             break;
         }
-        if (root === void 0) {
-          root = value;
+        if (root2 === void 0) {
+          root2 = value;
         } else {
           var parent = stack[stack.length - 1];
           if (Array.isArray(parent)) {
@@ -10257,12 +10257,24 @@ var zh_CN_default = Object.freeze({
   "diagnostics.logsResult.completed": "\u64CD\u4F5C\u5DF2\u5B8C\u6210 \xB7 \u540E\u7AEF\u5904\u7406\u5DF2\u8FD4\u56DE",
   "diagnostics.logsOperation.workspace.bind": "\u7ED1\u5B9A\u5DE5\u4F5C\u533A",
   "diagnostics.logsOperation.workspace.dir.create": "\u521B\u5EFA\u76EE\u5F55",
+  "diagnostics.logsOperation.workspace.checkpoint.write": "\u4FDD\u5B58\u64CD\u4F5C\u68C0\u67E5\u70B9",
   "diagnostics.logsOperation.workspace.file.write": "\u5199\u5165\u6587\u4EF6",
   "diagnostics.logsOperation.session.create": "\u521B\u5EFA\u4F1A\u8BDD",
   "diagnostics.logsOperation.session.branch": "\u5206\u652F\u4F1A\u8BDD",
   "diagnostics.logsOperation.session.user-message": "\u53D1\u9001\u7528\u6237\u6D88\u606F",
   "diagnostics.logsOperation.session.import-context.bind": "\u7ED1\u5B9A\u5BFC\u5165\u4E0A\u4E0B\u6587",
   "diagnostics.logsOperation.session.import-context.unbind": "\u89E3\u7ED1\u5BFC\u5165\u4E0A\u4E0B\u6587",
+  "diagnostics.logsOperation.playthrough.generation": "\u91CD\u65B0\u751F\u6210\u6216\u91CD\u8BD5\u56DE\u590D",
+  "diagnostics.logsOperation.playthrough.fork": "\u5206\u652F\u4E3A\u65B0\u5468\u76EE",
+  "diagnostics.logsResult.playthrough.generation.intent": "\u5DF2\u4FDD\u5B58\u751F\u6210\u76EE\u6807",
+  "diagnostics.logsResult.playthrough.generation.send-intent": "\u5DF2\u5728\u53D1\u9001\u524D\u8BB0\u5F55\u63D0\u95EE\u8BF7\u6C42",
+  "diagnostics.logsResult.playthrough.fork.child-verified": "\u5DF2\u6838\u5B9E\u65B0\u5206\u652F\u7EE7\u627F\u7684\u95EE\u7B54",
+  "diagnostics.logsResult.playthrough.fork.published": "\u5DF2\u767B\u8BB0\u65B0\u5206\u652F\u5468\u76EE",
+  "diagnostics.logsResult.playthrough.fork.intent": "\u5DF2\u4FDD\u5B58\u5206\u652F\u76EE\u6807",
+  "diagnostics.logsOperation.playthrough.rollback": "\u56DE\u9000\u5468\u76EE",
+  "diagnostics.logsResult.playthrough.rollback.child-verified": "\u5DF2\u6838\u5B9E\u5B50\u4F1A\u8BDD\u7EE7\u627F\u7684\u95EE\u7B54",
+  "diagnostics.logsResult.playthrough.rollback.head-verified": "\u5DF2\u8BFB\u56DE\u5E76\u6838\u5B9E\u5468\u76EE\u56DE\u9000\u4F4D\u7F6E",
+  "diagnostics.logsResult.playthrough.rollback.intent": "\u5DF2\u8BB0\u5F55\u56DE\u9000\u76EE\u6807",
   "diagnostics.logsOperation.playthrough.session.detach": "\u79FB\u9664\u5468\u76EE\u4F1A\u8BDD\u5173\u8054",
   "diagnostics.logsOperation.playthrough.character.relink": "\u91CD\u65B0\u5173\u8054\u89D2\u8272",
   "diagnostics.logsOperation.plugin.start": "\u542F\u52A8 Tavern",
@@ -10429,6 +10441,10 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.archiveHint": "\u5DF2\u5F52\u6863\u5468\u76EE\u4FDD\u7559\u5168\u90E8\u8BB0\u5F55\u548C\u7ED1\u5B9A\uFF0C\u53EF\u968F\u65F6\u67E5\u770B\u6216\u6062\u590D\u3002",
   "play.sidebar.archiveEmpty": "\u6682\u65E0\u5DF2\u5F52\u6863\u5468\u76EE\u3002",
   "play.sidebar.restoreNamed": "\u6062\u590D\u5468\u76EE\u300C{title}\u300D",
+  "play.io.repair": "\u4FEE\u590D\u5468\u76EE",
+  "play.io.repairSessionTitle": "\u4FEE\u590D\u5468\u76EE \xB7 {title}",
+  "play.io.repairSelectionChanged": "\u6240\u9009 RP \u5DE5\u4F5C\u533A\u6216\u5468\u76EE\u5DF2\u53D8\u66F4\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u5468\u76EE\u83DC\u5355\u3002",
+  "play.io.repairDispatchFailed": "\u672A\u80FD\u5728\u4F1A\u8BDD {id} \u542F\u52A8\u4FEE\u590D\u3002\u53EF\u5728\u8BE5\u4F1A\u8BDD\u8F93\u5165 {command} \u91CD\u8BD5\u3002{error}",
   "play.io.rename": "\u91CD\u547D\u540D\u5468\u76EE",
   "play.io.relinkCharacter": "\u91CD\u65B0\u7ED1\u5B9A\u89D2\u8272\u5361",
   "play.io.renamePrompt": "\u8F93\u5165\u65B0\u7684\u5468\u76EE\u540D\u79F0\uFF1A",
@@ -11404,12 +11420,24 @@ var en_default = Object.freeze({
   "diagnostics.logsResult.completed": "Operation completed \xB7 backend handler returned",
   "diagnostics.logsOperation.workspace.bind": "Bind workspace",
   "diagnostics.logsOperation.workspace.dir.create": "Create directory",
+  "diagnostics.logsOperation.workspace.checkpoint.write": "Save operation checkpoint",
   "diagnostics.logsOperation.workspace.file.write": "Write file",
   "diagnostics.logsOperation.session.create": "Create session",
   "diagnostics.logsOperation.session.branch": "Branch session",
   "diagnostics.logsOperation.session.user-message": "Send user message",
   "diagnostics.logsOperation.session.import-context.bind": "Bind import context",
   "diagnostics.logsOperation.session.import-context.unbind": "Unbind import context",
+  "diagnostics.logsOperation.playthrough.generation": "Generate a new reply",
+  "diagnostics.logsOperation.playthrough.fork": "Fork a playthrough",
+  "diagnostics.logsResult.playthrough.generation.intent": "Generation target saved",
+  "diagnostics.logsResult.playthrough.generation.send-intent": "Prompt request identified before sending",
+  "diagnostics.logsResult.playthrough.fork.child-verified": "Forked reply verified",
+  "diagnostics.logsResult.playthrough.fork.published": "New playthrough published",
+  "diagnostics.logsResult.playthrough.fork.intent": "Fork target saved",
+  "diagnostics.logsOperation.playthrough.rollback": "Roll back playthrough",
+  "diagnostics.logsResult.playthrough.rollback.child-verified": "Inherited question and reply verified",
+  "diagnostics.logsResult.playthrough.rollback.head-verified": "Saved rollback head verified",
+  "diagnostics.logsResult.playthrough.rollback.intent": "Rollback intent saved",
   "diagnostics.logsOperation.playthrough.session.detach": "Detach playthrough session",
   "diagnostics.logsOperation.playthrough.character.relink": "Relink character",
   "diagnostics.logsOperation.plugin.start": "Start Tavern",
@@ -11576,6 +11604,10 @@ var en_default = Object.freeze({
   "play.sidebar.archiveHint": "Archived playthroughs retain their history and bindings. View or restore them at any time.",
   "play.sidebar.archiveEmpty": "No archived playthroughs.",
   "play.sidebar.restoreNamed": 'Restore playthrough "{title}"',
+  "play.io.repair": "Repair playthrough",
+  "play.io.repairSessionTitle": "Repair \xB7 {title}",
+  "play.io.repairSelectionChanged": "The selected RP workspace or playthrough has changed. Reopen its menu.",
+  "play.io.repairDispatchFailed": "Could not start the repair in chat {id}. Run {command} there to retry. {error}",
   "play.io.rename": "Rename playthrough",
   "play.io.relinkCharacter": "Relink character card",
   "play.io.renamePrompt": "Enter a new playthrough name:",
@@ -12552,9 +12584,9 @@ function normalizeScriptEnablement(value) {
   });
   return { schemaVersion: 1, entries: entries2 };
 }
-function updateScriptEnablement(value, owner, key2, enabled) {
-  const entries2 = (value?.entries ?? []).filter((item) => item.owner !== owner || item.key !== key2);
-  if (typeof enabled === "boolean") entries2.push({ owner, key: key2, enabled });
+function updateScriptEnablement(value, owner2, key2, enabled) {
+  const entries2 = (value?.entries ?? []).filter((item) => item.owner !== owner2 || item.key !== key2);
+  if (typeof enabled === "boolean") entries2.push({ owner: owner2, key: key2, enabled });
   return normalizeScriptEnablement({ schemaVersion: 1, entries: entries2 });
 }
 
@@ -12578,9 +12610,9 @@ function normalizeRenderingAdapters(value) {
   });
   return { schemaVersion: 1, entries: entries2 };
 }
-function updateRenderingAdapter(value, owner, source, mode) {
-  const entries2 = (value?.entries ?? []).filter((item) => item.owner !== owner || item.source !== source);
-  if (mode !== void 0) entries2.push({ owner, source, mode });
+function updateRenderingAdapter(value, owner2, source, mode) {
+  const entries2 = (value?.entries ?? []).filter((item) => item.owner !== owner2 || item.source !== source);
+  if (mode !== void 0) entries2.push({ owner: owner2, source, mode });
   return normalizeRenderingAdapters({ schemaVersion: 1, entries: entries2 });
 }
 
@@ -12830,8 +12862,8 @@ var Position = function Position2(line, col) {
 Position.prototype.offset = function offset(n) {
   return new Position(this.line, this.column + n);
 };
-var SourceLocation = function SourceLocation2(p, start, end) {
-  this.start = start;
+var SourceLocation = function SourceLocation2(p, start2, end) {
+  this.start = start2;
   this.end = end;
   if (p.sourceFile !== null) {
     this.source = p.sourceFile;
@@ -12979,18 +13011,18 @@ function getOptions(opts) {
   return options;
 }
 function pushComment(options, array) {
-  return function(block, text3, start, end, startLoc, endLoc) {
+  return function(block, text3, start2, end, startLoc, endLoc) {
     var comment = {
       type: block ? "Block" : "Line",
       value: text3,
-      start,
+      start: start2,
       end
     };
     if (options.locations) {
       comment.loc = new SourceLocation(this, startLoc, endLoc);
     }
     if (options.ranges) {
-      comment.range = [start, end];
+      comment.range = [start2, end];
     }
     array.push(comment);
   };
@@ -13138,28 +13170,28 @@ Parser.tokenizer = function tokenizer(input, options) {
 Object.defineProperties(Parser.prototype, prototypeAccessors);
 var pp$9 = Parser.prototype;
 var literal = /^(?:'((?:\\[^]|[^'\\])*?)'|"((?:\\[^]|[^"\\])*?)")/;
-pp$9.strictDirective = function(start) {
+pp$9.strictDirective = function(start2) {
   if (this.options.ecmaVersion < 5) {
     return false;
   }
   for (; ; ) {
-    skipWhiteSpace.lastIndex = start;
-    start += skipWhiteSpace.exec(this.input)[0].length;
-    var match = literal.exec(this.input.slice(start));
+    skipWhiteSpace.lastIndex = start2;
+    start2 += skipWhiteSpace.exec(this.input)[0].length;
+    var match = literal.exec(this.input.slice(start2));
     if (!match) {
       return false;
     }
     if ((match[1] || match[2]) === "use strict") {
-      skipWhiteSpace.lastIndex = start + match[0].length;
+      skipWhiteSpace.lastIndex = start2 + match[0].length;
       var spaceAfter = skipWhiteSpace.exec(this.input), end = spaceAfter.index + spaceAfter[0].length;
       var next = this.input.charAt(end);
       return next === ";" || next === "}" || lineBreak.test(spaceAfter[0]) && !(/[(`.[+\-/*%<>=,?^&]/.test(next) || next === "!" && this.input.charAt(end + 1) === "=");
     }
-    start += match[0].length;
-    skipWhiteSpace.lastIndex = start;
-    start += skipWhiteSpace.exec(this.input)[0].length;
-    if (this.input[start] === ";") {
-      start++;
+    start2 += match[0].length;
+    skipWhiteSpace.lastIndex = start2;
+    start2 += skipWhiteSpace.exec(this.input)[0].length;
+    if (this.input[start2] === ";") {
+      start2++;
     }
   }
 };
@@ -15200,13 +15232,13 @@ pp$5.parseExprAtom = function(refDestructuringErrors, forInit, forNew) {
       this.next();
       return this.finishNode(node, "Literal");
     case types$1.parenL:
-      var start = this.start, expr = this.parseParenAndDistinguishExpression(canBeArrow, forInit);
+      var start2 = this.start, expr = this.parseParenAndDistinguishExpression(canBeArrow, forInit);
       if (refDestructuringErrors) {
         if (refDestructuringErrors.parenthesizedAssign < 0 && !this.isSimpleAssignTarget(expr)) {
-          refDestructuringErrors.parenthesizedAssign = start;
+          refDestructuringErrors.parenthesizedAssign = start2;
         }
         if (refDestructuringErrors.parenthesizedBind < 0) {
-          refDestructuringErrors.parenthesizedBind = start;
+          refDestructuringErrors.parenthesizedBind = start2;
         }
       }
       return expr;
@@ -15540,11 +15572,11 @@ pp$5.parseGetterSetter = function(prop) {
   prop.kind = kind;
   var paramCount = prop.kind === "get" ? 0 : 1;
   if (prop.value.params.length !== paramCount) {
-    var start = prop.value.start;
+    var start2 = prop.value.start;
     if (prop.kind === "get") {
-      this.raiseRecoverable(start, "getter should have no params");
+      this.raiseRecoverable(start2, "getter should have no params");
     } else {
-      this.raiseRecoverable(start, "setter should have exactly one param");
+      this.raiseRecoverable(start2, "setter should have exactly one param");
     }
   } else {
     if (prop.kind === "set" && prop.value.params[0].type === "RestElement") {
@@ -15730,33 +15762,33 @@ pp$5.parseExprList = function(close2, allowTrailingComma, allowEmpty, refDestruc
   return elts;
 };
 pp$5.checkUnreserved = function(ref2) {
-  var start = ref2.start;
+  var start2 = ref2.start;
   var end = ref2.end;
   var name2 = ref2.name;
   if (this.inGenerator && name2 === "yield") {
-    this.raiseRecoverable(start, "Cannot use 'yield' as identifier inside a generator");
+    this.raiseRecoverable(start2, "Cannot use 'yield' as identifier inside a generator");
   }
   if (this.inAsync && name2 === "await") {
-    this.raiseRecoverable(start, "Cannot use 'await' as identifier inside an async function");
+    this.raiseRecoverable(start2, "Cannot use 'await' as identifier inside an async function");
   }
   if (!(this.currentThisScope().flags & SCOPE_VAR) && name2 === "arguments") {
-    this.raiseRecoverable(start, "Cannot use 'arguments' in class field initializer");
+    this.raiseRecoverable(start2, "Cannot use 'arguments' in class field initializer");
   }
   if (this.inClassStaticBlock && (name2 === "arguments" || name2 === "await")) {
-    this.raise(start, "Cannot use " + name2 + " in class static initialization block");
+    this.raise(start2, "Cannot use " + name2 + " in class static initialization block");
   }
   if (this.keywords.test(name2)) {
-    this.raise(start, "Unexpected keyword '" + name2 + "'");
+    this.raise(start2, "Unexpected keyword '" + name2 + "'");
   }
-  if (this.options.ecmaVersion < 6 && this.input.slice(start, end).indexOf("\\") !== -1) {
+  if (this.options.ecmaVersion < 6 && this.input.slice(start2, end).indexOf("\\") !== -1) {
     return;
   }
   var re = this.strict ? this.reservedWordsStrict : this.reservedWords;
   if (re.test(name2)) {
     if (!this.inAsync && name2 === "await") {
-      this.raiseRecoverable(start, "Cannot use keyword 'await' outside an async function");
+      this.raiseRecoverable(start2, "Cannot use keyword 'await' outside an async function");
     }
-    this.raiseRecoverable(start, "The keyword '" + name2 + "' is reserved");
+    this.raiseRecoverable(start2, "The keyword '" + name2 + "' is reserved");
   }
 };
 pp$5.parseIdent = function(liberal) {
@@ -16071,10 +16103,10 @@ var RegExpValidationState = function RegExpValidationState2(parser) {
   this.backReferenceNames = [];
   this.branchID = null;
 };
-RegExpValidationState.prototype.reset = function reset(start, pattern, flags) {
+RegExpValidationState.prototype.reset = function reset(start2, pattern, flags) {
   var unicodeSets = flags.indexOf("v") !== -1;
   var unicode = flags.indexOf("u") !== -1;
-  this.start = start | 0;
+  this.start = start2 | 0;
   this.source = pattern + "";
   this.flags = flags;
   if (unicodeSets && this.parser.options.ecmaVersion >= 15) {
@@ -16274,7 +16306,7 @@ pp$1.regexp_eatTerm = function(state) {
   return false;
 };
 pp$1.regexp_eatAssertion = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   state.lastAssertionIsQuantifiable = false;
   if (state.eat(
     94
@@ -16298,7 +16330,7 @@ pp$1.regexp_eatAssertion = function(state) {
     )) {
       return true;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   if (state.eat(
     40
@@ -16332,7 +16364,7 @@ pp$1.regexp_eatAssertion = function(state) {
       return true;
     }
   }
-  state.pos = start;
+  state.pos = start2;
   return false;
 };
 pp$1.regexp_eatQuantifier = function(state, noError) {
@@ -16359,7 +16391,7 @@ pp$1.regexp_eatQuantifierPrefix = function(state, noError) {
   ) || this.regexp_eatBracedQuantifier(state, noError);
 };
 pp$1.regexp_eatBracedQuantifier = function(state, noError) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     123
     /* { */
@@ -16386,7 +16418,7 @@ pp$1.regexp_eatBracedQuantifier = function(state, noError) {
     if (state.switchU && !noError) {
       state.raise("Incomplete quantifier");
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
@@ -16397,7 +16429,7 @@ pp$1.regexp_eatAtom = function(state) {
   ) || this.regexp_eatReverseSolidusAtomEscape(state) || this.regexp_eatCharacterClass(state) || this.regexp_eatUncapturingGroup(state) || this.regexp_eatCapturingGroup(state);
 };
 pp$1.regexp_eatReverseSolidusAtomEscape = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     92
     /* \ */
@@ -16405,12 +16437,12 @@ pp$1.regexp_eatReverseSolidusAtomEscape = function(state) {
     if (this.regexp_eatAtomEscape(state)) {
       return true;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
 pp$1.regexp_eatUncapturingGroup = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     40
     /* ( */
@@ -16460,7 +16492,7 @@ pp$1.regexp_eatUncapturingGroup = function(state) {
         state.raise("Unterminated group");
       }
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
@@ -16523,12 +16555,12 @@ function isSyntaxCharacter(ch2) {
   return ch2 === 36 || ch2 >= 40 && ch2 <= 43 || ch2 === 46 || ch2 === 63 || ch2 >= 91 && ch2 <= 94 || ch2 >= 123 && ch2 <= 125;
 }
 pp$1.regexp_eatPatternCharacters = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   var ch2 = 0;
   while ((ch2 = state.current()) !== -1 && !isSyntaxCharacter(ch2)) {
     state.advance();
   }
-  return state.pos !== start;
+  return state.pos !== start2;
 };
 pp$1.regexp_eatExtendedPatternCharacter = function(state) {
   var ch2 = state.current();
@@ -16595,7 +16627,7 @@ pp$1.regexp_eatRegExpIdentifierName = function(state) {
   return false;
 };
 pp$1.regexp_eatRegExpIdentifierStart = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   var forceU = this.options.ecmaVersion >= 11;
   var ch2 = state.current(forceU);
   state.advance(forceU);
@@ -16606,14 +16638,14 @@ pp$1.regexp_eatRegExpIdentifierStart = function(state) {
     state.lastIntValue = ch2;
     return true;
   }
-  state.pos = start;
+  state.pos = start2;
   return false;
 };
 function isRegExpIdentifierStart(ch2) {
   return isIdentifierStart(ch2, true) || ch2 === 36 || ch2 === 95;
 }
 pp$1.regexp_eatRegExpIdentifierPart = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   var forceU = this.options.ecmaVersion >= 11;
   var ch2 = state.current(forceU);
   state.advance(forceU);
@@ -16624,7 +16656,7 @@ pp$1.regexp_eatRegExpIdentifierPart = function(state) {
     state.lastIntValue = ch2;
     return true;
   }
-  state.pos = start;
+  state.pos = start2;
   return false;
 };
 function isRegExpIdentifierPart(ch2) {
@@ -16643,7 +16675,7 @@ pp$1.regexp_eatAtomEscape = function(state) {
   return false;
 };
 pp$1.regexp_eatBackReference = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (this.regexp_eatDecimalEscape(state)) {
     var n = state.lastIntValue;
     if (state.switchU) {
@@ -16655,7 +16687,7 @@ pp$1.regexp_eatBackReference = function(state) {
     if (n <= state.numCapturingParens) {
       return true;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
@@ -16676,7 +16708,7 @@ pp$1.regexp_eatCharacterEscape = function(state) {
   return this.regexp_eatControlEscape(state) || this.regexp_eatCControlLetter(state) || this.regexp_eatZero(state) || this.regexp_eatHexEscapeSequence(state) || this.regexp_eatRegExpUnicodeEscapeSequence(state, false) || !state.switchU && this.regexp_eatLegacyOctalEscapeSequence(state) || this.regexp_eatIdentityEscape(state);
 };
 pp$1.regexp_eatCControlLetter = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     99
     /* c */
@@ -16684,7 +16716,7 @@ pp$1.regexp_eatCControlLetter = function(state) {
     if (this.regexp_eatControlLetter(state)) {
       return true;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
@@ -16739,7 +16771,7 @@ function isControlLetter(ch2) {
 }
 pp$1.regexp_eatRegExpUnicodeEscapeSequence = function(state, forceU) {
   if (forceU === void 0) forceU = false;
-  var start = state.pos;
+  var start2 = state.pos;
   var switchU = forceU || state.switchU;
   if (state.eat(
     117
@@ -16779,7 +16811,7 @@ pp$1.regexp_eatRegExpUnicodeEscapeSequence = function(state, forceU) {
     if (switchU) {
       state.raise("Invalid unicode escape");
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
@@ -16855,7 +16887,7 @@ function isCharacterClassEscape(ch2) {
   return ch2 === 100 || ch2 === 68 || ch2 === 115 || ch2 === 83 || ch2 === 119 || ch2 === 87;
 }
 pp$1.regexp_eatUnicodePropertyValueExpression = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (this.regexp_eatUnicodePropertyName(state) && state.eat(
     61
     /* = */
@@ -16867,7 +16899,7 @@ pp$1.regexp_eatUnicodePropertyValueExpression = function(state) {
       return CharSetOk;
     }
   }
-  state.pos = start;
+  state.pos = start2;
   if (this.regexp_eatLoneUnicodePropertyNameOrValue(state)) {
     var nameOrValue = state.lastStringValue;
     return this.regexp_validateUnicodePropertyNameOrValue(state, nameOrValue);
@@ -16969,7 +17001,7 @@ pp$1.regexp_nonEmptyClassRanges = function(state) {
   }
 };
 pp$1.regexp_eatClassAtom = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     92
     /* \ */
@@ -16984,7 +17016,7 @@ pp$1.regexp_eatClassAtom = function(state) {
       }
       state.raise("Invalid escape");
     }
-    state.pos = start;
+    state.pos = start2;
   }
   var ch2 = state.current();
   if (ch2 !== 93) {
@@ -16995,7 +17027,7 @@ pp$1.regexp_eatClassAtom = function(state) {
   return false;
 };
 pp$1.regexp_eatClassEscape = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     98
     /* b */
@@ -17017,7 +17049,7 @@ pp$1.regexp_eatClassEscape = function(state) {
     if (this.regexp_eatClassControlLetter(state)) {
       return true;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return this.regexp_eatCharacterClassEscape(state) || this.regexp_eatCharacterEscape(state);
 };
@@ -17028,7 +17060,7 @@ pp$1.regexp_classSetExpression = function(state) {
     if (subResult === CharSetString) {
       result = CharSetString;
     }
-    var start = state.pos;
+    var start2 = state.pos;
     while (state.eatChars(
       [38, 38]
       /* && */
@@ -17041,7 +17073,7 @@ pp$1.regexp_classSetExpression = function(state) {
       }
       state.raise("Invalid character in character class");
     }
-    if (start !== state.pos) {
+    if (start2 !== state.pos) {
       return result;
     }
     while (state.eatChars(
@@ -17053,7 +17085,7 @@ pp$1.regexp_classSetExpression = function(state) {
       }
       state.raise("Invalid character in character class");
     }
-    if (start !== state.pos) {
+    if (start2 !== state.pos) {
       return result;
     }
   } else {
@@ -17073,7 +17105,7 @@ pp$1.regexp_classSetExpression = function(state) {
   }
 };
 pp$1.regexp_eatClassSetRange = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (this.regexp_eatClassSetCharacter(state)) {
     var left = state.lastIntValue;
     if (state.eat(
@@ -17086,7 +17118,7 @@ pp$1.regexp_eatClassSetRange = function(state) {
       }
       return true;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
@@ -17097,7 +17129,7 @@ pp$1.regexp_eatClassSetOperand = function(state) {
   return this.regexp_eatClassStringDisjunction(state) || this.regexp_eatNestedClass(state);
 };
 pp$1.regexp_eatNestedClass = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     91
     /* [ */
@@ -17116,7 +17148,7 @@ pp$1.regexp_eatNestedClass = function(state) {
       }
       return result;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   if (state.eat(
     92
@@ -17126,12 +17158,12 @@ pp$1.regexp_eatNestedClass = function(state) {
     if (result$1) {
       return result$1;
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return null;
 };
 pp$1.regexp_eatClassStringDisjunction = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eatChars(
     [92, 113]
     /* \q */
@@ -17150,7 +17182,7 @@ pp$1.regexp_eatClassStringDisjunction = function(state) {
     } else {
       state.raise("Invalid escape");
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return null;
 };
@@ -17174,7 +17206,7 @@ pp$1.regexp_classString = function(state) {
   return count === 1 ? CharSetOk : CharSetString;
 };
 pp$1.regexp_eatClassSetCharacter = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     92
     /* \ */
@@ -17189,7 +17221,7 @@ pp$1.regexp_eatClassSetCharacter = function(state) {
       state.lastIntValue = 8;
       return true;
     }
-    state.pos = start;
+    state.pos = start2;
     return false;
   }
   var ch2 = state.current();
@@ -17231,7 +17263,7 @@ pp$1.regexp_eatClassControlLetter = function(state) {
   return false;
 };
 pp$1.regexp_eatHexEscapeSequence = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   if (state.eat(
     120
     /* x */
@@ -17242,32 +17274,32 @@ pp$1.regexp_eatHexEscapeSequence = function(state) {
     if (state.switchU) {
       state.raise("Invalid escape");
     }
-    state.pos = start;
+    state.pos = start2;
   }
   return false;
 };
 pp$1.regexp_eatDecimalDigits = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   var ch2 = 0;
   state.lastIntValue = 0;
   while (isDecimalDigit(ch2 = state.current())) {
     state.lastIntValue = 10 * state.lastIntValue + (ch2 - 48);
     state.advance();
   }
-  return state.pos !== start;
+  return state.pos !== start2;
 };
 function isDecimalDigit(ch2) {
   return ch2 >= 48 && ch2 <= 57;
 }
 pp$1.regexp_eatHexDigits = function(state) {
-  var start = state.pos;
+  var start2 = state.pos;
   var ch2 = 0;
   state.lastIntValue = 0;
   while (isHexDigit(ch2 = state.current())) {
     state.lastIntValue = 16 * state.lastIntValue + hexToInt(ch2);
     state.advance();
   }
-  return state.pos !== start;
+  return state.pos !== start2;
 };
 function isHexDigit(ch2) {
   return ch2 >= 48 && ch2 <= 57 || ch2 >= 65 && ch2 <= 70 || ch2 >= 97 && ch2 <= 102;
@@ -17312,12 +17344,12 @@ function isOctalDigit(ch2) {
   return ch2 >= 48 && ch2 <= 55;
 }
 pp$1.regexp_eatFixedHexDigits = function(state, length) {
-  var start = state.pos;
+  var start2 = state.pos;
   state.lastIntValue = 0;
   for (var i3 = 0; i3 < length; ++i3) {
     var ch2 = state.current();
     if (!isHexDigit(ch2)) {
-      state.pos = start;
+      state.pos = start2;
       return false;
     }
     state.lastIntValue = 16 * state.lastIntValue + hexToInt(ch2);
@@ -17403,13 +17435,13 @@ pp.fullCharCodeAtPos = function() {
 };
 pp.skipBlockComment = function() {
   var startLoc = this.options.onComment && this.curPosition();
-  var start = this.pos, end = this.input.indexOf("*/", this.pos += 2);
+  var start2 = this.pos, end = this.input.indexOf("*/", this.pos += 2);
   if (end === -1) {
     this.raise(this.pos - 2, "Unterminated comment");
   }
   this.pos = end + 2;
   if (this.options.locations) {
-    for (var nextBreak = void 0, pos = start; (nextBreak = nextLineBreak(this.input, pos, this.pos)) > -1; ) {
+    for (var nextBreak = void 0, pos = start2; (nextBreak = nextLineBreak(this.input, pos, this.pos)) > -1; ) {
       ++this.curLine;
       pos = this.lineStart = nextBreak;
     }
@@ -17417,8 +17449,8 @@ pp.skipBlockComment = function() {
   if (this.options.onComment) {
     this.options.onComment(
       true,
-      this.input.slice(start + 2, end),
-      start,
+      this.input.slice(start2 + 2, end),
+      start2,
       this.pos,
       startLoc,
       this.curPosition()
@@ -17426,7 +17458,7 @@ pp.skipBlockComment = function() {
   }
 };
 pp.skipLineComment = function(startSkip) {
-  var start = this.pos;
+  var start2 = this.pos;
   var startLoc = this.options.onComment && this.curPosition();
   var ch2 = this.input.charCodeAt(this.pos += startSkip);
   while (this.pos < this.input.length && !isNewLine(ch2)) {
@@ -17435,8 +17467,8 @@ pp.skipLineComment = function(startSkip) {
   if (this.options.onComment) {
     this.options.onComment(
       false,
-      this.input.slice(start + startSkip, this.pos),
-      start,
+      this.input.slice(start2 + startSkip, this.pos),
+      start2,
       this.pos,
       startLoc,
       this.curPosition()
@@ -17744,14 +17776,14 @@ pp.finishOp = function(type, size2) {
   return this.finishToken(type, str);
 };
 pp.readRegexp = function() {
-  var escaped, inClass, start = this.pos;
+  var escaped, inClass, start2 = this.pos;
   for (; ; ) {
     if (this.pos >= this.input.length) {
-      this.raise(start, "Unterminated regular expression");
+      this.raise(start2, "Unterminated regular expression");
     }
     var ch2 = this.input.charAt(this.pos);
     if (lineBreak.test(ch2)) {
-      this.raise(start, "Unterminated regular expression");
+      this.raise(start2, "Unterminated regular expression");
     }
     if (!escaped) {
       if (ch2 === "[") {
@@ -17767,7 +17799,7 @@ pp.readRegexp = function() {
     }
     ++this.pos;
   }
-  var pattern = this.input.slice(start, this.pos);
+  var pattern = this.input.slice(start2, this.pos);
   ++this.pos;
   var flagsStart = this.pos;
   var flags = this.readWord1();
@@ -17775,7 +17807,7 @@ pp.readRegexp = function() {
     this.unexpected(flagsStart);
   }
   var state = this.regexpState || (this.regexpState = new RegExpValidationState(this));
-  state.reset(start, pattern, flags);
+  state.reset(start2, pattern, flags);
   this.validateRegExpFlags(state);
   this.validateRegExpPattern(state);
   var value = null;
@@ -17788,7 +17820,7 @@ pp.readRegexp = function() {
 pp.readInt = function(radix, len, maybeLegacyOctalNumericLiteral) {
   var allowSeparators = this.options.ecmaVersion >= 12 && len === void 0;
   var isLegacyOctalNumericLiteral = maybeLegacyOctalNumericLiteral && this.input.charCodeAt(this.pos) === 48;
-  var start = this.pos, total = 0, lastCode = 0;
+  var start2 = this.pos, total = 0, lastCode = 0;
   for (var i3 = 0, e = len == null ? Infinity : len; i3 < e; ++i3, ++this.pos) {
     var code = this.input.charCodeAt(this.pos), val = void 0;
     if (allowSeparators && code === 95) {
@@ -17822,7 +17854,7 @@ pp.readInt = function(radix, len, maybeLegacyOctalNumericLiteral) {
   if (allowSeparators && lastCode === 95) {
     this.raiseRecoverable(this.pos - 1, "Numeric separator is not allowed at the last of digits");
   }
-  if (this.pos === start || len != null && this.pos - start !== len) {
+  if (this.pos === start2 || len != null && this.pos - start2 !== len) {
     return null;
   }
   return total;
@@ -17840,14 +17872,14 @@ function stringToBigInt(str) {
   return BigInt(str.replace(/_/g, ""));
 }
 pp.readRadixNumber = function(radix) {
-  var start = this.pos;
+  var start2 = this.pos;
   this.pos += 2;
   var val = this.readInt(radix);
   if (val == null) {
     this.raise(this.start + 2, "Expected number in radix " + radix);
   }
   if (this.options.ecmaVersion >= 11 && this.input.charCodeAt(this.pos) === 110) {
-    val = stringToBigInt(this.input.slice(start, this.pos));
+    val = stringToBigInt(this.input.slice(start2, this.pos));
     ++this.pos;
   } else if (isIdentifierStart(this.fullCharCodeAtPos())) {
     this.raise(this.pos, "Identifier directly after number");
@@ -17855,24 +17887,24 @@ pp.readRadixNumber = function(radix) {
   return this.finishToken(types$1.num, val);
 };
 pp.readNumber = function(startsWithDot) {
-  var start = this.pos;
+  var start2 = this.pos;
   if (!startsWithDot && this.readInt(10, void 0, true) === null) {
-    this.raise(start, "Invalid number");
+    this.raise(start2, "Invalid number");
   }
-  var octal = this.pos - start >= 2 && this.input.charCodeAt(start) === 48;
+  var octal = this.pos - start2 >= 2 && this.input.charCodeAt(start2) === 48;
   if (octal && this.strict) {
-    this.raise(start, "Invalid number");
+    this.raise(start2, "Invalid number");
   }
   var next = this.input.charCodeAt(this.pos);
   if (!octal && !startsWithDot && this.options.ecmaVersion >= 11 && next === 110) {
-    var val$1 = stringToBigInt(this.input.slice(start, this.pos));
+    var val$1 = stringToBigInt(this.input.slice(start2, this.pos));
     ++this.pos;
     if (isIdentifierStart(this.fullCharCodeAtPos())) {
       this.raise(this.pos, "Identifier directly after number");
     }
     return this.finishToken(types$1.num, val$1);
   }
-  if (octal && /[89]/.test(this.input.slice(start, this.pos))) {
+  if (octal && /[89]/.test(this.input.slice(start2, this.pos))) {
     octal = false;
   }
   if (next === 46 && !octal) {
@@ -17886,13 +17918,13 @@ pp.readNumber = function(startsWithDot) {
       ++this.pos;
     }
     if (this.readInt(10) === null) {
-      this.raise(start, "Invalid number");
+      this.raise(start2, "Invalid number");
     }
   }
   if (isIdentifierStart(this.fullCharCodeAtPos())) {
     this.raise(this.pos, "Identifier directly after number");
   }
-  var val = stringToNumber(this.input.slice(start, this.pos), octal);
+  var val = stringToNumber(this.input.slice(start2, this.pos), octal);
   return this.finishToken(types$1.num, val);
 };
 pp.readCodePoint = function() {
@@ -18255,7 +18287,7 @@ function compileFiniteRegex({ pattern, flags }, tick) {
   const text3 = pattern.slice(1, -1);
   let offset2 = 0;
   const invalid = () => fail("MVU_SCHEMA_CODE", "Unsupported finite regex syntax");
-  function character() {
+  function character2() {
     const c = text3[offset2++];
     if (c === "\\") {
       const escaped = text3[offset2++];
@@ -18285,19 +18317,19 @@ function compileFiniteRegex({ pattern, flags }, tick) {
         offset2++;
         const ranges = [];
         while (offset2 < text3.length && text3[offset2] !== "]") {
-          const start2 = character();
+          const start3 = character2();
           if (text3[offset2] === "-") {
             offset2++;
-            const end2 = character();
-            if (start2.length !== 1 || end2.length !== 1 || start2[0][0] !== start2[0][1] || end2[0][0] !== end2[0][1] || start2[0][0] > end2[0][0]) invalid();
-            ranges.push([start2[0][0], end2[0][0]]);
-          } else ranges.push(...start2);
+            const end2 = character2();
+            if (start3.length !== 1 || end2.length !== 1 || start3[0][0] !== start3[0][1] || end2[0][0] !== end2[0][1] || start3[0][0] > end2[0][0]) invalid();
+            ranges.push([start3[0][0], end2[0][0]]);
+          } else ranges.push(...start3);
         }
         if (!ranges.length || text3[offset2++] !== "]") invalid();
         item = { ranges };
       } else {
         if (text3[offset2] === ".") invalid();
-        item = { ranges: character() };
+        item = { ranges: character2() };
       }
       if (text3[offset2] === "{") {
         const quantifier = /^\{(\d{1,2})(?:,(\d{1,2}))?\}/.exec(text3.slice(offset2));
@@ -18316,9 +18348,9 @@ function compileFiniteRegex({ pattern, flags }, tick) {
     choices.push({ sequence: items2 });
     return { choices };
   }
-  const root = expression2();
+  const root2 = expression2();
   if (offset2 !== text3.length) invalid();
-  if (root.choices.length !== 1) fail("MVU_SCHEMA_CODE", "Regex alternatives must be grouped inside both anchors");
+  if (root2.choices.length !== 1) fail("MVU_SCHEMA_CODE", "Regex alternatives must be grouped inside both anchors");
   const states = [];
   const state = () => {
     tick();
@@ -18330,18 +18362,18 @@ function compileFiniteRegex({ pattern, flags }, tick) {
     tick();
     states[from].push(value);
   };
-  function build(node, start2, end2) {
+  function build(node, start3, end2) {
     if (node.ranges) {
-      edge(start2, { ranges: node.ranges, next: end2 });
+      edge(start3, { ranges: node.ranges, next: end2 });
       return 1;
     }
     if (node.choices) {
       let max = 0;
-      for (const choice of node.choices) max = Math.max(max, build(choice, start2, end2));
+      for (const choice of node.choices) max = Math.max(max, build(choice, start3, end2));
       return max;
     }
     if (node.sequence) {
-      let length2 = 0, from2 = start2;
+      let length2 = 0, from2 = start3;
       node.sequence.forEach((item, i3) => {
         const to = i3 === node.sequence.length - 1 ? end2 : state();
         length2 += build(item, from2, to);
@@ -18349,28 +18381,28 @@ function compileFiniteRegex({ pattern, flags }, tick) {
       });
       return length2;
     }
-    let length = 0, from = start2;
+    let length = 0, from = start3;
     for (let i3 = 0; i3 < node.max; i3++) {
       if (i3 >= node.min) edge(from, { next: end2 });
       const to = i3 === node.max - 1 ? end2 : state();
       length += build(node.repeat, from, to);
       from = to;
     }
-    if (!node.max) edge(start2, { next: end2 });
+    if (!node.max) edge(start3, { next: end2 });
     return length;
   }
-  const start = state(), end = state(), maxLength = build(root, start, end);
-  return { states, start, end, maxLength };
+  const start2 = state(), end = state(), maxLength = build(root2, start2, end);
+  return { states, start: start2, end, maxLength };
 }
 function testFiniteRegex(value, regex, tick) {
   if (value.length > regex.maxLength) return false;
   const closure = (input) => {
-    const result = new Set(input), pending2 = [...result];
-    for (let i3 = 0; i3 < pending2.length; i3++) {
+    const result = new Set(input), pending4 = [...result];
+    for (let i3 = 0; i3 < pending4.length; i3++) {
       tick();
-      for (const edge of regex.states[pending2[i3]]) if (!edge.ranges && !result.has(edge.next)) {
+      for (const edge of regex.states[pending4[i3]]) if (!edge.ranges && !result.has(edge.next)) {
         result.add(edge.next);
-        pending2.push(edge.next);
+        pending4.push(edge.next);
       }
     }
     return result;
@@ -18453,7 +18485,7 @@ function machine(interpreterVersion = 2) {
       }
     }
   };
-  const call = (fn, args) => {
+  const call2 = (fn, args) => {
     tick();
     if (fn?.[FUNCTION]) {
       const env = copyEnv(fn.env);
@@ -18621,7 +18653,7 @@ function machine(interpreterVersion = 2) {
           if (!value || typeof value !== "object" || capability(value)) fail("MVU_SCHEMA_CODE", "Own-property test requires data");
           return Object.hasOwn(value, safeKey(key2));
         }
-        return call(evaluate(node.callee, env), node.arguments.map((a) => evaluate(a, env)));
+        return call2(evaluate(node.callee, env), node.arguments.map((a) => evaluate(a, env)));
       }
       case "BinaryExpression": {
         const operation = binary[node.operator];
@@ -18707,12 +18739,12 @@ function machine(interpreterVersion = 2) {
     }
     fail("MVU_SCHEMA_CODE", `Unsupported statement: ${node.type}`);
   }
-  return { evaluate, statement, call, tick, declare };
+  return { evaluate, statement, call: call2, tick, declare };
 }
-function inspectAst(root, interpreterVersion = 2) {
+function inspectAst(root2, interpreterVersion = 2) {
   const allowed = /* @__PURE__ */ new Set(["Program", "ImportDeclaration", "ImportSpecifier", "ExportNamedDeclaration", "VariableDeclaration", "VariableDeclarator", "Identifier", "Literal", "ArrayExpression", "ObjectExpression", "Property", "SpreadElement", "MemberExpression", "ArrowFunctionExpression", "FunctionExpression", "AssignmentPattern", "ChainExpression", "ForOfStatement", "CallExpression", "BinaryExpression", "LogicalExpression", "ConditionalExpression", "UnaryExpression", "AssignmentExpression", "BlockStatement", "ReturnStatement", "IfStatement", "ExpressionStatement"]);
   const declared = /* @__PURE__ */ new Set(["z", "Math", "math", "_", "$", "registerMvuSchema", "undefined", ...Object.keys(mathFunctions)]);
-  for (let entry of root.body ?? []) {
+  for (let entry of root2.body ?? []) {
     if (entry.type === "ExportNamedDeclaration") entry = entry.declaration;
     if (entry?.type === "VariableDeclaration") {
       for (const item of entry.declarations) if (item.id.type === "Identifier") declared.add(item.id.name);
@@ -18761,7 +18793,7 @@ function inspectAst(root, interpreterVersion = 2) {
       } else if (value?.type) walk2(value, depth + 1, locals, node, field2, mutable);
     }
   }
-  walk2(root, 0);
+  walk2(root2, 0);
 }
 function buildSchema(source, interpreterVersion = 2) {
   if (typeof source !== "string" || source.length > 128 * 1024) fail("MVU_LIMIT", "Schema source exceeds limit");
@@ -18813,7 +18845,7 @@ function compileMvuSchema(source) {
 }
 function applyMvuSchema(value, definition) {
   if (definition?.mvuSchema !== 1 || ![1, 2].includes(definition.interpreterVersion) || Object.keys(definition).some((key2) => !["mvuSchema", "interpreterVersion", "source"].includes(key2))) fail("MVU_SCHEMA_CODE", "Invalid schema descriptor");
-  const root = buildSchema(definition.source, definition.interpreterVersion), vm = machine(definition.interpreterVersion);
+  const root2 = buildSchema(definition.source, definition.interpreterVersion), vm = machine(definition.interpreterVersion);
   let count = 0;
   function apply5(value2, node, depth = 0) {
     if (++count > 1e4 || depth > 64) fail("MVU_LIMIT", "Schema traversal exceeds limit");
@@ -18880,7 +18912,7 @@ function applyMvuSchema(value, definition) {
     if (node.min !== void 0 && measured < node.min || node.max !== void 0 && measured > node.max) fail("MVU_SCHEMA", "Value outside limits");
     return value2;
   }
-  return data2(apply5(data2(value), root));
+  return data2(apply5(data2(value), root2));
 }
 
 // packages/client/src/play/mvu-builtins.js
@@ -18893,10 +18925,10 @@ function mvuAdapter(url, version3 = 1) {
 }
 function confirmMvuSchemas(declarations, snapshot) {
   return declarations.map((item) => {
-    const descriptor = snapshot?.variables?.mvu_schema;
+    const descriptor2 = snapshot?.variables?.mvu_schema;
     if (snapshot?.status !== "available") throw Object.assign(Error("MVU snapshot is unavailable"), { code: "MVU_SNAPSHOT_UNAVAILABLE" });
-    if (descriptor?.mvuSchema !== 1 || ![1, 2].includes(descriptor?.interpreterVersion) || descriptor?.source !== item.source) throw Object.assign(Error("Built-in MVU schema requires the exact complete schema source and supported interpreter version"), { code: "MVU_SCHEMA_MISMATCH" });
-    return { ...item, status: "source-registered", resourceId: snapshot.resourceId, revision: snapshot.revision, interpreterVersion: descriptor.interpreterVersion, confirmation: "Derived locally from the authoritative snapshot; original schema script was not executed in the card" };
+    if (descriptor2?.mvuSchema !== 1 || ![1, 2].includes(descriptor2?.interpreterVersion) || descriptor2?.source !== item.source) throw Object.assign(Error("Built-in MVU schema requires the exact complete schema source and supported interpreter version"), { code: "MVU_SCHEMA_MISMATCH" });
+    return { ...item, status: "source-registered", resourceId: snapshot.resourceId, revision: snapshot.revision, interpreterVersion: descriptor2.interpreterVersion, confirmation: "Derived locally from the authoritative snapshot; original schema script was not executed in the card" };
   });
 }
 function confirmMvuCommandHooks(declarations, snapshot) {
@@ -18962,8 +18994,8 @@ function htmlLoaderScript(source) {
 var literal2 = (node) => node?.type === "Literal" && typeof node.value === "string" ? node.value : null;
 function loadCall(node, name2, localBindings) {
   if (node?.type !== "ExpressionStatement") return false;
-  const call = node.expression, member = call?.callee, selector = member?.object;
-  return call.type === "CallExpression" && call.arguments.length === 1 && member.type === "MemberExpression" && !member.computed && member.property.name === "load" && selector.type === "CallExpression" && selector.callee.type === "Identifier" && ["$", "jQuery"].includes(selector.callee.name) && !localBindings.has(selector.callee.name) && selector.arguments.length === 1 && literal2(selector.arguments[0]) === "body" && call.arguments[0].type === "Identifier" && call.arguments[0].name === name2;
+  const call2 = node.expression, member = call2?.callee, selector = member?.object;
+  return call2.type === "CallExpression" && call2.arguments.length === 1 && member.type === "MemberExpression" && !member.computed && member.property.name === "load" && selector.type === "CallExpression" && selector.callee.type === "Identifier" && ["$", "jQuery"].includes(selector.callee.name) && !localBindings.has(selector.callee.name) && selector.arguments.length === 1 && literal2(selector.arguments[0]) === "body" && call2.arguments[0].type === "Identifier" && call2.arguments[0].name === name2;
 }
 function inspectHtmlLoader(source) {
   const code = htmlLoaderScript(source);
@@ -19012,9 +19044,9 @@ function adaptIdentityHtml(html2, wrapper) {
   if (wrapper?.kind !== "identity-html-loader") return html2;
   if (sourceSha256(html2) !== wrapper.htmlSha256) throw Error("Identity HTML source changed; this compatibility snapshot must be reviewed again");
   const marker = "  function finishIdentitySelection(prompt) {";
-  const start = html2.indexOf(marker), end = html2.indexOf('\n  $("#identitySelect").addEventListener(', start);
-  if (start < 0 || end < 0) throw Error("Identity proposal adapter structure changed");
-  const proposed = html2.slice(0, start) + `  function finishIdentitySelection(result) {
+  const start2 = html2.indexOf(marker), end = html2.indexOf('\n  $("#identitySelect").addEventListener(', start2);
+  if (start2 < 0 || end < 0) throw Error("Identity proposal adapter structure changed");
+  const proposed = html2.slice(0, start2) + `  function finishIdentitySelection(result) {
     setStatus(result.proposalReady ? "\u8EAB\u4EFD\u5DF2\u5199\u5165\uFF0C\u8BF7\u5728\u5361\u7247\u4E0B\u65B9\u786E\u8BA4\u5F00\u573A\u63D0\u6848\u3002" : "\u8EAB\u4EFD\u5DF2\u5199\u5165\uFF1B\u5F00\u573A\u63D0\u6848\u5C1A\u672A\u5C55\u793A\uFF0C\u8BF7\u67E5\u770B\u5361\u7247\u4E0B\u65B9\u7684\u7ED3\u679C\u3002");
   }
 ` + html2.slice(end);
@@ -19119,9 +19151,9 @@ function discoverDependencies(source, base) {
         continue;
       }
     }
-    const pending2 = [tree];
-    while (pending2.length) {
-      const node = pending2.pop();
+    const pending4 = [tree];
+    while (pending4.length) {
+      const node = pending4.pop();
       if (["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration"].includes(node.type) && node.source) add("module", node.source.value);
       if (node.type === "ImportExpression") {
         if (node.source.type === "Literal" && typeof node.source.value === "string") add("module", node.source.value);
@@ -19130,8 +19162,8 @@ function discoverDependencies(source, base) {
       if (node.type === "CallExpression" && node.callee.type === "MemberExpression" && !node.callee.computed && node.callee.property.name === "load" && node.arguments[0]?.type === "Literal" && typeof node.arguments[0].value === "string") add("html", node.arguments[0].value);
       for (const value of Object.values(node)) {
         if (Array.isArray(value)) {
-          for (const item of value) if (item && typeof item.type === "string") pending2.push(item);
-        } else if (value && typeof value.type === "string") pending2.push(value);
+          for (const item of value) if (item && typeof item.type === "string") pending4.push(item);
+        } else if (value && typeof value.type === "string") pending4.push(value);
       }
     }
   }
@@ -19164,25 +19196,25 @@ function helperScripts(resource2) {
 }
 function renderingInventory(resource2, { kind, resourceId }) {
   const raw = resource2?.source?.raw ?? resource2;
-  const owner = `${kind}:${resourceId}`;
-  const scripts = helperScripts(resource2).map((script2) => ({ ...script2, owner, kind: "helper", key: `${owner}:${script2.path}` }));
+  const owner2 = `${kind}:${resourceId}`;
+  const scripts = helperScripts(resource2).map((script2) => ({ ...script2, owner: owner2, kind: "helper", key: `${owner2}:${script2.path}` }));
   const cardData = raw?.data ?? raw;
   for (const [path3, content] of [["first_mes", cardData?.first_mes], ...Array.isArray(cardData?.alternate_greetings) ? cardData.alternate_greetings.slice(0, 128).map((text3, index) => [`alternate_greetings[${index}]`, text3]) : []]) {
-    if (typeof content === "string" && /<(?:body|html|script)\b/i.test(content)) scripts.push({ owner, key: `${owner}:${path3}`, path: path3, kind: "greeting", name: path3, content, enabled: true });
+    if (typeof content === "string" && /<(?:body|html|script)\b/i.test(content)) scripts.push({ owner: owner2, key: `${owner2}:${path3}`, path: path3, kind: "greeting", name: path3, content, enabled: true });
   }
   const regex = raw?.data?.extensions?.regex_scripts ?? raw?.extensions?.regex_scripts ?? raw?.regex_scripts ?? [];
   if (Array.isArray(regex)) regex.slice(0, 256).forEach((rule, index) => {
     const content = rule?.replaceString ?? rule?.replace_string ?? rule?.replacement ?? rule?.replace;
-    if (typeof content === "string" && /<(?:body|html|script)\b/i.test(content)) scripts.push({ owner, key: `${owner}:regex[${index}]`, path: `regex[${index}]`, kind: "regex", name: String(rule.scriptName ?? rule.name ?? index), content, enabled: rule.disabled !== true && rule.enabled !== false });
+    if (typeof content === "string" && /<(?:body|html|script)\b/i.test(content)) scripts.push({ owner: owner2, key: `${owner2}:regex[${index}]`, path: `regex[${index}]`, kind: "regex", name: String(rule.scriptName ?? rule.name ?? index), content, enabled: rule.disabled !== true && rule.enabled !== false });
   });
   return scripts.map((script2) => ({ ...script2, dependencies: discoverDependencies(script2.content) }));
 }
 function isSideEffectModuleReference(code, url, base) {
   const tree = SourceParser.parse(code, { ecmaVersion: "latest", sourceType: "module" });
   let matched = false;
-  const pending2 = [tree];
-  while (pending2.length) {
-    const node = pending2.pop();
+  const pending4 = [tree];
+  while (pending4.length) {
+    const node = pending4.pop();
     if (["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration"].includes(node.type) && node.source && externalUrl(node.source.value, base) === url) {
       if (node.type !== "ImportDeclaration" || node.specifiers.length) return false;
       matched = true;
@@ -19190,8 +19222,8 @@ function isSideEffectModuleReference(code, url, base) {
     if (node.type === "ImportExpression" && node.source.type === "Literal" && externalUrl(node.source.value, base) === url) return false;
     for (const value of Object.values(node)) {
       if (Array.isArray(value)) {
-        for (const item of value) if (item?.type) pending2.push(item);
-      } else if (value?.type) pending2.push(value);
+        for (const item of value) if (item?.type) pending4.push(item);
+      } else if (value?.type) pending4.push(value);
     }
   }
   return matched;
@@ -19220,17 +19252,17 @@ async function identifyRenderingSources(sources) {
   });
 }
 async function readRenderingWorkspace(client, read) {
-  const owner = await globalRenderingOwner(client);
+  const owner2 = await globalRenderingOwner(client);
   const resource2 = await read();
-  return { owner: owner === await globalRenderingOwner(client) ? owner : null, resource: resource2 };
+  return { owner: owner2 === await globalRenderingOwner(client) ? owner2 : null, resource: resource2 };
 }
 
 // packages/client/src/play/rendering-selection.js
 var builtinCandidate = (url) => MVU_ADAPTERS.find((item) => item.url === url) ?? null;
 var sourceEnabled = (source, trust) => source.enablementAmbiguous ? source.enabled !== false : trust.isEnabled(source.owner, source.preferenceKey ?? source.key, source.enabled !== false);
-function builtinReferenceSupport(content, dependency, source = {}, base, descriptor = builtinCandidate(dependency.url)) {
-  if (!descriptor) return null;
-  if (descriptor.kind === "mvu-facade") {
+function builtinReferenceSupport(content, dependency, source = {}, base, descriptor2 = builtinCandidate(dependency.url)) {
+  if (!descriptor2) return null;
+  if (descriptor2.kind === "mvu-facade") {
     if (dependency.kind === "script") return true;
     if (dependency.kind !== "module") return false;
     try {
@@ -19241,7 +19273,7 @@ function builtinReferenceSupport(content, dependency, source = {}, base, descrip
       return false;
     }
   }
-  if (descriptor.kind === "backend-schema" && source.kind === "helper" && !base && dependency.kind === "module") {
+  if (descriptor2.kind === "backend-schema" && source.kind === "helper" && !base && dependency.kind === "module") {
     try {
       compileMvuSchema(content);
       return true;
@@ -19308,7 +19340,7 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
       return () => listeners.delete(fn);
     },
     listRevocations() {
-      return [...revocations.values()].map(({ id, pending: pending2, error }) => ({ id, pending: pending2, error }));
+      return [...revocations.values()].map(({ id, pending: pending4, error }) => ({ id, pending: pending4, error }));
     },
     retryRevocation(id) {
       const item = [...revocations.values()].find((item2) => item2.id === id);
@@ -19317,9 +19349,9 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
     revokeMvuBinding(capability2, remove) {
       return revokeRemote({ grantId: capability2 }, remove);
     },
-    register({ scope, owners, runs, modules, html: html2, adapters = [], schemaDeclarations = [], downloaded, enabled, onRevoke }) {
+    register({ scope, owners, runs, modules, html: html2, adapters: adapters2 = [], schemaDeclarations = [], downloaded, enabled, onRevoke }) {
       if (downloaded !== true || enabled !== true) throw Error("Card execution requires available sources and enabled scripts");
-      const source = JSON.stringify({ version: 1, scope, owners, runs, modules, html: html2, adapters, schemaDeclarations });
+      const source = JSON.stringify({ version: 1, scope, owners, runs, modules, html: html2, adapters: adapters2, schemaDeclarations });
       const boundScope = JSON.parse(source).scope;
       const entry = { grant: null, generation: 0, onRevoke, executionId: crypto.randomUUID(), started: false };
       entries2.add(entry);
@@ -19329,11 +19361,11 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
       const current4 = () => {
         if (!entries2.has(entry)) throw new DOMException("Card execution stopped", "AbortError");
       };
-      let pending2;
-      const acquire2 = async () => {
+      let pending4;
+      const acquire3 = async () => {
         current4();
         if (entry.grant) return structuredClone(entry.grant);
-        if (pending2) return pending2;
+        if (pending4) return pending4;
         const ticket = entry.generation, executionId = entry.executionId, controller2 = new AbortController();
         entry.controller = controller2;
         const work = (async () => {
@@ -19355,26 +19387,26 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
           entry.grant = { grantId: grant.grantId, sourceIdentity };
           return structuredClone(entry.grant);
         })();
-        pending2 = work;
+        pending4 = work;
         try {
           return await work;
         } finally {
-          if (pending2 === work) pending2 = null;
+          if (pending4 === work) pending4 = null;
           if (entry.controller === controller2) entry.controller = null;
         }
       };
       return Object.freeze({
-        getGrant: acquire2,
+        getGrant: acquire3,
         peekGrant: () => entry.grant ? structuredClone(entry.grant) : null,
         async renew() {
           current4();
           release2(entry, false);
           try {
-            await pending2;
+            await pending4;
           } catch {
           }
           current4();
-          return acquire2();
+          return acquire3();
         },
         dispose() {
           if (!entries2.delete(entry)) return;
@@ -19448,14 +19480,14 @@ function createRenderingCacheBudget(limit2 = 64 * 1024 * 1024) {
     },
     trackInitialization(key2, promise) {
       if (typeof key2 !== "string" || !key2 || key2.length > 200 || initializations.has(key2) || (/* @__PURE__ */ new Set([...initializations.keys(), ...failures.keys()])).size >= 16 && !failures.has(key2) || !promise || typeof promise.then !== "function") throw Error("Invalid cache initialization");
-      const pending2 = Promise.resolve(promise).then(() => {
+      const pending4 = Promise.resolve(promise).then(() => {
         failures.delete(key2);
       }, (error) => {
         failures.set(key2, error instanceof Error ? error : Error(String(error)));
       }).finally(() => {
-        if (initializations.get(key2) === pending2) initializations.delete(key2);
+        if (initializations.get(key2) === pending4) initializations.delete(key2);
       });
-      initializations.set(key2, pending2);
+      initializations.set(key2, pending4);
     },
     async ready() {
       while (initializations.size) await Promise.all([...initializations.values()]);
@@ -19482,7 +19514,7 @@ function uniqueSourceBytes(items2, excluding = []) {
   return bytes;
 }
 function createSharedSourceDownloads({ lookup, download }) {
-  const pending2 = /* @__PURE__ */ new Map(), active = /* @__PURE__ */ new Set();
+  const pending4 = /* @__PURE__ */ new Map(), active = /* @__PURE__ */ new Set();
   let lastDownload = 0;
   return {
     async acquire(url, { signal, refresh = false } = {}) {
@@ -19493,7 +19525,7 @@ function createSharedSourceDownloads({ lookup, download }) {
         if (saved) return { ...saved, release() {
         } };
       }
-      let entry = refresh ? null : pending2.get(url);
+      let entry = refresh ? null : pending4.get(url);
       if (!entry) {
         entry = { controller: new AbortController(), users: /* @__PURE__ */ new Set() };
         active.add(entry);
@@ -19506,7 +19538,7 @@ function createSharedSourceDownloads({ lookup, download }) {
         });
         entry.promise.catch(() => {
         });
-        pending2.set(url, entry);
+        pending4.set(url, entry);
       }
       const user = {};
       entry.users.add(user);
@@ -19520,7 +19552,7 @@ function createSharedSourceDownloads({ lookup, download }) {
           if (!entry.users.size) {
             entry.controller.abort();
             active.delete(entry);
-            if (pending2.get(url) === entry) pending2.delete(url);
+            if (pending4.get(url) === entry) pending4.delete(url);
           }
         };
         const abort = () => {
@@ -19552,15 +19584,15 @@ function createSharedSourceDownloads({ lookup, download }) {
     dispose() {
       for (const entry of active) entry.controller.abort();
       active.clear();
-      pending2.clear();
+      pending4.clear();
     }
   };
 }
 
 // packages/client/src/play/rendering-trust.js
 function createRenderingTrust({ candidates = MVU_ADAPTERS, budget = createRenderingCacheBudget() } = {}) {
-  const installs = /* @__PURE__ */ new Map(), records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), adapters = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
-  let revision = 0, generation = 0;
+  const installs = /* @__PURE__ */ new Map(), records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), adapters2 = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
+  let revision = 0, generation2 = 0;
   let inactiveBytes = () => 0;
   let cacheReady = async () => {
   };
@@ -19568,7 +19600,7 @@ function createRenderingTrust({ candidates = MVU_ADAPTERS, budget = createRender
     revision++;
     for (const listener of listeners) listener();
   };
-  const keyFor = (owner, source) => JSON.stringify([owner, source]);
+  const keyFor = (owner2, source) => JSON.stringify([owner2, source]);
   const reserveRecords = (values) => {
     const snapshot = budget.snapshot(), old = new Map(snapshot.entries), next = /* @__PURE__ */ new Map([
       ["executable", uniqueSourceBytes(values)],
@@ -19602,8 +19634,8 @@ function createRenderingTrust({ candidates = MVU_ADAPTERS, budget = createRender
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    isEnabled(owner, source, fallback = true) {
-      return intentions.get(keyFor(owner, source)) ?? fallback;
+    isEnabled(owner2, source, fallback = true) {
+      return intentions.get(keyFor(owner2, source)) ?? fallback;
     },
     setEnablement(value) {
       const next = value?.entries ?? [];
@@ -19618,105 +19650,105 @@ function createRenderingTrust({ candidates = MVU_ADAPTERS, budget = createRender
     setAdapterIntents(value) {
       const next = value === void 0 ? [] : normalizeRenderingAdapters(value).entries;
       const pairs2 = next.map((item) => [keyFor(item.owner, item.source), item.mode]);
-      if (JSON.stringify([...adapters]) === JSON.stringify(pairs2)) return;
-      adapters.clear();
-      for (const [key2, mode] of pairs2) adapters.set(key2, mode);
+      if (JSON.stringify([...adapters2]) === JSON.stringify(pairs2)) return;
+      adapters2.clear();
+      for (const [key2, mode] of pairs2) adapters2.set(key2, mode);
       emit();
     },
-    adapterIntent(owner, source) {
-      return adapters.get(keyFor(owner, source));
+    adapterIntent(owner2, source) {
+      return adapters2.get(keyFor(owner2, source));
     },
     builtinCandidate(source) {
       return candidates.find((item) => item.url === source) ?? null;
     },
-    selection(owner) {
-      const selected = (values) => [...values].filter(([key2]) => JSON.parse(key2)[0] === owner).sort((a, b2) => a[0].localeCompare(b2[0]));
-      return { enablement: selected(intentions), adapters: selected(adapters) };
+    selection(owner2) {
+      const selected = (values) => [...values].filter(([key2]) => JSON.parse(key2)[0] === owner2).sort((a, b2) => a[0].localeCompare(b2[0]));
+      return { enablement: selected(intentions), adapters: selected(adapters2) };
     },
-    async stage(owner, source, content) {
-      if (typeof owner !== "string" || owner.length > 300 || typeof source !== "string" || source.length > 2048 || typeof content !== "string" || content.length > MAX_RENDER_SOURCE) throw Error("Rendering source exceeds limit");
+    async stage(owner2, source, content) {
+      if (typeof owner2 !== "string" || owner2.length > 300 || typeof source !== "string" || source.length > 2048 || typeof content !== "string" || content.length > MAX_RENDER_SOURCE) throw Error("Rendering source exceeds limit");
       if (source.startsWith("https:") && externalUrl(source) !== source) throw Error("Unsupported dependency URL");
-      const key2 = keyFor(owner, source), ticket = {}, epoch = generation;
-      const ownerTicket = installs.get(owner);
+      const key2 = keyFor(owner2, source), ticket = {}, epoch = generation2;
+      const ownerTicket = installs.get(owner2);
       await cacheReady();
       await budget.ready();
-      if (generation !== epoch || installs.get(owner) !== ownerTicket) throw Error("Rendering review was cancelled");
+      if (generation2 !== epoch || installs.get(owner2) !== ownerTicket) throw Error("Rendering review was cancelled");
       if (!records.has(key2) && records.size >= RENDERING_CACHE_LIMITS.count) throw Error("Rendering source count exceeds limit");
       const bytes = new TextEncoder().encode(content).byteLength;
       if (bytes > MAX_RENDER_SOURCE || uniqueSourceBytes([...records.values()].filter((item) => keyFor(item.owner, item.source) !== key2).concat({ source, content })) > RENDERING_CACHE_LIMITS.bytes) throw Error("Rendering cache exceeds limit");
-      const next = { ticket, owner, source, content, approved: false, digest: null };
+      const next = { ticket, owner: owner2, source, content, approved: false, digest: null };
       reserveRecords([...records.values()].filter((item) => keyFor(item.owner, item.source) !== key2).concat(next));
       records.set(key2, next);
       emit();
       const digest2 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-      if (generation !== epoch || records.get(key2)?.ticket !== ticket) throw Error("Rendering review was cancelled");
-      records.set(key2, { owner, source, content, digest: digest2, approved: false });
+      if (generation2 !== epoch || records.get(key2)?.ticket !== ticket) throw Error("Rendering review was cancelled");
+      records.set(key2, { owner: owner2, source, content, digest: digest2, approved: false });
       emit();
       return digest2;
     },
-    removeOwner(owner) {
-      reserveRecords([...records.values()].filter((item) => item.owner !== owner));
-      installs.set(owner, {});
-      for (const [key2, value] of records) if (value.owner === owner) records.delete(key2);
+    removeOwner(owner2) {
+      reserveRecords([...records.values()].filter((item) => item.owner !== owner2));
+      installs.set(owner2, {});
+      for (const [key2, value] of records) if (value.owner === owner2) records.delete(key2);
       emit();
     },
-    async prepare(owner, items2) {
+    async prepare(owner2, items2) {
       if (!Array.isArray(items2) || items2.length > DEPENDENCY_LIMITS.count || items2.reduce((sum, item) => sum + new TextEncoder().encode(item.content ?? "").byteLength, 0) > DEPENDENCY_LIMITS.bytes) throw Error("Rendering dependency graph exceeds limit");
-      const epoch = generation, ticket = {};
-      installs.set(owner, ticket);
+      const epoch = generation2, ticket = {};
+      installs.set(owner2, ticket);
       await cacheReady();
       await budget.ready();
-      if (epoch !== generation || installs.get(owner) !== ticket) throw Error("Dependency installation cancelled");
+      if (epoch !== generation2 || installs.get(owner2) !== ticket) throw Error("Dependency installation cancelled");
       const next = await Promise.all(items2.map(async (item) => {
         if (externalUrl(item.url) !== item.url || item.depth !== void 0 && (!Number.isSafeInteger(item.depth) || item.depth < 0 || item.depth > DEPENDENCY_LIMITS.depth)) throw Error("Invalid cached dependency");
         if (item.builtin === true) {
           const adapter = candidates.find((candidate) => candidate.url === item.url);
-          if (!adapter || item.adapter !== adapter.kind || item.adapterVersion !== adapter.version || adapters.get(keyFor(owner, item.url)) === "original") throw Error("Invalid built-in adapter selection");
-          return { owner, source: item.url, depth: item.depth, approved: true, builtin: true, adapter: adapter.kind, adapterVersion: adapter.version };
+          if (!adapter || item.adapter !== adapter.kind || item.adapterVersion !== adapter.version || adapters2.get(keyFor(owner2, item.url)) === "original") throw Error("Invalid built-in adapter selection");
+          return { owner: owner2, source: item.url, depth: item.depth, approved: true, builtin: true, adapter: adapter.kind, adapterVersion: adapter.version };
         }
         if (typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE) throw Error("Invalid cached dependency");
         const digest2 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(item.content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
         if (item.contentDigest && item.contentDigest !== digest2) throw Error("Shared dependency content changed");
-        return { owner, source: item.url, content: item.content, depth: item.depth, digest: digest2, approved: true };
+        return { owner: owner2, source: item.url, content: item.content, depth: item.depth, digest: digest2, approved: true };
       }));
       return () => {
-        if (epoch !== generation || installs.get(owner) !== ticket) throw Error("Dependency installation cancelled");
-        const retained = [...records.values()].filter((item) => item.owner !== owner);
+        if (epoch !== generation2 || installs.get(owner2) !== ticket) throw Error("Dependency installation cancelled");
+        const retained = [...records.values()].filter((item) => item.owner !== owner2);
         if (retained.length + next.length > RENDERING_CACHE_LIMITS.count || uniqueSourceBytes([...retained, ...next]) > RENDERING_CACHE_LIMITS.bytes) throw Error("Rendering cache exceeds limit");
         reserveRecords([...retained, ...next]);
-        for (const [key2, value] of records) if (value.owner === owner) records.delete(key2);
-        for (const item of next) records.set(keyFor(owner, item.source), item);
+        for (const [key2, value] of records) if (value.owner === owner2) records.delete(key2);
+        for (const item of next) records.set(keyFor(owner2, item.source), item);
         emit();
       };
     },
-    async install(owner, items2) {
-      const commit = await this.prepare(owner, items2);
+    async install(owner2, items2) {
+      const commit = await this.prepare(owner2, items2);
       commit();
     },
-    inspect(owner, source) {
-      const value = records.get(keyFor(owner, source));
+    inspect(owner2, source) {
+      const value = records.get(keyFor(owner2, source));
       return value ? { ...value, ticket: void 0 } : null;
     },
-    approve(owner, source, digest2) {
-      const value = records.get(keyFor(owner, source));
+    approve(owner2, source, digest2) {
+      const value = records.get(keyFor(owner2, source));
       if (!value?.digest || digest2 !== value.digest) throw Error("Rendering content changed; review again");
-      records.set(keyFor(owner, source), { ...value, approved: true });
+      records.set(keyFor(owner2, source), { ...value, approved: true });
       emit();
     },
-    revoke(owner, source) {
-      reserveRecords([...records.values()].filter((item) => item.owner !== owner || item.source !== source));
-      records.delete(keyFor(owner, source));
+    revoke(owner2, source) {
+      reserveRecords([...records.values()].filter((item) => item.owner !== owner2 || item.source !== source));
+      records.delete(keyFor(owner2, source));
       emit();
     },
-    read(owner, source) {
-      const value = records.get(keyFor(owner, source));
-      if (source.startsWith("https:") && intentions.get(keyFor(owner, source)) === false) throw Error("Rendering source is disabled");
+    read(owner2, source) {
+      const value = records.get(keyFor(owner2, source));
+      if (source.startsWith("https:") && intentions.get(keyFor(owner2, source)) === false) throw Error("Rendering source is disabled");
       if (!value?.approved) throw Error("Rendering dependency is not downloaded; open External code to download dependencies");
       return value.builtin ? "" : value.content;
     },
     clear() {
       reserveRecords([]);
-      generation++;
+      generation2++;
       records.clear();
       emit();
     }
@@ -19734,7 +19766,7 @@ function cacheRequest(request2 = tavernFetch) {
     return value.value;
   };
 }
-var ownerPath = (owner, suffix = "") => `/graphs${suffix}?owner=${encodeURIComponent(owner)}`;
+var ownerPath = (owner2, suffix = "") => `/graphs${suffix}?owner=${encodeURIComponent(owner2)}`;
 var hydrateInventory = (inventory) => {
   const sources = new Map(inventory.sources.map((source) => [JSON.stringify([source.url, source.digest]), source.content]));
   return inventory.graphs.map((record) => {
@@ -19747,15 +19779,15 @@ var hydrateInventory = (inventory) => {
   });
 };
 function hostDependencyStore({ request: request2 = tavernFetch, legacy: legacy2 } = {}) {
-  const call = cacheRequest(request2);
+  const call2 = cacheRequest(request2);
   let initializing;
   async function ready() {
     initializing ??= (async () => {
       if (!legacy2) return;
       const entries2 = await legacy2.list();
       if (!entries2.length) return;
-      const inventory = await call("/graphs?metadata=1"), known = new Set(inventory.graphs.map((record) => record.owner));
-      for (const { owner, ...record } of entries2) if (!known.has(owner)) await call(ownerPath(owner, "/import"), { method: "POST", body: record });
+      const inventory = await call2("/graphs?metadata=1"), known = new Set(inventory.graphs.map((record) => record.owner));
+      for (const { owner: owner2, ...record } of entries2) if (!known.has(owner2)) await call2(ownerPath(owner2, "/import"), { method: "POST", body: record });
     })().catch((error) => {
       initializing = null;
       throw error;
@@ -19764,32 +19796,32 @@ function hostDependencyStore({ request: request2 = tavernFetch, legacy: legacy2 
   }
   const operation = async (path3, options) => {
     await ready();
-    return call(path3, options);
+    return call2(path3, options);
   };
-  const get = (owner) => operation(ownerPath(owner));
+  const get = (owner2) => operation(ownerPath(owner2));
   return {
     list: async () => hydrateInventory(await operation("/graphs")),
     get,
-    async readCurrent(owner, snapshot, accept) {
-      const saved = await get(owner);
+    async readCurrent(owner2, snapshot, accept) {
+      const saved = await get(owner2);
       return saved.generation === snapshot.generation && saved.pending === snapshot.pending ? accept(saved) !== false : false;
     },
-    begin: (owner) => operation(ownerPath(owner), { method: "POST", body: {} }),
-    remove: (owner) => operation(ownerPath(owner), { method: "DELETE" }),
-    publish: (owner, generation, graph) => operation(ownerPath(owner), { method: "PUT", body: { generation, graph } }),
+    begin: (owner2) => operation(ownerPath(owner2), { method: "POST", body: {} }),
+    remove: (owner2) => operation(ownerPath(owner2), { method: "DELETE" }),
+    publish: (owner2, generation2, graph) => operation(ownerPath(owner2), { method: "PUT", body: { generation: generation2, graph } }),
     source: (url) => operation(`/sources?url=${encodeURIComponent(url)}`)
   };
 }
 function hostOpeningDataStore({ request: request2 = tavernFetch, legacy: legacy2 } = {}) {
-  const call = cacheRequest(request2);
+  const call2 = cacheRequest(request2);
   let initializing;
   async function ready() {
     initializing ??= (async () => {
       if (!legacy2) return;
-      const saved = await call("/opening");
+      const saved = await call2("/opening");
       if (saved.generation === 0) {
         const content = await legacy2.get();
-        if (content !== void 0 && content !== null) await call("/opening", { method: "PUT", body: { content, onlyMissing: true } });
+        if (content !== void 0 && content !== null) await call2("/opening", { method: "PUT", body: { content, onlyMissing: true } });
       }
     })().catch((error) => {
       initializing = null;
@@ -19800,15 +19832,15 @@ function hostOpeningDataStore({ request: request2 = tavernFetch, legacy: legacy2
   return {
     async get() {
       await ready();
-      return (await call("/opening")).content;
+      return (await call2("/opening")).content;
     },
     async put(content) {
       await ready();
-      return call("/opening", { method: "PUT", body: { content } });
+      return call2("/opening", { method: "PUT", body: { content } });
     },
     async remove() {
       await ready();
-      return call("/opening", { method: "DELETE" });
+      return call2("/opening", { method: "DELETE" });
     }
   };
 }
@@ -19896,7 +19928,7 @@ function indexedDependencyStore(indexedDB = globalThis.indexedDB) {
     state.error = error;
     transaction.abort();
   }
-  function replace(transaction, owner, saved, record, sources, state, done = () => {
+  function replace(transaction, owner2, saved, record, sources, state, done = () => {
   }) {
     const graphs = transaction.objectStore("graphs"), bytes = transaction.objectStore("sources"), old = references(saved.graph), next = references(record.graph);
     const keys2 = /* @__PURE__ */ new Set([...old, ...next]);
@@ -19923,7 +19955,7 @@ function indexedDependencyStore(indexedDB = globalThis.indexedDB) {
         }
       };
     }
-    graphs.put(record, owner);
+    graphs.put(record, owner2);
     if (!remaining) done();
   }
   function hydrate(transaction, saved, done, state) {
@@ -19994,12 +20026,12 @@ function indexedDependencyStore(indexedDB = globalThis.indexedDB) {
     await initializing;
     return db;
   }
-  async function operation(owner, change, read) {
-    const db = await ready(), transaction = db.transaction(["graphs", "sources"], change ? "readwrite" : "readonly"), state = { result: owner === void 0 ? [] : void 0 };
-    const graphs = transaction.objectStore("graphs"), request2 = owner === void 0 ? graphs.openCursor() : graphs.get(owner);
+  async function operation(owner2, change, read) {
+    const db = await ready(), transaction = db.transaction(["graphs", "sources"], change ? "readwrite" : "readonly"), state = { result: owner2 === void 0 ? [] : void 0 };
+    const graphs = transaction.objectStore("graphs"), request2 = owner2 === void 0 ? graphs.openCursor() : graphs.get(owner2);
     request2.onsuccess = () => {
       try {
-        if (owner === void 0) {
+        if (owner2 === void 0) {
           const cursor = request2.result;
           if (cursor) {
             const key2 = cursor.key;
@@ -20013,7 +20045,7 @@ function indexedDependencyStore(indexedDB = globalThis.indexedDB) {
         if (change) {
           const next = change(saved);
           state.result = next.result;
-          if (next.record) replace(transaction, owner, saved, next.record, next.sources ?? /* @__PURE__ */ new Map(), state);
+          if (next.record) replace(transaction, owner2, saved, next.record, next.sources ?? /* @__PURE__ */ new Map(), state);
           return;
         }
         hydrate(transaction, saved, (value) => {
@@ -20025,16 +20057,16 @@ function indexedDependencyStore(indexedDB = globalThis.indexedDB) {
     };
     return transactionResult(transaction, state);
   }
-  const advance2 = (owner, pending2) => operation(owner, (saved) => ({ record: { generation: saved.generation + 1, pending: pending2, ...pending2 && saved.graph ? { graph: saved.graph } : {} }, result: saved.generation + 1 }));
+  const advance2 = (owner2, pending4) => operation(owner2, (saved) => ({ record: { generation: saved.generation + 1, pending: pending4, ...pending4 && saved.graph ? { graph: saved.graph } : {} }, result: saved.generation + 1 }));
   return {
     list: () => operation(void 0),
-    get: (owner) => operation(owner),
-    readCurrent: (owner, snapshot, accept) => operation(owner, null, (saved) => saved.generation === snapshot.generation && saved.pending === snapshot.pending ? accept(saved) !== false : false),
-    begin: (owner) => advance2(owner, true),
-    remove: (owner) => advance2(owner, false),
-    async publish(owner, generation, graph) {
+    get: (owner2) => operation(owner2),
+    readCurrent: (owner2, snapshot, accept) => operation(owner2, null, (saved) => saved.generation === snapshot.generation && saved.pending === snapshot.pending ? accept(saved) !== false : false),
+    begin: (owner2) => advance2(owner2, true),
+    remove: (owner2) => advance2(owner2, false),
+    async publish(owner2, generation2, graph) {
       const packed = await pack(graph);
-      return operation(owner, (saved) => saved.generation === generation && saved.pending ? { record: { generation, graph: packed.graph, pending: false }, sources: packed.sources, result: true } : { result: false });
+      return operation(owner2, (saved) => saved.generation === generation2 && saved.pending ? { record: { generation: generation2, graph: packed.graph, pending: false }, sources: packed.sources, result: true } : { result: false });
     },
     async source(url) {
       const db = await ready(), transaction = db.transaction("sources", "readonly"), state = {}, request2 = transaction.objectStore("sources").index("url").getAll(url);
@@ -20098,25 +20130,25 @@ function discovery(limits) {
     metadata: () => ({ discovered: identities.size, discoveryCapped: capped, omitted: identities.size - items2.length })
   };
 }
-function localItem(item, trust, owner) {
-  const candidate = trust.builtinCandidate?.(item.url), mode = trust.adapterIntent?.(owner, item.url);
+function localItem(item, trust, owner2) {
+  const candidate = trust.builtinCandidate?.(item.url), mode = trust.adapterIntent?.(owner2, item.url);
   if (mode === "original" || !candidate && mode !== "builtin") return null;
   const { content, contentDigest, downloadedAt, builtin: builtin2, adapter, adapterVersion, error, ...reference } = item;
   if (!candidate || item.adapterSupport !== true) return { ...reference, status: "failed", errorKind: "adapter", error: "Unsupported built-in adapter invocation; select original-code mode to fetch its graph" };
   return { ...reference, status: "ready", error: null, builtin: true, adapter: candidate.kind, adapterVersion: candidate.version };
 }
-function directGraph(sources, limits, trust, owner) {
+function directGraph(sources, limits, trust, owner2) {
   const graph = discovery(limits);
   for (const source of sources) graph.add(dependencyReferences(source.content, void 0, source, trust), 0);
-  const items2 = graph.items.map((item) => localItem(item, trust, owner) ?? item);
+  const items2 = graph.items.map((item) => localItem(item, trust, owner2) ?? item);
   return { items: items2, excluded: graph.excluded, ...graph.metadata(), complete: !graph.metadata().omitted && !graph.metadata().discoveryCapped && items2.every((item) => item.status === "ready") };
 }
-function cachedGraph(sources, graph, limits, trust, owner) {
-  const pending2 = discovery(limits), cached = new Map(graph.items.map((item) => [item.url, item]));
+function cachedGraph(sources, graph, limits, trust, owner2) {
+  const pending4 = discovery(limits), cached = new Map(graph.items.map((item) => [item.url, item]));
   if (cached.size !== graph.items.length) throw Error("Invalid dependency cache identities");
-  for (const source of sources) pending2.add(dependencyReferences(source.content, void 0, source, trust), 0);
-  for (let i3 = 0; i3 < pending2.items.length; i3++) {
-    const item = pending2.items[i3], local = localItem(item, trust, owner), saved = cached.get(item.url);
+  for (const source of sources) pending4.add(dependencyReferences(source.content, void 0, source, trust), 0);
+  for (let i3 = 0; i3 < pending4.items.length; i3++) {
+    const item = pending4.items[i3], local = localItem(item, trust, owner2), saved = cached.get(item.url);
     if (local) {
       Object.assign(item, local);
       continue;
@@ -20125,18 +20157,18 @@ function cachedGraph(sources, graph, limits, trust, owner) {
       if (saved.depth !== void 0 && saved.depth !== item.depth) throw Error("Invalid dependency cache depth");
       if (saved.builtin || typeof saved.content !== "string") throw Error("Incomplete original dependency cache");
       Object.assign(item, { status: "ready", content: saved.content, contentDigest: saved.contentDigest, downloadedAt: saved.downloadedAt, error: null });
-      pending2.add(dependencyReferences(item.content, item.url, { owner, key: item.url, kind: "dependency", origins: item.origins }, trust), item.depth + 1);
+      pending4.add(dependencyReferences(item.content, item.url, { owner: owner2, key: item.url, kind: "dependency", origins: item.origins }, trust), item.depth + 1);
     } else if (graph.status === "ready") throw Error("Incomplete dependency cache");
     else if (saved?.status === "failed") Object.assign(item, { status: "failed", error: saved.error });
   }
-  const visited = new Set(pending2.items.map((item) => item.url));
+  const visited = new Set(pending4.items.map((item) => item.url));
   if (graph.items.some((item) => item.status === "ready" && !visited.has(item.url))) throw Error("Invalid dependency cache depth");
-  const items2 = pending2.items.map((item) => localItem(item, trust, owner) ?? item), metadata = pending2.metadata();
+  const items2 = pending4.items.map((item) => localItem(item, trust, owner2) ?? item), metadata = pending4.metadata();
   const legacyTruncated = graph.discovered === void 0 && /exceeds \d+ files/.test(graph.error ?? "");
   if (legacyTruncated) Object.assign(metadata, { discovered: items2.length + 1, omitted: 1, discoveryCapped: true });
   const error = metadata.omitted || metadata.discoveryCapped ? graph.error ?? "Dependency graph exceeds limits" : null;
-  const complete = !error && !metadata.omitted && !metadata.discoveryCapped && items2.every((item) => item.status === "ready");
-  return { items: items2, excluded: pending2.excluded, ...metadata, error, complete, status: complete ? "ready" : items2.some((item) => item.status === "failed") || error ? "failed" : graph.status };
+  const complete3 = !error && !metadata.omitted && !metadata.discoveryCapped && items2.every((item) => item.status === "ready");
+  return { items: items2, excluded: pending4.excluded, ...metadata, error, complete: complete3, status: complete3 ? "ready" : items2.some((item) => item.status === "failed") || error ? "failed" : graph.status };
 }
 function retainedCache(items2, active = []) {
   const activeUrls = new Set(active.filter((item) => typeof item.content === "string").map((item) => item.url)), byUrl = /* @__PURE__ */ new Map();
@@ -20183,16 +20215,16 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     retainedCache([...values.values()].map((item) => ({ ...item, status: "ready" })));
     return [...values.values()];
   };
-  const remember = (owner, graph, generation = 0) => {
-    if (disposed || generation < (cacheGenerations.get(owner) ?? 0)) return;
-    const previous = cachedOwners.get(owner);
-    cachedOwners.set(owner, cacheItems(graph));
+  const remember = (owner2, graph, generation2 = 0) => {
+    if (disposed || generation2 < (cacheGenerations.get(owner2) ?? 0)) return;
+    const previous = cachedOwners.get(owner2);
+    cachedOwners.set(owner2, cacheItems(graph));
     try {
       trust.reaccount?.();
-      cacheGenerations.set(owner, generation);
+      cacheGenerations.set(owner2, generation2);
     } catch (error) {
-      if (previous) cachedOwners.set(owner, previous);
-      else cachedOwners.delete(owner);
+      if (previous) cachedOwners.set(owner2, previous);
+      else cachedOwners.delete(owner2);
       throw error;
     }
   };
@@ -20212,16 +20244,16 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       }
       const previous = new Map(cachedOwners);
       cachedOwners.clear();
-      for (const [owner, items2] of nextOwners) cachedOwners.set(owner, items2);
+      for (const [owner2, items2] of nextOwners) cachedOwners.set(owner2, items2);
       try {
         trust.reaccount?.();
       } catch (error) {
         cachedOwners.clear();
-        for (const [owner, items2] of previous) cachedOwners.set(owner, items2);
+        for (const [owner2, items2] of previous) cachedOwners.set(owner2, items2);
         throw error;
       }
       cacheGenerations.clear();
-      for (const [owner, generation] of nextGenerations) cacheGenerations.set(owner, generation);
+      for (const [owner2, generation2] of nextGenerations) cacheGenerations.set(owner2, generation2);
       accounted = true;
     })().finally(() => {
       initializing = null;
@@ -20235,7 +20267,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
   };
   const current4 = (state) => states.get(state.owner) === state;
   const snapshot = (state) => state ? { ...state, sources: void 0, controller: void 0, ready: void 0, cacheItems: void 0, items: state.items.map((item) => ({ ...item })) } : null;
-  const broadcast = (owner) => channel?.postMessage({ owner });
+  const broadcast = (owner2) => channel?.postMessage({ owner: owner2 });
   async function restore(state, saved) {
     if (!current4(state)) return;
     state.restoring = true;
@@ -20284,21 +20316,21 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       }
     }
   }
-  async function refresh(owner) {
-    const previous = states.get(owner);
+  async function refresh(owner2) {
+    const previous = states.get(owner2);
     if (!previous) return;
     if (previous.status === "loading" || previous.restoring || previous.starting) {
       previous.refreshPending = true;
       return;
     }
     try {
-      const saved = await store.get(owner);
+      const saved = await store.get(owner2);
       if (!current4(previous) || saved.generation < (previous.cacheGeneration ?? 0)) return;
       if (previous.controller && saved.generation === (previous.cacheGeneration ?? 0)) return;
       previous.controller?.abort();
-      trust.removeOwner(owner);
+      trust.removeOwner(owner2);
       const state = { ...previous, controller: null };
-      states.set(owner, state);
+      states.set(owner2, state);
       state.ready = restore(state, saved).catch((error) => {
         if (current4(state)) {
           state.status = "failed";
@@ -20327,26 +20359,26 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
   };
   async function sync(sources, owners = []) {
     connect();
-    const groups = new Map(owners.filter(Boolean).map((owner) => [owner, []]));
+    const groups = new Map(owners.filter(Boolean).map((owner2) => [owner2, []]));
     for (const source of sources) {
       if (!groups.has(source.owner)) groups.set(source.owner, []);
       groups.get(source.owner).push(source);
     }
-    await Promise.all([...groups].map(async ([owner, sources2]) => {
-      const signature = JSON.stringify([sources2.map((source) => [source.key, source.content, source.enabled !== false, source.preferenceKey ?? null, source.enablementAmbiguous === true, source.kind ?? null]).sort((a, b2) => a[0].localeCompare(b2[0])), trust.selection?.(owner) ?? {}]);
-      const previous = states.get(owner);
+    await Promise.all([...groups].map(async ([owner2, sources2]) => {
+      const signature = JSON.stringify([sources2.map((source) => [source.key, source.content, source.enabled !== false, source.preferenceKey ?? null, source.enablementAmbiguous === true, source.kind ?? null]).sort((a, b2) => a[0].localeCompare(b2[0])), trust.selection?.(owner2) ?? {}]);
+      const previous = states.get(owner2);
       if (previous?.signature === signature && previous.status !== "failed") return previous.ready;
       previous?.controller?.abort();
-      trust.removeOwner(owner);
-      const state = { owner, signature, sources: sources2, status: "loading", ...directGraph(sources2, limits, trust, owner), retained: [], cacheItems: previous?.cacheItems ?? [], fingerprint: null, error: null, cacheGeneration: 0 };
-      states.set(owner, state);
+      trust.removeOwner(owner2);
+      const state = { owner: owner2, signature, sources: sources2, status: "loading", ...directGraph(sources2, limits, trust, owner2), retained: [], cacheItems: previous?.cacheItems ?? [], fingerprint: null, error: null, cacheGeneration: 0 };
+      states.set(owner2, state);
       emit();
       state.ready = (async () => {
         try {
           await ensureCacheAccounted();
           state.fingerprint = await digest(signature);
           if (!current4(state)) return;
-          await restore(state, await store.get(owner));
+          await restore(state, await store.get(owner2));
         } catch (error) {
           if (current4(state)) {
             state.status = "failed";
@@ -20358,35 +20390,35 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       return state.ready;
     }));
   }
-  async function acquire2(owner, { refresh: forceDownload } = {}) {
+  async function acquire3(owner2, { refresh: forceDownload } = {}) {
     await ensureCacheAccounted();
-    const previous = states.get(owner);
-    if (previous) await sync(previous.sources, [owner]);
-    const original = states.get(owner);
+    const previous = states.get(owner2);
+    if (previous) await sync(previous.sources, [owner2]);
+    const original = states.get(owner2);
     if (!original) throw Error("Dependency resource is unavailable");
     await original.ready;
     if (!current4(original)) throw Error("Dependency resource changed");
     forceDownload ??= original.cacheItems.length > 0;
     original.controller?.abort();
-    const pending2 = discovery(limits);
-    for (const source of original.sources) pending2.add(dependencyReferences(source.content, void 0, source, trust), 0);
-    const state = { ...original, items: pending2.items, excluded: pending2.excluded, ...pending2.metadata(), complete: false, status: "downloading", error: null, starting: true, controller: new AbortController() };
-    states.set(owner, state);
-    trust.removeOwner(owner);
+    const pending4 = discovery(limits);
+    for (const source of original.sources) pending4.add(dependencyReferences(source.content, void 0, source, trust), 0);
+    const state = { ...original, items: pending4.items, excluded: pending4.excluded, ...pending4.metadata(), complete: false, status: "downloading", error: null, starting: true, controller: new AbortController() };
+    states.set(owner2, state);
+    trust.removeOwner(owner2);
     emit();
     const leases = [];
     try {
-      state.cacheGeneration = await store.begin(owner);
+      state.cacheGeneration = await store.begin(owner2);
       state.starting = false;
       if (!current4(state)) return;
       if (state.refreshPending) {
         state.refreshPending = false;
-        void refresh(owner);
+        void refresh(owner2);
       }
-      broadcast(owner);
+      broadcast(owner2);
       const enqueue = (dependencies = [], depth = 0) => {
-        pending2.add(dependencies, depth);
-        Object.assign(state, pending2.metadata());
+        pending4.add(dependencies, depth);
+        Object.assign(state, pending4.metadata());
         if (state.omitted || state.discoveryCapped) state.error = (state.discoveryCapped ? "Dependency discovery exceeds " + MAX_DEPENDENCY_IDENTITIES + " identities" : "Dependency graph exceeds " + limits.count + " files") + "; " + state.discovered + (state.discoveryCapped ? "+" : "") + " discovered; graph incomplete";
       };
       enqueue();
@@ -20395,7 +20427,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
         if (!current4(state) || state.controller.signal.aborted) return;
         const item = state.items[i3];
         if (item.status === "failed") continue;
-        const local = localItem(item, trust, owner);
+        const local = localItem(item, trust, owner2);
         if (local) {
           Object.assign(item, local);
           emit();
@@ -20417,7 +20449,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
           bytes += new TextEncoder().encode(content).byteLength;
           if (bytes > limits.bytes) throw Error("Dependency graph exceeds byte limit");
           item.content = content;
-          enqueue(dependencyReferences(content, item.url, { owner, key: item.url, kind: "dependency", origins: item.origins }, trust), item.depth + 1);
+          enqueue(dependencyReferences(content, item.url, { owner: owner2, key: item.url, kind: "dependency", origins: item.origins }, trust), item.depth + 1);
           item.status = "ready";
         } catch (error) {
           item.status = "failed";
@@ -20428,9 +20460,9 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
         }
         emit();
         if (bytes > limits.bytes) {
-          for (const pending3 of state.items.filter((item2) => item2.status === "queued")) {
-            pending3.status = "failed";
-            pending3.error = "Dependency graph exceeds byte limit";
+          for (const pending5 of state.items.filter((item2) => item2.status === "queued")) {
+            pending5.status = "failed";
+            pending5.error = "Dependency graph exceeds byte limit";
           }
           ;
           break;
@@ -20447,18 +20479,18 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       state.complete = state.status === "ready";
       state.retained = retainedCache(state.cacheItems, state.items);
       const stored = { fingerprint: state.fingerprint, status: state.status, items: state.items, excluded: state.excluded, retained: state.retained, error: state.error, discovered: state.discovered, discoveryCapped: state.discoveryCapped, omitted: state.omitted, complete: state.complete };
-      remember(owner, stored, state.cacheGeneration);
-      const published = await store.publish(owner, state.cacheGeneration, stored);
+      remember(owner2, stored, state.cacheGeneration);
+      const published = await store.publish(owner2, state.cacheGeneration, stored);
       if (!current4(state)) return;
       state.controller = null;
       if (!published) {
-        await refresh(owner);
+        await refresh(owner2);
         return;
       }
-      await restore(state, await store.get(owner));
+      await restore(state, await store.get(owner2));
       if (current4(state)) {
         emit();
-        broadcast(owner);
+        broadcast(owner2);
       }
     } catch (error) {
       if (current4(state)) {
@@ -20468,33 +20500,33 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
         state.complete = false;
         state.error = error.message;
         emit();
-        broadcast(owner);
+        broadcast(owner2);
       }
     } finally {
       for (const lease of leases) lease.release();
     }
   }
-  async function uninstall(owner) {
-    const previous = states.get(owner);
+  async function uninstall(owner2) {
+    const previous = states.get(owner2);
     previous?.controller?.abort();
-    const state = previous ? { ...previous, ...directGraph(previous.sources, limits, trust, owner), retained: [], cacheItems: [], status: "waiting", error: null, starting: true, controller: null } : null;
-    if (state) states.set(owner, state);
-    trust.removeOwner(owner);
+    const state = previous ? { ...previous, ...directGraph(previous.sources, limits, trust, owner2), retained: [], cacheItems: [], status: "waiting", error: null, starting: true, controller: null } : null;
+    if (state) states.set(owner2, state);
+    trust.removeOwner(owner2);
     emit();
     try {
-      const generation = await store.remove(owner);
+      const generation2 = await store.remove(owner2);
       accounted = false;
-      remember(owner, null, generation);
+      remember(owner2, null, generation2);
       if (state && current4(state)) {
-        state.cacheGeneration = generation;
+        state.cacheGeneration = generation2;
         state.starting = false;
-        await restore(state, { generation, pending: false });
+        await restore(state, { generation: generation2, pending: false });
         if (state.refreshPending) {
           state.refreshPending = false;
-          await refresh(owner);
+          await refresh(owner2);
         }
       }
-      broadcast(owner);
+      broadcast(owner2);
     } catch (error) {
       if (state && current4(state)) {
         state.starting = false;
@@ -20506,7 +20538,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       throw error;
     }
   }
-  return { sync, acquire: acquire2, uninstall, inspect: (owner) => snapshot(states.get(owner)), subscribe(listener) {
+  return { sync, acquire: acquire3, uninstall, inspect: (owner2) => snapshot(states.get(owner2)), subscribe(listener) {
     listeners.add(listener);
     return () => listeners.delete(listener);
   }, dispose() {
@@ -20863,10 +20895,10 @@ function downloadRegexScripts(rules, kind) {
   const scripts = exportNativeRegexScripts(rules);
   const blob = new Blob([JSON.stringify(scripts, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const anchor = window.document.createElement("a");
-  anchor.href = url;
-  anchor.download = `regex-${kind}.json`;
-  anchor.click();
+  const anchor2 = window.document.createElement("a");
+  anchor2.href = url;
+  anchor2.download = `regex-${kind}.json`;
+  anchor2.click();
   URL.revokeObjectURL(url);
 }
 function Field({ labelKey, children }) {
@@ -21403,7 +21435,7 @@ function configureRenderingTooltip(Tooltip2) {
 function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy: busy2 = false, status }) {
   const [sources, setSources] = (0, import_react4.useState)([]), [error, setError] = (0, import_react4.useState)(""), [notice, setNotice] = (0, import_react4.useState)(""), [version3, setVersion] = (0, import_react4.useState)(0);
   const [revision, setRevision] = (0, import_react4.useState)(renderingTrust.revision), [dependencyRevision, setDependencyRevision] = (0, import_react4.useState)(0);
-  const generation = (0, import_react4.useRef)(0);
+  const generation2 = (0, import_react4.useRef)(0);
   const [, setExecutionRevision] = (0, import_react4.useState)(0);
   (0, import_react4.useEffect)(() => renderingWriteRequests.subscribe(() => setExecutionRevision((v2) => v2 + 1)), []);
   const bindings = activeRegexBindings(activeSnapshot);
@@ -21415,7 +21447,7 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
   (0, import_react4.useEffect)(() => {
-    const ticket = ++generation.current;
+    const ticket = ++generation2.current;
     setSources([]);
     setError("");
     setNotice("");
@@ -21423,31 +21455,31 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
       bindings.characterId ? client.getCharacter(bindings.characterId) : null,
       bindings.presetId ? client.getPreset(bindings.presetId) : null,
       readRenderingWorkspace(client, () => getRegexDocument(client).catch((error2) => {
-        if (ticket === generation.current) setError(error2.message);
+        if (ticket === generation2.current) setError(error2.message);
         return { rules: [] };
       }))
-    ]).then(async ([character, preset, { owner: globalOwner, resource: regex }]) => {
-      if (ticket !== generation.current) return;
+    ]).then(async ([character2, preset, { owner: globalOwner, resource: regex }]) => {
+      if (ticket !== generation2.current) return;
       const inventory = await identifyRenderingSources([
-        ...renderingInventory(character?.character ?? character, { kind: "character", resourceId: bindings.characterId }),
+        ...renderingInventory(character2?.character ?? character2, { kind: "character", resourceId: bindings.characterId }),
         ...renderingInventory(preset?.preset ?? preset, { kind: "preset", resourceId: bindings.presetId }),
         ...globalOwner ? renderingInventory({ regex_scripts: regex.rules.filter((rule) => rule.scope.kind === "global") }, { kind: "global", resourceId: globalOwner.slice(7) }) : []
       ]);
-      if (ticket === generation.current) {
+      if (ticket === generation2.current) {
         setSources(inventory);
         await renderingDependencies.sync(inventory, [bindings.characterId && "character:" + bindings.characterId, bindings.presetId && "preset:" + bindings.presetId, globalOwner]);
       }
     }).catch((error2) => {
-      if (ticket === generation.current) setError(error2.message);
+      if (ticket === generation2.current) setError(error2.message);
     });
     return () => {
-      generation.current++;
+      generation2.current++;
     };
   }, [client, bindings.characterId, bindings.presetId, version3]);
   (0, import_react4.useEffect)(() => {
     if (sources.length) void renderingDependencies.sync(sources).catch((error2) => setError(error2.message));
   }, [sources, settings.scriptEnablement, settings.renderingAdapters]);
-  const run = async (callback) => {
+  const run2 = async (callback) => {
     try {
       setError("");
       setNotice("");
@@ -21458,8 +21490,8 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
   };
   const help = (label, text3) => (0, import_react4.createElement)(HostTooltip ?? "span", HostTooltip ? { label: text3, portal: true, maxWidth: 320, side: "bottom", openOnClick: true } : { title: text3 }, (0, import_react4.createElement)("button", { type: "button", className: "dtv-script-info", "aria-label": label }, "\u24D8"));
   const sourceView = (content) => (0, import_react4.createElement)("textarea", { className: "dtv-script-source", readOnly: true, value: content, spellCheck: false, wrap: "off", "aria-label": translate("rendering.source") });
-  const changeEnabled = (entry, enabled) => run(() => update?.({ ...settings, scriptEnablement: updateScriptEnablement(settings.scriptEnablement, entry.owner, entry.preferenceKey ?? entry.key, enabled) }));
-  const changeAdapter = (owner, source, mode) => run(() => update?.({ ...settings, renderingAdapters: updateRenderingAdapter(settings.renderingAdapters, owner, source, mode === "auto" ? void 0 : mode) }));
+  const changeEnabled = (entry, enabled) => run2(() => update?.({ ...settings, scriptEnablement: updateScriptEnablement(settings.scriptEnablement, entry.owner, entry.preferenceKey ?? entry.key, enabled) }));
+  const changeAdapter = (owner2, source, mode) => run2(() => update?.({ ...settings, renderingAdapters: updateRenderingAdapter(settings.renderingAdapters, owner2, source, mode === "auto" ? void 0 : mode) }));
   const helpers = sources.filter((source) => source.kind === "helper");
   const owners = [...new Set(sources.filter((source) => source.dependencies.length).map((source) => source.owner))];
   const renderHelper = (entry) => {
@@ -21485,17 +21517,17 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
       )
     );
   };
-  const renderGraph = (owner) => {
-    const graph = renderingDependencies.inspect(owner), state = graph?.status ?? "loading", items2 = graph?.items ?? [];
+  const renderGraph = (owner2) => {
+    const graph = renderingDependencies.inspect(owner2), state = graph?.status ?? "loading", items2 = graph?.items ?? [];
     const working = state === "downloading" || state === "loading";
-    const hasRemote = items2.some((item) => item.url && item.status !== "disabled" && (renderingTrust.adapterIntent(owner, item.url) === "original" || !builtinCandidate(item.url) && renderingTrust.adapterIntent(owner, item.url) !== "builtin"));
+    const hasRemote = items2.some((item) => item.url && item.status !== "disabled" && (renderingTrust.adapterIntent(owner2, item.url) === "original" || !builtinCandidate(item.url) && renderingTrust.adapterIntent(owner2, item.url) !== "builtin"));
     const canClear = state === "downloading" || state === "remote" || [...items2, ...graph?.retained ?? []].some((item) => typeof item.content === "string");
     const progress = dependencyProgress(graph), count = progress.discovered + (progress.capped ? "+" : "");
     const label = !graph ? translate("rendering.graph.unknown") : progress.complete ? progress.ready + " / " + count + " \xB7 " + translate("rendering.graph.complete") : ["waiting", "changed", "loading", "remote"].includes(state) ? "0 / " + count + " \xB7 " + translate("rendering.graph.roots") : translate("rendering.graph.discovered", { ready: progress.ready, count }) + " \xB7 " + translate(state === "downloading" ? "rendering.graph.discovering" : "rendering.graph.incomplete");
     return (0, import_react4.createElement)(
       "section",
-      { key: owner, className: "dtv-script-group dtv-dependency-graph" },
-      (0, import_react4.createElement)("p", { className: "dtv-script-meta" }, owner),
+      { key: owner2, className: "dtv-script-group dtv-dependency-graph" },
+      (0, import_react4.createElement)("p", { className: "dtv-script-meta" }, owner2),
       (0, import_react4.createElement)("p", { role: "status" }, translate("rendering.graph." + state), " \xB7 ", label),
       progress.failed ? (0, import_react4.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.graph.issues", { count: progress.failed })) : null,
       state === "downloading" ? (0, import_react4.createElement)("progress", { "aria-label": translate("rendering.graph.downloading"), value: progress.ready + progress.failed, max: Math.max(1, progress.discovered) }) : null,
@@ -21505,27 +21537,27 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
       (0, import_react4.createElement)(
         "div",
         { className: "dtv-script-actions" },
-        hasRemote ? (0, import_react4.createElement)("button", { type: "button", className: "dtv-button", disabled: working, onClick: () => run(() => renderingDependencies.acquire(owner, { refresh: state !== "waiting" })) }, translate(state === "waiting" ? "rendering.acquire" : state === "changed" ? "rendering.acquireUpdate" : "rendering.redownload")) : null,
-        canClear ? (0, import_react4.createElement)("button", { type: "button", className: "dtv-button", disabled: state === "loading", onClick: () => run(async () => {
-          await renderingDependencies.uninstall(owner);
+        hasRemote ? (0, import_react4.createElement)("button", { type: "button", className: "dtv-button", disabled: working, onClick: () => run2(() => renderingDependencies.acquire(owner2, { refresh: state !== "waiting" })) }, translate(state === "waiting" ? "rendering.acquire" : state === "changed" ? "rendering.acquireUpdate" : "rendering.redownload")) : null,
+        canClear ? (0, import_react4.createElement)("button", { type: "button", className: "dtv-button", disabled: state === "loading", onClick: () => run2(async () => {
+          await renderingDependencies.uninstall(owner2);
           setNotice(translate("rendering.cacheCleared"));
         }) }, translate(state === "downloading" ? "rendering.cancel" : "rendering.uninstall")) : null
       ),
       (0, import_react4.createElement)("div", { className: "dtv-dependency-items" }, ...[...items2, ...graph?.excluded ?? []].map((item) => {
-        const enabled = renderingTrust.isEnabled(owner, item.url), selected = item.status !== "disabled", candidate = builtinCandidate(item.url);
+        const enabled = renderingTrust.isEnabled(owner2, item.url), selected = item.status !== "disabled", candidate = builtinCandidate(item.url);
         const cached = graph?.retained?.find((record) => record.url === item.url), content = item.builtin ? void 0 : item.content ?? cached?.content;
         const displayUrl = item.url ? new URL(item.url).hostname + new URL(item.url).pathname : item.key;
         return (0, import_react4.createElement)(
           "details",
           { key: item.key, className: "dtv-entry", "data-selected": selected },
-          (0, import_react4.createElement)("summary", null, (0, import_react4.createElement)("input", { type: "checkbox", checked: enabled, disabled: !item.url || busy2 || !update, "aria-label": translate("rendering.enableEntry", { name: item.key }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled({ owner, key: item.url }, event.target.checked) }), (0, import_react4.createElement)("span", { className: "dtv-entry-name" }, displayUrl), (0, import_react4.createElement)("span", { className: "dtv-entry-state" }, translate(!selected ? "rendering.excluded" : item.builtin ? "rendering.builtinProvided" : item.errorKind === "adapter" ? "rendering.adapterUnsupported" : enabled ? "rendering.graph." + item.status : "rendering.disabled"))),
+          (0, import_react4.createElement)("summary", null, (0, import_react4.createElement)("input", { type: "checkbox", checked: enabled, disabled: !item.url || busy2 || !update, "aria-label": translate("rendering.enableEntry", { name: item.key }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled({ owner: owner2, key: item.url }, event.target.checked) }), (0, import_react4.createElement)("span", { className: "dtv-entry-name" }, displayUrl), (0, import_react4.createElement)("span", { className: "dtv-entry-state" }, translate(!selected ? "rendering.excluded" : item.builtin ? "rendering.builtinProvided" : item.errorKind === "adapter" ? "rendering.adapterUnsupported" : enabled ? "rendering.graph." + item.status : "rendering.disabled"))),
           (0, import_react4.createElement)(
             "div",
             { className: "dtv-entry-body" },
             (0, import_react4.createElement)("p", { className: "dtv-script-meta" }, item.key),
             item.error ? (0, import_react4.createElement)("p", { role: "alert", className: "dtv-script-meta" }, item.error) : null,
             item.origins?.length ? (0, import_react4.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.origins"), item.origins.join(" \xB7 ")) : null,
-            candidate ? (0, import_react4.createElement)("label", { className: "dtv-script-control" }, translate("rendering.adapterMode"), (0, import_react4.createElement)("select", { className: "dtv-select", disabled: busy2 || !update, "aria-label": translate("rendering.adapterMode") + " " + item.key, value: renderingTrust.adapterIntent(owner, item.url) ?? "auto", onChange: (event) => changeAdapter(owner, item.url, event.target.value) }, (0, import_react4.createElement)("option", { value: "auto" }, translate("rendering.adapterAuto")), (0, import_react4.createElement)("option", { value: "builtin" }, translate("rendering.adapterBuiltin")), (0, import_react4.createElement)("option", { value: "original" }, translate("rendering.adapterOriginal")))) : null,
+            candidate ? (0, import_react4.createElement)("label", { className: "dtv-script-control" }, translate("rendering.adapterMode"), (0, import_react4.createElement)("select", { className: "dtv-select", disabled: busy2 || !update, "aria-label": translate("rendering.adapterMode") + " " + item.key, value: renderingTrust.adapterIntent(owner2, item.url) ?? "auto", onChange: (event) => changeAdapter(owner2, item.url, event.target.value) }, (0, import_react4.createElement)("option", { value: "auto" }, translate("rendering.adapterAuto")), (0, import_react4.createElement)("option", { value: "builtin" }, translate("rendering.adapterBuiltin")), (0, import_react4.createElement)("option", { value: "original" }, translate("rendering.adapterOriginal")))) : null,
             item.builtin ? help(translate("rendering.adapterHelp"), translate("rendering.builtinMvu")) : null,
             content !== void 0 ? sourceView(content) : null
           )
@@ -21544,7 +21576,7 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     status?.text ? (0, import_react4.createElement)("p", { className: "dtv-script-meta", role: status.error ? "alert" : "status" }, status.text) : null,
     (0, import_react4.createElement)("section", { className: "dtv-script-group" }, (0, import_react4.createElement)("div", { className: "dtv-script-actions" }, (0, import_react4.createElement)("h4", null, translate("rendering.cardScripts")), help(translate("rendering.safetyDetails"), translate("rendering.enablementHelp"))), ...helpers.map(renderHelper), !helpers.length ? (0, import_react4.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
     (0, import_react4.createElement)("section", { className: "dtv-script-group" }, (0, import_react4.createElement)("div", { className: "dtv-script-actions" }, (0, import_react4.createElement)("h4", null, translate("rendering.dependencies")), help(translate("rendering.safetyDetails"), translate("rendering.boundary"))), ...owners.map(renderGraph), !owners.length ? (0, import_react4.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
-    ...renderingWriteRequests.listRevocations().map((item) => (0, import_react4.createElement)("div", { key: item.id, role: "alert" }, (0, import_react4.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""), (0, import_react4.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke")))),
+    ...renderingWriteRequests.listRevocations().map((item) => (0, import_react4.createElement)("div", { key: item.id, role: "alert" }, (0, import_react4.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""), (0, import_react4.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run2(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke")))),
     notice ? (0, import_react4.createElement)("p", { role: "status" }, notice) : null,
     error ? (0, import_react4.createElement)("p", { role: "alert" }, error) : null
   );
@@ -21584,7 +21616,7 @@ function createDraftResourceTarget({ client, draftId, label, fetcher = tavernFet
   };
   const active = async () => {
     const draft = await read(), selection = draft.selection;
-    const [preset, character, user, books, userBooks, presetBooks, characterBooks] = await Promise.all([
+    const [preset, character2, user, books, userBooks, presetBooks, characterBooks] = await Promise.all([
       selection.presetId ? resource2(`/presets/${encodeURIComponent(selection.presetId)}`) : null,
       resource2(`/characters/${encodeURIComponent(selection.characterCardId)}`),
       selection.userId ? resource2(`/users/${encodeURIComponent(selection.userId)}`) : null,
@@ -21596,7 +21628,7 @@ function createDraftResourceTarget({ client, draftId, label, fetcher = tavernFet
     const userBoundIds = userBooks?.binding?.worldBookIds ?? [], presetBoundIds = presetBooks?.binding?.worldBookIds ?? [], characterBoundIds = characterBooks?.binding?.worldBookIds ?? [];
     const effectiveIds = [.../* @__PURE__ */ new Set([...selection.worldBookIds, ...userBoundIds, ...presetBoundIds, ...characterBoundIds])];
     const worldBooks = effectiveIds.map((id) => books.worldBooks.find((book) => book.id === id) ?? { id, name: id });
-    const card = character.character, embedded = card?.data?.characterBook;
+    const card = character2.character, embedded = card?.data?.characterBook;
     if (embedded && typeof embedded === "object" && !Array.isArray(embedded)) worldBooks.push({
       id: `character:${card.id}:embedded-world-book`,
       name: card.name || card.data?.name || "\u89D2\u8272\u5361\u4E16\u754C\u4E66",
@@ -21715,68 +21747,87 @@ function bubbleCss(style, role2 = "assistant") {
 // packages/client/src/play/turn-actions.js
 var import_react5 = require("react");
 
-// packages/client/src/play/pending-swipe.js
-var clients = /* @__PURE__ */ new WeakMap();
-var key = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
-function notify() {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
-}
-function pendingSwipes(client) {
-  return [...clients.get(client)?.values() ?? []];
-}
-function pendingSwipe(client, playthrough) {
-  return clients.get(client)?.get(key(playthrough)) ?? null;
-}
-function pendingSwipeForSession(client, sessionId) {
-  return pendingSwipes(client).find((item) => item.sessionId === sessionId) ?? null;
-}
-function beginPendingSwipe(client, value) {
-  let entries2 = clients.get(client);
-  if (!entries2) clients.set(client, entries2 = /* @__PURE__ */ new Map());
-  const pending2 = { ...value, error: null };
-  entries2.set(key(value.playthrough), pending2);
-  notify();
-  return pending2;
-}
-function finishPendingSwipe(client, pending2, error = null) {
-  const entries2 = clients.get(client);
-  if (entries2?.get(key(pending2.playthrough)) !== pending2) return;
-  if (error === null) entries2.delete(key(pending2.playthrough));
-  else pending2.error = error instanceof Error ? error.message : String(error);
-  notify();
-}
-function pendingSwipeTimeline(timeline, entries2, sourceIndex, sessionId) {
-  const prefix = entries2.slice(0, sourceIndex);
-  const parent = prefix.at(-1);
-  return {
-    ...timeline,
-    nodes: prefix.map(({ node, variant: variant2 }) => ({ ...node, adoptedVariantId: variant2.id })),
-    head: parent ? { sessionId, nodeId: parent.node.id, variantId: parent.variant.id } : null
-  };
+// packages/client/src/play/operation-deadline.js
+async function withOperationDeadline(options, work) {
+  const deadline = AbortSignal.timeout(35e3);
+  const signal = options?.signal ? AbortSignal.any([options.signal, deadline]) : deadline;
+  signal.throwIfAborted();
+  let abort;
+  const timeout = new Promise((_2, reject) => {
+    abort = () => reject(options?.signal?.aborted ? options.signal.reason : options?.timeoutError ?? signal.reason);
+    signal.addEventListener("abort", abort, { once: true });
+  });
+  try {
+    return await Promise.race([timeout, work(signal)]);
+  } finally {
+    signal.removeEventListener("abort", abort);
+  }
 }
 
-// packages/client/src/play/mutations.js
-async function updateCatalog(client, mutator, options) {
-  if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
-  const current4 = await readCatalogOrEmpty(client);
-  const next = await mutator(current4);
-  const saved = await client.putCatalog(next);
-  return saved ?? next;
+// packages/play/src/http.js
+function httpError(status, message, code) {
+  const error = new Error(message);
+  error.status = status;
+  if (code !== void 0) error.code = code;
+  return error;
 }
-async function updateTimeline(client, playthrough, mutator, options) {
-  if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
-  const current4 = options?.initial ?? await client.getTimeline(playthrough);
-  const next = await mutator(current4);
-  const saved = await client.putTimeline(playthrough, next);
-  return saved ?? next;
+
+// packages/presentation/avatar.js
+var MAX_AVATAR_LENGTH = 128 * 1024;
+function normalizeAvatar(value) {
+  if (value === null || value === void 0 || value === "") return null;
+  if (typeof value !== "string" || value.length > MAX_AVATAR_LENGTH) throw new TypeError("Avatar exceeds 128 KiB");
+  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if (!match || match[2].length % 4 !== 0) throw new TypeError("Avatar must be PNG, JPEG or WebP data");
+  const bytes = atob(match[2].slice(0, 32));
+  const valid = match[1] === "png" ? bytes.startsWith("\x89PNG\r\n\n") : match[1] === "jpeg" ? bytes.startsWith("\xFF\xD8\xFF") : bytes.startsWith("RIFF") && bytes.slice(8, 12) === "WEBP";
+  if (!valid) throw new TypeError("Avatar image signature does not match its type");
+  return value;
 }
-async function readCatalogOrEmpty(client) {
-  try {
-    return await client.getCatalog();
-  } catch (error) {
-    if (error?.code === "PLAY_PATH_NOT_FOUND" && (error?.status === void 0 || error?.status === 404)) return { playthroughs: [] };
-    throw error;
+function avatarFor(appearance, role2, key2, defaults = {}) {
+  return normalizeAvatar(appearance?.messages?.[key2]?.[role2]) ?? normalizeAvatar(appearance?.[role2]) ?? defaults[role2] ?? null;
+}
+function editAvatar(timeline, { role: role2, key: key2, scope, avatar }) {
+  if (!["user", "assistant"].includes(role2)) throw new TypeError("Invalid avatar role");
+  if (!["message", "playthrough", "reset-message", "reset-playthrough"].includes(scope)) throw new TypeError("Invalid avatar scope");
+  if (typeof key2 !== "string" || key2.length > 500 || ["__proto__", "constructor", "prototype"].includes(key2)) throw new TypeError("Invalid message key");
+  const next = structuredClone(timeline);
+  next.ext ??= {};
+  next.ext.pmpDshTavern ??= {};
+  const appearance = next.ext.pmpDshTavern.appearance ??= { schemaVersion: 1, messages: {} };
+  if (appearance.schemaVersion !== 1) throw new TypeError("Unsupported avatar schema");
+  appearance.messages ??= {};
+  if (scope === "message") {
+    if (Object.keys(appearance.messages).length >= 500 && !Object.hasOwn(appearance.messages, key2)) throw new TypeError("Too many message avatar overrides");
+    appearance.messages[key2] = { ...appearance.messages[key2], [role2]: normalizeAvatar(avatar) };
+  } else if (scope === "reset-message") {
+    if (Object.hasOwn(appearance.messages, key2)) delete appearance.messages[key2][role2];
+  } else {
+    if (scope === "reset-playthrough") delete appearance[role2];
+    else appearance[role2] = normalizeAvatar(avatar);
+    for (const value of Object.values(appearance.messages)) delete value[role2];
   }
+  for (const [messageKey, overrides] of Object.entries(appearance.messages)) {
+    if (!Object.values(overrides).some((value) => value != null)) delete appearance.messages[messageKey];
+  }
+  validateAppearance(appearance);
+  return next;
+}
+function validateAppearance(value) {
+  const record = (x2) => x2 !== null && typeof x2 === "object" && !Array.isArray(x2);
+  if (!record(value) || value.schemaVersion !== 1) throw new TypeError("Unsupported avatar schema");
+  for (const key2 of Object.keys(value)) if (!["schemaVersion", "user", "assistant", "messages"].includes(key2)) throw new TypeError("Unknown avatar field");
+  for (const role2 of ["user", "assistant"]) if (value[role2] !== void 0) normalizeAvatar(value[role2]);
+  if (!record(value.messages) || Object.keys(value.messages).length > 500) throw new TypeError("Invalid avatar messages");
+  for (const [key2, overrides] of Object.entries(value.messages)) {
+    if (key2.length > 500 || ["__proto__", "constructor", "prototype"].includes(key2) || !record(overrides)) throw new TypeError("Invalid avatar message");
+    for (const role2 of Object.keys(overrides)) {
+      if (!["user", "assistant"].includes(role2)) throw new TypeError("Invalid avatar role");
+      normalizeAvatar(overrides[role2]);
+    }
+  }
+  if (JSON.stringify(value).length > 512 * 1024) throw new TypeError("Playthrough avatars exceed 512K serialized characters; clear unused overrides");
+  return value;
 }
 
 // packages/play/src/timeline-tree.js
@@ -21802,7 +21853,7 @@ function storedBranchHeads(timeline, variants) {
     if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
     const branch = variants.get(value.branchVariantId);
     const head = variants.get(value.variantId);
-    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || head.variant.sessionId !== value.sessionId) continue;
+    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || typeof value.sessionId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(value.sessionId)) continue;
     result.set(value.branchVariantId, {
       sessionId: value.sessionId,
       nodeId: value.nodeId,
@@ -21937,59 +21988,6 @@ function activeVariantEnd(timeline, sessionId) {
   return entry?.variant?.endEventId ?? -1;
 }
 
-// packages/client/src/play/swipe-completion.js
-var origin = (message) => message?.origin?.kind ?? (message?.role === "user" ? "user" : message?.role);
-function completedSwipePair(state, boundary) {
-  if (state?.incompleteTurn !== false) return null;
-  const messages = (state.messages ?? []).filter((m2) => Number.isSafeInteger(m2.seq) && m2.seq > boundary).sort((a, b2) => a.seq - b2.seq);
-  const user = messages.find((m2) => m2.role === "user" && ["user", "steering"].includes(origin(m2)));
-  if (!user || state.stoppedRequest?.userEventId === user.seq) return null;
-  const assistant = messages.findLast((m2) => m2.role === "assistant" && m2.seq > user.seq);
-  return assistant ? { user, assistant, sessionFormatVersion: state.sessionFormatVersion } : null;
-}
-async function commitSwipeReply(client, pending2, pair, {
-  variantId = `swipe-${pending2.sessionId}-${pair.user.seq}-${pair.assistant.seq}`,
-  writeTimeline = (transform) => updateTimeline(client, pending2.playthrough, transform)
-} = {}) {
-  const variant2 = {
-    id: variantId,
-    sessionId: pending2.sessionId,
-    startEventId: pair.user.seq,
-    endEventId: pair.assistant.seq,
-    ...Number.isSafeInteger(pair.sessionFormatVersion) ? { ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } } } : {}
-  };
-  const next = await writeTimeline((timeline) => {
-    const node = timeline.nodes.find((n) => n.id === pending2.nodeId);
-    if (!node || !node.variants.some((v2) => v2.sessionId === pending2.sourceSessionId && (!pending2.sourceVariantId || v2.id === pending2.sourceVariantId))) throw Error("Swipe source reply is no longer in this playthrough");
-    if (!Object.hasOwn(pending2, "expectedHead") && timeline.head && ![pending2.sourceSessionId, pending2.sessionId].includes(timeline.head.sessionId)) throw Error("Active reply changed while the swipe was waiting");
-    const existing = node.variants.find((v2) => v2.sessionId === variant2.sessionId && v2.startEventId === variant2.startEventId && v2.endEventId === variant2.endEventId);
-    const saved = existing ?? variant2;
-    const head = { sessionId: saved.sessionId, nodeId: node.id, variantId: saved.id };
-    if (JSON.stringify(timeline.head ?? null) !== JSON.stringify(head) && Object.hasOwn(pending2, "expectedHead") && JSON.stringify(timeline.head ?? null) !== JSON.stringify(pending2.expectedHead)) throw Error("Active reply changed while the swipe was waiting");
-    return timelineWithHead({ ...timeline, nodes: timeline.nodes.map((n) => n === node ? { ...n, adoptedVariantId: saved.id, variants: existing ? n.variants : [...n.variants, saved] } : n) }, head);
-  });
-  const focus = await client.getFocus(pending2.playthrough);
-  if (focus.sessionId !== pending2.sessionId) throw Error("Saved swipe does not match derived focus");
-  finishPendingSwipe(client, pending2);
-  return { timeline: next, sessionId: pending2.sessionId, nodeId: pending2.nodeId, variantId: next.head.variantId };
-}
-async function recoverCompletedSwipe(client, pending2) {
-  if (!pending2.error || pending2.kind === "request-retry") return null;
-  if (pending2.recovery) return pending2.recovery;
-  const work = (async () => {
-    const boundary = pending2.boundary ?? Math.max(-1, ...pending2.timeline.nodes.flatMap((n) => n.variants.filter((v2) => v2.id === n.adoptedVariantId).map((v2) => v2.endEventId)));
-    const pair = completedSwipePair(await client.getMessages(pending2.sessionId), boundary);
-    if (!pair) return null;
-    return commitSwipeReply(client, pending2, pair);
-  })();
-  pending2.recovery = work;
-  try {
-    return await work;
-  } finally {
-    if (pending2.recovery === work) delete pending2.recovery;
-  }
-}
-
 // packages/play/src/playthrough-state.js
 function isPlaythroughArchived(playthrough) {
   return typeof playthrough?.ext?.pmpDshTavern?.archivedAt === "string";
@@ -22011,1061 +22009,825 @@ function isArchiveTimestamp(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 }
 
-// packages/client/src/play/schema.js
-var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
-var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system", "developer", "tool"]);
-var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
-function isRecord3(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
+// packages/play/src/timeline.js
+var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+function isSafeCatalogSegment(value) {
+  return typeof value === "string" && SAFE_SEGMENT.test(value);
 }
-function fail2(label, detail) {
-  throw new TypeError(`${label}: ${detail}`);
-}
-function stringId(value, label) {
-  if (typeof value !== "string" || value.trim() === "") fail2(label, "must be a non-empty string");
-  return value;
-}
-function eventSeq(value, label) {
-  if (!Number.isSafeInteger(value) || value < 0) fail2(label, "must be a non-negative integer");
-  return value;
-}
-function extRecord(value, label) {
-  if (value === void 0) return void 0;
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  return value;
-}
-function normalizeChrome(value, label = "chrome") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!CHROME_MODES.has(value.mode)) fail2(label, "mode must be native or play");
-  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
-    fail2(label, "revision must be a non-empty string or null");
+
+// packages/play/src/creation-publication.js
+function nextPlaythroughNumber(catalog2, characterId) {
+  let maximum = 0, ordinal = 0;
+  for (const row of catalog2?.playthroughs ?? []) {
+    const meta = row.ext?.pmpDshTavern;
+    if (meta?.characterId !== characterId) continue;
+    ordinal++;
+    const number2 = meta.playthroughNumber;
+    maximum = Math.max(maximum, Number.isSafeInteger(number2) && number2 > 0 ? number2 : ordinal);
   }
-  return { mode: value.mode, revision: value.revision ?? null };
+  return maximum + 1;
 }
-function normalizeWorkspace(value, label = "workspace") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (typeof value.selected !== "boolean") fail2(label, "selected must be a boolean");
-  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
-    fail2(label, "rootPath must be a string or null");
-  }
-  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
-    fail2(label, "contractVersion must be a positive integer");
-  }
-  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord3).map((item) => ({
-    code: typeof item.code === "string" ? item.code : "",
-    message: typeof item.message === "string" ? item.message : ""
-  })) : [];
-  return {
-    selected: value.selected,
-    rootPath: value.rootPath ?? null,
-    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
-    contractVersion: value.contractVersion,
-    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
-    firstSelection: value.firstSelection === true,
-    warnings
-  };
+var creationConflict = () => httpError(409, "Creation destination or checkpoint changed. Inspect Repair playthrough.", "PLAY_CREATION_CONFLICT");
+function creationRow(catalog2, id, path3, meta) {
+  const rows = catalog2.playthroughs.filter((row2) => row2.id === id || row2.path === path3);
+  if (!rows.length) return null;
+  const row = rows[0], actual = row.ext?.pmpDshTavern;
+  if (rows.length !== 1 || row.id !== id || row.path !== path3 || actual?.characterId !== meta.characterId || meta.draftId && actual.draftId !== meta.draftId || meta.rootSessionId && actual.rootSessionId !== meta.rootSessionId) throw creationConflict();
+  return row;
 }
-function normalizeTimelineVariant(value, label = "variant") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
-  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
-  if (startEventId > endEventId) fail2(label, "startEventId must not exceed endEventId");
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return {
-    id: stringId(value.id, `${label}.id`),
-    sessionId: stringId(value.sessionId, `${label}.sessionId`),
-    startEventId,
-    endEventId,
-    ...ext === void 0 ? {} : { ext }
-  };
-}
-function normalizeTimelineNode(value, label = "node") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (value.kind !== "qa") fail2(label, "kind must be qa");
-  if (!Array.isArray(value.variants) || value.variants.length === 0) {
-    fail2(label, "variants must be a non-empty array");
+
+// packages/play/src/session-coordinates.js
+function requireSnapshotVersion(version3) {
+  if (!Number.isSafeInteger(version3) || version3 < 0) {
+    throw httpError(503, "The Host did not provide the Session format version for this history snapshot. Retry when Session metadata is available.", "PLAY_COORDINATES_UNAVAILABLE");
   }
-  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
-  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
-  if (!variants.some((item) => item.id === adoptedVariantId)) fail2(label, "adoptedVariantId must match a variant");
-  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
-    fail2(label, "displayOverride must be a string or null");
-  }
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return {
-    id: stringId(value.id, `${label}.id`),
-    kind: "qa",
-    displayOverride: value.displayOverride ?? null,
-    ...Object.hasOwn(value, "parentVariantId") ? {
-      parentVariantId: value.parentVariantId === null ? null : stringId(value.parentVariantId, `${label}.parentVariantId`)
-    } : {},
-    adoptedVariantId,
-    variants,
-    ...ext === void 0 ? {} : { ext }
-  };
 }
-function normalizeTimeline(value, label = "timeline") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!Array.isArray(value.nodes)) fail2(label, "nodes must be an array");
-  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
-  const ids = /* @__PURE__ */ new Set();
-  const variantOwners = /* @__PURE__ */ new Map();
-  const tree = value.head !== void 0 || nodes.some((node) => Object.hasOwn(node, "parentVariantId"));
-  for (const node of nodes) {
-    if (ids.has(node.id)) fail2(label, `duplicate node id ${node.id}`);
-    ids.add(node.id);
+function requireCoordinates(version3, current4) {
+  if (version3 !== void 0 && (!Number.isSafeInteger(version3) || version3 < 0)) {
+    throw httpError(400, "Invalid Session coordinate format version", "PLAY_COORDINATES_INVALID");
+  }
+  requireSnapshotVersion(current4?.sessionFormatVersion);
+  if (version3 !== void 0 && version3 !== current4.sessionFormatVersion || version3 === void 0 && (current4.migratedFromV2 || current4.sessionFormatVersion >= 4)) {
+    throw httpError(
+      409,
+      "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs. For missing markers after a V3-to-V4 upgrade, preview --auto-v3-v4. Use --stamp-only for independently verified message IDs.",
+      "PLAY_COORDINATES_MIGRATION_REQUIRED"
+    );
+  }
+}
+function variantFormatVersion(variant2) {
+  return variant2.ext?.pmpDshTavern?.sessionFormatVersion;
+}
+function withVariantFormat(variant2, version3) {
+  requireSnapshotVersion(version3);
+  return { ...variant2, ext: { ...variant2.ext, pmpDshTavern: {
+    ...variant2.ext?.pmpDshTavern,
+    sessionFormatVersion: version3
+  } } };
+}
+async function validateTimelineCoordinates(timeline, describe) {
+  if (typeof describe !== "function") return;
+  const descriptions = /* @__PURE__ */ new Map();
+  for (const node of timeline.nodes) {
     for (const variant2 of node.variants) {
-      if (tree && variantOwners.has(variant2.id)) fail2(label, `duplicate tree variant id ${variant2.id}`);
-      variantOwners.set(variant2.id, node.id);
+      if (!descriptions.has(variant2.sessionId)) descriptions.set(variant2.sessionId, await describe(variant2.sessionId));
+      requireCoordinates(variantFormatVersion(variant2), descriptions.get(variant2.sessionId));
     }
   }
-  for (const [index, node] of nodes.entries()) {
-    if (!Object.hasOwn(node, "parentVariantId") || node.parentVariantId === null) continue;
-    const parentNodeId = variantOwners.get(node.parentVariantId);
-    if (parentNodeId === void 0) fail2(`${label}.nodes[${index}]`, "parentVariantId is unknown");
-    if (nodes.findIndex((item) => item.id === parentNodeId) >= index) fail2(`${label}.nodes[${index}]`, "parentVariantId must reference an earlier node");
-  }
-  let head;
-  if (value.head !== void 0) {
-    if (!isRecord3(value.head)) fail2(`${label}.head`, "must be an object");
-    head = {
-      sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
-      nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
-      variantId: stringId(value.head.variantId, `${label}.head.variantId`)
-    };
-    if (variantOwners.get(head.variantId) !== head.nodeId) fail2(`${label}.head`, "must reference a variant on its node");
-  }
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return { nodes, ...head === void 0 ? {} : { head }, ...ext === void 0 ? {} : { ext } };
 }
-function normalizeCatalog(value, label = "catalog") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!Array.isArray(value.playthroughs)) fail2(label, "playthroughs must be an array");
-  const playthroughs = value.playthroughs.map((item, index) => {
-    const itemLabel = `${label}.playthroughs[${index}]`;
-    if (!isRecord3(item)) fail2(itemLabel, "must be an object");
-    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
-    const archivedAt = ext2?.pmpDshTavern?.archivedAt;
-    if (archivedAt !== void 0 && !isArchiveTimestamp(archivedAt)) {
-      fail2(`${itemLabel}.ext.pmpDshTavern.archivedAt`, "must be a UTC ISO timestamp with milliseconds");
-    }
-    return {
-      id: stringId(item.id, `${itemLabel}.id`),
-      path: stringId(item.path, `${itemLabel}.path`),
-      ...typeof item.title === "string" ? { title: item.title } : {},
-      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
-      ...ext2 === void 0 ? {} : { ext: ext2 }
-    };
+
+// packages/client/src/play/creation-request.js
+var adapters = /* @__PURE__ */ new WeakMap();
+async function creationRequest(client, action, creationId, run2, reusable) {
+  const deadline = AbortSignal.timeout(35e3);
+  let onAbort;
+  const timeout = new Promise((_2, reject) => {
+    onAbort = () => reject(Object.assign(new Error("Creation timed out. Retry the same action or open Repair playthrough to check its status."), { code: "PLAY_CREATION_TIMEOUT" }));
+    deadline.addEventListener("abort", onAbort, { once: true });
   });
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return { playthroughs, ...ext === void 0 ? {} : { ext } };
-}
-function parseJsonDocument(content, normalize, label) {
-  if (typeof content !== "string") fail2(label, "content must be a JSON string");
-  let parsed;
   try {
-    parsed = JSON.parse(content);
-  } catch {
-    fail2(label, "content must be valid JSON");
+    return await Promise.race([submit(client, action, creationId, run2, reusable, deadline), timeout]);
+  } finally {
+    deadline.removeEventListener("abort", onAbort);
   }
-  return normalize(parsed, label);
 }
+async function submit(client, action, creationId, run2, reusable, signal) {
+  const binding = await client.getWorkspace?.({ signal });
+  signal.throwIfAborted();
+  const scope = binding && JSON.stringify([binding.workspaceId, binding.rootPath]);
+  const key2 = "pmp-dsh-tavern:creation:" + JSON.stringify([client.apiRoot, scope, action]);
+  let storage;
+  if (typeof window !== "undefined") {
+    storage = window.localStorage;
+    if (!storage) throw new Error("Playthrough creation requires browser storage for retry recovery.");
+  } else {
+    if (!adapters.has(client)) adapters.set(client, /* @__PURE__ */ new Map());
+    const records = adapters.get(client);
+    storage = { getItem: (key3) => records.get(key3), setItem: (key3, value) => records.set(key3, value), removeItem: (key3) => records.delete(key3) };
+  }
+  const previous = storage.getItem(key2);
+  if (!previous && !creationId && reusable) {
+    const found = await reusable();
+    if (found) return found;
+  }
+  signal.throwIfAborted();
+  const id = creationId ?? storage.getItem(key2) ?? globalThis.crypto.randomUUID();
+  storage.setItem(key2, id);
+  const acknowledge = () => {
+    if (storage.getItem(key2) === id) storage.removeItem(key2);
+  };
+  try {
+    const result = await run2({ creationId: id, ...scope ? { expectedWorkspaceScope: scope } : {} }, { signal });
+    signal.throwIfAborted();
+    acknowledge();
+    return result;
+  } catch (error) {
+    if (error.code === "PLAY_CREATION_DISMISSED") acknowledge();
+    throw error;
+  }
+}
+
+// packages/client/src/play/branch-recovery.js
+var conflict = () => httpError(409, "The branch target or its saved evidence changed. Open Repair playthrough.", "PLAY_FILE_REVISION_CONFLICT");
+var pending = (key2) => httpError(409, "Branch outcome needs verification. Open Repair playthrough. Operation " + key2, "PLAY_BRANCH_PENDING");
+var root = (row) => row.ext?.pmpDshTavern?.rootSessionId ?? null;
+var character = (row) => row.ext?.pmpDshTavern?.characterId ?? row.path.split("/")[0];
+var ownerFor = (kind) => "tavern." + kind;
+var targetId = (key2) => "playthrough-" + sourceSha256(key2);
+function activeAnchor(timeline) {
+  const entries2 = activeTimelineEntries(timeline);
+  return sourceSha256(JSON.stringify([timelineHead(timeline), entries2.map(({ node, variant: variant2 }) => [node.id, variant2.id, variant2.sessionId, variant2.startEventId, variant2.endEventId, variantFormatVersion(variant2)])]));
+}
+async function fileAt(client, path3) {
+  try {
+    return await client.getFile(path3);
+  } catch (error) {
+    if (error.code === "PLAY_PATH_NOT_FOUND") return null;
+    throw error;
+  }
+}
+async function sourceRow(client, row) {
+  const catalog2 = JSON.parse((await client.getFile("catalog.json")).content);
+  const hits = catalog2.playthroughs.filter((item) => item.id === row.id || item.path === row.path);
+  if (hits.length !== 1 || hits[0].id !== row.id || hits[0].path !== row.path || isPlaythroughArchived(hits[0])) throw conflict();
+  return hits[0];
+}
+function endpoints(evidence, sessionId, start2, end) {
+  if (evidence.sessionId !== sessionId) throw conflict();
+  const find = (seq2, role2) => {
+    const found = evidence.endpoints.filter((item) => item.seq === seq2);
+    if (found.length !== 1 || found[0].role !== role2 || !found[0].id) throw conflict();
+    return found[0].id;
+  };
+  return [find(start2, "user"), find(end, "assistant")];
+}
+async function acquire(client, row, request2, scope, key2, signal) {
+  const saved = await sourceRow(client, row);
+  const file = await client.getFile(row.path);
+  if (request2.expectedRevision && file.revision !== request2.expectedRevision) throw conflict();
+  const timeline = JSON.parse(file.content);
+  const target = activeTimelineEntries(timeline).find((entry) => entry.node.id === request2.nodeId);
+  if (!target || request2.variantId != null && target.variant.id !== request2.variantId) throw conflict();
+  const { variant: variant2 } = target;
+  const start2 = variant2.startEventId, end = variant2.endEventId;
+  const evidence = await client.getSessionEvidence(variant2.sessionId, { start: start2, end });
+  requireCoordinates(variantFormatVersion(variant2), evidence);
+  await validateTimelineCoordinates(timeline, (id) => id === variant2.sessionId ? evidence : client.getSessionEvidence(id, { start: 0, end: 0 }));
+  const [questionId, answerId] = endpoints(evidence, variant2.sessionId, start2, end);
+  const data3 = {
+    path: row.path,
+    scope,
+    characterId: character(saved),
+    rootSessionId: root(saved),
+    nodeId: target.node.id,
+    variantId: variant2.id,
+    source: variant2.sessionId,
+    start: start2,
+    end,
+    version: evidence.sessionFormatVersion,
+    questionId,
+    answerId,
+    anchor: activeAnchor(timeline),
+    revision: file.revision,
+    nativeKey: crypto.randomUUID(),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  if (request2.kind === "fork") data3.target = targetId(key2);
+  signal.throwIfAborted();
+  return client.putCheckpoint(row, {
+    key: key2,
+    owner: ownerFor(request2.kind),
+    data: data3,
+    expectedRevision: null,
+    expectedWorkspaceScope: scope,
+    expectedTimelineRevision: file.revision,
+    expectedBinding: { path: saved.path, rootSessionId: root(saved), characterId: saved.ext?.pmpDshTavern?.characterId ?? null }
+  });
+}
+function forkTimeline(timeline, data3, child) {
+  const entries2 = activeTimelineEntries(timeline);
+  const index = entries2.findIndex(({ node, variant: variant2 }) => node.id === data3.nodeId && variant2.id === data3.variantId);
+  if (index < 0) throw conflict();
+  const nodes = entries2.slice(0, index + 1).map(({ node, variant: variant2 }, i3) => ({
+    ...node,
+    parentVariantId: entries2[i3 - 1]?.variant.id ?? null,
+    adoptedVariantId: variant2.id,
+    variants: node.variants.map((item) => item.id === data3.variantId ? withVariantFormat({ ...item, sessionId: child }, data3.version) : item)
+  }));
+  return { ...timeline, nodes, head: { sessionId: child, nodeId: data3.nodeId, variantId: data3.variantId } };
+}
+async function publishFork(client, checkpoint, source, child, write) {
+  const data3 = checkpoint.data;
+  if (data3.target !== targetId(checkpoint.key) || !isSafeCatalogSegment(data3.characterId)) throw conflict();
+  const path3 = data3.characterId + "/" + data3.target + "/timeline.json";
+  const meta = { characterId: data3.characterId, rootSessionId: child };
+  const timeline = forkTimeline(source, data3, child);
+  const content = JSON.stringify(timeline);
+  const file = await fileAt(client, path3);
+  const catalogFile = await client.getFile("catalog.json");
+  const catalog2 = JSON.parse(catalogFile.content);
+  let playthrough = creationRow(catalog2, data3.target, path3, meta);
+  if (file && file.content !== content || playthrough && !file) throw conflict();
+  if (!file) await write(path3, null, content);
+  if (!playthrough) {
+    const number2 = nextPlaythroughNumber(catalog2, data3.characterId);
+    playthrough = {
+      id: data3.target,
+      path: path3,
+      title: number2 + "\u5468\u76EE",
+      lastOpenedAt: data3.createdAt,
+      ext: { pmpDshTavern: { ...meta, playthroughNumber: number2, autoTitle: true } }
+    };
+    await write("catalog.json", catalogFile, JSON.stringify({ ...catalog2, playthroughs: [...catalog2.playthroughs, playthrough] }));
+  }
+  return { ok: true, playthrough, timeline, sessionId: child };
+}
+function matchRecordedSource(timeline, data3) {
+  const node = timeline.nodes.find((node2) => node2.id === data3.nodeId);
+  const variant2 = node?.variants.find((variant3) => variant3.id === data3.variantId);
+  if (!variant2 || variant2.sessionId !== data3.source || variant2.startEventId !== data3.start || variant2.endEventId !== data3.end) throw conflict();
+  if (variantFormatVersion(variant2) !== void 0 && variantFormatVersion(variant2) !== data3.version) throw conflict();
+}
+async function publish(client, row, checkpoint, { signal, beforeWrite, preview, allowBranch }) {
+  const { key: key2, owner: owner2, data: data3 } = checkpoint;
+  const scope = data3.scope;
+  const rowNow = await sourceRow(client, row);
+  if (data3.path !== row.path || data3.rootSessionId !== root(rowNow) || data3.characterId !== character(rowNow)) throw conflict();
+  const ownership = { expectedWorkspaceScope: scope, checkpointId: row.id, checkpointKey: key2 };
+  let receipt = await client.getSessionReceipt(data3.nativeKey, scope);
+  if (receipt.state === "missing" && allowBranch) {
+    const source = JSON.parse((await client.getFile(row.path)).content);
+    matchRecordedSource(source, data3);
+    if (activeAnchor(source) !== data3.anchor) throw conflict();
+    signal.throwIfAborted();
+    await client.postBranch(data3.source, data3.end, data3.version, void 0, { ...ownership, operationKey: data3.nativeKey, signal });
+    receipt = await client.getSessionReceipt(data3.nativeKey, scope);
+  }
+  if (receipt.active) throw httpError(409, "Native session operation is running", "PLAY_SESSION_OPERATION_BUSY");
+  if (receipt.state !== "done") throw pending(key2);
+  const child = receipt.result?.sessionId;
+  if (!child || child === data3.source) throw conflict();
+  const evidence = await client.getSessionEvidence(child, { start: data3.start, end: data3.end });
+  requireCoordinates(data3.version, evidence);
+  const [question, answer] = endpoints(evidence, child, data3.start, data3.end);
+  if (question !== data3.questionId || answer !== data3.answerId || evidence.inheritedEventCount !== data3.end + 1 || evidence.hasOwnTurns) throw conflict();
+  const file = await client.getFile(row.path);
+  let timeline = JSON.parse(file.content);
+  matchRecordedSource(timeline, data3);
+  const head = { sessionId: child, nodeId: data3.nodeId, variantId: data3.variantId };
+  const matches = (view) => view?.sessionId === child && view.nodeId === data3.nodeId && view.variantId === data3.variantId;
+  const done = owner2 === "tavern.rollback" && matches(timeline.head);
+  if (!done && activeAnchor(timeline) !== data3.anchor) throw conflict();
+  async function write(path3, previous, content) {
+    if (preview) return;
+    signal.throwIfAborted();
+    await beforeWrite?.(previous, path3);
+    signal.throwIfAborted();
+    await client.putFile(path3, content, { ...ownership, expectedRevision: previous?.revision ?? null, signal });
+  }
+  let result;
+  if (owner2 === "tavern.fork") result = await publishFork(client, checkpoint, timeline, child, write);
+  else {
+    if (!done) {
+      timeline = timelineWithHead({ ...timeline, nodes: timeline.nodes.map((node) => node.id === data3.nodeId ? { ...node, adoptedVariantId: data3.variantId } : node) }, head);
+      await write(row.path, file, JSON.stringify(timeline));
+    }
+    result = { ok: true, sessionId: child, timeline };
+  }
+  if (!preview) {
+    const focus = await client.getFocus(result.playthrough ?? row);
+    if (!matches(focus)) throw conflict();
+    signal.throwIfAborted();
+    await client.putCheckpoint(row, {
+      key: key2,
+      owner: owner2,
+      data: { ...data3, child },
+      released: true,
+      expectedRevision: checkpoint.revision,
+      expectedWorkspaceScope: scope
+    });
+  }
+  return result;
+}
+async function returned(client, row, checkpoint) {
+  const { data: data3 } = checkpoint;
+  if (data3.dismissed || !data3.child) throw httpError(409, "This branch operation was dismissed.", "PLAY_CREATION_DISMISSED");
+  let playthrough;
+  if (checkpoint.owner === "tavern.fork") {
+    if (data3.target !== targetId(checkpoint.key)) throw conflict();
+    const catalog2 = JSON.parse((await client.getFile("catalog.json")).content);
+    playthrough = creationRow(
+      catalog2,
+      data3.target,
+      data3.characterId + "/" + data3.target + "/timeline.json",
+      { characterId: data3.characterId, rootSessionId: data3.child }
+    );
+    if (!playthrough || isPlaythroughArchived(playthrough)) throw conflict();
+  }
+  const timeline = JSON.parse((await client.getFile(playthrough?.path ?? row.path)).content);
+  return { ok: true, ...playthrough ? { playthrough } : {}, sessionId: data3.child, timeline };
+}
+function runBranchOperation(client, row, request2, options) {
+  return withOperationDeadline(options, async (signal) => {
+    if (!["fork", "rollback"].includes(request2.kind)) throw new TypeError("Unknown branch operation");
+    const workspace = await client.getWorkspace();
+    const scope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+    if (request2.expectedWorkspaceScope && request2.expectedWorkspaceScope !== scope) throw conflict();
+    const current4 = await client.getCheckpoint(row, scope);
+    const owner2 = ownerFor(request2.kind);
+    const key2 = request2.creationId ?? (current4 && !current4.released && current4.owner === owner2 ? current4.key : crypto.randomUUID());
+    let checkpoint = current4?.key === key2 ? current4 : await client.getCheckpoint(row, scope, key2);
+    if (!checkpoint) {
+      if (current4 && !current4.released) throw pending(current4.key);
+      checkpoint = await acquire(client, row, request2, scope, key2, signal);
+    }
+    const data3 = checkpoint.data;
+    if (checkpoint.owner !== owner2 || data3.scope !== scope || data3.nodeId !== request2.nodeId || data3.path !== row.path || request2.variantId != null && data3.variantId !== request2.variantId) throw conflict();
+    if (checkpoint.released) return returned(client, row, checkpoint);
+    return publish(client, row, checkpoint, { signal, allowBranch: true });
+  });
+}
+function rollbackAtNode(client, row, nodeId, variantId) {
+  return creationRequest(
+    client,
+    ["rollback", row.id, row.path, nodeId, variantId],
+    void 0,
+    (identity, options) => runBranchOperation(client, row, { ...identity, kind: "rollback", nodeId, variantId }, options)
+  );
+}
+
+// packages/play/src/message-content.js
 function projectContentText(content) {
   if (!Array.isArray(content)) return "";
   return content.map((part) => {
-    if (!isRecord3(part)) return "";
+    if (part === null || typeof part !== "object" || Array.isArray(part)) return "";
     if (typeof part.text === "string") return part.text;
     return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
   }).join("");
 }
-function normalizeSessionMessages(value, label = "messages") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!Array.isArray(value.messages)) fail2(label, "messages must be an array");
-  if (typeof value.incompleteTurn !== "boolean") fail2(label, "incompleteTurn must be a boolean");
-  const stopped = value.stoppedRequest;
-  if (stopped != null && (!isRecord3(stopped) || !["userEventId", "turnStartEventId", "turnEndEventId"].every((key2) => Number.isSafeInteger(stopped[key2]) && stopped[key2] >= 0) || stopped.turnStartEventId >= stopped.userEventId || stopped.userEventId >= stopped.turnEndEventId || value.incompleteTurn)) fail2(label, "invalid stopped request coordinates");
-  const messages = value.messages.map((item, index) => {
-    const itemLabel = `${label}.messages[${index}]`;
-    if (!isRecord3(item)) fail2(itemLabel, "must be an object");
-    if (!MESSAGE_ROLES.has(item.role)) fail2(itemLabel, "role is invalid");
-    if (!Array.isArray(item.content)) fail2(itemLabel, "content must be an array");
-    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail2(itemLabel, "seq must be a non-negative integer or null");
-    const fallbackKind = item.role === "tool" || item.role === "developer" ? "context" : item.role;
-    const origin2 = item.origin === void 0 ? { kind: fallbackKind } : (() => {
-      if (!isRecord3(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail2(`${itemLabel}.origin`, "kind is invalid");
-      if (item.origin.kind !== "context") return { kind: item.origin.kind };
-      const optional = (field, maximum) => {
-        const fieldValue = item.origin[field];
-        if (fieldValue !== null && fieldValue !== void 0 && (typeof fieldValue !== "string" || fieldValue.length > maximum)) {
-          fail2(`${itemLabel}.origin.${field}`, `must be a string up to ${maximum} characters or null`);
-        }
-        return typeof fieldValue === "string" && fieldValue !== "" ? fieldValue : null;
-      };
-      return {
-        kind: "context",
-        producer: optional("producer", 200),
-        form: optional("form", 64),
-        summary: optional("summary", 1e3)
-      };
-    })();
-    return {
-      id: stringId(item.id, `${itemLabel}.id`),
-      role: item.role,
-      content: item.content,
-      seq: item.seq,
-      text: projectContentText(item.content),
-      origin: origin2
-    };
-  });
-  return {
-    messages,
-    incompleteTurn: value.incompleteTurn,
-    ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {},
-    ...stopped === void 0 ? {} : { stoppedRequest: stopped === null ? null : { userEventId: stopped.userEventId, turnStartEventId: stopped.turnStartEventId, turnEndEventId: stopped.turnEndEventId } }
-  };
-}
-function normalizeFocus(value, label = "focus") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  const nullableId = (field, fieldLabel) => {
-    if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
-      fail2(label, `${fieldLabel} must be a non-empty string or null`);
+
+// packages/play/src/generation-target.js
+var generationConflict = () => httpError(409, "The active reply or its source changed. Review this generation in Repair playthrough.", "PLAY_GENERATION_CONFLICT");
+var human = (message) => message.role === "user" && ["user", "steering"].includes(message.origin.kind);
+var same = (a, b2) => JSON.stringify(a) === JSON.stringify(b2);
+var anchor = (variant2) => variant2 ? [variant2.id, variant2.sessionId, variant2.startEventId, variant2.endEventId, variantFormatVersion(variant2) ?? null] : null;
+var branchIdentity = (entries2, hash2) => hash2(JSON.stringify(entries2.map(({ node, variant: variant2 }) => [node.id, anchor(variant2)])));
+async function resolveGenerationSource(readMessages, row, timeline, request2, hash2) {
+  const entries2 = activeTimelineEntries(timeline);
+  let index, source, user, target, sourceSessionId;
+  if (request2.kind === "request-retry") {
+    index = entries2.length;
+    sourceSessionId = request2.sessionId;
+    if ((timelineHead(timeline)?.sessionId ?? row.ext?.pmpDshTavern?.rootSessionId) !== sourceSessionId) throw generationConflict();
+    source = await readMessages(sourceSessionId);
+    user = source.messages.find((message) => message.seq === request2.userEventId && human(message));
+    if (source.incompleteTurn || source.stoppedRequest?.userEventId !== request2.userEventId || !user || !projectContentText(user.content).trim() || (entries2.at(-1)?.variant.endEventId ?? -1) >= user.seq) {
+      throw httpError(409, "The stopped request is no longer retryable", "PLAY_GENERATION_SOURCE_INVALID");
     }
-    return value[field];
-  };
+  } else {
+    index = entries2.findIndex(({ node }) => node.id === request2.nodeId);
+    if (index < 0 || request2.variantId !== void 0 && entries2[index].variant.id !== request2.variantId) throw generationConflict();
+    const sessions = /* @__PURE__ */ new Map();
+    for (; index >= 0; index--) {
+      target = entries2[index];
+      sourceSessionId = target.variant.sessionId;
+      if (!sessions.has(sourceSessionId)) sessions.set(sourceSessionId, await readMessages(sourceSessionId));
+      source = sessions.get(sourceSessionId);
+      requireCoordinates(variantFormatVersion(target.variant), source);
+      user = source.messages.find((message) => Number.isSafeInteger(message.seq) && human(message) && message.seq >= target.variant.startEventId && message.seq <= target.variant.endEventId);
+      if (user && projectContentText(user.content)) break;
+    }
+    if (index < 0) throw httpError(409, "Active branch has no reusable user message", "PLAY_GENERATION_SOURCE_INVALID");
+  }
+  const parent = entries2[index - 1]?.variant;
   return {
-    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
-    sessionId: nullableId("sessionId", "sessionId"),
-    nodeId: nullableId("nodeId", "nodeId"),
-    variantId: nullableId("variantId", "variantId")
+    text: projectContentText(user.content),
+    intent: {
+      kind: request2.kind,
+      sourceSessionId,
+      nodeId: target?.node.id ?? "live-" + user.seq,
+      sourceIndex: index,
+      stateSource: { sessionId: sourceSessionId, ...target ? { beforeReplyEventId: target.variant.endEventId } : { beforeUserEventId: user.seq } },
+      expectedHead: timelineHead(timeline),
+      branch: branchIdentity(entries2, hash2),
+      source: anchor(target?.variant),
+      parent: anchor(parent),
+      boundary: parent?.endEventId ?? -1,
+      forkVersion: parent ? variantFormatVersion(parent) : void 0
+    }
   };
 }
-function timelinePath(value, label = "timeline path") {
-  const path3 = typeof value === "string" ? value : value?.path;
-  stringId(path3, label);
-  if (!path3.endsWith("timeline.json")) fail2(label, "must point to timeline.json");
-  return path3;
+function verifyGenerationTarget(record, timeline, hash2) {
+  const entries2 = activeTimelineEntries(timeline);
+  const target = entries2[record.sourceIndex];
+  const head = timelineHead(timeline);
+  if (["sessionId", "nodeId", "variantId"].some((key2) => head?.[key2] !== record.expectedHead?.[key2]) || branchIdentity(entries2, hash2) !== record.branch || !same(anchor(entries2[record.sourceIndex - 1]?.variant), record.parent) || record.kind === "reply-swipe" && (target?.node.id !== record.nodeId || !same(anchor(target.variant), record.source)) || record.kind === "request-retry" && entries2.length !== record.sourceIndex) throw generationConflict();
 }
-function playthroughCharacterId(playthrough) {
-  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
-  if (typeof explicit === "string" && explicit !== "") return explicit;
-  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
-  const first = path3.split("/").filter(Boolean)[0];
-  return first || null;
+function resultHead(record) {
+  const variantId = "generation-" + record.requestId;
+  return { sessionId: record.sessionId, nodeId: record.kind === "reply-swipe" ? record.nodeId : "qa-" + variantId, variantId };
+}
+function generationTimeline(record, timeline, outcome, hash2) {
+  const head = resultHead(record);
+  const saved = timeline.nodes.find((node) => node.id === head.nodeId)?.variants.find((v2) => v2.id === head.variantId);
+  const variant2 = withVariantFormat({ id: head.variantId, sessionId: head.sessionId, startEventId: outcome.start, endEventId: outcome.end }, outcome.version);
+  if (saved) {
+    if (!same(anchor(saved), anchor(variant2))) throw generationConflict();
+    return timeline;
+  }
+  verifyGenerationTarget(record, timeline, hash2);
+  const nodes = record.kind === "reply-swipe" ? timeline.nodes.map((node) => node.id === head.nodeId ? { ...node, adoptedVariantId: variant2.id, variants: [...node.variants, variant2] } : node) : [...timeline.nodes, { id: head.nodeId, kind: "qa", displayOverride: null, parentVariantId: record.parent?.[0] ?? null, adoptedVariantId: variant2.id, variants: [variant2] }];
+  return timelineWithHead({ ...timeline, nodes }, head);
 }
 
-// packages/client/src/play/sidebar-model.js
-var SIDEBAR_LOAD_CONCURRENCY = 4;
-function characterIdFromSelection(value) {
-  const selection = value?.selection ?? value;
-  const id = selection?.characterCardId;
-  return typeof id === "string" && id !== "" ? id : null;
+// packages/client/src/play/generation-recovery.js
+var owner = "tavern.generation";
+var pending2 = () => httpError(409, "Generation needs verification. Open Repair playthrough.", "PLAY_GENERATION_PENDING");
+var stopped = () => httpError(409, "Generation stopped without a saved assistant reply.", "PLAY_GENERATION_STOPPED");
+function descriptor(checkpoint) {
+  const { kind, sessionId, sourceSessionId, nodeId, sourceIndex, boundary, stage } = checkpoint.data;
+  return { operationKey: checkpoint.key, operationId: checkpoint.key, kind, sessionId, sourceSessionId, nodeId, sourceIndex, boundary, stage };
 }
-function rootSessionId(playthrough) {
-  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof id === "string" && id !== "" ? id : null;
-}
-function sessionTitle(session, id) {
-  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
-  if (typeof session?.title === "string" && session.title !== "") return session.title;
-  return id;
-}
-function timestamp(value) {
-  if (Number.isFinite(value)) return value;
-  if (typeof value !== "string" || value === "") return 0;
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-function latestCharacterSessionActivity(character, sessions) {
-  let latest = 0;
-  for (const playthrough of character.playthroughs) {
-    for (const id of playthrough.sessionIds) latest = Math.max(latest, timestamp(sessions[id]?.updatedAt));
-  }
-  for (const session of character.unassigned) latest = Math.max(latest, timestamp(sessions[session.id]?.updatedAt));
-  return latest;
-}
-function compareProjectedNames(left, right) {
-  const named = left.name.localeCompare(right.name, "zh-CN", { numeric: true, sensitivity: "base" });
-  return named !== 0 ? named : left.id.localeCompare(right.id);
-}
-function sortCharactersByRecentConversation(characters, sessions) {
-  return characters.toSorted((left, right) => {
-    const activity = latestCharacterSessionActivity(right, sessions) - latestCharacterSessionActivity(left, sessions);
-    if (activity !== 0) return activity;
-    const resourceUpdate = timestamp(right.updatedAt) - timestamp(left.updatedAt);
-    return resourceUpdate !== 0 ? resourceUpdate : compareProjectedNames(left, right);
+function save(client, row, checkpoint, patch, released = false) {
+  return client.putCheckpoint(row, {
+    owner,
+    key: checkpoint.key,
+    expectedWorkspaceScope: checkpoint.data.scope,
+    expectedRevision: checkpoint.revision,
+    released,
+    data: { ...checkpoint.data, ...patch }
   });
 }
-function historicalCharacterName(playthrough, sessions, fallback) {
-  const preserved = playthrough?.ext?.pmpDshTavern?.characterName;
-  if (typeof preserved === "string" && preserved.trim() !== "") return preserved;
-  const root = rootSessionId(playthrough);
-  if (root === null) return fallback;
-  const title = sessionTitle(sessions[root], root);
-  const inferred = title.replace(/\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/, "").trim();
-  return inferred !== "" && inferred !== root ? inferred : fallback;
+function fence(row, checkpoint) {
+  return { checkpointId: row.id, checkpointKey: checkpoint.key, expectedWorkspaceScope: checkpoint.data.scope };
 }
-function normalizedCharacterName(value) {
-  return String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+function sourceRequest(body2) {
+  return body2.kind === "reply-swipe" ? { kind: body2.kind, nodeId: body2.nodeId, variantId: body2.variantId } : { kind: body2.kind, sessionId: body2.sessionId, userEventId: body2.userEventId };
 }
-function assessPlaythroughCharacterRelink({
-  playthrough,
-  target,
-  characters = [],
-  missingCharacters = []
-} = {}) {
-  const reference = playthrough?.ext?.pmpDshTavern ?? {};
-  const currentId = playthroughCharacterId(playthrough);
-  if (typeof target?.id !== "string" || target.id === "") return { automatic: false, reason: "target-missing" };
-  if (target.id === currentId) return { automatic: true, reason: "unchanged" };
-  if (typeof reference.characterSha256 === "string" && reference.characterSha256 !== "") {
-    const shaMatches = characters.filter((character) => character.sha256 === reference.characterSha256);
-    if (shaMatches.length === 1 && shaMatches[0].id === target.id) return { automatic: true, reason: "sha256" };
+async function start(client, row, body2, scope, existing, signal) {
+  const request2 = sourceRequest(body2);
+  let child;
+  if (existing) {
+    if (existing.owner !== owner || existing.key !== body2.operationKey || JSON.stringify(existing.data.request) !== JSON.stringify(request2) || existing.data.scope !== scope || existing.data.path !== row.path) throw generationConflict();
+    if (existing.released && existing.data.stage !== "done") throw pending2();
+    if (existing.released) return { ok: true, ...descriptor(existing) };
+    if (existing.data.stage === "sending") {
+      const send = await client.getSessionReceipt(existing.data.requestId, scope);
+      if (send.state !== "missing") return { ok: true, ...descriptor(existing) };
+      child = { sessionId: existing.data.sessionId };
+    } else if (existing.data.stage === "creating") {
+      const creation = await client.getSessionReceipt(existing.data.sessionKey, scope);
+      if (creation.state === "pending") throw pending2();
+      if (creation.state === "done") child = creation.result;
+    } else throw pending2();
   }
-  const name2 = normalizedCharacterName(reference.characterName);
-  if (name2 !== "") {
-    const missingNameMatches = missingCharacters.filter((character) => normalizedCharacterName(character.name) === name2);
-    const currentNameMatches = characters.filter((character) => normalizedCharacterName(character.name) === name2);
-    const missingIdentityIsUnique = missingNameMatches.length === 0 || missingNameMatches.length === 1 && missingNameMatches[0].id === currentId;
-    if (missingIdentityIsUnique && currentNameMatches.length === 1 && currentNameMatches[0].id === target.id) {
-      return { automatic: true, reason: "name" };
+  if (!["reply-swipe", "request-retry"].includes(body2.kind) || !body2.operationKey) throw generationConflict();
+  const file = await client.getFile(row.path);
+  if (!existing && body2.expectedRevision && body2.expectedRevision !== file.revision) throw generationConflict();
+  const timeline = JSON.parse(file.content);
+  await validateTimelineCoordinates(timeline, (id) => client.getCoordinates(id));
+  const { intent, text: text3 } = await resolveGenerationSource((id) => client.getMessages(id), row, timeline, request2, sourceSha256);
+  const uuid = () => globalThis.crypto.randomUUID();
+  if (existing) verifyGenerationTarget(existing.data, timeline, sourceSha256);
+  const data3 = existing?.data ?? { ...intent, scope, path: row.path, request: request2, sessionKey: uuid(), requestId: uuid(), stage: "creating" };
+  signal.throwIfAborted();
+  let checkpoint = existing ?? await client.putCheckpoint(row, {
+    owner,
+    key: body2.operationKey,
+    data: data3,
+    expectedWorkspaceScope: scope,
+    expectedRevision: null,
+    expectedTimelineRevision: file.revision,
+    expectedBinding: { path: row.path, rootSessionId: row.ext?.pmpDshTavern?.rootSessionId ?? null, characterId: row.ext?.pmpDshTavern?.characterId ?? null }
+  });
+  const options = { ...fence(row, checkpoint), operationKey: data3.sessionKey, signal };
+  if (!child && data3.boundary >= 0) {
+    child = await client.postBranch(data3.sourceSessionId, data3.boundary, data3.forkVersion, data3.stateSource, options);
+  } else if (!child) {
+    const ref2 = await client.getImportContextBinding(data3.sourceSessionId);
+    signal.throwIfAborted();
+    child = await client.postSession(data3.sourceSessionId, ref2?.path ? { path: ref2.path } : void 0, data3.stateSource, options);
+  }
+  if (!child?.sessionId) throw pending2();
+  const { sessionFormatVersion } = await client.getCoordinates(child.sessionId);
+  if (!Number.isSafeInteger(sessionFormatVersion)) throw pending2();
+  verifyGenerationTarget(data3, JSON.parse((await client.getFile(row.path)).content), sourceSha256);
+  signal.throwIfAborted();
+  if (checkpoint.data.stage !== "sending") {
+    checkpoint = await save(client, row, checkpoint, { stage: "sending", sessionId: child.sessionId, childVersion: sessionFormatVersion });
+  } else if (checkpoint.data.childVersion !== sessionFormatVersion) throw generationConflict();
+  signal.throwIfAborted();
+  await client.postUserMessage(child.sessionId, text3, { ...fence(row, checkpoint), operationKey: data3.requestId, requestId: data3.requestId, signal });
+  return { ok: true, ...descriptor(checkpoint) };
+}
+async function inspect(client, checkpoint) {
+  const data3 = checkpoint.data;
+  if (checkpoint.released) return { state: data3.stage };
+  if (data3.stage === "creating") {
+    const receipt2 = await client.getSessionReceipt(data3.sessionKey, data3.scope);
+    return { state: receipt2.active ? "busy" : "uncertain", sessionId: receipt2.result?.sessionId ?? receipt2.sessionId };
+  }
+  if (data3.stage !== "sending" || !data3.sessionId) return { state: "uncertain" };
+  const receipt = await client.getSessionReceipt(data3.requestId, data3.scope);
+  const outcome = await client.getRequestOutcome(data3.sessionId, {
+    requestId: data3.requestId,
+    boundary: data3.boundary,
+    version: data3.childVersion,
+    stage: receipt.state === "done" ? "accepted" : "sending"
+  });
+  return outcome.state === "uncertain" && receipt.active ? { state: "busy" } : outcome;
+}
+async function complete(client, row, checkpoint, { apply: apply5, beforeWrite, signal }) {
+  const data3 = checkpoint.data;
+  if (checkpoint.released) {
+    if (data3.stage === "stopped") throw stopped();
+    if (data3.stage !== "done") throw pending2();
+    return { ok: true, ...resultHead(data3), timeline: JSON.parse((await client.getFile(row.path)).content) };
+  }
+  const outcome = await inspect(client, checkpoint);
+  signal?.throwIfAborted();
+  if (outcome.state === "stopped") {
+    if (apply5) await save(client, row, checkpoint, { stage: "stopped" }, true);
+    throw stopped();
+  }
+  if (outcome.state === "busy" || outcome.state === "waiting") throw httpError(409, "The native request is pending.", "PLAY_GENERATION_BUSY");
+  if (outcome.state === "running") throw httpError(409, "The native turn is still in progress.", "PLAY_GENERATION_RUNNING");
+  if (outcome.state !== "ready") throw pending2();
+  const file = await client.getFile(row.path);
+  const timeline = JSON.parse(file.content);
+  const next = generationTimeline(data3, timeline, outcome, sourceSha256);
+  if (apply5) {
+    if (next !== timeline) {
+      await beforeWrite?.(file, row.path);
+      signal?.throwIfAborted();
+      await client.putFile(row.path, JSON.stringify(next), { ...fence(row, checkpoint), expectedRevision: file.revision, signal });
     }
+    signal?.throwIfAborted();
+    await save(client, row, checkpoint, { stage: "done" }, true);
   }
-  return { automatic: false, reason: "manual" };
+  return { ok: true, ...resultHead(data3), timeline: next };
 }
-function normalizedPath(value) {
-  if (typeof value !== "string") return "";
-  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
-  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
-}
-function requiresSystemWorkspaceConfirmation(value) {
-  const path3 = typeof value === "string" ? value.replaceAll("\\", "/") : "";
-  return /^c:\//i.test(path3) || path3 === "/" || path3 === "/usr" || path3.startsWith("/usr/") || path3 === "/System" || path3.startsWith("/System/");
-}
-function timelineFor(timelines, playthrough) {
-  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
-}
-function playthroughMembers(playthrough, timeline) {
-  const ids = /* @__PURE__ */ new Set();
-  const rootId = rootSessionId(playthrough);
-  if (rootId !== null) ids.add(rootId);
-  if (typeof timeline?.head?.sessionId === "string" && timeline.head.sessionId !== "") {
-    ids.add(timeline.head.sessionId);
+async function run(client, row, body2, signal) {
+  let scope = body2.expectedWorkspaceScope;
+  if (!scope) {
+    const workspace = await client.getWorkspace();
+    scope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
   }
-  for (const head of timeline?.ext?.pmpDshTavern?.branchHeads ?? []) {
-    if (typeof head?.sessionId === "string" && head.sessionId !== "") ids.add(head.sessionId);
+  const checkpoint = await client.getCheckpoint(row, scope, body2.operationKey);
+  if (body2.action === "start") return start(client, row, body2, scope, checkpoint, signal);
+  if (body2.action === "status" && !body2.operationKey && (!checkpoint || checkpoint.released || checkpoint.owner !== owner)) return { ok: true, pending: null };
+  if (!checkpoint || checkpoint.owner !== owner || checkpoint.data.scope !== scope || checkpoint.data.path !== row.path || body2.operationKey && checkpoint.key !== body2.operationKey) throw generationConflict();
+  if (body2.action !== "status" && !body2.operationKey) throw generationConflict();
+  if (body2.action === "finish") return complete(client, row, checkpoint, { apply: true, signal });
+  const outcome = await inspect(client, checkpoint);
+  if (body2.action === "dismiss") {
+    if (!body2.operationKey || checkpoint.released && checkpoint.data.stage !== "dismissed") throw generationConflict();
+    if (["busy", "running", "ready", "waiting"].includes(outcome.state)) throw pending2();
+    signal.throwIfAborted();
+    if (!checkpoint.released) await save(client, row, checkpoint, { stage: "dismissed" }, true);
+    return { ok: true };
   }
-  for (const node of timeline?.nodes ?? []) {
-    for (const variant2 of node?.variants ?? []) {
-      if (typeof variant2?.sessionId === "string" && variant2.sessionId !== "") ids.add(variant2.sessionId);
-    }
-  }
-  return ids;
-}
-function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
-  const ids = /* @__PURE__ */ new Set();
-  if (workspace?.selected !== true) return ids;
-  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
-    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
-    if (item !== void 0) {
-      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
-      return ids;
-    }
-  }
-  const root = normalizedPath(workspace.rootPath);
-  if (root === "") return ids;
-  for (const [id, session] of Object.entries(sessions)) {
-    if (normalizedPath(session?.cwd) === root) ids.add(id);
-  }
-  return ids;
-}
-var SessionCharacterBindingCache = class {
-  constructor() {
-    this.entries = /* @__PURE__ */ new Map();
-    this.generation = 0;
-  }
-  clear() {
-    this.generation += 1;
-    this.entries.clear();
-  }
-  get(client, sessionId) {
-    const cached = this.entries.get(sessionId);
-    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
-    const generation = this.generation;
-    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
-    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
-    this.entries.set(sessionId, { promise });
-    promise.then((value) => {
-      if (this.generation === generation) this.entries.set(sessionId, { value });
-    });
-    return promise;
-  }
-};
-async function loadSessionCharacterBindings(client, sessionIds, {
-  concurrency = SIDEBAR_LOAD_CONCURRENCY,
-  cache = new SessionCharacterBindingCache()
-} = {}) {
-  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
-  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
-  const result = {};
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < ids.length) {
-      const index = cursor;
-      cursor += 1;
-      const id = ids[index];
-      result[id] = await cache.get(client, id);
-    }
-  };
-  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
-  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
-  await Promise.all(Array.from({ length: workerCount }, worker));
-  return result;
-}
-async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
-  const result = new Array(values.length);
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < values.length) {
-      const index = cursor;
-      cursor += 1;
-      result[index] = await mapper(values[index], index);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
-  return result;
-}
-async function loadPlaySidebarResources(client) {
-  if (client == null) throw new TypeError("playClient.required");
-  const [workspace, characterResponse] = await Promise.all([
-    client.getWorkspace(),
-    client.getCharacters()
-  ]);
-  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
-  const missingCharacters = Array.isArray(characterResponse?.missingCharacters) ? characterResponse.missingCharacters : [];
-  const characterSorting = characterResponse?.sorting ?? { mode: "updated" };
-  if (workspace.selected !== true) return { workspace, characters, missingCharacters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
-  let catalog2;
-  try {
-    catalog2 = await client.getCatalog();
-  } catch (reason) {
-    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
-    catalog2 = { playthroughs: [] };
-  }
-  const timelines = {};
-  const diagnostics = [];
-  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
+  if (body2.action !== "status") throw generationConflict();
+  const entry = descriptor(checkpoint);
+  if (outcome.sessionId) entry.sessionId = outcome.sessionId;
+  if (!checkpoint.released) {
     try {
-      timelines[playthrough.path] = await client.getTimeline(playthrough);
-    } catch (reason) {
-      diagnostics.push({
-        playthroughId: playthrough.id,
-        ...typeof reason?.code === "string" ? { code: reason.code } : {},
-        path: playthrough.path,
-        message: reason instanceof Error ? reason.message : String(reason)
-      });
+      const timeline = JSON.parse((await client.getFile(row.path)).content);
+      if (outcome.state === "ready") generationTimeline(checkpoint.data, timeline, outcome, sourceSha256);
+      else verifyGenerationTarget(checkpoint.data, timeline, sourceSha256);
+    } catch (error) {
+      return { ok: true, state: "uncertain", pending: entry, code: error.code ?? "PLAY_GENERATION_UNVERIFIED" };
     }
-  });
-  return { workspace, characters, missingCharacters, characterSorting, catalog: catalog2, timelines, diagnostics };
-}
-function projectPlaySidebar({
-  workspace = { selected: false },
-  workspaceItems = [],
-  characters = [],
-  characterSorting = { mode: "updated" },
-  missingCharacters = [],
-  catalog: catalog2 = { playthroughs: [] },
-  timelines = {},
-  sessions = {},
-  sessionIds = [],
-  archivedSessionIds = [],
-  currentId = null,
-  activePlaythroughId = null,
-  sessionCharacters = {},
-  pendingSwipes: pendingSwipes2 = []
-} = {}) {
-  const archived = new Set(archivedSessionIds);
-  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
-  const characterById = /* @__PURE__ */ new Map();
-  const missingById = new Map(missingCharacters.map((item) => [item.id, item]));
-  const missingCharacterById = /* @__PURE__ */ new Map();
-  const ensureCharacter = (id, name2 = id) => {
-    if (!characterById.has(id) && !characters.some((item) => item?.id === id)) {
-      if (!missingCharacterById.has(id)) {
-        const missing = missingById.get(id);
-        missingCharacterById.set(id, {
-          id,
-          name: missing?.name ?? name2,
-          ...typeof missing?.sha256 === "string" ? { sha256: missing.sha256 } : {},
-          playthroughs: [],
-          unassigned: [],
-          missing: true
-        });
-      }
-      return missingCharacterById.get(id);
-    }
-    if (!characterById.has(id)) {
-      const resource2 = characters.find((item) => item?.id === id);
-      characterById.set(id, {
-        id,
-        name: name2,
-        ...typeof resource2?.updatedAt === "string" ? { updatedAt: resource2.updatedAt } : {},
-        playthroughs: [],
-        unassigned: []
-      });
-    }
-    return characterById.get(id);
-  };
-  for (const character of characters) {
-    if (typeof character?.id !== "string" || character.id === "") continue;
-    ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
   }
-  const claimedRpSessions = /* @__PURE__ */ new Set();
-  const archivedPlaythroughs = [];
-  for (const playthrough of catalog2.playthroughs ?? []) {
-    const rootId = rootSessionId(playthrough);
-    const draft = rootId === null && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id;
-    const characterId = playthroughCharacterId(playthrough);
-    if (characterId === null) continue;
-    const characterReference = playthrough.ext?.pmpDshTavern ?? {};
-    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
-    for (const pending2 of pendingSwipes2) {
-      if (pending2.playthrough.id === playthrough.id && pending2.playthrough.path === playthrough.path) allMembers.add(pending2.sessionId);
-    }
-    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
-    for (const id of members) claimedRpSessions.add(id);
-    if (isPlaythroughArchived(playthrough)) {
-      archivedPlaythroughs.push({
-        ...playthrough,
-        characterName: characters.find((item) => item.id === characterId)?.name ?? historicalCharacterName(playthrough, sessions, characterId),
-        rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
-        sessionIds: members,
-        missing: members.length === 0 && !draft
-      });
-      continue;
-    }
-    const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId));
-    if (characterGroup.missing === true && characterGroup.sha256 === void 0 && typeof characterReference.characterSha256 === "string") {
-      characterGroup.sha256 = characterReference.characterSha256;
-    }
-    characterGroup.playthroughs.push({
-      ...playthrough,
-      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
-      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
-      sessionIds: members,
-      active: typeof activePlaythroughId === "string" && activePlaythroughId !== "" ? playthrough.id === activePlaythroughId : currentId !== null && members.includes(currentId),
-      missing: members.length === 0 && !draft
-    });
-  }
-  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
-  const otherSessions = [];
-  for (const id of ids) {
-    const session = sessions[id];
-    if (session == null || archived.has(id)) continue;
-    if (session.origin === "subagent") continue;
-    if (!rpSessionIds.has(id)) {
-      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
-      continue;
-    }
-    if (claimedRpSessions.has(id)) continue;
-    const characterId = sessionCharacters[id];
-    if (typeof characterId === "string" && characterId !== "") {
-      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
-      continue;
-    }
-    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
-  }
-  const projectedCharacters = [...characterById.values()];
-  return {
-    workspaceReady: workspace.selected === true,
-    rpSessionIds: [...rpSessionIds],
-    playSessionIds: [...claimedRpSessions],
-    characters: characterSorting?.mode === "updated" ? sortCharactersByRecentConversation(projectedCharacters, sessions) : projectedCharacters,
-    missingCharacters: [...missingCharacterById.values()],
-    otherSessions,
-    archivedPlaythroughs
-  };
+  return { ok: true, state: outcome.state, pending: entry };
 }
-function playthroughFocusTarget({ focus, playthrough, rpSessionIds = [] } = {}) {
-  const target = typeof focus?.sessionId === "string" ? focus.sessionId : playthrough?.rootSessionId;
-  return typeof target === "string" && new Set(rpSessionIds).has(target) ? target : null;
+function boundedGeneration(signal, work) {
+  const timeoutError = httpError(504, "Timed out checking generation. Open Repair playthrough.", "PLAY_GENERATION_TIMEOUT");
+  return withOperationDeadline({ signal, timeoutError }, work);
 }
-function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
-  if (workspace == null || session == null) return false;
-  if (workspace.selected !== true) return true;
-  const workspacePath = normalizedPath(workspace.rootPath);
-  const sessionPath = normalizedPath(session.cwd);
-  if (workspacePath === "" || sessionPath !== workspacePath) return true;
-  return characterIdFromSelection(selection) === null;
-}
-async function runAutomaticCharacterRelinks(recoveries, { attempted, isActive, relink, onError, onChanged }) {
-  let changed = false;
-  try {
-    for (const recovery of recoveries) {
-      if (!isActive()) break;
-      if (attempted.has(recovery.key)) continue;
-      attempted.add(recovery.key);
-      try {
-        await relink(recovery.missing.id, recovery.character.id);
-        changed = true;
-      } catch (reason) {
-        if (isActive()) onError(reason);
-      }
-    }
-  } finally {
-    if (changed) onChanged();
-  }
+function runGenerationOperation(client, row, body2) {
+  return boundedGeneration(void 0, (signal) => run(client, row, body2, signal));
 }
 
-// packages/client/src/play/import.js
-function parseJsonl(text3) {
-  const rows = text3.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-  if (rows.length === 0) throw new TypeError("play.import.empty");
-  if (rows[0]?.kind === "pmp-dsh-tavern-playthrough") throw new TypeError("play.import.unsupported");
-  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
-  let greeting = null;
-  const qa = [];
-  let pending2 = null;
-  for (const message of messages) {
-    if (message.is_user === true) {
-      if (pending2 !== null) throw new TypeError("play.import.unpaired");
-      pending2 = message.mes;
-    } else if (pending2 === null && qa.length === 0 && greeting === null) {
-      greeting = message.mes;
-    } else if (pending2 !== null) {
-      qa.push({ user: pending2, assistant: message.mes });
-      pending2 = null;
+// packages/client/src/play/pending-swipe.js
+var clients = /* @__PURE__ */ new WeakMap();
+var key = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
+function notify() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+}
+function pendingSwipes(client) {
+  return [...clients.get(client)?.values() ?? []];
+}
+function pendingSwipe(client, playthrough) {
+  return clients.get(client)?.get(key(playthrough)) ?? null;
+}
+function pendingSwipeForSession(client, sessionId) {
+  return pendingSwipes(client).find((item) => item.sessionId === sessionId) ?? null;
+}
+function beginPendingSwipe(client, value) {
+  let entries2 = clients.get(client);
+  if (!entries2) clients.set(client, entries2 = /* @__PURE__ */ new Map());
+  const pending4 = { ...value, error: null };
+  entries2.set(key(value.playthrough), pending4);
+  notify();
+  return pending4;
+}
+function finishPendingSwipe(client, pending4, error = null) {
+  const entries2 = clients.get(client);
+  if (entries2?.get(key(pending4.playthrough)) !== pending4) return;
+  if (error === null) entries2.delete(key(pending4.playthrough));
+  else pending4.error = error instanceof Error ? error.message : String(error);
+  notify();
+}
+function pendingSwipeTimeline(timeline, entries2, sourceIndex, sessionId) {
+  const prefix = entries2.slice(0, sourceIndex);
+  const parent = prefix.at(-1);
+  return {
+    ...timeline,
+    nodes: prefix.map(({ node, variant: variant2 }) => ({ ...node, adoptedVariantId: variant2.id })),
+    head: parent ? { sessionId, nodeId: parent.node.id, variantId: parent.variant.id } : null
+  };
+}
+
+// packages/client/src/play/generation.js
+function supportsGenerationRecovery(client) {
+  return typeof client?.getCheckpoint === "function" || typeof client?.generation === "function";
+}
+function generation(client, row, body2, timeline) {
+  return typeof client.generation === "function" ? client.generation(row, body2, timeline) : runGenerationOperation(client, row, body2);
+}
+function requestKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)), (b2) => b2.toString(16).padStart(2, "0")).join("");
+}
+function project(client, playthrough, timeline, entry, expectedWorkspaceScope, restored = false) {
+  const previous = pendingSwipe(client, playthrough);
+  if (previous?.operationKey === entry.operationKey && previous.expectedWorkspaceScope === expectedWorkspaceScope) return previous;
+  return beginPendingSwipe(client, {
+    ...entry,
+    playthrough,
+    expectedWorkspaceScope,
+    restored,
+    timeline: pendingSwipeTimeline(timeline, activeTimelineEntries(timeline), entry.sourceIndex, entry.sessionId)
+  });
+}
+function call(client, pending4, action) {
+  return generation(client, pending4.playthrough, { action, operationKey: pending4.operationKey, expectedWorkspaceScope: pending4.expectedWorkspaceScope });
+}
+function statusError(status) {
+  const message = status.state === "stopped" ? "Generation stopped without a saved assistant reply." : "Generation needs verification. Open Repair playthrough. Operation " + status.pending.operationKey;
+  return Object.assign(new Error(message), { code: status.code ?? "PLAY_GENERATION_PENDING" });
+}
+async function complete2(client, pending4) {
+  const result = await call(client, pending4, "finish");
+  finishPendingSwipe(client, pending4);
+  return result;
+}
+async function recoverDurableGeneration(client, pending4) {
+  const status = await call(client, pending4, "status");
+  if (status.state === "ready" || status.state === "done") return complete2(client, pending4);
+  if (status.state === "stopped") {
+    try {
+      await complete2(client, pending4);
+    } catch (error) {
+      if (pending4.error !== error.message) finishPendingSwipe(client, pending4, error);
     }
+  } else if (status.state === "uncertain") {
+    const error = statusError(status);
+    if (pending4.error !== error.message) finishPendingSwipe(client, pending4, error);
+  } else if (pending4.restored) pending4.error = null;
+  return null;
+}
+async function restorePendingGeneration(client, playthrough, timeline, { sessionId, expectedWorkspaceScope } = {}) {
+  if (!supportsGenerationRecovery(client)) return null;
+  if (!expectedWorkspaceScope) {
+    const workspace = await client.getWorkspace();
+    expectedWorkspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
   }
-  if (pending2 !== null) throw new TypeError("play.import.unpaired");
-  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
-}
-function parsePlaythroughImport(text3, fileName = "") {
-  if (typeof text3 !== "string" || text3.trim() === "") throw new TypeError("play.import.empty");
-  const parsed = parseJsonl(text3);
-  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
-}
-function rootSessionId2(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-function playthroughDirectory(playthrough) {
-  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
-  if (!path3.endsWith("/timeline.json")) throw new TypeError("play.import.timelineRequired");
-  return path3.slice(0, -"/timeline.json".length);
-}
-function fallbackImportPath(playthrough, timeline) {
-  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
-  if (typeof direct === "string" && direct !== "") return direct;
-  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
-  return typeof nested === "string" && nested !== "" ? nested : null;
-}
-async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
-  if (typeof client.getImportContextBinding === "function") {
-    return client.getImportContextBinding(sessionId);
+  const status = await generation(client, playthrough, { action: "status", expectedWorkspaceScope });
+  if (!status.pending) {
+    const prior = pendingSwipe(client, playthrough);
+    if (prior?.operationKey && prior.expectedWorkspaceScope === expectedWorkspaceScope && (!sessionId || prior.sessionId === sessionId)) finishPendingSwipe(client, prior);
+    return null;
   }
-  const path3 = fallbackImportPath(playthrough, timeline);
-  return path3 === null ? null : { path: path3, state: "pending" };
+  const entry = status.pending;
+  if (!entry.sessionId || sessionId && entry.sessionId !== sessionId) return null;
+  const pending4 = project(client, playthrough, timeline, entry, expectedWorkspaceScope, true);
+  if (status.state === "ready") return complete2(client, pending4);
+  if (status.state === "stopped") {
+    try {
+      await complete2(client, pending4);
+    } catch (error) {
+      finishPendingSwipe(client, pending4, error);
+    }
+  } else if (status.state === "uncertain" && !pending4.error) {
+    finishPendingSwipe(client, pending4, statusError(status));
+  }
+  return pending4;
 }
-async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
-  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
-  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
-  const document2 = JSON.parse((await client.getFile(binding.path)).content);
-  return { binding, document: document2 };
-}
-function assertLocallyMutable(timeline, messages) {
-  if ((timeline?.nodes?.length ?? 0) > 0 || messages?.incompleteTurn === true || (messages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant")) {
-    const error = new Error("play.import.locked");
-    error.code = "PLAY_IMPORT_CONTEXT_LOCKED";
+async function runGeneration(client, playthrough, request2, { onStarted, delay, pollInterval, maxPolls }) {
+  const workspace = await client.getWorkspace();
+  const scope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  const timeline = await client.getTimeline(playthrough);
+  const started = await generation(client, playthrough, { ...request2, action: "start", operationKey: requestKey(), expectedWorkspaceScope: scope }, timeline);
+  const pending4 = project(client, playthrough, timeline, started, scope);
+  try {
+    onStarted?.({ sessionId: pending4.sessionId, nodeId: pending4.nodeId });
+    for (let idlePolls = 0; idlePolls < maxPolls; ) {
+      const status = await call(client, pending4, "status");
+      if (status.state === "ready" || status.state === "done" || status.state === "stopped") return await complete2(client, pending4);
+      if (!["busy", "waiting", "running"].includes(status.state)) throw statusError(status);
+      idlePolls = status.state === "running" ? 0 : idlePolls + 1;
+      if (idlePolls < maxPolls) await delay(pollInterval);
+    }
+    throw new Error("Timed out waiting for the generation. Open Repair playthrough to check the saved request.");
+  } catch (error) {
+    finishPendingSwipe(client, pending4, error);
     throw error;
   }
 }
-async function bindPlaythroughImport(client, playthrough, file, {
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  const document2 = parsePlaythroughImport(await file.text(), file.name);
-  const sessionId = rootSessionId2(playthrough);
-  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
-  const [timeline, messages] = await Promise.all([
-    client.getTimeline(playthrough),
-    client.getMessages(sessionId)
-  ]);
-  assertLocallyMutable(timeline, messages);
-  const directory = playthroughDirectory(playthrough);
-  const token = String(randomUUID());
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError("play.import.idInvalid");
-  const contextPath = `${directory}/import-context-${token}.json`;
-  await client.createDirs(directory);
-  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
-  const bound = await client.putImportContextBinding(sessionId, { path: contextPath });
-  const [savedFile, savedBinding] = await Promise.all([
-    client.getFile(contextPath),
-    client.getImportContextBinding(sessionId)
-  ]);
-  const savedDocument = JSON.parse(savedFile.content);
-  if (bound?.path !== contextPath || savedBinding?.path !== contextPath || savedBinding?.state !== "pending" || savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length) {
-    throw new Error("play.import.verificationFailed");
-  }
-  return { sessionId, binding: savedBinding, document: document2 };
-}
-async function unbindPlaythroughImport(client, playthrough) {
-  const sessionId = rootSessionId2(playthrough);
-  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
-  const [timeline, messages] = await Promise.all([
-    client.getTimeline(playthrough),
-    client.getMessages(sessionId)
-  ]);
-  assertLocallyMutable(timeline, messages);
-  await client.deleteImportContextBinding(sessionId);
-  const saved = await client.getImportContextBinding(sessionId);
-  if (saved !== null) throw new Error("play.import.verificationFailed");
-  return { sessionId, binding: null };
-}
 
-// packages/session-template/src/model.js
-var MAX_RESOURCE_ID_CHARACTERS = 200;
-var MAX_WORLD_BOOKS = 100;
-function stringOrNull(value) {
-  return typeof value === "string" && value !== "" && value.length <= MAX_RESOURCE_ID_CHARACTERS ? value : null;
+// packages/client/src/play/mutations.js
+async function updateCatalog(client, mutator, options) {
+  if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
+  const current4 = await readCatalogOrEmpty(client);
+  const next = await mutator(current4);
+  const saved = await client.putCatalog(next);
+  return saved ?? next;
 }
-function characterOptions(value) {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
-  const result = {};
-  if (Number.isSafeInteger(value.greetingIndex) && value.greetingIndex >= 0) result.greetingIndex = value.greetingIndex;
-  if (typeof value.preferCharacterSystemPrompt === "boolean") result.preferCharacterSystemPrompt = value.preferCharacterSystemPrompt;
-  if (typeof value.preferCharacterPostHistory === "boolean") result.preferCharacterPostHistory = value.preferCharacterPostHistory;
-  return result;
+async function updateTimeline(client, playthrough, mutator, options) {
+  if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
+  const current4 = options?.initial ?? await client.getTimeline(playthrough);
+  const next = await mutator(current4);
+  const saved = await client.putTimeline(playthrough, next);
+  return saved ?? next;
 }
-var RP_SOURCES = /* @__PURE__ */ new Set(["command", "character-follow"]);
-var SANDBOX_MODES = /* @__PURE__ */ new Set(["read-only", "workspace-write", "danger-full-access"]);
-function rpState(value) {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return { active: false, source: null, followSuppressed: false, sandboxBefore: null };
-  }
-  return {
-    active: value.active === true,
-    source: RP_SOURCES.has(value.source) ? value.source : null,
-    followSuppressed: value.followSuppressed === true,
-    sandboxBefore: SANDBOX_MODES.has(value.sandboxBefore) ? value.sandboxBefore : null
-  };
-}
-function normalizeTemplateSelection(value = {}) {
-  const worldBookIds = Array.isArray(value?.worldBookIds) ? [...new Set(value.worldBookIds.filter((item) => typeof item === "string" && item !== "" && item.length <= MAX_RESOURCE_ID_CHARACTERS))].slice(0, MAX_WORLD_BOOKS) : [];
-  return {
-    presetId: stringOrNull(value?.presetId),
-    characterCardId: stringOrNull(value?.characterCardId),
-    userId: stringOrNull(value?.userId),
-    worldBookIds,
-    character: characterOptions(value?.character),
-    rp: rpState(value?.rp)
-  };
-}
-var sessionTemplateModelConstants = Object.freeze({
-  maxResourceIdCharacters: MAX_RESOURCE_ID_CHARACTERS,
-  maxWorldBooks: MAX_WORLD_BOOKS
-});
-
-// packages/client/src/play/create.js
-var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
-var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
-function safeSegment(value, label) {
-  if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
-    throw new TypeError(`${label} must be a safe path segment`);
-  }
-  return value;
-}
-function safeSessionId(value) {
-  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
-    throw new TypeError("session.id must be a valid DSH session id");
-  }
-  return value;
-}
-function isoNow(now) {
-  const value = now();
-  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
-  return value.toISOString();
-}
-async function catalogOrEmpty(client) {
+async function readCatalogOrEmpty(client) {
   try {
     return await client.getCatalog();
-  } catch (reason) {
-    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
-    throw reason;
-  }
-}
-function playthroughCharacterId2(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.characterId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-function rootSessionId3(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-async function ensureCharacterSelection(client, sessionId, characterId) {
-  const current4 = await client.getCharacterSelection(sessionId);
-  if (characterIdFromSelection(current4) !== characterId) {
-    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
-  }
-  const verified = await client.getCharacterSelection(sessionId);
-  if (characterIdFromSelection(verified) !== characterId) {
-    throw new Error("playthrough character selection did not persist");
-  }
-  return verified;
-}
-function latestCharacterPlaythrough(catalog2, characterId) {
-  let latest = null;
-  let latestNumber = 0;
-  let ordinal = 0;
-  for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (playthroughCharacterId2(playthrough) !== characterId) continue;
-    ordinal += 1;
-    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-    const number2 = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
-    if (latest === null || number2 >= latestNumber) {
-      latest = playthrough;
-      latestNumber = number2;
-    }
-  }
-  return latest;
-}
-async function playthroughIsReusable(client, playthrough) {
-  if (isPlaythroughArchived(playthrough)) return false;
-  try {
-    const sessionId = rootSessionId3(playthrough);
-    const timeline = await client.getTimeline(playthrough);
-    if ((timeline?.nodes?.length ?? 0) > 0) return false;
-    if (sessionId === null) {
-      return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
-    }
-    const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
-    if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
-    const history = await client.getMessages(sessionId);
-    if (history?.incompleteTurn === true) return false;
-    return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
-  } catch (reason) {
-    if (reason?.code === "PLAY_SESSION_NOT_FOUND") return false;
-    throw reason;
-  }
-}
-function nextPlaythroughNumber(catalog2, characterId) {
-  let maximum = 0;
-  let legacyOrdinal = 0;
-  for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (playthroughCharacterId2(playthrough) !== characterId) continue;
-    legacyOrdinal += 1;
-    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal);
-  }
-  return maximum + 1;
-}
-async function renamePlaythrough(client, playthrough, title) {
-  if (client == null) throw new TypeError("playClient.required");
-  const normalized = typeof title === "string" ? title.trim() : "";
-  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
-  const saved = await updateCatalog(client, (current4) => {
-    const freshIndex = current4.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
-    if (freshIndex < 0) throw new TypeError("play.rename.missing");
-    const freshPlaythroughs = [...current4.playthroughs];
-    const fresh = freshPlaythroughs[freshIndex];
-    freshPlaythroughs[freshIndex] = {
-      ...fresh,
-      title: normalized,
-      ext: {
-        ...fresh.ext,
-        pmpDshTavern: { ...fresh.ext?.pmpDshTavern, autoTitle: false }
-      }
-    };
-    return { ...current4, playthroughs: freshPlaythroughs };
-  });
-  const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
-  const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
-  if (renamed?.title !== normalized || renamed.ext?.pmpDshTavern?.autoTitle !== false) {
-    throw new Error("play.rename.verificationFailed");
-  }
-  return renamed;
-}
-function sourceSessionIdForCharacter(character) {
-  const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
-  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
-  const activeLoose = character?.unassigned?.find((item) => item.active);
-  if (activeLoose !== void 0) return activeLoose.id;
-  const loose = character?.unassigned?.find((item) => typeof item.id === "string");
-  if (loose !== void 0) return loose.id;
-  const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
-  return rooted?.rootSessionId ?? null;
-}
-async function reusableOpeningDraft(client, characterId, configurationSelection) {
-  const latest = latestCharacterPlaythrough(await catalogOrEmpty(client), characterId);
-  if (!latest || isPlaythroughArchived(latest) || rootSessionId3(latest) || latest.ext?.pmpDshTavern?.draftId !== latest.id) return null;
-  let result;
-  try {
-    result = await client.getDraft(latest.id);
   } catch (error) {
-    if (["PLAY_DRAFT_NOT_FOUND", "PLAY_DRAFT_ARCHIVED"].includes(error.code)) return null;
+    if (error?.code === "PLAY_PATH_NOT_FOUND" && (error?.status === void 0 || error?.status === 404)) return { playthroughs: [] };
     throw error;
   }
-  const { draft, playthrough } = result;
-  if (draft.phase !== "draft" || draft.claim || draft.selection.characterCardId !== characterId || isPlaythroughArchived(playthrough) || rootSessionId3(playthrough)) return null;
-  if (configurationSelection && JSON.stringify(normalizeTemplateSelection(draft.selection)) !== JSON.stringify(normalizeTemplateSelection(configurationSelection))) return null;
-  return { ...result, sessionId: null, reused: true };
 }
-async function createCharacterPlaythrough(client, {
-  character,
-  selectionFromSessionId = null,
-  configureSession = null,
-  configurationSource = null,
-  configurationSelection = null,
-  reuseEmpty = true,
-  now = () => /* @__PURE__ */ new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID()
+
+// packages/client/src/play/swipe-completion.js
+var origin = (message) => message?.origin?.kind ?? (message?.role === "user" ? "user" : message?.role);
+function completedSwipePair(state, boundary) {
+  if (state?.incompleteTurn !== false) return null;
+  const messages = (state.messages ?? []).filter((m2) => Number.isSafeInteger(m2.seq) && m2.seq > boundary).sort((a, b2) => a.seq - b2.seq);
+  const user = messages.find((m2) => m2.role === "user" && ["user", "steering"].includes(origin(m2)));
+  if (!user || state.stoppedRequest?.userEventId === user.seq) return null;
+  const assistant = messages.findLast((m2) => m2.role === "assistant" && m2.seq > user.seq);
+  return assistant ? { user, assistant, sessionFormatVersion: state.sessionFormatVersion } : null;
+}
+async function commitSwipeReply(client, pending4, pair, {
+  variantId = `swipe-${pending4.sessionId}-${pair.user.seq}-${pair.assistant.seq}`,
+  writeTimeline = (transform) => updateTimeline(client, pending4.playthrough, transform)
 } = {}) {
-  if (client == null) throw new TypeError("playClient.required");
-  if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
-  const characterId = safeSegment(character?.id, "character.id");
-  if (typeof client.postDraft === "function") {
-    const pending2 = reuseEmpty ? await reusableOpeningDraft(client, characterId, configurationSelection) : null;
-    if (pending2) return pending2;
-    return { ...await client.postDraft({ characterId, ...configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: "current", sessionId: selectionFromSessionId } } : {} }), reused: false };
-  }
-  const createdAt = isoNow(now);
-  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
-  const directory = `${characterId}/${playthroughId}`;
-  const path3 = `${directory}/timeline.json`;
-  const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
-  const catalog2 = await catalogOrEmpty(client);
-  let latest = latestCharacterPlaythrough(catalog2, characterId);
-  let reusable = reuseEmpty && latest !== null && await playthroughIsReusable(client, latest);
-  if (reusable) {
-    const fresh = (await client.getCatalog()).playthroughs.find((item) => item.id === latest.id && item.path === latest.path);
-    reusable = fresh !== void 0 && !isPlaythroughArchived(fresh) && rootSessionId3(fresh) === rootSessionId3(latest);
-    if (reusable) latest = fresh;
-  }
-  if (reusable) {
-    const existingRoot = rootSessionId3(latest);
-    if (existingRoot !== null) {
-      if (typeof configureSession === "function") await configureSession(existingRoot);
-      await ensureCharacterSelection(client, existingRoot, characterId);
-      return { sessionId: existingRoot, playthrough: latest, reused: true };
-    }
-    const created2 = await client.postSession(sourceId);
-    const sessionId2 = safeSessionId(created2?.sessionId);
-    if (typeof configureSession === "function") await configureSession(sessionId2);
-    await ensureCharacterSelection(client, sessionId2, characterId);
-    let attached;
-    const savedCatalog2 = await updateCatalog(client, (fresh) => {
-      const index = fresh.playthroughs.findIndex((item) => item.id === latest.id && item.path === latest.path);
-      if (index < 0) throw new Error("playthrough.create.missingVacancy");
-      const current4 = fresh.playthroughs[index];
-      if (isPlaythroughArchived(current4)) throw new Error("playthrough.create.archivedVacancy");
-      const currentRoot = rootSessionId3(current4);
-      if (currentRoot !== null && currentRoot !== sessionId2) throw new Error("playthrough.create.identityConflict");
-      attached = {
-        ...current4,
-        lastOpenedAt: createdAt,
-        ext: {
-          ...current4.ext ?? {},
-          pmpDshTavern: {
-            ...current4.ext?.pmpDshTavern ?? {},
-            characterId,
-            rootSessionId: sessionId2
-          }
-        }
-      };
-      const playthroughs = [...fresh.playthroughs];
-      playthroughs[index] = attached;
-      return { ...fresh, playthroughs };
-    });
-    attached ??= savedCatalog2?.playthroughs?.find((item) => item.id === latest.id && item.path === latest.path);
-    if (rootSessionId3(attached) !== sessionId2) throw new Error("playthrough vacancy attachment did not persist");
-    return { sessionId: sessionId2, playthrough: attached, reused: true, reattached: true };
-  }
-  const created = await client.postSession(sourceId);
-  const sessionId = safeSessionId(created?.sessionId);
-  if (typeof configureSession === "function") await configureSession(sessionId);
-  await ensureCharacterSelection(client, sessionId, characterId);
-  const playthrough = {
-    id: playthroughId,
-    path: path3,
-    title: "\u5468\u76EE",
-    lastOpenedAt: createdAt,
-    ext: {
-      pmpDshTavern: {
-        characterId,
-        characterName: character.name,
-        ...typeof character.sha256 === "string" ? { characterSha256: character.sha256 } : {},
-        rootSessionId: sessionId,
-        playthroughNumber: 0,
-        autoTitle: true
-      }
-    }
-  };
-  await client.createDirs(directory);
-  await client.putTimeline(playthrough, { nodes: [] });
-  let saved;
-  const savedCatalog = await updateCatalog(client, (fresh) => {
-    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path3);
-    if (existing !== void 0) {
-      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) throw new Error("playthrough.create.identityConflict");
-      saved = existing;
-      return fresh;
-    }
-    const playthroughNumber2 = nextPlaythroughNumber(fresh, characterId);
-    const row = {
-      ...playthrough,
-      title: `${playthroughNumber2}\u5468\u76EE`,
-      ext: {
-        ...playthrough.ext,
-        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber: playthroughNumber2, autoTitle: true }
-      }
-    };
-    saved = row;
-    return { ...fresh, playthroughs: [...fresh.playthroughs, row] };
+  const variant2 = withVariantFormat({
+    id: variantId,
+    sessionId: pending4.sessionId,
+    startEventId: pair.user.seq,
+    endEventId: pair.assistant.seq
+  }, pair.sessionFormatVersion);
+  const next = await writeTimeline((timeline) => {
+    const node = timeline.nodes.find((n) => n.id === pending4.nodeId);
+    if (!node || !node.variants.some((v2) => v2.sessionId === pending4.sourceSessionId && (!pending4.sourceVariantId || v2.id === pending4.sourceVariantId))) throw Error("Swipe source reply is no longer in this playthrough");
+    if (!Object.hasOwn(pending4, "expectedHead") && timeline.head && ![pending4.sourceSessionId, pending4.sessionId].includes(timeline.head.sessionId)) throw Error("Active reply changed while the swipe was waiting");
+    const existing = node.variants.find((v2) => v2.sessionId === variant2.sessionId && v2.startEventId === variant2.startEventId && v2.endEventId === variant2.endEventId);
+    const saved = existing ?? variant2;
+    const head = { sessionId: saved.sessionId, nodeId: node.id, variantId: saved.id };
+    if (JSON.stringify(timeline.head ?? null) !== JSON.stringify(head) && Object.hasOwn(pending4, "expectedHead") && JSON.stringify(timeline.head ?? null) !== JSON.stringify(pending4.expectedHead)) throw Error("Active reply changed while the swipe was waiting");
+    return timelineWithHead({ ...timeline, nodes: timeline.nodes.map((n) => n === node ? { ...n, adoptedVariantId: saved.id, variants: existing ? n.variants : [...n.variants, saved] } : n) }, head);
   });
-  const savedTimeline = await client.getTimeline(playthrough);
-  saved ??= savedCatalog?.playthroughs?.find((item) => item.id === playthroughId && item.path === path3);
-  if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
-    throw new Error("playthrough verification failed");
-  }
-  return { sessionId, playthrough: saved, reused: false };
+  const focus = await client.getFocus(pending4.playthrough);
+  if (focus.sessionId !== pending4.sessionId) throw Error("Saved swipe does not match derived focus");
+  finishPendingSwipe(client, pending4);
+  return { timeline: next, sessionId: pending4.sessionId, nodeId: pending4.nodeId, variantId: next.head.variantId };
 }
-function createPlaythroughController(client, dependencies = {}) {
-  const inFlight = /* @__PURE__ */ new Map();
-  let tail = Promise.resolve();
-  return {
-    create(args) {
-      const characterId = safeSegment(args?.character?.id, "character.id");
-      const reuseEmpty = args?.reuseEmpty === void 0 ? dependencies.reuseEmpty === void 0 ? true : dependencies.reuseEmpty : args.reuseEmpty;
-      if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
-      const key2 = JSON.stringify([characterId, reuseEmpty, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null]);
-      const existing = inFlight.get(key2);
-      if (existing !== void 0) return existing;
-      const task = tail.catch(() => {
-      }).then(() => createCharacterPlaythrough(client, {
-        ...dependencies,
-        ...args,
-        reuseEmpty
-      }));
-      tail = task;
-      inFlight.set(key2, task);
-      task.finally(() => {
-        if (inFlight.get(key2) === task) inFlight.delete(key2);
-      }).catch(() => {
-      });
-      return task;
-    }
-  };
+async function recoverCompletedSwipe(client, pending4) {
+  if (pending4.operationKey) return recoverDurableGeneration(client, pending4);
+  if (!pending4.error || pending4.kind === "request-retry") return null;
+  if (pending4.recovery) return pending4.recovery;
+  const work = (async () => {
+    const boundary = pending4.boundary ?? Math.max(-1, ...pending4.timeline.nodes.flatMap((n) => n.variants.filter((v2) => v2.id === n.adoptedVariantId).map((v2) => v2.endEventId)));
+    const pair = completedSwipePair(await client.getMessages(pending4.sessionId), boundary);
+    if (!pair) return null;
+    return commitSwipeReply(client, pending4, pair);
+  })();
+  pending4.recovery = work;
+  try {
+    return await work;
+  } finally {
+    if (pending4.recovery === work) delete pending4.recovery;
+  }
 }
 
 // packages/client/src/play/fork.js
-var SAFE_SEGMENT2 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
-var SAFE_SESSION_ID2 = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
-function safeSegment2(value, label) {
-  if (typeof value !== "string" || !SAFE_SEGMENT2.test(value)) {
-    throw new TypeError(`${label} must be a safe path segment`);
-  }
-  return value;
-}
-function safeSessionId2(value) {
-  if (typeof value !== "string" || !SAFE_SESSION_ID2.test(value)) {
+var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+function safeSessionId(value) {
+  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
     throw new TypeError("session.id must be a valid DSH session id");
   }
   return value;
@@ -23074,27 +22836,6 @@ function nodeById(timeline, nodeId) {
   const index = timeline.nodes.findIndex((node) => node.id === nodeId);
   if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
   return { index, node: timeline.nodes[index] };
-}
-function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
-  const entries2 = activeTimelineEntries(source);
-  const activeIndex = entries2.findIndex((entry) => entry.node.id === source.nodes[nodeIndex].id);
-  if (activeIndex < 0) throw new TypeError("Fork target is not on the active timeline branch");
-  let parentVariantId = null;
-  const nodes = entries2.slice(0, activeIndex + 1).map(({ node, variant: variant2 }) => {
-    const copy2 = {
-      ...node,
-      parentVariantId,
-      adoptedVariantId: variant2.id,
-      variants: node.variants.map((item) => item.id === adoptedId ? { ...item, sessionId } : { ...item })
-    };
-    parentVariantId = variant2.id;
-    return copy2;
-  });
-  return {
-    ...source,
-    nodes,
-    head: { sessionId, nodeId: nodes.at(-1).id, variantId: adoptedId }
-  };
 }
 function inheritedRangeExists(messages, variant2) {
   const values = messages?.messages ?? [];
@@ -23109,72 +22850,25 @@ async function branchPlaythroughAtNode(client, { playthrough, nodeId } = {}) {
   const active = activeTimelineEntries(source).find((entry) => entry.node.id === nodeId);
   if (active === void 0) throw new TypeError("Branch target is not on the active timeline branch");
   const adopted = active.variant;
-  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, adopted.ext?.pmpDshTavern?.sessionFormatVersion);
-  const sessionId = safeSessionId2(branch?.sessionId);
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, variantFormatVersion(adopted));
+  const sessionId = safeSessionId(branch?.sessionId);
   const inherited = await client.getMessages(sessionId);
   if (!inheritedRangeExists(inherited, adopted)) {
     throw new Error("Forked session does not contain the adopted reply range");
   }
   return { source, index, node, adopted, sessionId, inherited };
 }
-async function forkPlaythroughAtNode(client, {
-  playthrough,
-  nodeId,
-  now = () => /* @__PURE__ */ new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  if (client == null) throw new TypeError("playClient.required");
-  const characterId = safeSegment2(playthroughCharacterId(playthrough), "character.id");
-  const { source, index, node, adopted, sessionId } = await branchPlaythroughAtNode(client, { playthrough, nodeId });
-  const value = now();
-  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
-  const playthroughId = safeSegment2(`playthrough-${randomUUID()}`, "playthrough.id");
-  const directory = `${characterId}/${playthroughId}`;
-  const path3 = `${directory}/timeline.json`;
-  const timeline = forkedTimeline(source, index, adopted.id, sessionId);
-  const draft = {
-    id: playthroughId,
-    path: path3,
-    title: "\u5468\u76EE",
-    lastOpenedAt: value.toISOString(),
-    ext: {
-      pmpDshTavern: {
-        characterId,
-        rootSessionId: sessionId,
-        playthroughNumber: 0,
-        autoTitle: true
-      }
-    }
-  };
-  await client.createDirs(directory);
-  await client.putTimeline(draft, timeline);
-  let saved;
-  const catalog2 = await updateCatalog(client, (fresh) => {
-    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path3);
-    if (existing !== void 0) {
-      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) {
-        throw new Error("playthrough.fork.identityConflict");
-      }
-      saved = existing;
-      return fresh;
-    }
-    const playthroughNumber2 = nextPlaythroughNumber(fresh, characterId);
-    saved = {
-      ...draft,
-      title: `${playthroughNumber2}\u5468\u76EE`,
-      ext: {
-        ...draft.ext,
-        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber: playthroughNumber2, autoTitle: true }
-      }
-    };
-    return { ...fresh, playthroughs: [...fresh.playthroughs, saved] };
-  });
-  saved ??= catalog2?.playthroughs?.find((item) => item.id === playthroughId && item.path === path3);
-  const focus = await client.getFocus(saved ?? draft);
-  if (focus.sessionId !== sessionId || focus.nodeId !== node.id || focus.variantId !== adopted.id) {
-    throw new Error("Forked playthrough focus verification failed");
+async function forkPlaythroughAtNode(client, { playthrough, nodeId, variantId, creationId } = {}) {
+  const submit2 = typeof client?.getCheckpoint === "function" ? (row, body2, options) => runBranchOperation(client, row, { ...body2, kind: "fork" }, options) : client?.forkPlaythrough?.bind(client);
+  if (!submit2) {
+    throw Object.assign(new Error("Recoverable branching requires workspace checkpoints and session receipts."), { code: "PLAY_CREATION_UNAVAILABLE" });
   }
-  return { sessionId, playthrough: saved ?? draft, timeline };
+  return creationRequest(
+    client,
+    ["fork", playthrough.id, playthrough.path, nodeId, variantId],
+    creationId,
+    (identity, options) => submit2(playthrough, { nodeId, ...variantId === void 0 ? {} : { variantId }, ...identity }, options)
+  );
 }
 
 // packages/client/src/play/nodes.js
@@ -23279,12 +22973,19 @@ function createPlayNodeController(client, {
         return { timeline: next, sessionId: focus.sessionId };
       });
     },
-    createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
+    createReplySwipe(playthrough, nodeId, { onStarted, variantId } = {}) {
+      if (supportsGenerationRecovery(client)) return schedule(playthrough, () => runGeneration(
+        client,
+        playthrough,
+        { kind: "reply-swipe", nodeId, variantId },
+        { onStarted, delay, pollInterval, maxPolls }
+      ));
       return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough);
         const entries2 = activeTimelineEntries(timeline);
         const requestedIndex = entries2.findIndex((entry) => entry.node.id === nodeId);
         if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`);
+        if (variantId !== void 0 && entries2[requestedIndex].variant.id !== variantId) throw new Error("The active reply changed");
         let sourceNode = null;
         let sourceIndex = -1;
         let adopted = null;
@@ -23308,12 +23009,12 @@ function createPlayNodeController(client, {
         }
         const parent = sourceIndex > 0 ? entries2[sourceIndex - 1] : null;
         const forkEventId = parent?.variant.endEventId ?? -1;
-        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId, { beforeReplyEventId: adopted.endEventId }) : await client.postBranch(adopted.sessionId, forkEventId, void 0, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId });
+        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId, { beforeReplyEventId: adopted.endEventId }) : await client.postBranch(adopted.sessionId, forkEventId, variantFormatVersion(parent.variant), { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId });
         const newSessionId = branch?.sessionId;
         if (typeof newSessionId !== "string" || newSessionId === "") {
           throw new TypeError("Branch response has no sessionId");
         }
-        const pending2 = beginPendingSwipe(client, {
+        const pending4 = beginPendingSwipe(client, {
           playthrough,
           sessionId: newSessionId,
           sourceSessionId: adopted.sessionId,
@@ -23327,17 +23028,23 @@ function createPlayNodeController(client, {
           onStarted?.({ sessionId: newSessionId, nodeId: sourceNode.id });
           await client.postUserMessage(newSessionId, user.text);
           const pair = await waitForReply(newSessionId, forkEventId);
-          return await commitSwipeReply(client, pending2, pair, {
+          return await commitSwipeReply(client, pending4, pair, {
             variantId: idFactory(pair.user.seq, pair.assistant.seq, newSessionId),
             writeTimeline: (transform) => writeTimeline(playthrough, transform)
           });
         } catch (error) {
-          finishPendingSwipe(client, pending2, error);
+          finishPendingSwipe(client, pending4, error);
           throw error;
         }
       });
     },
     retryStoppedRequest(playthrough, { sessionId, userEventId }, { onStarted } = {}) {
+      if (supportsGenerationRecovery(client)) return schedule(playthrough, () => runGeneration(
+        client,
+        playthrough,
+        { kind: "request-retry", sessionId, userEventId },
+        { onStarted, delay, pollInterval, maxPolls }
+      ));
       return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough), entries2 = activeTimelineEntries(timeline);
         if ((timeline.head?.sessionId ?? playthrough.ext?.pmpDshTavern?.rootSessionId) !== sessionId) throw Error("The stopped request is not on the active session");
@@ -23347,35 +23054,42 @@ function createPlayNodeController(client, {
         const parent = entries2.at(-1), boundary = parent?.variant.endEventId ?? -1;
         if (boundary >= userEventId) throw Error("The stopped request is already represented by a reply");
         const stateSource = { sessionId, beforeUserEventId: userEventId };
-        const branch = parent ? await client.postBranch(sessionId, boundary, source.sessionFormatVersion, stateSource) : await createRootSwipeSession(client, sessionId, { beforeUserEventId: userEventId });
+        const branch = parent ? await client.postBranch(sessionId, boundary, variantFormatVersion(parent.variant), stateSource) : await createRootSwipeSession(client, sessionId, { beforeUserEventId: userEventId });
         const newSessionId = branch?.sessionId;
         if (typeof newSessionId !== "string" || !newSessionId) throw Error("Retry created no session");
-        const pending2 = beginPendingSwipe(client, { kind: "request-retry", playthrough, sessionId: newSessionId, sourceSessionId: sessionId, nodeId: `live-${userEventId}`, timeline: pendingSwipeTimeline(timeline, entries2, entries2.length, newSessionId) });
+        const pending4 = beginPendingSwipe(client, { kind: "request-retry", playthrough, sessionId: newSessionId, sourceSessionId: sessionId, nodeId: `live-${userEventId}`, timeline: pendingSwipeTimeline(timeline, entries2, entries2.length, newSessionId) });
         try {
           onStarted?.({ sessionId: newSessionId });
           await client.postUserMessage(newSessionId, user.text);
           const pair = await waitForReply(newSessionId, boundary);
           const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId), nodeId = `qa-${variantId}`.slice(0, 200);
-          const variant2 = { id: variantId, sessionId: newSessionId, startEventId: pair.user.seq, endEventId: pair.assistant.seq, ...Number.isSafeInteger(pair.sessionFormatVersion) ? { ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } } } : {} };
+          const variant2 = withVariantFormat({
+            id: variantId,
+            sessionId: newSessionId,
+            startEventId: pair.user.seq,
+            endEventId: pair.assistant.seq
+          }, pair.sessionFormatVersion);
           const next = await writeTimeline(playthrough, (current4) => {
             if (JSON.stringify(current4.head) !== JSON.stringify(timeline.head)) throw Error("Active reply changed during request retry");
             return timelineWithHead({ ...current4, nodes: [...current4.nodes, { id: nodeId, kind: "qa", displayOverride: null, parentVariantId: parent?.variant.id ?? null, adoptedVariantId: variantId, variants: [variant2] }] }, { sessionId: newSessionId, nodeId, variantId });
           });
           const focus = await client.getFocus(playthrough);
           if (focus.sessionId !== newSessionId) throw Error("Saved retry does not match derived focus");
-          finishPendingSwipe(client, pending2);
+          finishPendingSwipe(client, pending4);
           return { timeline: next, sessionId: newSessionId, nodeId, variantId };
         } catch (error) {
-          finishPendingSwipe(client, pending2, error);
+          finishPendingSwipe(client, pending4, error);
           throw error;
         }
       });
     },
-    forkPlaythrough(playthrough, nodeId) {
-      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }));
+    forkPlaythrough(playthrough, nodeId, variantId) {
+      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId, variantId }));
     },
-    rollbackPlaythrough(playthrough, nodeId) {
+    rollbackPlaythrough(playthrough, nodeId, variantId) {
       return schedule(playthrough, async () => {
+        if (typeof client.getCheckpoint === "function") return rollbackAtNode(client, playthrough, nodeId, variantId);
+        if (typeof client.rollbackPlaythrough === "function") return client.rollbackPlaythrough(playthrough, nodeId, variantId);
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId });
         const next = await writeTimeline(playthrough, (timeline) => {
           const current4 = nodeById2(timeline, nodeId);
@@ -23401,30 +23115,30 @@ function createPlayNodeController(client, {
 
 // packages/client/src/play/swipe-transition.js
 var MAX_PENDING_TRANSITIONS = 32;
-var pending = /* @__PURE__ */ new Map();
+var pending3 = /* @__PURE__ */ new Map();
 function queueSwipeTransition(sessionId, direction, nodeId) {
   if (typeof sessionId !== "string" || sessionId === "") return;
   if (direction !== "previous" && direction !== "next") return;
   if (typeof nodeId !== "string" || nodeId === "") return;
-  pending.delete(sessionId);
-  pending.set(sessionId, { direction, nodeId });
-  while (pending.size > MAX_PENDING_TRANSITIONS) {
-    pending.delete(pending.keys().next().value);
+  pending3.delete(sessionId);
+  pending3.set(sessionId, { direction, nodeId });
+  while (pending3.size > MAX_PENDING_TRANSITIONS) {
+    pending3.delete(pending3.keys().next().value);
   }
 }
 function consumeSwipeTransition(sessionId) {
-  const intent = pending.get(sessionId) ?? null;
-  pending.delete(sessionId);
+  const intent = pending3.get(sessionId) ?? null;
+  pending3.delete(sessionId);
   return intent;
 }
 function setSwipeTransitionSource(sessionId, sourceSessionId) {
-  const intent = pending.get(sessionId);
+  const intent = pending3.get(sessionId);
   if (intent !== void 0 && typeof sourceSessionId === "string" && sourceSessionId !== "") {
-    pending.set(sessionId, { ...intent, sourceSessionId });
+    pending3.set(sessionId, { ...intent, sourceSessionId });
   }
 }
 function peekSwipeTransition(sessionId) {
-  return pending.get(sessionId) ?? null;
+  return pending3.get(sessionId) ?? null;
 }
 
 // packages/client/src/play/turn-actions.js
@@ -23480,8 +23194,8 @@ function turnActionCapabilities(turn) {
 }
 function StoppedRequestActions({ request: request2, nodeId, playthrough, playClient, openSession, running, readOnly, onChanged, onError, onSwipePending }) {
   installStyles();
-  const [busy2, setBusy] = (0, import_react5.useState)(false), pending2 = pendingSwipe(playClient, playthrough);
-  const disabled = readOnly || running || busy2 || pending2 !== null && pending2.error === null;
+  const [busy2, setBusy] = (0, import_react5.useState)(false), pending4 = pendingSwipe(playClient, playthrough);
+  const disabled = readOnly || running || busy2 || pending4 !== null && pending4.error === null;
   async function retry() {
     if (disabled) return;
     setBusy(true);
@@ -23521,8 +23235,8 @@ function PlayTurnActions({
   const [busy2, setBusy] = (0, import_react5.useState)(false);
   const [editor, setEditor] = (0, import_react5.useState)(null);
   const [generating, setGenerating] = (0, import_react5.useState)(false);
-  const pending2 = pendingSwipe(playClient, playthrough);
-  const pathLocked = running || generating || pending2 !== null && pending2.error === null;
+  const pending4 = pendingSwipe(playClient, playthrough);
+  const pathLocked = running || generating || pending4 !== null && pending4.error === null;
   const displayDisabled = readOnly || busy2;
   const disabled = pathLocked || displayDisabled;
   const position = Math.max(0, turn.variants.findIndex((item) => item.id === turn.variant.id));
@@ -23559,6 +23273,7 @@ function PlayTurnActions({
     onSwipePending?.(turn.id, true);
     try {
       await controller(playClient).createReplySwipe(playthrough, turn.id, {
+        variantId: turn.variant.id,
         onStarted: (result) => {
           queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
           openSession(result.sessionId, playthrough);
@@ -23646,7 +23361,7 @@ function PlayTurnActions({
       label: uiMessage("play.chat.forkPlaythrough"),
       disabled,
       onClick: () => mutate(async () => {
-        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id);
+        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id, turn.variant.id);
         window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
         openSession(result.sessionId, result.playthrough);
       })
@@ -23656,7 +23371,7 @@ function PlayTurnActions({
       label: uiMessage("play.chat.rollbackPlaythrough"),
       disabled,
       onClick: () => mutate(async () => {
-        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id);
+        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id, turn.variant.id);
         openSession(result.sessionId, playthrough);
       })
     }),
@@ -23962,7 +23677,7 @@ function AssemblyError({ message, locale = 0, context, ...attributes }) {
 var import_react10 = require("react");
 init_history_client();
 var EMPTY_PRESETS = [];
-function HistoryPanel({ sessionId, presetId, value, backend, fetcher, root, editorRef, fragmentPresets = EMPTY_PRESETS, onChange, onInvalid, onDirtyChange, locale = 0 }) {
+function HistoryPanel({ sessionId, presetId, value, backend, fetcher, root: root2, editorRef, fragmentPresets = EMPTY_PRESETS, onChange, onInvalid, onDirtyChange, locale = 0 }) {
   const container = (0, import_react10.useRef)(null);
   const callbacks = (0, import_react10.useRef)({ onChange, onInvalid, onDirtyChange });
   callbacks.current = { onChange, onInvalid, onDirtyChange };
@@ -23971,7 +23686,7 @@ function HistoryPanel({ sessionId, presetId, value, backend, fetcher, root, edit
     let active = true;
     const editor = mountHistoryPolicyPanel(container.current, {
       sessionId,
-      root,
+      root: root2,
       request: fetcher,
       value,
       backend,
@@ -23992,7 +23707,7 @@ function HistoryPanel({ sessionId, presetId, value, backend, fetcher, root, edit
       if (editorRef.current === editor) editorRef.current = null;
       editor.dispose();
     };
-  }, [sessionId, presetId, backend, fetcher, root, presets]);
+  }, [sessionId, presetId, backend, fetcher, root2, presets]);
   return (0, import_react10.createElement)(
     "details",
     { className: "dta-editor-section dta-history-section", open: true },
@@ -24093,8 +23808,8 @@ var PositionStrategyRegistry = class {
   register(definition) {
     if (!definition || typeof definition.id !== "string" || !idPattern.test(definition.id) || definition.id === "user" || typeof definition.pluginId !== "string" || !idPattern.test(definition.pluginId) || !Array.isArray(definition.name) || definition.name.length !== 2 || definition.name.some((s) => typeof s !== "string" || !s) || typeof definition.execute !== "function") throw new TypeError("Strategy requires id, pluginId, bilingual name and execute");
     if (this.#entries.has(definition.id)) throw new TypeError(`Duplicate position strategy: ${definition.id}`);
-    const descriptor = freeze(structuredClone({ id: definition.id, pluginId: definition.pluginId, name: definition.name }));
-    const entry = Object.freeze({ descriptor, execute: definition.execute });
+    const descriptor2 = freeze(structuredClone({ id: definition.id, pluginId: definition.pluginId, name: definition.name }));
+    const entry = Object.freeze({ descriptor: descriptor2, execute: definition.execute });
     this.#entries.set(definition.id, entry);
     return () => {
       if (this.#entries.get(definition.id) === entry) this.#entries.delete(definition.id);
@@ -24153,9 +23868,9 @@ function normalizePositions(value) {
     const key2 = positionKey(p?.sourceId, p?.positionId);
     if (!p || typeof p.sourceId !== "string" || typeof p.positionId !== "string" || !idPattern2.test(p.sourceId) || !idPattern2.test(p.positionId) || seen.has(key2) || typeof p.enabled !== "boolean" || !["source", "list"].includes(p.placement)) throw new TypeError("Invalid resource position");
     seen.add(key2);
-    const anchor = p.anchor;
-    if (anchor !== void 0 && anchor !== "end" && (!anchor || typeof anchor.sourceId !== "string" || typeof anchor.positionId !== "string" || !idPattern2.test(anchor.sourceId) || !idPattern2.test(anchor.positionId) || !["before", "after"].includes(anchor.side) || positionKey(anchor.sourceId, anchor.positionId) === key2)) throw new TypeError("Invalid position anchor");
-    return { sourceId: p.sourceId, positionId: p.positionId, enabled: p.enabled, placement: p.placement, ...anchor !== void 0 ? { anchor: anchor === "end" ? anchor : { sourceId: anchor.sourceId, positionId: anchor.positionId, side: anchor.side } } : {} };
+    const anchor2 = p.anchor;
+    if (anchor2 !== void 0 && anchor2 !== "end" && (!anchor2 || typeof anchor2.sourceId !== "string" || typeof anchor2.positionId !== "string" || !idPattern2.test(anchor2.sourceId) || !idPattern2.test(anchor2.positionId) || !["before", "after"].includes(anchor2.side) || positionKey(anchor2.sourceId, anchor2.positionId) === key2)) throw new TypeError("Invalid position anchor");
+    return { sourceId: p.sourceId, positionId: p.positionId, enabled: p.enabled, placement: p.placement, ...anchor2 !== void 0 ? { anchor: anchor2 === "end" ? anchor2 : { sourceId: anchor2.sourceId, positionId: anchor2.positionId, side: anchor2.side } } : {} };
   });
 }
 var positionKey = (sourceId, positionId) => `${sourceId}#${positionId}`;
@@ -24221,7 +23936,7 @@ function configurePosition(preset, sources, key2, patch, beforeKey, displayOrder
     rules.push({ id, kind: row.sourceId, enabled: true, role: row.source.roles?.includes("preserve") ? "preserve" : row.source.roles?.[0] ?? "system", lifetime: row.source.lifetimes?.[0] ?? "request", depth: null, text: "", name: "" });
   }
   const layout = preset.layout ?? { version: 1, source: "preset-slots", priority: ["preset", "resource", "default"], identity: "preserve", fallback: "source-order", overrides: [] };
-  return { ...preset, rules, layout: { ...layout, source: "preset-slots", priority: positionPriority({ layout }), positions: next.map(({ sourceId, positionId, enabled, placement, anchor }) => ({ sourceId, positionId, enabled, placement, ...placement === "list" && anchor !== void 0 ? { anchor } : {} })) } };
+  return { ...preset, rules, layout: { ...layout, source: "preset-slots", priority: positionPriority({ layout }), positions: next.map(({ sourceId, positionId, enabled, placement, anchor: anchor2 }) => ({ sourceId, positionId, enabled, placement, ...placement === "list" && anchor2 !== void 0 ? { anchor: anchor2 } : {} })) } };
 }
 function applyResourceAnchors(nodes, preset, diagnostics, active = null, logical = false) {
   if (!Array.isArray(preset.layout?.priority)) return;
@@ -24237,16 +23952,16 @@ function applyResourceAnchors(nodes, preset, diagnostics, active = null, logical
     groups.get(key2).push(node);
   }
   for (const group of groups.values()) {
-    const first = group[0], anchor = first.resourceAnchor;
-    const matches = nodes.filter((n) => !group.includes(n) && n.source?.module === anchor.sourceId && (!anchor.fields || anchor.fields.includes(n.source.field)));
+    const first = group[0], anchor2 = first.resourceAnchor;
+    const matches = nodes.filter((n) => !group.includes(n) && n.source?.module === anchor2.sourceId && (!anchor2.fields || anchor2.fields.includes(n.source.field)));
     const compatible = matches.filter((n) => area(n) === area(first) && !n.nativeDepthAnchor && n.depth == null);
     if (!compatible.length) {
-      diagnostics.push({ code: "POSITION_ANCHOR_MISSING", sourceId: first.source.module, positionId: first.positionId, winner: matches.length ? "runtime" : "default", anchor });
-      if (!matches.length && preset.layout.fallback === "error") throw Object.assign(new Error(`Resource anchor unavailable: ${anchor.sourceId}`), { code: "POSITION_ANCHOR_MISSING", status: 409 });
+      diagnostics.push({ code: "POSITION_ANCHOR_MISSING", sourceId: first.source.module, positionId: first.positionId, winner: matches.length ? "runtime" : "default", anchor: anchor2 });
+      if (!matches.length && preset.layout.fallback === "error") throw Object.assign(new Error(`Resource anchor unavailable: ${anchor2.sourceId}`), { code: "POSITION_ANCHOR_MISSING", status: 409 });
       continue;
     }
-    const target = anchor.side === "before" ? compatible[0] : compatible.at(-1);
-    const rest = nodes.filter((n) => !group.includes(n)), index = rest.indexOf(target) + (anchor.side === "after" ? 1 : 0);
+    const target = anchor2.side === "before" ? compatible[0] : compatible.at(-1);
+    const rest = nodes.filter((n) => !group.includes(n)), index = rest.indexOf(target) + (anchor2.side === "after" ? 1 : 0);
     rest.splice(index, 0, ...group);
     nodes.splice(0, nodes.length, ...rest);
     for (const node of group) {
@@ -24492,7 +24207,7 @@ function normalizePreset(value) {
 var BUILTINS = Object.freeze([{ id: "builtin-native", ...normalizePreset({ format: FORMAT, version: 1, name: "DSH \u539F\u751F / DSH native", backend: "native", rules: DEFAULT_RULES }) }]);
 
 // node_modules/dsh-prompt-assembler/src/native-policy.js
-var fail3 = (message, detail) => {
+var fail2 = (message, detail) => {
   throw Object.assign(new Error(message), { status: 409, code: "ASSEMBLY_NATIVE_UNSUPPORTED", detail });
 };
 var adaptiveNativePlacement = (preset) => preset?.backend === "native" && ["native-roles", "native-slots"].includes(preset.placement);
@@ -24501,17 +24216,17 @@ function presetBackend(preset) {
 }
 function validateNativePreset(value) {
   const preset = normalizePreset(value);
-  if (presetBackend(preset) !== "native") fail3("This strategy requires the optional core assembly extension.", { backend: "core" });
+  if (presetBackend(preset) !== "native") fail2("This strategy requires the optional core assembly extension.", { backend: "core" });
   for (const kind of ["history", "input"]) {
     const rule = preset.rules.find((r) => r.kind === kind);
-    if (!rule?.enabled) fail3(`Native assembly must preserve ${kind}.`, { ruleId: rule?.id, kind });
+    if (!rule?.enabled) fail2(`Native assembly must preserve ${kind}.`, { ruleId: rule?.id, kind });
   }
   for (const rule of preset.rules.filter((r) => isContextControl(r.kind))) {
-    if (rule.role !== "preserve" || rule.lifetime !== "request" || rule.depth !== null || rule.inputMode === "text") fail3("Native context controls only support enable/disable.", { ruleId: rule.id });
+    if (rule.role !== "preserve" || rule.lifetime !== "request" || rule.depth !== null || rule.inputMode === "text") fail2("Native context controls only support enable/disable.", { ruleId: rule.id });
   }
   if (adaptiveNativePlacement(preset)) {
     for (const rule of preset.rules.filter((r) => r.enabled)) {
-      if (rule.lifetime === "snapshot" || rule.depth !== null || rule.role === "assistant") fail3("Native ordering does not support snapshots, depth or assistant contributions.", { ruleId: rule.id });
+      if (rule.lifetime === "snapshot" || rule.depth !== null || rule.role === "assistant") fail2("Native ordering does not support snapshots, depth or assistant contributions.", { ruleId: rule.id });
     }
     return preset;
   }
@@ -24519,27 +24234,27 @@ function validateNativePreset(value) {
   for (const rule of preset.rules.filter((r) => r.enabled)) {
     if (isContextControl(rule.kind)) continue;
     if (rule.kind === "history") {
-      if (phase !== "system") fail3("Native history cannot be moved after current input.");
+      if (phase !== "system") fail2("Native history cannot be moved after current input.");
       phase = "before-input";
       continue;
     }
     if (rule.kind === "input") {
-      if (phase !== "before-input") fail3("Current input must follow native history.");
+      if (phase !== "before-input") fail2("Current input must follow native history.");
       phase = "after-input";
       continue;
     }
-    if (rule.lifetime === "snapshot" || rule.depth !== null) fail3("Retained request snapshots and insertion depth require core assembly.", { ruleId: rule.id });
-    if (rule.role === "assistant") fail3("Assistant-role contributions require core assembly.", { ruleId: rule.id });
+    if (rule.lifetime === "snapshot" || rule.depth !== null) fail2("Retained request snapshots and insertion depth require core assembly.", { ruleId: rule.id });
+    if (rule.role === "assistant") fail2("Assistant-role contributions require core assembly.", { ruleId: rule.id });
     if (rule.role === "user") {
-      if (phase === "system") fail3("Native user contributions must follow native history.", { ruleId: rule.id });
-      if (phase === "before-input" && rule.delivery !== "pre-step") fail3("User context snapshots follow current input; use pre-step before input.", { ruleId: rule.id });
+      if (phase === "system") fail2("Native user contributions must follow native history.", { ruleId: rule.id });
+      if (phase === "before-input" && rule.delivery !== "pre-step") fail2("User context snapshots follow current input; use pre-step before input.", { ruleId: rule.id });
       if (phase === "after-input") {
         if (rule.delivery === "pre-step") afterInputMessages = true;
-        else if (afterInputMessages) fail3("Native context snapshots precede post-input pre-step messages; reorder these contributions.", { ruleId: rule.id });
+        else if (afterInputMessages) fail2("Native context snapshots precede post-input pre-step messages; reorder these contributions.", { ruleId: rule.id });
       }
-    } else if (phase !== "system") fail3("Native system contributions must precede native history.", { ruleId: rule.id });
+    } else if (phase !== "system") fail2("Native system contributions must precede native history.", { ruleId: rule.id });
   }
-  if (preset.placement !== "modules") fail3("ST slot/depth placement requires core assembly; choose a native strategy.");
+  if (preset.placement !== "modules") fail2("ST slot/depth placement requires core assembly; choose a native strategy.");
   return preset;
 }
 
@@ -24803,7 +24518,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   };
   const [validationFailure, setValidationFailure] = (0, import_react13.useState)(null);
   const appliedBackend = selection?.backend ?? "native";
-  const file = (0, import_react13.useRef)(), stage = (0, import_react13.useRef)(), dialog = (0, import_react13.useRef)(), generation = (0, import_react13.useRef)(0), mounted = (0, import_react13.useRef)(true);
+  const file = (0, import_react13.useRef)(), stage = (0, import_react13.useRef)(), dialog = (0, import_react13.useRef)(), generation2 = (0, import_react13.useRef)(0), mounted = (0, import_react13.useRef)(true);
   (0, import_react13.useLayoutEffect)(() => {
     if (standalone) return;
     const panel = dialog.current;
@@ -24842,7 +24557,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     if (!mounted.current) throw new DOMException("Panel closed", "AbortError");
     return result;
   };
-  const run = async (fn) => {
+  const run2 = async (fn) => {
     setBusy(true);
     setError(false);
     try {
@@ -24858,10 +24573,10 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   };
   (0, import_react13.useEffect)(() => {
     mounted.current = true;
-    const gen = ++generation.current;
-    run(async () => {
+    const gen = ++generation2.current;
+    run2(async () => {
       const data3 = await api2(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
-      if (gen !== generation.current || !mounted.current) return;
+      if (gen !== generation2.current || !mounted.current) return;
       setItems(data3.presets);
       setSelection(data3.selection);
       setCapable(data3.capability);
@@ -24878,14 +24593,14 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
     });
     return () => {
       mounted.current = false;
-      generation.current++;
+      generation2.current++;
     };
   }, [sessionId, selectionTarget, reload]);
   (0, import_react13.useEffect)(() => {
-    const refresh = () => run(async () => {
-      const gen = generation.current;
+    const refresh = () => run2(async () => {
+      const gen = generation2.current;
       const data3 = await api2(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
-      if (gen !== generation.current || !mounted.current) return;
+      if (gen !== generation2.current || !mounted.current) return;
       setItems(data3.presets);
       setSelection(data3.selection);
       setCapable(data3.capability);
@@ -24938,7 +24653,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
   const editRule = (id, patch) => edit({ rules: controlRows(draft.rules).map((r) => r.id === id ? { ...editableRule(r), ...patch } : r) });
   const toggle = (id) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
   const presetForSave = () => ({ ...editablePreset(draft), historyPolicy: historyEditor.current?.getPolicy() ?? draft.historyPolicy });
-  async function save(asCopy = false) {
+  async function save2(asCopy = false) {
     const creates = asCopy || draft.builtin || !draft.id;
     const data3 = await api2(creates ? "" : `/${encodeURIComponent(draft.id)}`, creates ? "POST" : "PUT", presetForSave());
     setDraft(data3.preset);
@@ -25198,7 +24913,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
       (0, import_react13.createElement)("div", { className: "dta-toolbar" }, (0, import_react13.createElement)("input", { type: "file", accept: ".json,application/json", hidden: true, ref: file, onChange: (e) => {
         const f2 = e.target.files?.[0];
         e.target.value = "";
-        if (f2) run(async () => {
+        if (f2) run2(async () => {
           if (f2.size > 2 * 1024 * 1024) throw new Error("2 MiB limit");
           if (!await discard()) return;
           const data3 = await api2("", "POST", JSON.parse(await f2.text()));
@@ -25207,7 +24922,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           setDirty(false);
           setPreview(null);
         });
-      } }), button("import", () => file.current.click()), button("export", () => run(download), !draft), button("create", async () => {
+      } }), button("import", () => file.current.click()), button("export", () => run2(download), !draft), button("create", async () => {
         if (await discard()) {
           setDraft({ ...structuredClone(items2.find((p) => p.id === defaultId3) ?? items2[0] ?? BUILTINS[0]), builtin: false, id: void 0, name: t("title") });
           setDirty(true);
@@ -25234,7 +24949,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
             setError(false);
           }
         } }, !draft.id && (0, import_react13.createElement)("option", { value: "" }, draft.name), ...items2.map((p) => (0, import_react13.createElement)("option", { key: p.id, value: p.id }, p.name)))), (0, import_react13.createElement)("label", null, t("name"), (0, import_react13.createElement)("input", { value: draft.name, disabled: draft.builtin, onChange: (e) => edit({ name: e.target.value }) }))),
-        (0, import_react13.createElement)("div", { className: "dta-toolbar" }, button("save", () => run(() => save())), button("copy", () => run(() => save(true))), button("remove", () => run(async () => {
+        (0, import_react13.createElement)("div", { className: "dta-toolbar" }, button("save", () => run2(() => save2())), button("copy", () => run2(() => save2(true))), button("remove", () => run2(async () => {
           if (!await confirm(t("confirmDelete"))) return;
           await api2(`/${draft.id}`, "DELETE");
           setItems((i3) => i3.filter((p) => p.id !== draft.id));
@@ -25249,13 +24964,13 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           (0, import_react13.createElement)("label", { className: "dta-toolbar" }, t("backend"), (0, import_react13.createElement)("select", { "aria-label": t("backend"), value: draft.backend ?? "core", onChange: (e) => edit({ backend: e.target.value }) }, (0, import_react13.createElement)("option", { value: "native" }, t("backendNative")), (0, import_react13.createElement)("option", { value: "core" }, t("backendCore")))),
           (0, import_react13.createElement)("div", { className: "dta-notice dta-help" }, draft.layout ? locale === 0 ? "\u62D6\u62FD\u5373\u81EA\u5B9A\u4E49\u4F4D\u7F6E\uFF1B\u5176\u4F59\u5185\u5BB9\u6309\u81EA\u52A8\u4F18\u5148\u7EA7\u5B9A\u4F4D\u3002\u5F53\u524D\u8D44\u6E90\u53EF\u786E\u5B9A\u7684\u4F4D\u7F6E\u4F1A\u540C\u6B65\u66F4\u65B0\uFF0C\u8EAB\u4EFD\u4E0E\u8FD0\u884C\u65F6\u7EA6\u675F\u59CB\u7EC8\u751F\u6548\u3002" : "Dragging sets a custom position; other content follows automatic priority. Definite positions update from current resources, within identity and runtime constraints." : t(adaptiveNative ? draft.placement === "native-slots" ? "nativeSlotsHint" : "nativeRolesHint" : nativeDraft ? "nativeHint" : "coreHint")),
           nativeError && (0, import_react13.createElement)(AssemblyError, { message: nativeError, locale }),
-          (0, import_react13.createElement)("div", { className: "dta-tabs" }, (0, import_react13.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
+          (0, import_react13.createElement)("div", { className: "dta-tabs" }, (0, import_react13.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run2(async () => {
             const result = await validateCurrent();
             setPreview(result);
             if (slotMode) setSlotAnalysis({ draft, preview: result });
             setTab("expanded");
           }), Boolean(selectionTarget && (typeof selectionTarget.previewAssembly !== "function" || selectionTarget.editable === false)), void 0, tab === "expanded" && !preview?.actual)),
-          (0, import_react13.createElement)("div", { className: "dta-result-tools" }, button("actual", () => run(actualRequest), !sessionId)),
+          (0, import_react13.createElement)("div", { className: "dta-result-tools" }, button("actual", () => run2(actualRequest), !sessionId)),
           (0, import_react13.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react13.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
           tab === "rules" ? (0, import_react13.createElement)("div", null, (0, import_react13.createElement)(ResourcePositionEditor, { strategies, preset: draft, sources, preview: analysis?.preview, resolving: !!draft.layout && !!(sessionId || selectionTarget) && !analysis, resolutionError: analysis?.error, locale, busy: busy2, sourceColor, originName, sourceName, onChange: editLayout }), (0, import_react13.createElement)(
             "details",
@@ -25278,15 +24993,15 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         }, locale }),
         (0, import_react13.createElement)("h3", { className: "dta-section-title" }, t("applicationSection")),
         (0, import_react13.createElement)("div", { className: "dta-notice" }, `${t("applied")}: ${selection?.name ?? t("legacy")}`, selection?.id && !items2.some((p) => p.id === selection.id) && (0, import_react13.createElement)("small", null, t("withdrawnPreset")), !capable && (0, import_react13.createElement)("small", null, t("unavailable"))),
-        onCreateSession && (0, import_react13.createElement)("div", null, createSessionControls, (0, import_react13.createElement)("div", { className: "dta-toolbar" }, button("createSession", () => run(async () => {
-          const preset = dirty || historyDirty || !draft.id ? await save() : draft;
+        onCreateSession && (0, import_react13.createElement)("div", null, createSessionControls, (0, import_react13.createElement)("div", { className: "dta-toolbar" }, button("createSession", () => run2(async () => {
+          const preset = dirty || historyDirty || !draft.id ? await save2() : draft;
           if (!mounted.current) return;
           await onCreateSession(preset.id);
         }), !draftAvailable, "primary"))),
         (0, import_react13.createElement)("div", { className: "dta-toolbar" }, button("apply", async () => {
-          run(async () => {
+          run2(async () => {
             await validateCurrent();
-            const preset = dirty || historyDirty || !draft.id ? await save() : draft;
+            const preset = dirty || historyDirty || !draft.id ? await save2() : draft;
             const data3 = await api2("/selection", "PUT", { sessionId, id: preset.id });
             setSelection(data3.selection);
             setStatus(t("appliedStatus"));
@@ -25295,7 +25010,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
         }, Boolean(applyBlockedReason), "primary"), button("reset", async () => {
           const nextBackend = items2.find((p) => p.id === defaultId3)?.backend ?? "core";
           if (!await (nextBackend === appliedBackend ? discard() : leave())) return;
-          run(async () => {
+          run2(async () => {
             await validateCurrent(items2.find((p) => p.id === defaultId3));
             const data3 = await api2("/selection", "PUT", { sessionId, id: defaultId3 });
             setSelection(data3.selection);
@@ -25308,7 +25023,7 @@ function AssemblyPanelContent({ selectionTarget, sessionId, sessionLabel, onCrea
           });
         }, !sessionId && !selectionTarget || !capable || selectionTarget?.editable === false), button("disable", async () => {
           if (!await changeHistoryBackend("native")) return;
-          run(async () => {
+          run2(async () => {
             const data3 = await api2("/selection", "PUT", { sessionId, id: null });
             setSelection(data3.selection);
             window.dispatchEvent(new window.Event(refreshEvent));
@@ -25540,7 +25255,7 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
     const timers = [0, 200, 800].map((delay) => window.setTimeout(openPanel, delay));
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [autoOpen]);
-  const run = (0, import_react15.useCallback)(async (operation, successKey) => {
+  const run2 = (0, import_react15.useCallback)(async (operation, successKey) => {
     setBusy(true);
     try {
       const result = await operation();
@@ -25554,12 +25269,12 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
     }
   }, []);
   const refresh = (0, import_react15.useCallback)(async (preferredId) => {
-    const generation = ++refreshGeneration.current;
+    const generation2 = ++refreshGeneration.current;
     const query = !bindingTarget && sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
     const data3 = await api2(`/presets${query}`);
     const id = preferredId === void 0 ? data3.selectedId ?? data3.presets[0]?.id ?? null : preferredId;
     const detail = id === null || id === void 0 ? null : (await api2(`/presets/${encodeURIComponent(id)}`)).preset;
-    if (generation !== refreshGeneration.current) return false;
+    if (generation2 !== refreshGeneration.current) return false;
     setCatalog(data3);
     setDraft(detail);
     return true;
@@ -25569,43 +25284,43 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
     setCatalog(null);
     setDraft(null);
     setStatus({ error: false, key: "preset.status.syncing" });
-    run(() => refresh(), "preset.status.loaded");
+    run2(() => refresh(), "preset.status.loaded");
     return () => {
       refreshGeneration.current += 1;
     };
-  }, [refresh, run, sessionId, bindingTarget]);
+  }, [refresh, run2, sessionId, bindingTarget]);
   (0, import_react15.useEffect)(() => {
     const onRefresh = (event) => {
       if (event.detail?.source === "preset") return;
-      run(() => refresh(), "preset.status.refreshed");
+      run2(() => refresh(), "preset.status.refreshed");
     };
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
-  }, [refresh, run]);
-  const browse = (0, import_react15.useCallback)((id) => run(async () => {
+  }, [refresh, run2]);
+  const browse = (0, import_react15.useCallback)((id) => run2(async () => {
     const detail = await api2(`/presets/${encodeURIComponent(id)}`);
     setDraft(detail.preset);
-  }, "preset.status.detailsLoaded"), [run]);
-  const bind = (0, import_react15.useCallback)(() => run(async () => {
+  }, "preset.status.detailsLoaded"), [run2]);
+  const bind = (0, import_react15.useCallback)(() => run2(async () => {
     if (!canBind) throw uiError("preset.error.needSession");
     if (draft === null) throw uiError("preset.error.needPreset");
     if (catalog2?.selectedId !== draft.id && catalog2?.selectedId !== null && sessionBlank === false && !window.confirm(unwrapText(uiMessage("preset.confirmHistoricalSwitch")))) return;
     await api2("/select", { method: "POST", body: body({ id: draft.id, sessionId }) });
     await refresh(draft.id);
     announceTavernRefresh();
-  }, "preset.status.bound"), [catalog2?.selectedId, draft, refresh, run, sessionBlank, sessionId, bindingTarget]);
-  const unbind = (0, import_react15.useCallback)(() => run(async () => {
+  }, "preset.status.bound"), [catalog2?.selectedId, draft, refresh, run2, sessionBlank, sessionId, bindingTarget]);
+  const unbind = (0, import_react15.useCallback)(() => run2(async () => {
     if (!canBind) throw uiError("preset.error.noSessionToUnbind");
     await api2("/select", { method: "POST", body: body({ id: null, sessionId }) });
     await refresh(draft?.id);
     announceTavernRefresh();
-  }, "preset.status.unbound"), [draft?.id, refresh, run, sessionId, bindingTarget]);
-  const createPreset = (0, import_react15.useCallback)(() => run(async () => {
+  }, "preset.status.unbound"), [draft?.id, refresh, run2, sessionId, bindingTarget]);
+  const createPreset = (0, import_react15.useCallback)(() => run2(async () => {
     const created = await api2("/presets", { method: "POST", body: body({ name: translate("preset.defaultName") }) });
     await refresh(created.preset.id);
     announceTavernRefresh();
-  }, "preset.status.created"), [refresh, run]);
-  const importFile = (0, import_react15.useCallback)((file) => run(async () => {
+  }, "preset.status.created"), [refresh, run2]);
+  const importFile = (0, import_react15.useCallback)((file) => run2(async () => {
     let imported;
     try {
       const content = await file.text();
@@ -25622,8 +25337,8 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
     await offerRenderingDependencies(importedResource.preset, "preset", imported.preset.id, { message: (sources) => translate("rendering.importDependencies", { sources }) });
     announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
-  }, "preset.status.imported"), [refresh, run]);
-  const save = (0, import_react15.useCallback)(() => run(async () => {
+  }, "preset.status.imported"), [refresh, run2]);
+  const save2 = (0, import_react15.useCallback)(() => run2(async () => {
     const result = await api2(`/presets/${encodeURIComponent(draft.id)}`, {
       method: "PUT",
       body: body({ name: draft.name, systemPromptMode: draft.systemPromptMode, sampling: draft.sampling, prompts: draft.prompts })
@@ -25631,13 +25346,13 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
     setDraft(result.preset);
     await refresh(result.preset.id);
     announceTavernRefresh();
-  }, "preset.status.saved"), [draft, refresh, run]);
-  const remove = (0, import_react15.useCallback)(() => run(async () => {
+  }, "preset.status.saved"), [draft, refresh, run2]);
+  const remove = (0, import_react15.useCallback)(() => run2(async () => {
     if (!window.confirm(unwrapText(uiMessage("preset.confirmDelete", { name: draft.name })))) return;
     await api2(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
     await refresh();
     announceTavernRefresh();
-  }, "preset.status.deleted"), [draft, refresh, run]);
+  }, "preset.status.deleted"), [draft, refresh, run2]);
   const patchSampling = (patch) => setDraft((current4) => ({
     ...current4,
     sampling: { ...current4.sampling, ...patch }
@@ -25799,7 +25514,7 @@ function PresetSidebar({ bindingTarget, closePanel, openPanel, sessionId, sessio
         h15(
           "div",
           { className: "dtt-footer" },
-          h15("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy2, onClick: save }, busy2 ? uiMessage("common.working") : uiMessage("common.saveChanges")),
+          h15("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy2, onClick: save2 }, busy2 ? uiMessage("common.working") : uiMessage("common.saveChanges")),
           h15("button", { className: "dtt-button dtt-danger", type: "button", disabled: busy2, onClick: remove }, uiMessage("common.delete"))
         )
       )
@@ -25814,10 +25529,10 @@ function installPresetStyles() {
 var import_react16 = require("react");
 
 // packages/character/src/client-state.js
-function characterGreetingOptions(character) {
-  if (character === null || typeof character !== "object") return [];
-  const first = typeof character.data?.firstMessage === "string" ? character.data.firstMessage : "";
-  const alternates = Array.isArray(character.data?.alternateGreetings) ? character.data.alternateGreetings.filter((item) => typeof item === "string") : [];
+function characterGreetingOptions(character2) {
+  if (character2 === null || typeof character2 !== "object") return [];
+  const first = typeof character2.data?.firstMessage === "string" ? character2.data.firstMessage : "";
+  const alternates = Array.isArray(character2.data?.alternateGreetings) ? character2.data.alternateGreetings.filter((item) => typeof item === "string") : [];
   return [
     { index: 0, labelKey: first === "" ? "character.greeting.defaultEmpty" : "character.greeting.default", text: first },
     ...alternates.map((text3, index) => ({
@@ -25850,12 +25565,12 @@ function characterBindingDirty(selection, binding) {
   if (selection === null || typeof selection !== "object" || binding === null || typeof binding !== "object") return false;
   if (selection.characterCardId !== binding.characterCardId) return false;
   const applied = characterBindingOptions(selection);
-  const pending2 = characterBindingOptions(binding);
-  return applied.greetingIndex !== pending2.greetingIndex || applied.preferCharacterSystemPrompt !== pending2.preferCharacterSystemPrompt || applied.preferCharacterPostHistory !== pending2.preferCharacterPostHistory;
+  const pending4 = characterBindingOptions(binding);
+  return applied.greetingIndex !== pending4.greetingIndex || applied.preferCharacterSystemPrompt !== pending4.preferCharacterSystemPrompt || applied.preferCharacterPostHistory !== pending4.preferCharacterPostHistory;
 }
-function characterEditorDraft(character) {
-  if (character === null || typeof character !== "object") return null;
-  const data3 = character.data ?? {};
+function characterEditorDraft(character2) {
+  if (character2 === null || typeof character2 !== "object") return null;
+  const data3 = character2.data ?? {};
   return {
     name: typeof data3.name === "string" ? data3.name : "",
     nickname: typeof data3.nickname === "string" ? data3.nickname : "",
@@ -25960,14 +25675,14 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
   const dirtyRef = (0, import_react16.useRef)(false);
   const dirty = characterEditorDirty(draft, savedDraft);
   dirtyRef.current = dirty;
-  const applyCharacter = (0, import_react16.useCallback)((character, currentSelection) => {
-    const nextDraft = characterEditorDraft(character);
-    setDetail(character);
+  const applyCharacter = (0, import_react16.useCallback)((character2, currentSelection) => {
+    const nextDraft = characterEditorDraft(character2);
+    setDetail(character2);
     setDraft(nextDraft);
     setSavedDraft(nextDraft === null ? null : structuredClone(nextDraft));
-    setBinding(currentSelection?.characterCardId === character?.id ? currentSelection : character === null ? null : defaultCharacterSelection(character.id));
+    setBinding(currentSelection?.characterCardId === character2?.id ? currentSelection : character2 === null ? null : defaultCharacterSelection(character2.id));
   }, []);
-  const run = (0, import_react16.useCallback)(async (operation, successKey) => {
+  const run2 = (0, import_react16.useCallback)(async (operation, successKey) => {
     setBusy(true);
     try {
       const result = await operation();
@@ -25981,24 +25696,24 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
     }
   }, []);
   const loadDetail = (0, import_react16.useCallback)(async (id) => {
-    const generation = ++refreshGeneration.current;
+    const generation2 = ++refreshGeneration.current;
     if (id === null || id === void 0 || id === "") {
       applyCharacter(null, null);
       return;
     }
     const data3 = await api2(`/characters/${encodeURIComponent(id)}`);
-    if (generation !== refreshGeneration.current) return;
+    if (generation2 !== refreshGeneration.current) return;
     applyCharacter(data3.character, selection);
   }, [applyCharacter, selection]);
   const refresh = (0, import_react16.useCallback)(async (preferredId) => {
-    const generation = ++refreshGeneration.current;
+    const generation2 = ++refreshGeneration.current;
     const list2 = await api2("/characters");
     let currentSelection = null;
     if (bindingTarget || sessionId) {
       const selected = await api2(`/character-selection?sessionId=${encodeURIComponent(sessionId)}`);
       currentSelection = selected.selection;
     }
-    if (generation !== refreshGeneration.current) return;
+    if (generation2 !== refreshGeneration.current) return;
     setCatalog(list2);
     setSelection(currentSelection);
     const id = preferredId ?? currentSelection?.characterCardId ?? list2.characters[0]?.id ?? null;
@@ -26007,15 +25722,15 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
       return;
     }
     const data3 = await api2(`/characters/${encodeURIComponent(id)}`);
-    if (generation !== refreshGeneration.current) return;
+    if (generation2 !== refreshGeneration.current) return;
     applyCharacter(data3.character, currentSelection);
   }, [applyCharacter, sessionId, bindingTarget]);
   (0, import_react16.useEffect)(() => {
-    run(() => refresh(), "character.status.loaded");
+    run2(() => refresh(), "character.status.loaded");
     return () => {
       refreshGeneration.current += 1;
     };
-  }, [refresh, run]);
+  }, [refresh, run2]);
   (0, import_react16.useEffect)(() => {
     const onRefresh = (event) => {
       if (event.detail?.source === "character") return;
@@ -26023,11 +25738,11 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
         setStatus({ error: false, key: "character.status.skippedRefresh" });
         return;
       }
-      run(() => refresh(detail?.id), "character.status.refreshed");
+      run2(() => refresh(detail?.id), "character.status.refreshed");
     };
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
-  }, [detail?.id, refresh, run]);
+  }, [detail?.id, refresh, run2]);
   (0, import_react16.useEffect)(() => {
     if (!dirty) return void 0;
     const warn2 = (event) => {
@@ -26039,13 +25754,13 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
   }, [dirty]);
   const create2 = (0, import_react16.useCallback)(() => {
     if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardForCreate")))) return;
-    run(async () => {
+    run2(async () => {
       const data3 = await api2("/characters", { method: "POST", body: JSON.stringify({ name: translate("character.defaultName") }) });
       await refresh(data3.character.id);
       announceTavernRefresh2();
     }, "character.status.created");
-  }, [dirty, refresh, run]);
-  const importFile = (0, import_react16.useCallback)((file) => run(async () => {
+  }, [dirty, refresh, run2]);
+  const importFile = (0, import_react16.useCallback)((file) => run2(async () => {
     let data3;
     try {
       const response = await tavernFetch(`${API_V1}/characters/import?filename=${encodeURIComponent(file.name)}`, {
@@ -26064,8 +25779,8 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
     await offerRenderingDependencies(importedResource.character, "character", data3.character.id, { message: (sources) => translate("rendering.importDependencies", { sources }) });
     announceTavernRefresh2();
     if (fileRef.current !== null) fileRef.current.value = "";
-  }, "character.status.imported"), [refresh, run]);
-  const save = (0, import_react16.useCallback)(() => run(async () => {
+  }, "character.status.imported"), [refresh, run2]);
+  const save2 = (0, import_react16.useCallback)(() => run2(async () => {
     if (detail === null || draft === null) return;
     const data3 = await api2(`/characters/${encodeURIComponent(detail.id)}`, {
       method: "PATCH",
@@ -26087,7 +25802,7 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
       return { ...current4, character: { ...current4.character, greetingIndex: greetingIndex2 } };
     });
     announceTavernRefresh2();
-  }, "character.status.saved"), [detail, draft, run]);
+  }, "character.status.saved"), [detail, draft, run2]);
   const requestSelection = (0, import_react16.useCallback)(async (request2, action, { prompt = true } = {}) => {
     try {
       return await api2("/character-selection", {
@@ -26112,7 +25827,7 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
     }
     announceTavernRefresh2();
   }, [detail?.id, refresh, sessionId, bindingTarget]);
-  const bind = (0, import_react16.useCallback)(() => run(async () => {
+  const bind = (0, import_react16.useCallback)(() => run2(async () => {
     if (!canBind) throw uiError("character.error.needSession");
     if (dirty) throw uiError("character.error.saveFirst");
     if (selection?.characterCardId !== binding?.characterCardId) {
@@ -26122,35 +25837,35 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
     const data3 = await requestSelection({ sessionId, ...binding }, "bind");
     if (data3 === RUN_SKIPPED) return RUN_SKIPPED;
     await applySelectionResult(data3, "bind");
-  }, "character.status.bound"), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId, bindingTarget]);
-  const unbind = (0, import_react16.useCallback)(() => run(async () => {
+  }, "character.status.bound"), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run2, selection, sessionBlank, sessionId, bindingTarget]);
+  const unbind = (0, import_react16.useCallback)(() => run2(async () => {
     if (!canBind) throw uiError("character.error.noSessionToUnbind");
     const data3 = await requestSelection({ sessionId, characterCardId: null }, "unbind");
     if (data3 === RUN_SKIPPED) return RUN_SKIPPED;
     await applySelectionResult(data3, "unbind");
-  }, "character.status.unbound"), [applySelectionResult, requestSelection, run, sessionId, bindingTarget]);
+  }, "character.status.unbound"), [applySelectionResult, requestSelection, run2, sessionId, bindingTarget]);
   const confirmDetach = (0, import_react16.useCallback)(() => {
     if (detachPrompt === null) return;
-    run(async () => {
+    run2(async () => {
       if (typeof detachPlaythroughSession !== "function") throw new Error(unwrapText(uiMessage("character.detachUnavailable")));
-      for (const conflict of detachPrompt.conflicts) {
-        await detachPlaythroughSession(conflict.playthroughId, conflict.sessionId);
+      for (const conflict2 of detachPrompt.conflicts) {
+        await detachPlaythroughSession(conflict2.playthroughId, conflict2.sessionId);
       }
       const data3 = await requestSelection(detachPrompt.request, detachPrompt.action, { prompt: false });
       await applySelectionResult(data3, detachPrompt.action);
       setDetachPrompt(null);
     }, detachPrompt.action === "unbind" ? "character.status.unbound" : "character.status.bound");
-  }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run]);
-  const remove = (0, import_react16.useCallback)(() => run(async () => {
+  }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run2]);
+  const remove = (0, import_react16.useCallback)(() => run2(async () => {
     if (detail === null || !window.confirm(unwrapText(uiMessage("character.confirmDelete", { name: detail.name })))) return;
     await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
     await refresh(null);
     announceTavernRefresh2();
-  }, "character.status.deleted"), [detail, refresh, run]);
+  }, "character.status.deleted"), [detail, refresh, run2]);
   const chooseCharacter = (0, import_react16.useCallback)((id) => {
     if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardForSwitch")))) return;
-    run(() => loadDetail(id), "character.status.detailsLoaded");
-  }, [dirty, loadDetail, run]);
+    run2(() => loadDetail(id), "character.status.detailsLoaded");
+  }, [dirty, loadDetail, run2]);
   const requestClose = () => {
     if (!dirty || window.confirm(unwrapText(uiMessage("character.confirmCloseDirty")))) close2();
   };
@@ -26201,7 +25916,7 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
         ),
         h16("button", { className: "dcc-button", type: "button", disabled: busy2, onClick: () => {
           if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardRefresh")))) return;
-          run(() => refresh(detail?.id), "character.status.libraryRefreshed");
+          run2(() => refresh(detail?.id), "character.status.libraryRefreshed");
         } }, uiMessage("common.refresh"))
       )),
       bindingTarget && h16("p", { className: "dcc-note" }, uiMessage("play.draft.characterHint")),
@@ -26379,7 +26094,7 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
         h16(
           "div",
           { className: "dcc-footer" },
-          h16("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy2 || !dirty, onClick: save }, dirty ? uiMessage("character.saveResource") : uiMessage("character.resourceSaved")),
+          h16("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy2 || !dirty, onClick: save2 }, dirty ? uiMessage("character.saveResource") : uiMessage("character.resourceSaved")),
           h16("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy2, onClick: remove }, uiMessage("character.delete"))
         )
       )
@@ -26392,9 +26107,9 @@ function CharacterPanel({ bindingTarget, sessionId, sessionBlank, hasConversatio
         { className: "dcc-modal", role: "dialog", "aria-modal": true, "aria-labelledby": "dcc-detach-title" },
         h16("h3", { id: "dcc-detach-title" }, uiMessage("character.detachTitle")),
         h16("p", { className: "dcc-note" }, uiMessage("character.detachDescription")),
-        h16("ul", { className: "dcc-modal-list" }, ...detachPrompt.conflicts.map((conflict) => h16("li", { key: conflict.playthroughId }, uiMessage("character.detachItem", {
-          title: conflict.playthroughTitle,
-          count: conflict.descendantSessionCount
+        h16("ul", { className: "dcc-modal-list" }, ...detachPrompt.conflicts.map((conflict2) => h16("li", { key: conflict2.playthroughId }, uiMessage("character.detachItem", {
+          title: conflict2.playthroughTitle,
+          count: conflict2.descendantSessionCount
         })))),
         h16(
           "div",
@@ -26664,7 +26379,7 @@ function ResourceWorldBookBindingEditor({
   selection,
   appliedSelection,
   setSelection,
-  save,
+  save: save2,
   edit,
   busy: busy2,
   currentKey,
@@ -26702,7 +26417,7 @@ function ResourceWorldBookBindingEditor({
     h17(
       "div",
       { className: "dwb-actions" },
-      h17("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy2 || !dirty, onClick: save }, dirty ? uiMessage("world.resource.save") : uiMessage("world.resource.saveApplied")),
+      h17("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy2 || !dirty, onClick: save2 }, dirty ? uiMessage("world.resource.save") : uiMessage("world.resource.saveApplied")),
       h17("button", { className: "dwb-button", type: "button", disabled: busy2 || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.resource.clear"))
     )
   );
@@ -26782,8 +26497,8 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
   const [entryDropIndex, setEntryDropIndex] = (0, import_react17.useState)(null);
   const fileRef = (0, import_react17.useRef)(null);
   const standaloneEditorRef = (0, import_react17.useRef)(null);
-  const generation = (0, import_react17.useRef)(0);
-  const run = (0, import_react17.useCallback)(async (operation, success, values) => {
+  const generation2 = (0, import_react17.useRef)(0);
+  const run2 = (0, import_react17.useCallback)(async (operation, success, values) => {
     setBusy(true);
     try {
       const value = await operation();
@@ -26802,7 +26517,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     }
   }, []);
   const refresh = (0, import_react17.useCallback)(async (preferredId) => {
-    const currentGeneration = ++generation.current;
+    const currentGeneration = ++generation2.current;
     const list2 = await api2("/world-books");
     const selected = bindingTarget || sessionId ? await api2(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
     const activeView2 = await api2(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
@@ -26814,7 +26529,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
       characterId === null ? null : api2(`/characters/${encodeURIComponent(characterId)}`)
     ]);
     const embeddedBook = characterDetail?.character?.data?.characterBook ?? null;
-    if (currentGeneration !== generation.current) return;
+    if (currentGeneration !== generation2.current) return;
     const ids = selected.selection?.worldBookIds ?? [];
     const resolvedUserIds = activeView2.resources?.user === null || activeView2.resources?.user === void 0 ? [] : activeView2.worldBookSelection?.userBoundIds ?? [];
     const userIds = Array.isArray(resolvedUserIds) ? resolvedUserIds : [];
@@ -26841,21 +26556,21 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
       return;
     }
     const detail = await api2(`/world-books/${encodeURIComponent(id)}`);
-    if (currentGeneration !== generation.current) return;
+    if (currentGeneration !== generation2.current) return;
     setDocument(detail.worldBook);
     setDraft(structuredClone(detail.worldBook.book));
     setDirty(false);
   }, [document2?.id, sessionId, bindingTarget]);
   (0, import_react17.useEffect)(() => {
-    run(() => refresh(), "world.status.loaded");
-    const onRefresh = () => run(() => refresh(), "world.status.refreshed");
+    run2(() => refresh(), "world.status.loaded");
+    const onRefresh = () => run2(() => refresh(), "world.status.refreshed");
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => {
-      generation.current += 1;
+      generation2.current += 1;
       window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     };
-  }, [refresh, run]);
-  const load = (id) => run(async () => {
+  }, [refresh, run2]);
+  const load = (id) => run2(async () => {
     const detail = await api2(`/world-books/${encodeURIComponent(id)}`);
     setDocument(detail.worldBook);
     setDraft(structuredClone(detail.worldBook.book));
@@ -26866,11 +26581,11 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
   const editResourceBook = editUserBook;
-  const create2 = () => run(async () => {
+  const create2 = () => run2(async () => {
     const data3 = await api2("/world-books", { method: "POST", body: JSON.stringify({ name: translate("world.defaultName") }) });
     await refresh(data3.worldBook.id);
   }, "world.status.created");
-  const importFile = (file) => run(async () => {
+  const importFile = (file) => run2(async () => {
     let data3;
     try {
       const response = await tavernFetch(`${API_V1}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
@@ -26887,21 +26602,21 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     if (fileRef.current !== null) fileRef.current.value = "";
     await refresh(data3.worldBook.id);
   }, "world.status.imported");
-  const save = () => run(async () => {
+  const save2 = () => run2(async () => {
     const data3 = await api2(`/world-books/${encodeURIComponent(document2.id)}`, { method: "PATCH", body: JSON.stringify({ book: draft }) });
     setDocument(data3.worldBook);
     setDraft(structuredClone(data3.worldBook.book));
     setDirty(false);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.saved");
-  const saveSelection = () => run(async () => {
+  const saveSelection = () => run2(async () => {
     if (!canBind) throw uiError("world.error.needSession");
     const data3 = await api2("/world-book-selection", { method: "POST", body: JSON.stringify({ sessionId, worldBookIds: selection }) });
     setSelection(data3.selection.worldBookIds);
     setAppliedSelection(data3.selection.worldBookIds);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.bindingSaved");
-  const saveUserSelection = () => run(async () => {
+  const saveUserSelection = () => run2(async () => {
     const userId = active?.resources?.user?.id;
     if (!userId) throw uiError("world.user.error.noUser");
     const data3 = await api2(`/users/${encodeURIComponent(userId)}/world-books`, {
@@ -26913,7 +26628,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     setAppliedUserSelection(ids);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.user.saveSuccess");
-  const savePresetSelection = () => run(async () => {
+  const savePresetSelection = () => run2(async () => {
     const presetId = active?.resources?.preset?.id;
     if (!presetId) throw uiError("world.resource.error.noPreset");
     const data3 = await api2(`/presets/${encodeURIComponent(presetId)}/world-books`, {
@@ -26925,7 +26640,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     setAppliedPresetSelection(ids);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.resource.saveSuccess");
-  const saveCharacterSelection = () => run(async () => {
+  const saveCharacterSelection = () => run2(async () => {
     const characterId = active?.resources?.characterCard?.id;
     if (!characterId) throw uiError("world.resource.error.noCharacter");
     const data3 = await api2(`/characters/${encodeURIComponent(characterId)}/world-books`, {
@@ -26937,7 +26652,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     setAppliedCharacterSelection(ids);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.resource.saveSuccess");
-  const remove = () => run(async () => {
+  const remove = () => run2(async () => {
     if (document2 === null || !window.confirm(unwrapText(uiMessage("world.confirmDelete", { name: document2.name })))) return;
     await api2(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
     setDocument(null);
@@ -26945,7 +26660,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     await refresh(null);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.deleted");
-  const saveEmbedded = () => run(async () => {
+  const saveEmbedded = () => run2(async () => {
     const data3 = await api2(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
       method: "PATCH",
       body: JSON.stringify({ characterBook: embeddedDraft })
@@ -26955,10 +26670,10 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.embeddedSaved");
   const createEmbedded = () => {
-    const character = active?.resources?.characterCard;
-    if (!character) return;
+    const character2 = active?.resources?.characterCard;
+    if (!character2) return;
     setEmbeddedDraft({
-      name: translate("world.embeddedDefaultName", { name: character.name || character.id }),
+      name: translate("world.embeddedDefaultName", { name: character2.name || character2.id }),
       entries: []
     });
     setEmbeddedDirty(true);
@@ -27059,7 +26774,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
           ...(catalog2?.worldBooks ?? []).map((item) => h17("option", { key: item.id, value: item.id }, rawText(item.name)))
         ),
         h17("button", { className: "dwb-button", type: "button", disabled: busy2, onClick: () => {
-          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "world.status.refreshed");
+          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run2(() => refresh(), "world.status.refreshed");
         } }, uiMessage("common.refresh"))
       )),
       h17(
@@ -27124,7 +26839,7 @@ function WorldBookPanel({ bindingTarget, sessionId, close: close2 }) {
           h17(
             "div",
             { className: "dwb-footer" },
-            h17("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy2 || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
+            h17("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy2 || !dirty, onClick: save2 }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
             h17("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy2, onClick: remove }, uiMessage("world.deleteStandalone"))
           )
         )
@@ -27267,66 +26982,6 @@ function installWorldBookStyles() {
 
 // packages/client/src/avatar-input.js
 var import_react18 = require("react");
-
-// packages/presentation/avatar.js
-var MAX_AVATAR_LENGTH = 128 * 1024;
-function normalizeAvatar(value) {
-  if (value === null || value === void 0 || value === "") return null;
-  if (typeof value !== "string" || value.length > MAX_AVATAR_LENGTH) throw new TypeError("Avatar exceeds 128 KiB");
-  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
-  if (!match || match[2].length % 4 !== 0) throw new TypeError("Avatar must be PNG, JPEG or WebP data");
-  const bytes = atob(match[2].slice(0, 32));
-  const valid = match[1] === "png" ? bytes.startsWith("\x89PNG\r\n\n") : match[1] === "jpeg" ? bytes.startsWith("\xFF\xD8\xFF") : bytes.startsWith("RIFF") && bytes.slice(8, 12) === "WEBP";
-  if (!valid) throw new TypeError("Avatar image signature does not match its type");
-  return value;
-}
-function avatarFor(appearance, role2, key2, defaults = {}) {
-  return normalizeAvatar(appearance?.messages?.[key2]?.[role2]) ?? normalizeAvatar(appearance?.[role2]) ?? defaults[role2] ?? null;
-}
-function editAvatar(timeline, { role: role2, key: key2, scope, avatar }) {
-  if (!["user", "assistant"].includes(role2)) throw new TypeError("Invalid avatar role");
-  if (!["message", "playthrough", "reset-message", "reset-playthrough"].includes(scope)) throw new TypeError("Invalid avatar scope");
-  if (typeof key2 !== "string" || key2.length > 500 || ["__proto__", "constructor", "prototype"].includes(key2)) throw new TypeError("Invalid message key");
-  const next = structuredClone(timeline);
-  next.ext ??= {};
-  next.ext.pmpDshTavern ??= {};
-  const appearance = next.ext.pmpDshTavern.appearance ??= { schemaVersion: 1, messages: {} };
-  if (appearance.schemaVersion !== 1) throw new TypeError("Unsupported avatar schema");
-  appearance.messages ??= {};
-  if (scope === "message") {
-    if (Object.keys(appearance.messages).length >= 500 && !Object.hasOwn(appearance.messages, key2)) throw new TypeError("Too many message avatar overrides");
-    appearance.messages[key2] = { ...appearance.messages[key2], [role2]: normalizeAvatar(avatar) };
-  } else if (scope === "reset-message") {
-    if (Object.hasOwn(appearance.messages, key2)) delete appearance.messages[key2][role2];
-  } else {
-    if (scope === "reset-playthrough") delete appearance[role2];
-    else appearance[role2] = normalizeAvatar(avatar);
-    for (const value of Object.values(appearance.messages)) delete value[role2];
-  }
-  for (const [messageKey, overrides] of Object.entries(appearance.messages)) {
-    if (!Object.values(overrides).some((value) => value != null)) delete appearance.messages[messageKey];
-  }
-  validateAppearance(appearance);
-  return next;
-}
-function validateAppearance(value) {
-  const record = (x2) => x2 !== null && typeof x2 === "object" && !Array.isArray(x2);
-  if (!record(value) || value.schemaVersion !== 1) throw new TypeError("Unsupported avatar schema");
-  for (const key2 of Object.keys(value)) if (!["schemaVersion", "user", "assistant", "messages"].includes(key2)) throw new TypeError("Unknown avatar field");
-  for (const role2 of ["user", "assistant"]) if (value[role2] !== void 0) normalizeAvatar(value[role2]);
-  if (!record(value.messages) || Object.keys(value.messages).length > 500) throw new TypeError("Invalid avatar messages");
-  for (const [key2, overrides] of Object.entries(value.messages)) {
-    if (key2.length > 500 || ["__proto__", "constructor", "prototype"].includes(key2) || !record(overrides)) throw new TypeError("Invalid avatar message");
-    for (const role2 of Object.keys(overrides)) {
-      if (!["user", "assistant"].includes(role2)) throw new TypeError("Invalid avatar role");
-      normalizeAvatar(overrides[role2]);
-    }
-  }
-  if (JSON.stringify(value).length > 512 * 1024) throw new TypeError("Playthrough avatars exceed 512K serialized characters; clear unused overrides");
-  return value;
-}
-
-// packages/client/src/avatar-input.js
 async function readAvatar(file) {
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error(translate("appearance.imageLimit"));
   const bitmap = await createImageBitmap(file);
@@ -27343,9 +26998,9 @@ async function readAvatar(file) {
 }
 function AvatarInput({ value, onChange, disabled = false }) {
   const [error, setError] = (0, import_react18.useState)("");
-  const generation = (0, import_react18.useRef)(0);
+  const generation2 = (0, import_react18.useRef)(0);
   (0, import_react18.useEffect)(() => () => {
-    generation.current++;
+    generation2.current++;
   }, []);
   return (0, import_react18.createElement)(
     "div",
@@ -27359,20 +27014,20 @@ function AvatarInput({ value, onChange, disabled = false }) {
         const file = event.target.files?.[0];
         event.target.value = "";
         if (!file) return;
-        const current4 = ++generation.current;
+        const current4 = ++generation2.current;
         try {
           const image = await readAvatar(file);
-          if (current4 === generation.current) {
+          if (current4 === generation2.current) {
             onChange(image);
             setError("");
           }
         } catch (error2) {
-          if (current4 === generation.current) setError(error2.message);
+          if (current4 === generation2.current) setError(error2.message);
         }
       } })
     ),
     (0, import_react18.createElement)("button", { type: "button", disabled: disabled || !value, onClick: () => {
-      generation.current++;
+      generation2.current++;
       onChange(null);
     } }, translate("appearance.clearImage")),
     (0, import_react18.createElement)("small", { style: { display: "block" } }, translate("appearance.imageHint")),
@@ -27435,7 +27090,7 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
   const [busy2, setBusy] = (0, import_react19.useState)(false);
   const [status, setStatus] = (0, import_react19.useState)({ error: false, key: "common.loading" });
   const fileRef = (0, import_react19.useRef)(null);
-  const generation = (0, import_react19.useRef)(0);
+  const generation2 = (0, import_react19.useRef)(0);
   const draftId = (0, import_react19.useRef)(null);
   const dirtyRef = (0, import_react19.useRef)(false);
   draftId.current = draft?.id ?? null;
@@ -27443,7 +27098,7 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
   dirtyRef.current = dirty;
   const resourceDirty = userResourceDirty(draft, savedDraft);
   const bindingDirty = !sameOrderedIds2(worldBookIds, appliedWorldBookIds);
-  const run = (0, import_react19.useCallback)(async (operation, success, values) => {
+  const run2 = (0, import_react19.useCallback)(async (operation, success, values) => {
     setBusy(true);
     try {
       const result = await operation();
@@ -27462,7 +27117,7 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
     }
   }, []);
   const refresh = (0, import_react19.useCallback)(async (preferredId) => {
-    const current4 = ++generation.current;
+    const current4 = ++generation2.current;
     const [catalog2, worldBookCatalog, binding] = await Promise.all([
       api2("/users"),
       api2("/world-books"),
@@ -27472,7 +27127,7 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
     const preferred = availableIds.has(preferredId) ? preferredId : availableIds.has(binding.selection?.userId) ? binding.selection.userId : null;
     const id = preferred ?? catalog2.users[0]?.id ?? null;
     const relation = id === null ? { binding: { worldBookIds: [] } } : await api2(`/users/${encodeURIComponent(id)}/world-books`);
-    if (current4 !== generation.current) return;
+    if (current4 !== generation2.current) return;
     setUsers(catalog2.users);
     setWorldBooks(worldBookCatalog.worldBooks);
     setSelectedUserId(binding.selection?.userId ?? null);
@@ -27484,20 +27139,20 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
     setAppliedWorldBookIds(ids);
   }, [sessionId, bindingTarget]);
   (0, import_react19.useEffect)(() => {
-    run(() => refresh(), "user.status.loaded");
+    run2(() => refresh(), "user.status.loaded");
     const onRefresh = () => {
       if (dirtyRef.current) {
         setStatus({ error: false, key: "user.status.skippedRefresh" });
         return;
       }
-      run(() => refresh(draftId.current), "user.status.refreshed");
+      run2(() => refresh(draftId.current), "user.status.refreshed");
     };
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => {
-      generation.current += 1;
+      generation2.current += 1;
       window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     };
-  }, [refresh, run]);
+  }, [refresh, run2]);
   (0, import_react19.useEffect)(() => {
     if (!dirty) return void 0;
     const warn2 = (event) => {
@@ -27509,16 +27164,16 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
   }, [dirty]);
   const create2 = (0, import_react19.useCallback)(() => {
     if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForCreate")))) return;
-    run(async () => {
+    run2(async () => {
       const data3 = await api2("/users", { method: "POST", body: JSON.stringify({ name: translate("user.defaultName"), description: "" }) });
       draftId.current = data3.user.id;
       await refresh(data3.user.id);
       notifyRefresh();
     }, "user.status.created");
-  }, [dirty, refresh, run]);
+  }, [dirty, refresh, run2]);
   const importFile = (0, import_react19.useCallback)((file) => {
     if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForCreate")))) return;
-    run(async () => {
+    run2(async () => {
       try {
         if (file.size > 1024 * 1024) throw uiError("resource.error.fileTooLarge");
         const data3 = await api2("/users/import", { method: "POST", body: await file.text() });
@@ -27531,8 +27186,8 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
         throw error;
       }
     }, "user.status.imported");
-  }, [dirty, refresh, run]);
-  const save = (0, import_react19.useCallback)(() => run(async () => {
+  }, [dirty, refresh, run2]);
+  const save2 = (0, import_react19.useCallback)(() => run2(async () => {
     if (draft === null) return;
     const data3 = await api2(`/users/${encodeURIComponent(draft.id)}`, {
       method: "PATCH",
@@ -27543,8 +27198,8 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
     setSavedDraft(structuredClone(data3.user));
     setUsers((current4) => current4?.map((user) => user.id === data3.user.id ? data3.user : user) ?? current4);
     notifyRefresh();
-  }, "user.status.saved"), [draft, run]);
-  const saveWorldBooks = (0, import_react19.useCallback)(() => run(async () => {
+  }, "user.status.saved"), [draft, run2]);
+  const saveWorldBooks = (0, import_react19.useCallback)(() => run2(async () => {
     if (draft === null) return;
     const data3 = await api2(`/users/${encodeURIComponent(draft.id)}/world-books`, {
       method: "PUT",
@@ -27554,12 +27209,12 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
     setWorldBookIds(ids);
     setAppliedWorldBookIds(ids);
     notifyRefresh();
-  }, "user.status.worldBooksSaved"), [draft, run, worldBookIds]);
+  }, "user.status.worldBooksSaved"), [draft, run2, worldBookIds]);
   const chooseUser = (0, import_react19.useCallback)((id) => {
     if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForSwitch")))) return;
-    run(() => refresh(id), "user.status.userLoaded");
-  }, [dirty, refresh, run]);
-  const bind = (0, import_react19.useCallback)(() => run(async () => {
+    run2(() => refresh(id), "user.status.userLoaded");
+  }, [dirty, refresh, run2]);
+  const bind = (0, import_react19.useCallback)(() => run2(async () => {
     if (!canBind || draft === null) throw uiError("user.error.needSession");
     if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm(unwrapText(uiMessage("user.confirmHistoricalSwitch")))) return;
     const data3 = await api2("/user-selection", {
@@ -27568,20 +27223,20 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
     });
     setSelectedUserId(data3.selection.userId);
     notifyRefresh();
-  }, "user.status.bound"), [draft, run, selectedUserId, sessionBlank, sessionId, bindingTarget]);
-  const unbind = (0, import_react19.useCallback)(() => run(async () => {
+  }, "user.status.bound"), [draft, run2, selectedUserId, sessionBlank, sessionId, bindingTarget]);
+  const unbind = (0, import_react19.useCallback)(() => run2(async () => {
     if (!canBind) throw uiError("user.error.noSessionToUnbind");
     await api2("/user-selection", { method: "POST", body: JSON.stringify({ sessionId, userId: null }) });
     setSelectedUserId(null);
     notifyRefresh();
-  }, "user.status.unbound"), [run, sessionId, bindingTarget]);
-  const remove = (0, import_react19.useCallback)(() => run(async () => {
+  }, "user.status.unbound"), [run2, sessionId, bindingTarget]);
+  const remove = (0, import_react19.useCallback)(() => run2(async () => {
     if (draft === null || !window.confirm(unwrapText(uiMessage("user.confirmDelete", { name: draft.name })))) return;
     await api2(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
     draftId.current = null;
     await refresh(null);
     notifyRefresh();
-  }, "user.status.deleted"), [draft, refresh, run]);
+  }, "user.status.deleted"), [draft, refresh, run2]);
   const activeName = selectedUserId === null ? translate("nav.user.empty") : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
   const requestClose = () => {
     if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmCloseDirty")))) close2();
@@ -27632,7 +27287,7 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
           ...(users ?? []).map((user) => h19("option", { key: user.id, value: user.id }, rawText(user.name)))
         ),
         h19("button", { className: "dtu-button", type: "button", disabled: busy2, onClick: () => {
-          if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmDiscardRefresh")))) run(() => refresh(draft?.id), "user.status.refreshed");
+          if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmDiscardRefresh")))) run2(() => refresh(draft?.id), "user.status.refreshed");
         } }, uiMessage("common.refresh"))
       )),
       h19(
@@ -27672,7 +27327,7 @@ function UserPanel({ bindingTarget, sessionId, sessionBlank, close: close2 }) {
         h19(
           "div",
           { className: "dtu-footer" },
-          h19("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy2 || !resourceDirty, onClick: save }, resourceDirty ? uiMessage("user.saveResource") : uiMessage("user.resourceSaved")),
+          h19("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy2 || !resourceDirty, onClick: save2 }, resourceDirty ? uiMessage("user.saveResource") : uiMessage("user.resourceSaved")),
           h19("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy2, onClick: remove }, uiMessage("user.delete"))
         )
       )
@@ -27925,7 +27580,7 @@ function ResourceVariables({ item, scope, turn, latest, running, refresh }) {
   (0, import_react20.useEffect)(() => {
     if (currentAvailable && staleCurrent && !editing && !saving && !running) readCurrent();
   }, [currentAvailable, staleCurrent, !!editing, saving, running]);
-  const save = async () => {
+  const save2 = async () => {
     if (!editable) return;
     const signal = lifetime.current.signal;
     setSaving(true);
@@ -28010,7 +27665,7 @@ function ResourceVariables({ item, scope, turn, latest, running, refresh }) {
           setNotice("");
         },
         onText: (text3) => setEditing((draft) => ({ ...draft, text: text3, operationId: crypto.randomUUID() })),
-        onSave: save,
+        onSave: save2,
         onCancel: () => setEditing(null)
       }),
       h20(
@@ -28753,10 +28408,10 @@ function resourceValue(resource2, emptyKey) {
 }
 function TemplatePreview({ template }) {
   const contents = template?.contents ?? {};
-  const character = template?.selection?.character ?? contents.character ?? {};
+  const character2 = template?.selection?.character ?? contents.character ?? {};
   const books = Array.isArray(contents.worldBooks) ? contents.worldBooks : [];
-  const enabledLabel = character.preferCharacterSystemPrompt === false ? translate("common.disabled") : translate("common.enabled");
-  const postHistoryLabel = character.preferCharacterPostHistory === false ? translate("common.disabled") : translate("common.enabled");
+  const enabledLabel = character2.preferCharacterSystemPrompt === false ? translate("common.disabled") : translate("common.enabled");
+  const postHistoryLabel = character2.preferCharacterPostHistory === false ? translate("common.disabled") : translate("common.enabled");
   return h22(
     "div",
     { className: "dtv-preview" },
@@ -28766,7 +28421,7 @@ function TemplatePreview({ template }) {
     contents.characterCard === null || contents.characterCard === void 0 ? null : h22(
       "div",
       { className: "dtv-preview-options" },
-      h22("span", null, uiMessage("template.preview.greeting", { value: Number(character.greetingIndex ?? 0) + 1 })),
+      h22("span", null, uiMessage("template.preview.greeting", { value: Number(character2.greetingIndex ?? 0) + 1 })),
       h22("span", null, uiMessage("template.preview.systemPrompt", { value: enabledLabel })),
       h22("span", null, uiMessage("template.preview.postHistory", { value: postHistoryLabel }))
     ),
@@ -28903,7 +28558,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refresh]);
-  const run = (0, import_react22.useCallback)(async (operation, success) => {
+  const run2 = (0, import_react22.useCallback)(async (operation, success) => {
     setBusy(true);
     try {
       const result = await operation();
@@ -28937,7 +28592,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
   }, [dirty]);
   const select = (event) => {
     if (!discard()) return;
-    return run(async () => {
+    return run2(async () => {
       const id = event.target.value || null;
       const data3 = await api("/session-templates/select", {
         method: "POST",
@@ -28949,14 +28604,14 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
   };
   const createBlank = () => {
     if (!discard()) return;
-    return run(
+    return run2(
       () => api("/session-templates", { method: "POST", body: JSON.stringify({ name: name2 }) }),
       (result) => ({ key: "template.status.created", values: { name: result.template.name } })
     );
   };
   const importFile = (file) => {
     if (!discard()) return;
-    return run(async () => {
+    return run2(async () => {
       try {
         if (file.size > 256 * 1024) throw uiError("resource.error.fileTooLarge");
         return await api("/session-templates/import", { method: "POST", body: await file.text() });
@@ -28966,13 +28621,13 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
       }
     }, "template.status.imported");
   };
-  const saveSelection = () => run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, {
+  const saveSelection = () => run2(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, {
     method: "PATCH",
     body: JSON.stringify({ name: name2, selection })
   }), "template.status.saved");
   const create2 = () => {
     if (!discard()) return;
-    return run(async () => {
+    return run2(async () => {
       if (!sessionId) throw uiError("template.error.needSessionToSave");
       return api("/session-templates", {
         method: "POST",
@@ -28982,7 +28637,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
   };
   const update = () => {
     if (!discard()) return;
-    return run(async () => {
+    return run2(async () => {
       if (!sessionId || selectedId === null) throw uiError("template.error.needSessionAndTemplate");
       return api(`/session-templates/${encodeURIComponent(selectedId)}`, {
         method: "PATCH",
@@ -28992,11 +28647,11 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
   };
   const remove = () => {
     if (selectedId === null || !window.confirm(unwrapText(uiMessage("template.confirmDelete", { name: selected?.name ?? selectedId })))) return;
-    run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
+    run2(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
   };
-  const start = (mode) => {
+  const start2 = (mode) => {
     if (!discard()) return;
-    return run(async () => {
+    return run2(async () => {
       if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
       const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
       if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
@@ -29035,7 +28690,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
           className: "dtv-button dtv-primary",
           type: "button",
           disabled: busy2 || !sessionId || chromeMode !== "play" && workspaceId === null,
-          onClick: () => start("current")
+          onClick: () => start2("current")
         }, uiMessage(chromeMode === "play" ? "template.startCurrentPlaythrough" : "template.startCurrent"))
       ),
       h22(
@@ -29084,7 +28739,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
           className: "dtv-button dtv-primary",
           type: "button",
           disabled: busy2 || selectedId === null || diagnostics.length > 0 || chromeMode !== "play" && workspaceId === null,
-          onClick: () => start("template")
+          onClick: () => start2("template")
         }, uiMessage(chromeMode === "play" ? "template.startPlaythroughFromTemplate" : "template.startFromTemplate"))
       ),
       h22(
@@ -29185,17 +28840,17 @@ var TAVERN_MENU_ITEMS = Object.freeze([
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
 var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 416 });
-function isRecord4(value) {
+function isRecord3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function firstRecord(...values) {
-  return values.find(isRecord4) ?? null;
+  return values.find(isRecord3) ?? null;
 }
 function firstArray(...values) {
   return values.find(Array.isArray) ?? [];
 }
 function resourceTitle(resource2, fallback = "") {
-  if (!isRecord4(resource2)) return fallback;
+  if (!isRecord3(resource2)) return fallback;
   for (const key2 of ["name", "title", "displayName", "label"]) {
     if (typeof resource2[key2] === "string" && resource2[key2].trim() !== "") return resource2[key2].trim();
   }
@@ -29203,7 +28858,7 @@ function resourceTitle(resource2, fallback = "") {
 }
 function catalog(snapshot, ...keys2) {
   for (const container of [snapshot?.catalog, snapshot?.catalogs]) {
-    if (!isRecord4(container)) continue;
+    if (!isRecord3(container)) continue;
     for (const key2 of keys2) {
       if (Array.isArray(container[key2])) return container[key2];
       if (Array.isArray(container[key2]?.items)) return container[key2].items;
@@ -29212,16 +28867,16 @@ function catalog(snapshot, ...keys2) {
   return [];
 }
 function findResourceById(items2, id) {
-  return items2.find((item) => isRecord4(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
+  return items2.find((item) => isRecord3(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
 }
 function selectionIds(value) {
   if (!Array.isArray(value)) return [];
-  const ids = value.map((item) => isRecord4(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
+  const ids = value.map((item) => isRecord3(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
   return ids.filter((id, index) => ids.findIndex((item) => String(item) === String(id)) === index);
 }
 function singleStatus({ id, resource: resource2, items: items2, emptyTitleKey }) {
   const bound = id !== null && id !== void 0 && id !== "";
-  const directResource = isRecord4(resource2) && (resource2.id === void 0 || String(resource2.id) === String(id)) ? resource2 : null;
+  const directResource = isRecord3(resource2) && (resource2.id === void 0 || String(resource2.id) === String(id)) ? resource2 : null;
   const resolved = firstRecord(directResource, bound ? findResourceById(items2, id) : null);
   return {
     bound,
@@ -29231,8 +28886,8 @@ function singleStatus({ id, resource: resource2, items: items2, emptyTitleKey })
   };
 }
 function launcherResourceStatuses(snapshot) {
-  const selection = isRecord4(snapshot?.selection) ? snapshot.selection : {};
-  const resources = isRecord4(snapshot?.resources) ? snapshot.resources : {};
+  const selection = isRecord3(snapshot?.selection) ? snapshot.selection : {};
+  const resources = isRecord3(snapshot?.resources) ? snapshot.resources : {};
   const presetResource = firstRecord(resources.preset, snapshot?.selected);
   const presetId = selection.presetId ?? presetResource?.id ?? null;
   const characterResource = firstRecord(resources.characterCard, resources.character);
@@ -29244,7 +28899,7 @@ function launcherResourceStatuses(snapshot) {
     selection.worldBooks,
     selection.worldBookSelection?.ids
   ));
-  const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord4);
+  const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord3);
   const implicitlySelectedWorlds = resolvedWorlds.filter((resource2) => resource2.selected !== false);
   const worldIds = explicitWorldIds.length > 0 ? explicitWorldIds : implicitlySelectedWorlds.map((resource2) => resource2.id ?? resource2.resourceId).filter((id) => id !== void 0 && id !== null);
   const worldCatalog = catalog(snapshot, "worldBooks", "worldBook", "lorebooks");
@@ -29299,9 +28954,9 @@ function clampLauncherAnchor(position, viewport2, scale = 1) {
     y: Math.min(height - launcherSize - margin, Math.max(margin, Number(position?.y) || margin))
   };
 }
-function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
+function launcherPlacement(anchor2, viewport2, expanded = false, scale = 1) {
   const factor = Math.max(0.1, Number(scale) || 1);
-  const point = clampLauncherAnchor(anchor, viewport2, factor);
+  const point = clampLauncherAnchor(anchor2, viewport2, factor);
   const panelWidth = TAVERN_LAUNCHER_PANEL.width * factor;
   const panelHeight = TAVERN_LAUNCHER_PANEL.height * factor;
   const launcherSize = TAVERN_LAUNCHER_SIZE * factor;
@@ -29480,7 +29135,7 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
   if ((typeof bound.sessionId !== "string" || !bound.sessionId) && !(bound.mode === "draft" && typeof bound.playthroughId === "string" && !Object.hasOwn(bound, "sessionId"))) throw new TypeError("MVU session or explicit draft scope is required");
   const controller2 = new AbortController(), listeners = /* @__PURE__ */ new Set();
   const bindingId = writeGrant ? crypto.randomUUID() : void 0;
-  let disposed = false, timer, current4, polling = false, capability2, creating = false, generation = 0, readFailed = false;
+  let disposed = false, timer, current4, polling = false, capability2, creating = false, generation2 = 0, readFailed = false;
   const dispose = () => {
     if (disposed) return;
     if (capability2 || creating) {
@@ -29541,7 +29196,7 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
   const poll = async () => {
     if (disposed || polling || !listeners.size) return;
     polling = true;
-    const issuedGeneration = generation;
+    const issuedGeneration = generation2;
     let transportFailure = false;
     try {
       let input;
@@ -29552,7 +29207,7 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
         throw error;
       }
       const next = validate2(input);
-      if (!disposed && issuedGeneration === generation && next.revision >= current4.revision) {
+      if (!disposed && issuedGeneration === generation2 && next.revision >= current4.revision) {
         readFailed = false;
         if (JSON.stringify(next) !== JSON.stringify(current4)) {
           current4 = next;
@@ -29565,7 +29220,7 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
         }
       }
     } catch (error) {
-      if (!disposed && issuedGeneration === generation) {
+      if (!disposed && issuedGeneration === generation2) {
         readFailed = true;
         const temporary = transportFailure && !["AbortError", "SyntaxError"].includes(error.name) && !error.code && (!error.status || error.status >= 500);
         const next = temporary && current4.status === "available" ? immutable({ ...current4, readState: "failed", error: "MVU_READ_FAILED" }) : immutable({ version: 1, scope: bound, revision: 0, status: "unavailable", variables: {}, error: "MVU_READ_FAILED" });
@@ -29584,22 +29239,22 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
       if (!disposed && listeners.size) timer = setTimeout(poll, Math.max(250, pollMs));
     }
   };
-  const submit = async ({ operation, value, expectedRevision, operationId, cause = "script", signal: writeSignal } = {}) => {
+  const submit2 = async ({ operation, value, expectedRevision, operationId, cause = "script", signal: writeSignal } = {}) => {
     if (disposed) throw new Error("MVU binding is disposed");
     if (!capability2) throw Object.assign(new Error("MVU binding is read-only"), { code: "MVU_WRITE_DENIED" });
     if (readFailed) throw Object.assign(new Error("A fresh MVU snapshot is required before writing"), { code: "MVU_READ_FAILED" });
     if (current4.status !== "available") throw Object.assign(new Error("MVU snapshot is unavailable"), { code: "MVU_SNAPSHOT_UNAVAILABLE" });
     writeSignal?.throwIfAborted();
-    const pending2 = new AbortController(), abort = () => pending2.abort();
+    const pending4 = new AbortController(), abort = () => pending4.abort();
     controller2.signal.addEventListener("abort", abort, { once: true });
     writeSignal?.addEventListener("abort", abort, { once: true });
     try {
-      const next = validate2(await post("card-write", { capability: capability2, operation, value, expectedRevision, operationId, cause }, pending2.signal));
+      const next = validate2(await post("card-write", { capability: capability2, operation, value, expectedRevision, operationId, cause }, pending4.signal));
       const receipt = immutable({ operationId, result: copy(next) });
-      if (disposed || pending2.signal.aborted) throw Object.assign(new DOMException("MVU write cancelled", "AbortError"), { operationReceipt: receipt });
+      if (disposed || pending4.signal.aborted) throw Object.assign(new DOMException("MVU write cancelled", "AbortError"), { operationReceipt: receipt });
       if (next.revision >= current4.revision) {
         current4 = next;
-        generation++;
+        generation2++;
       }
       for (const listener of listeners) {
         try {
@@ -29619,10 +29274,10 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
       return { ...copy(current4), writable: Boolean(capability2) && !readFailed && current4.status === "available" };
     },
     async write(request2) {
-      return (await submit(request2)).snapshot;
+      return (await submit2(request2)).snapshot;
     },
     async writeOperation(request2) {
-      return (await submit(request2)).receipt;
+      return (await submit2(request2)).receipt;
     },
     subscribe(listener) {
       if (disposed) throw new Error("MVU binding is disposed");
@@ -29678,10 +29333,10 @@ function setClientConversationSettings(value, { announce = true } = {}) {
   return getClientConversationSettings();
 }
 function createConversationSettingsPersistence({ request: request2, apply: apply5, status, busy: busy2 }) {
-  let generation = 0, active = true;
-  async function run(method, value) {
-    const ticket = ++generation, writing = method !== "GET";
-    const current4 = () => active && ticket === generation;
+  let generation2 = 0, active = true;
+  async function run2(method, value) {
+    const ticket = ++generation2, writing = method !== "GET";
+    const current4 = () => active && ticket === generation2;
     busy2(true);
     if (writing) status("saving");
     try {
@@ -29699,17 +29354,17 @@ function createConversationSettingsPersistence({ request: request2, apply: apply
   return {
     load() {
       active = true;
-      return run("GET");
+      return run2("GET");
     },
     save(value) {
-      return run("PUT", value);
+      return run2("PUT", value);
     },
     reset() {
-      return run("DELETE");
+      return run2("DELETE");
     },
     dispose() {
       active = false;
-      generation++;
+      generation2++;
     }
   };
 }
@@ -31051,10 +30706,10 @@ function userAliases(source) {
     return !ranges[rangeIndex] || offset2 < ranges[rangeIndex][0];
   });
 }
-function applyDisplayNameMacros(text3, { user = "User", character = "Assistant" } = {}) {
+function applyDisplayNameMacros(text3, { user = "User", character: character2 = "Assistant" } = {}) {
   const names2 = {
     user: typeof user === "string" && user !== "" ? user : "User",
-    char: typeof character === "string" && character !== "" ? character : "Assistant"
+    char: typeof character2 === "string" && character2 !== "" ? character2 : "Assistant"
   };
   const source = String(text3 ?? "");
   const replacements = [...source.matchAll(/\{\{\s*(user|char)\s*\}\}/gi)].map((match) => ({ offset: match.index, length: match[0].length, value: names2[match[1].toLowerCase()] }));
@@ -31072,10 +30727,10 @@ function applyDisplayNameMacros(text3, { user = "User", character = "Assistant" 
   parts.push(source.slice(copied));
   return parts.join("");
 }
-function applyCardUserAliases(root, user = "User") {
+function applyCardUserAliases(root2, user = "User") {
   const name2 = typeof user === "string" && user !== "" ? user : "User";
-  root.normalize();
-  const walker = root.ownerDocument.createTreeWalker(root, 4);
+  root2.normalize();
+  const walker = root2.ownerDocument.createTreeWalker(root2, 4);
   let node;
   while (node = walker.nextNode()) {
     if (node.parentElement?.closest("pre,code,script,style,textarea,input,select,template,[contenteditable]")) continue;
@@ -31101,16 +30756,16 @@ function cardViewport(value) {
 }
 function cardRootPresentation(value = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw Error("Invalid card root presentation");
-  const root = {};
+  const root2 = {};
   for (const key2 of ["html", "body"]) {
     const entry = value[key2] ?? {}, className = entry.className ?? "", style = entry.style ?? "";
     if (typeof className !== "string" || className.length > 4096 || typeof style !== "string" || style.length > 16384) throw Error("Invalid card root presentation");
-    root[key2] = { className, style };
+    root2[key2] = { className, style };
   }
-  return root;
+  return root2;
 }
-function usesCardViewport(html2, styles3, root) {
-  const css14 = [styles3, html2, root.html.style, root.body.style].join(";").replace(/(^|[;{"'])\s*max-height\s*:[^;}"']*/gi, "$1");
+function usesCardViewport(html2, styles3, root2) {
+  const css14 = [styles3, html2, root2.html.style, root2.body.style].join(";").replace(/(^|[;{"'])\s*max-height\s*:[^;}"']*/gi, "$1");
   return /(?:\d|\.)\s*(?:d|s|l)?vh\b|\bposition\s*:\s*fixed\b/i.test(css14);
 }
 var OPENING_CARD_VIEWPORT_CSS = `
@@ -31214,8 +30869,8 @@ function imageCss(css14) {
   if (/\\|@import\b|(?:image|image-set|-webkit-image-set|src)\s*\(/i.test(value)) return "";
   let blocked = false;
   const clean = value.replace(/url\s*\(\s*(?:"([^"\n]*)"|'([^'\n]*)'|([^\s()"']+))\s*\)/gi, (token, quoted, single, plain3, offset2) => {
-    const start = Math.max(value.lastIndexOf(";", offset2), value.lastIndexOf("{", offset2), value.lastIndexOf("}", offset2)) + 1;
-    if (!/^\s*background(?:-image)?\s*:/i.test(value.slice(start, offset2)) && !/^\s*--[A-Za-z0-9_-]+\s*:/i.test(value.slice(start, offset2))) {
+    const start2 = Math.max(value.lastIndexOf(";", offset2), value.lastIndexOf("{", offset2), value.lastIndexOf("}", offset2)) + 1;
+    if (!/^\s*background(?:-image)?\s*:/i.test(value.slice(start2, offset2)) && !/^\s*--[A-Za-z0-9_-]+\s*:/i.test(value.slice(start2, offset2))) {
       blocked = true;
       return "";
     }
@@ -31374,13 +31029,13 @@ async function fetchImage(source, signal) {
   if (length && (!/^\d+$/.test(length) || Number(length) > IMAGE_LIMITS.imageBytes)) throw Error("IMAGE_BYTES");
   if (!response.body) throw Error("IMAGE_NETWORK");
   const reader = response.body.getReader(), chunks = [];
-  let total = 0, complete = false;
+  let total = 0, complete3 = false;
   try {
     for (; ; ) {
       signal.throwIfAborted();
       const { done, value } = await reader.read();
       if (done) {
-        complete = true;
+        complete3 = true;
         break;
       }
       total += value.byteLength;
@@ -31388,7 +31043,7 @@ async function fetchImage(source, signal) {
       chunks.push(value);
     }
   } finally {
-    if (!complete) await reader.cancel().catch(() => {
+    if (!complete3) await reader.cancel().catch(() => {
     });
     reader.releaseLock();
   }
@@ -31446,7 +31101,7 @@ function createImagePool({ load = fetchImage, limits = IMAGE_LIMITS } = {}) {
       });
     }
   }
-  function acquire2(source, status) {
+  function acquire3(source, status) {
     if (closed || leases >= limits.visible) throw Error("IMAGE_VISIBLE_LIMIT");
     let entry = entries2.get(source);
     if (!entry) {
@@ -31482,7 +31137,7 @@ function createImagePool({ load = fetchImage, limits = IMAGE_LIMITS } = {}) {
       changed();
     } };
   }
-  return { acquire: acquire2, subscribe(fn) {
+  return { acquire: acquire3, subscribe(fn) {
     subscribers.add(fn);
     return () => subscribers.delete(fn);
   }, stats: () => ({ active, leases, entries: entries2.size, bytes }), dispose() {
@@ -31507,9 +31162,9 @@ function isDisplayed(element) {
   }
   return true;
 }
-function observeImages(root, { frame, pool = sharedPool(), onStatus = () => {
+function observeImages(root2, { frame, pool = sharedPool(), onStatus = () => {
 }, unavailable = "Image unavailable" } = {}) {
-  const doc = root.ownerDocument ?? root, records = /* @__PURE__ */ new Map(), backgrounds = /* @__PURE__ */ new WeakMap(), backgroundBindings = /* @__PURE__ */ new WeakMap(), observers = [], mutations = [], listeners = [];
+  const doc = root2.ownerDocument ?? root2, records = /* @__PURE__ */ new Map(), backgrounds = /* @__PURE__ */ new WeakMap(), backgroundBindings = /* @__PURE__ */ new WeakMap(), observers = [], mutations = [], listeners = [];
   let disposed = false, scheduled = false, observer, frameVisible = !frame;
   const elements = (scope) => [...scope === doc.body ? [doc.documentElement] : [], ...scope.nodeType === 1 ? [scope] : [], ...scope.querySelectorAll("*")];
   function painted(element, pseudo, style = doc.defaultView.getComputedStyle(element, pseudo || null), geometry = false) {
@@ -31670,7 +31325,7 @@ function observeImages(root, { frame, pool = sharedPool(), onStatus = () => {
     }
   }
   function roots() {
-    const found = [root];
+    const found = [root2];
     for (let i3 = 0; i3 < found.length; i3++) for (const el of found[i3].querySelectorAll("*")) if (el.shadowRoot) found.push(el.shadowRoot);
     return found;
   }
@@ -31772,7 +31427,7 @@ function observeImages(root, { frame, pool = sharedPool(), onStatus = () => {
       mutation.observe(scope, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: [IMAGE_SOURCE_ATTRIBUTE, "class", "style", "open", "hidden"] });
       mutations.push(mutation);
     }
-    if (root === doc.body) {
+    if (root2 === doc.body) {
       const mutation = new MutationObserver(refresh);
       mutation.observe(doc.documentElement, { attributes: true, attributeFilter: ["class", "style", "hidden"] });
       mutations.push(mutation);
@@ -31829,7 +31484,7 @@ var PHOTO_LIMITS = Object.freeze({ imageBytes: 8 * 1024 * 1024, pixels: 8 * 1024
 var TYPES = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp"]);
 var busy = false;
 var waiting = [];
-async function acquire(signal) {
+async function acquire2(signal) {
   signal.throwIfAborted();
   if (!busy) {
     busy = true;
@@ -31856,7 +31511,7 @@ function release() {
 }
 async function selectedPhoto(file, signal) {
   if (!file || !TYPES.has(file.type) || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > PHOTO_LIMITS.imageBytes) throw Error("PHOTO_FORMAT");
-  await acquire(signal);
+  await acquire2(signal);
   let bitmap;
   try {
     signal.throwIfAborted();
@@ -31909,9 +31564,9 @@ function commandHookDeclaration(source) {
     throw Object.assign(new Error("Command Helper must be a complete inline script"), { code: "MVU_COMMAND_HOOK_DECLARATION" });
   }
   let parsed = false, initialized = false;
-  const gates = /* @__PURE__ */ new Map(), reads = /* @__PURE__ */ new Map(), pending2 = [tree];
-  while (pending2.length) {
-    const node = pending2.pop();
+  const gates = /* @__PURE__ */ new Map(), reads = /* @__PURE__ */ new Map(), pending4 = [tree];
+  while (pending4.length) {
+    const node = pending4.pop();
     if (node.type === "MemberExpression" && !node.computed && node.property.name === "COMMAND_PARSED") parsed = true;
     if (node.type === "CallExpression" && node.callee.type === "Identifier" && node.callee.name === "eventOn" && node.arguments[0]?.value === "global_Mvu_initialized") initialized = true;
     if (node.type === "VariableDeclarator" && node.id.type === "Identifier" && node.init?.type === "MemberExpression" && node.init.object.name === "globalThis" && !node.init.computed) gates.set(node.id.name, node.init.property.name);
@@ -31921,9 +31576,9 @@ function commandHookDeclaration(source) {
     }
     for (const value of Object.values(node)) {
       if (Array.isArray(value)) for (const child of value) {
-        if (child?.type) pending2.push(child);
+        if (child?.type) pending4.push(child);
       }
-      else if (value?.type) pending2.push(value);
+      else if (value?.type) pending4.push(value);
     }
   }
   if (!parsed || !initialized) return null;
@@ -31943,10 +31598,10 @@ function validateInput(data3) {
     if (size2 > DEPENDENCY_LIMITS.bytes) throw Error("Card expanded input exceeds 24 MiB");
   };
   count(html2, 1024 * 1024);
-  for (const run of runs) {
-    if (!run || typeof run !== "object") throw Error("Invalid card run");
-    count(run.code, 8 * 1024 * 1024);
-    if (run.name !== void 0) count(run.name, 2048);
+  for (const run2 of runs) {
+    if (!run2 || typeof run2 !== "object") throw Error("Invalid card run");
+    count(run2.code, 8 * 1024 * 1024);
+    if (run2.name !== void 0) count(run2.name, 2048);
   }
   for (const [name2, code] of Object.entries(modules)) {
     count(name2, 2048);
@@ -32215,7 +31870,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
   }
   let disposed = false, startupTimer, busyTimer, lastWriteId = 0, lastMeasureId = 0, lastStorageId = 0, measurement = null, lastOpeningId = 0, opening = null, lastIdentityActionId = 0, identityAction = null;
   let lastActionId = 0, action = null;
-  const tasks = /* @__PURE__ */ new Map(), pending2 = /* @__PURE__ */ new Map();
+  const tasks = /* @__PURE__ */ new Map(), pending4 = /* @__PURE__ */ new Map();
   let lastPhotoPickId = 0;
   let controlSequence = 0, lastViewSequence = -1, lastViewString;
   const stop = () => {
@@ -32233,11 +31888,11 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       opening.controller.abort();
       opening = null;
     }
-    for (const item of pending2.values()) {
+    for (const item of pending4.values()) {
       clearTimeout(item.timer);
       item.controller.abort();
     }
-    pending2.clear();
+    pending4.clear();
     if (measurement) {
       clearTimeout(measurement.timer);
       measurement.controller.abort();
@@ -32485,7 +32140,7 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
     }
     if (message.kind === "write") {
       const value = message.value;
-      if (!value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastWriteId || pending2.size >= 32 || !["patch", "replace"].includes(value.operation) || !Number.isSafeInteger(value.observedRevision) || value.observedRevision < 0 || JSON.stringify(value).length > 128 * 1024) {
+      if (!value || !Number.isSafeInteger(value.requestId) || value.requestId <= lastWriteId || pending4.size >= 32 || !["patch", "replace"].includes(value.operation) || !Number.isSafeInteger(value.observedRevision) || value.observedRevision < 0 || JSON.stringify(value).length > 128 * 1024) {
         fail4("Invalid or duplicate variable write request");
         return;
       }
@@ -32495,21 +32150,21 @@ globalThis.__identityActionResult=(requestId,result)=>{const pending=__identityA
       const cause = task?.trusted === true && performance.now() - task.at < 1500 ? "user-interaction" : value.cause === "interval" ? "interval" : "script";
       const operationId = crypto.randomUUID(), controller2 = new AbortController();
       const item = { controller: controller2, operationId, timer: setTimeout(() => {
-        if (!pending2.has(value.requestId)) return;
+        if (!pending4.has(value.requestId)) return;
         fail4("Variable write outcome is unknown; inspect the operation receipt before retrying", operationId);
       }, 3e4) };
-      pending2.set(value.requestId, item);
+      pending4.set(value.requestId, item);
       Promise.resolve().then(() => {
-        if (disposed || !pending2.has(value.requestId)) return;
+        if (disposed || !pending4.has(value.requestId)) return;
         return onWrite({ operation: value.operation, value: value.value, options: value.options, cause, observedRevision: value.observedRevision, operationId, signal: controller2.signal });
       }).then((snapshot) => {
-        if (disposed || !pending2.has(value.requestId)) return;
-        pending2.delete(value.requestId);
+        if (disposed || !pending4.has(value.requestId)) return;
+        pending4.delete(value.requestId);
         clearTimeout(item.timer);
         replyWrite(value.requestId, { variables: snapshot.variables }, operationId);
       }, (error) => {
-        if (disposed || !pending2.has(value.requestId)) return;
-        pending2.delete(value.requestId);
+        if (disposed || !pending4.has(value.requestId)) return;
+        pending4.delete(value.requestId);
         clearTimeout(item.timer);
         replyWrite(value.requestId, { error: { message: String(error.message).slice(0, 300), code: error.code } }, operationId);
       });
@@ -33599,7 +33254,7 @@ var _resolveObjectOption = function _resolveObjectOption2(cfg, key2, makeFallbac
 };
 function createDOMPurify() {
   let window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
-  const DOMPurify = (root) => createDOMPurify(root);
+  const DOMPurify = (root2) => createDOMPurify(root2);
   DOMPurify.version = "3.4.17";
   DOMPurify.removed = [];
   if (!window2 || !window2.document || window2.document.nodeType !== NODE_TYPE.document || !window2.Element) {
@@ -34026,20 +33681,20 @@ function createDOMPurify() {
       }
     }
   };
-  const _neutralizeRoot = function _neutralizeRoot2(root) {
-    _neutralizeSubtree(root);
-    const childNodes = getChildNodes(root);
+  const _neutralizeRoot = function _neutralizeRoot2(root2) {
+    _neutralizeSubtree(root2);
+    const childNodes = getChildNodes(root2);
     if (childNodes) arrayForEach(arraySlice(childNodes), (child) => {
       try {
         remove(child);
       } catch (_2) {
       }
     });
-    const attributes = _readNodeType(root) === NODE_TYPE.element ? getAttributes(root) : null;
+    const attributes = _readNodeType(root2) === NODE_TYPE.element ? getAttributes(root2) : null;
     if (attributes) for (let i3 = attributes.length - 1; i3 >= 0; --i3) {
       const attribute = attributes[i3];
       const name2 = attribute && attribute.name;
-      if (typeof name2 === "string") _stripAttributeNode(root, attribute, name2);
+      if (typeof name2 === "string") _stripAttributeNode(root2, attribute, name2);
     }
   };
   const _removeAttribute = function _removeAttribute2(name2, element, attr) {
@@ -34082,9 +33737,9 @@ function createDOMPurify() {
       _stripAttributeNode(element, attribute, name2);
     }
   };
-  const _walkTree = function _walkTree2(root, visit3) {
+  const _walkTree = function _walkTree2(root2, visit3) {
     let intoShadow = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : false;
-    const stack = [root];
+    const stack = [root2];
     while (stack.length > 0) {
       const node = stack.pop();
       if (visit3(node) === false) continue;
@@ -34096,40 +33751,40 @@ function createDOMPurify() {
       if (childNodes) for (let i3 = childNodes.length - 1; i3 >= 0; --i3) stack.push(childNodes[i3]);
     }
   };
-  const _neutralizeSubtree = function _neutralizeSubtree2(root) {
-    _walkTree(root, (node) => {
+  const _neutralizeSubtree = function _neutralizeSubtree2(root2) {
+    _walkTree(root2, (node) => {
       if (_readNodeType(node) === NODE_TYPE.element) _stripDisallowedAttributes(node);
     });
   };
-  const _collectLiveNodes = function _collectLiveNodes2(root) {
+  const _collectLiveNodes = function _collectLiveNodes2(root2) {
     const nodes = [];
-    _walkTree(root, (node) => {
+    _walkTree(root2, (node) => {
       nodes.push(node);
     }, true);
     return nodes;
   };
-  const _neutralizeEscapedElements = function _neutralizeEscapedElements2(root, before) {
+  const _neutralizeEscapedElements = function _neutralizeEscapedElements2(root2, before) {
     const reachable = setCreate();
-    arrayForEach(_collectLiveNodes(root), (node) => {
+    arrayForEach(_collectLiveNodes(root2), (node) => {
       if (_readNodeType(node) === NODE_TYPE.element) setAdd(reachable, node);
     });
     arrayForEach(before, (node) => {
       if (_readNodeType(node) === NODE_TYPE.element && !setHas(reachable, node)) _stripDisallowedAttributes(node);
     });
   };
-  const _neutralizeDiscarded = function _neutralizeDiscarded2(root, before) {
+  const _neutralizeDiscarded = function _neutralizeDiscarded2(root2, before) {
     let rootRemoved = false;
     arrayForEach(DOMPurify.removed, (entry) => {
       if (entry.element) {
-        rootRemoved = rootRemoved || entry.element === root;
+        rootRemoved = rootRemoved || entry.element === root2;
         _neutralizeSubtree(entry.element);
       }
     });
-    _neutralizeEscapedElements(root, before);
+    _neutralizeEscapedElements(root2, before);
     return rootRemoved;
   };
   const MAX_UNVISITED_ROUNDS = 8;
-  const _sanitizeUnvisitedNodes = function _sanitizeUnvisitedNodes2(root, before) {
+  const _sanitizeUnvisitedNodes = function _sanitizeUnvisitedNodes2(root2, before) {
     const visited = IN_PLACE_VISITED;
     let original = null;
     const getOriginal = () => {
@@ -34142,28 +33797,28 @@ function createDOMPurify() {
       return original;
     };
     for (let round = 0; ; round++) {
-      const live = _collectLiveNodes(root);
-      const containers = [root];
-      let pending2 = false;
+      const live = _collectLiveNodes(root2);
+      const containers = [root2];
+      let pending4 = false;
       arrayForEach(live, (node) => {
         if (_readNodeType(node) === NODE_TYPE.documentFragment) arrayPush(containers, node);
-        else if (!pending2 && !setHas(visited, node)) pending2 = setHas(getOriginal(), node);
+        else if (!pending4 && !setHas(visited, node)) pending4 = setHas(getOriginal(), node);
       });
-      if (!pending2) return;
+      if (!pending4) return;
       if (round >= MAX_UNVISITED_ROUNDS) throw typeErrorCreate("the tree kept changing during in-place sanitization; refusing to return it");
       arrayForEach(containers, (container, index) => {
-        _sanitizeUnvisitedIn(container, index > 0, root, getOriginal());
+        _sanitizeUnvisitedIn(container, index > 0, root2, getOriginal());
       });
     }
   };
-  const _sanitizeUnvisitedIn = function _sanitizeUnvisitedIn2(container, inShadow, root, original) {
+  const _sanitizeUnvisitedIn = function _sanitizeUnvisitedIn2(container, inShadow, root2, original) {
     const iterator = _createNodeIterator(container);
     let node;
     while (node = iterator.nextNode()) {
       if (!setHas(original, node) || setHas(IN_PLACE_VISITED, node)) continue;
       if (inShadow) _executeHooks(hooks.uponSanitizeShadowNode, node, null);
-      _sanitizeElements(node, root);
-      _sanitizeAttributes(node, root);
+      _sanitizeElements(node, root2);
+      _sanitizeAttributes(node, root2);
       if (_isDocumentFragment(node.content)) _sanitizeShadowDOM2(node.content);
     }
   };
@@ -34175,9 +33830,9 @@ function createDOMPurify() {
     if (lcName === "patchsrc") return true;
     return lcName === "for" && lcTag !== "label" && lcTag !== "output";
   };
-  const _neutralizePatchLinkage = function _neutralizePatchLinkage2(root) {
+  const _neutralizePatchLinkage = function _neutralizePatchLinkage2(root2) {
     if (!SAFE_FOR_XML) return;
-    _walkTree(root, (node) => {
+    _walkTree(root2, (node) => {
       const nodeType = _readNodeType(node);
       if (nodeType === NODE_TYPE.processingInstruction || nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, node.data)) {
         try {
@@ -34224,9 +33879,9 @@ function createDOMPurify() {
     if (NAMESPACE === HTML_NAMESPACE) return getElementsByTagName.call(doc, WHOLE_DOCUMENT ? "html" : "body")[0];
     return WHOLE_DOCUMENT ? doc.documentElement : body2;
   };
-  const _createNodeIterator = function _createNodeIterator2(root) {
-    const doc = getOwnerDocument ? getOwnerDocument(root) : root.ownerDocument;
-    return createNodeIterator.call(doc || root, root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_TEXT | NodeFilter.SHOW_PROCESSING_INSTRUCTION | NodeFilter.SHOW_CDATA_SECTION, null);
+  const _createNodeIterator = function _createNodeIterator2(root2) {
+    const doc = getOwnerDocument ? getOwnerDocument(root2) : root2.ownerDocument;
+    return createNodeIterator.call(doc || root2, root2, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_TEXT | NodeFilter.SHOW_PROCESSING_INSTRUCTION | NodeFilter.SHOW_CDATA_SECTION, null);
   };
   const _stripTemplateExpressions = function _stripTemplateExpressions2(value) {
     value = stringReplace(value, MUSTACHE_EXPR$1, " ");
@@ -34295,7 +33950,7 @@ function createDOMPurify() {
     }
     return false;
   };
-  const _sanitizeDisallowedNode = function _sanitizeDisallowedNode2(currentNode, tagName, root) {
+  const _sanitizeDisallowedNode = function _sanitizeDisallowedNode2(currentNode, tagName, root2) {
     if (!FORBID_TAGS[tagName] && _isBasicCustomElement(tagName) && _matchesNameCheck(CUSTOM_ELEMENT_HANDLING.tagNameCheck, tagName)) return false;
     if (KEEP_CONTENT && !FORBID_CONTENTS[tagName] && !FORBID_CONTENTS[stringToLowerCase(tagName)]) {
       const parentNode = getParentNode(currentNode);
@@ -34303,7 +33958,7 @@ function createDOMPurify() {
       if (childNodes && parentNode) {
         const childCount = childNodes.length;
         for (let i3 = childCount - 1; i3 >= 0; --i3) {
-          const hoisted = currentNode === root ? cloneNode(childNodes[i3], true) : childNodes[i3];
+          const hoisted = currentNode === root2 ? cloneNode(childNodes[i3], true) : childNodes[i3];
           parentNode.insertBefore(hoisted, getNextSibling(currentNode));
         }
       }
@@ -34315,15 +33970,15 @@ function createDOMPurify() {
     if (hookList.length === 0) return set2;
     return set2 === defaultSet || set2 === setConfigSet ? clone(set2) : set2;
   };
-  const _handleHookDetachedNode = function _handleHookDetachedNode2(currentNode, root) {
-    if (currentNode === root || getParentNode(currentNode) !== null) return false;
+  const _handleHookDetachedNode = function _handleHookDetachedNode2(currentNode, root2) {
+    if (currentNode === root2 || getParentNode(currentNode) !== null) return false;
     if (IN_PLACE) _neutralizeSubtree(currentNode);
     return true;
   };
-  const _sanitizeElements = function _sanitizeElements2(currentNode, root) {
+  const _sanitizeElements = function _sanitizeElements2(currentNode, root2) {
     _markVisited(currentNode);
     _executeHooks(hooks.beforeSanitizeElements, currentNode, null);
-    if (_handleHookDetachedNode(currentNode, root)) return true;
+    if (_handleHookDetachedNode(currentNode, root2)) return true;
     if (_isClobbered(currentNode)) {
       _forceRemove(currentNode);
       return true;
@@ -34334,16 +33989,16 @@ function createDOMPurify() {
       tagName,
       allowedTags: ALLOWED_TAGS
     });
-    if (_handleHookDetachedNode(currentNode, root)) return true;
+    if (_handleHookDetachedNode(currentNode, root2)) return true;
     if (_isUnsafeNode(currentNode, tagName)) {
       _forceRemove(currentNode);
       return true;
     }
     if (FORBID_TAGS[tagName] || !(EXTRA_ELEMENT_HANDLING.tagCheck instanceof Function && EXTRA_ELEMENT_HANDLING.tagCheck(tagName)) && !ALLOWED_TAGS[tagName]) {
-      const removed = _sanitizeDisallowedNode(currentNode, tagName, root);
+      const removed = _sanitizeDisallowedNode(currentNode, tagName, root2);
       if (removed === false) {
         _executeHooks(hooks.afterSanitizeElements, currentNode, null);
-        if (_handleHookDetachedNode(currentNode, root)) return true;
+        if (_handleHookDetachedNode(currentNode, root2)) return true;
       }
       return removed;
     }
@@ -34363,7 +34018,7 @@ function createDOMPurify() {
       }
     }
     _executeHooks(hooks.afterSanitizeElements, currentNode, null);
-    return _handleHookDetachedNode(currentNode, root);
+    return _handleHookDetachedNode(currentNode, root2);
   };
   const _isValidAttribute = function _isValidAttribute2(lcTag, lcName, value) {
     if (FORBID_ATTR[lcName]) return false;
@@ -34419,9 +34074,9 @@ function createDOMPurify() {
     if (SAFE_FOR_XML && regExpTest(/((--!?|])>)|<\/(style|script|title|xmp|textarea|noscript|iframe|noembed|noframes)/i, value)) return true;
     return stringToLowerCase(name2) === "attributename" && stringMatch(value, "href") !== null;
   };
-  const _sanitizeAttributes = function _sanitizeAttributes2(currentNode, root) {
+  const _sanitizeAttributes = function _sanitizeAttributes2(currentNode, root2) {
     _executeHooks(hooks.beforeSanitizeAttributes, currentNode, null);
-    if (_handleHookDetachedNode(currentNode, root)) return;
+    if (_handleHookDetachedNode(currentNode, root2)) return;
     const attributes = currentNode.attributes;
     if (!attributes || _isClobbered(currentNode)) return;
     ALLOWED_ATTR = _forkSharedAllowlist(hooks.uponSanitizeAttribute, ALLOWED_ATTR, DEFAULT_ALLOWED_ATTR, SET_CONFIG_ALLOWED_ATTR);
@@ -34476,7 +34131,7 @@ function createDOMPurify() {
       }
     }
     _executeHooks(hooks.afterSanitizeAttributes, currentNode, null);
-    _handleHookDetachedNode(currentNode, root);
+    _handleHookDetachedNode(currentNode, root2);
   };
   const _sanitizeShadowDOM2 = function _sanitizeShadowDOM(fragment) {
     let shadowNode = null;
@@ -34498,9 +34153,9 @@ function createDOMPurify() {
     if (SAFE_FOR_TEMPLATES) _scrubOwnCharacterData(fragment);
     _executeHooks(hooks.afterSanitizeShadowDOM, fragment, null);
   };
-  const _sanitizeAttachedShadowRoots = function _sanitizeAttachedShadowRoots2(root) {
+  const _sanitizeAttachedShadowRoots = function _sanitizeAttachedShadowRoots2(root2) {
     const stack = [{
-      node: root,
+      node: root2,
       shadow: null
     }];
     while (stack.length > 0) {
@@ -34783,10 +34438,10 @@ function adaptDocumentCss(css14) {
     if (parentheses || brackets) continue;
     const frame = frames.at(-1);
     if (char === "{") {
-      const start = frame.rules ? skipCssTrivia(css14, frame.start, i3) : i3;
-      const prefix = css14.slice(start, Math.min(start + 20, i3));
-      const root = prefix.match(/^(?:html|body|:root)\b/i)?.[0];
-      if (root && skipCssTrivia(css14, start + root.length, i3) === i3) {
+      const start2 = frame.rules ? skipCssTrivia(css14, frame.start, i3) : i3;
+      const prefix = css14.slice(start2, Math.min(start2 + 20, i3));
+      const root2 = prefix.match(/^(?:html|body|:root)\b/i)?.[0];
+      if (root2 && skipCssTrivia(css14, start2 + root2.length, i3) === i3) {
         parts.push(css14.slice(copied, frame.start), ":host");
         copied = i3;
       }
@@ -34811,10 +34466,10 @@ function mountStyledHtml(element) {
   if (!element) return;
   for (const template of element.querySelectorAll("template[data-dtv-style-root]")) {
     const host = template.parentElement;
-    const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    root.replaceChildren(template.content);
+    const root2 = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+    root2.replaceChildren(template.content);
     template.remove();
-    mountStyledHtml(root);
+    mountStyledHtml(root2);
   }
 }
 
@@ -34823,24 +34478,24 @@ var ParseError = class _ParseError extends Error {
   // The underlying error message without any context added.
   constructor(message, token) {
     var error = "KaTeX parse error: " + message;
-    var start;
+    var start2;
     var end;
     var loc = token && token.loc;
     if (loc && loc.start <= loc.end) {
       var input = loc.lexer.input;
-      start = loc.start;
+      start2 = loc.start;
       end = loc.end;
-      if (start === input.length) {
+      if (start2 === input.length) {
         error += " at end of input: ";
       } else {
-        error += " at position " + (start + 1) + ": ";
+        error += " at position " + (start2 + 1) + ": ";
       }
-      var underlined = input.slice(start, end).replace(/[^]/g, "$&\u0332");
+      var underlined = input.slice(start2, end).replace(/[^]/g, "$&\u0332");
       var left;
-      if (start > 15) {
-        left = "\u2026" + input.slice(start - 15, start);
+      if (start2 > 15) {
+        left = "\u2026" + input.slice(start2 - 15, start2);
       } else {
-        left = input.slice(0, start);
+        left = input.slice(0, start2);
       }
       var right;
       if (end + 15 < input.length) {
@@ -34856,9 +34511,9 @@ var ParseError = class _ParseError extends Error {
     this.length = void 0;
     this.rawMessage = void 0;
     Object.setPrototypeOf(this, _ParseError.prototype);
-    this.position = start;
-    if (start != null && end != null) {
-      this.length = end - start;
+    this.position = start2;
+    if (start2 != null && end != null) {
+      this.length = end - start2;
     }
     this.rawMessage = message;
   }
@@ -38165,14 +37820,14 @@ var extraCharacterMap = {
 function setFontMetrics(fontName, metrics) {
   fontMetricsData[fontName] = metrics;
 }
-function getCharacterMetrics(character, font, mode) {
+function getCharacterMetrics(character2, font, mode) {
   if (!fontMetricsData[font]) {
     throw new Error("Font metrics not found for font: " + font + ".");
   }
-  var ch2 = character.charCodeAt(0);
+  var ch2 = character2.charCodeAt(0);
   var metrics = fontMetricsData[font][ch2];
-  if (!metrics && character[0] in extraCharacterMap) {
-    ch2 = extraCharacterMap[character[0]].charCodeAt(0);
+  if (!metrics && character2[0] in extraCharacterMap) {
+    ch2 = extraCharacterMap[character2[0]].charCodeAt(0);
     metrics = fontMetricsData[font][ch2];
   }
   if (!metrics && mode === "text") {
@@ -39274,9 +38929,9 @@ var makeLineSpan = function makeLineSpan2(className, options, thickness) {
   return line;
 };
 var makeAnchor = function makeAnchor2(href, classes, children, options) {
-  var anchor = new Anchor(href, classes, children, options);
-  sizeElementFromChildren(anchor);
-  return anchor;
+  var anchor2 = new Anchor(href, classes, children, options);
+  sizeElementFromChildren(anchor2);
+  return anchor2;
 };
 var makeFragment = function makeFragment2(children) {
   var fragment = new DocumentFragment(children);
@@ -42202,8 +41857,8 @@ var delimTypeToFont = function delimTypeToFont2(type) {
   }
 };
 var traverseSequence = function traverseSequence2(delim, height, sequence, options) {
-  var start = Math.min(2, 3 - options.style.size);
-  for (var i3 = start; i3 < sequence.length; i3++) {
+  var start2 = Math.min(2, 3 - options.style.size);
+  for (var i3 = start2; i3 < sequence.length; i3++) {
     var delimType = sequence[i3];
     if (delimType.type === "stack") {
       break;
@@ -42837,12 +42492,12 @@ function defineMacro(name2, body2) {
 }
 var SourceLocation3 = class _SourceLocation {
   // End offset, zero-based exclusive.
-  constructor(lexer, start, end) {
+  constructor(lexer, start2, end) {
     this.lexer = void 0;
     this.start = void 0;
     this.end = void 0;
     this.lexer = lexer;
-    this.start = start;
+    this.start = start2;
     this.end = end;
   }
   /**
@@ -47147,7 +46802,7 @@ var MacroExpander = class {
    * tokens to the token stack. Uses Token as a container for the result.
    */
   scanArgument(isOptional) {
-    var start;
+    var start2;
     var end;
     var tokens;
     if (isOptional) {
@@ -47155,19 +46810,19 @@ var MacroExpander = class {
       if (this.future().text !== "[") {
         return null;
       }
-      start = this.popToken();
+      start2 = this.popToken();
       var _this$consumeArg = this.consumeArg(["]"]);
       tokens = _this$consumeArg.tokens;
       end = _this$consumeArg.end;
     } else {
       var _this$consumeArg2 = this.consumeArg();
       tokens = _this$consumeArg2.tokens;
-      start = _this$consumeArg2.start;
+      start2 = _this$consumeArg2.start;
       end = _this$consumeArg2.end;
     }
     this.pushToken(new Token3("EOF", end.loc));
     this.pushTokens(tokens);
-    return new Token3("", SourceLocation3.range(start, end));
+    return new Token3("", SourceLocation3.range(start2, end));
   }
   /**
    * Consume all following space tokens, without expansion.
@@ -47192,7 +46847,7 @@ var MacroExpander = class {
     if (!isDelimited) {
       this.consumeSpaces();
     }
-    var start = this.future();
+    var start2 = this.future();
     var tok;
     var depth = 0;
     var match = 0;
@@ -47221,14 +46876,14 @@ var MacroExpander = class {
         }
       }
     } while (depth !== 0 || isDelimited);
-    if (start.text === "{" && tokens[tokens.length - 1].text === "}") {
+    if (start2.text === "{" && tokens[tokens.length - 1].text === "}") {
       tokens.pop();
       tokens.shift();
     }
     tokens.reverse();
     return {
       tokens,
-      start,
+      start: start2,
       end: tok
     };
   }
@@ -49045,11 +48700,11 @@ function withoutHtmlComments(html2) {
   const parts = [];
   let offset2 = 0;
   for (; ; ) {
-    const start = html2.indexOf("<!--", offset2);
-    if (start < 0) break;
-    const end = html2.indexOf("-->", start + 4);
+    const start2 = html2.indexOf("<!--", offset2);
+    if (start2 < 0) break;
+    const end = html2.indexOf("-->", start2 + 4);
     if (end < 0) break;
-    parts.push(html2.slice(offset2, start));
+    parts.push(html2.slice(offset2, start2));
     offset2 = end + 3;
   }
   parts.push(html2.slice(offset2));
@@ -49087,15 +48742,15 @@ markdownConverter.use({ extensions: [{
     const tokens = /<!--[\s\S]*?-->|<(pre|code|script|style|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>|^ {0,3}(`{3,}|~{3,})[^\n]*|(`+)[\s\S]*?\3|<\/?[a-z][a-z0-9:-]*(?:[^"'<>]|"[^"]*"|'[^']*')*>/gim;
     tokens.lastIndex = opening[0].length;
     let depth = 1;
-    let fence = null;
+    let fence2 = null;
     let end = source.length;
     let bodyEnd = end;
     for (let match; match = tokens.exec(source); ) {
       if (match[2]) {
         const marker = match[2];
-        if (!fence) fence = marker;
-        else if (marker[0] === fence[0] && marker.length >= fence.length && match[0].trim() === marker) fence = null;
-      } else if (!fence && /^<\/?details(?=[\s>])/i.test(match[0])) {
+        if (!fence2) fence2 = marker;
+        else if (marker[0] === fence2[0] && marker.length >= fence2.length && match[0].trim() === marker) fence2 = null;
+      } else if (!fence2 && /^<\/?details(?=[\s>])/i.test(match[0])) {
         depth += /^<\//.test(match[0]) ? -1 : 1;
         if (depth === 0) {
           bodyEnd = match.index;
@@ -49139,18 +48794,18 @@ function normalizeStQuotedFences(source) {
 }
 function protectStandaloneWrapperTags(source) {
   const wrappers = [];
-  let fence = null;
+  let fence2 = null;
   let prefix = "DSHTAVERNWRAPPER";
   while (source.includes(prefix)) prefix += "X";
   const text3 = source.split("\n").map((line) => {
     const fenceMatch = line.match(FENCE_MARKER);
     if (fenceMatch) {
       const marker = fenceMatch[1];
-      if (!fence) fence = marker;
-      else if (marker[0] === fence[0] && marker.length >= fence.length && line.trim() === marker) fence = null;
+      if (!fence2) fence2 = marker;
+      else if (marker[0] === fence2[0] && marker.length >= fence2.length && line.trim() === marker) fence2 = null;
       return line;
     }
-    if (fence) return line;
+    if (fence2) return line;
     const tagMatch = line.match(STANDALONE_WRAPPER_TAG);
     if (!tagMatch) return line;
     const tagName = tagMatch[1].match(/^<\/?([^\s/>]+)/)?.[1].toLowerCase();
@@ -49582,13 +49237,13 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
   const identity = Object.freeze(clone2(sourceIdentity)), controller2 = new AbortController();
   signal?.addEventListener("abort", () => controller2.abort(), { once: true });
   if (signal?.aborted) controller2.abort();
-  let pending2, disposed = false;
+  let pending4, disposed = false;
   const current4 = () => {
     if (disposed || controller2.signal.aborted) throw Error("Opening card generation expired");
   };
   const currentTicket = (ticket) => {
     current4();
-    if (pending2 !== ticket) throw Error("Opening selection cancelled");
+    if (pending4 !== ticket) throw Error("Opening selection cancelled");
   };
   const post = async (operation, body2) => {
     current4();
@@ -49601,8 +49256,8 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
     return value;
   };
   const end = (ticket, error, result) => {
-    if (pending2 !== ticket) return;
-    pending2 = null;
+    if (pending4 !== ticket) return;
+    pending4 = null;
     onProposal(null);
     if (error) ticket.reject(error);
     else ticket.resolve(result);
@@ -49610,9 +49265,9 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
   return Object.freeze({
     async request(openingId) {
       current4();
-      if (!OPENING_IDS.includes(openingId) || pending2) throw Error("Invalid or pending opening selection");
+      if (!OPENING_IDS.includes(openingId) || pending4) throw Error("Invalid or pending opening selection");
       const ticket = { openingId };
-      pending2 = ticket;
+      pending4 = ticket;
       try {
         onProgress("preparing");
         const source = counts[openingId] === 0 ? void 0 : await loadSource({ signal: controller2.signal, onProgress });
@@ -49621,7 +49276,7 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
         currentTicket(ticket);
         if (!sameIdentity(proposal.sourceIdentity, identity) || proposal.openingId !== openingId || proposal.entryCount !== counts[openingId] || !Array.isArray(proposal.entries) || proposal.entries.length !== proposal.entryCount || !Number.isSafeInteger(proposal.expectedRevision) || proposal.expectedRevision < 0 || typeof proposal.proposalId !== "string" || !proposal.proposalId || proposal.proposalId.length > 200 || !/^[a-f0-9]{64}$/.test(proposal.entriesHash) || sourceSha256(JSON.stringify(proposal.entries)) !== proposal.entriesHash || !Number.isFinite(proposal.expiresAt) || proposal.expiresAt <= Date.now()) throw Error("Opening proposal does not match this selection");
         if (!proposal.entryCount) {
-          pending2 = null;
+          pending4 = null;
           onProgress("");
           return { ok: true, skipped: true, inserted: 0, existing: 0, updated: 0, method: "empty-selection" };
         }
@@ -49634,8 +49289,8 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
           onProposal({ ...clone2(proposal), operationId: ticket.operationId, error: "", busy: false });
         });
       } catch (error) {
-        if (pending2 === ticket) {
-          pending2 = null;
+        if (pending4 === ticket) {
+          pending4 = null;
           onProposal(null);
           onProgress("");
         }
@@ -49644,7 +49299,7 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
     },
     async confirm(proposalId, { trusted = false } = {}) {
       current4();
-      const ticket = pending2;
+      const ticket = pending4;
       if (trusted !== true || !ticket?.proposal || ticket.proposal.proposalId !== proposalId || ticket.busy) throw Error("Opening write requires its trusted confirmation button");
       if (ticket.proposal.expiresAt <= Date.now()) {
         end(ticket, Error("Opening proposal expired"));
@@ -49658,17 +49313,17 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
         current4();
         end(ticket, null, receipt);
       } catch (error) {
-        if (!disposed && pending2 === ticket && !controller2.signal.aborted) {
+        if (!disposed && pending4 === ticket && !controller2.signal.aborted) {
           ticket.busy = false;
           onProposal({ ...clone2(ticket.proposal), operationId: ticket.operationId, error: error.message, busy: false });
         }
       }
     },
     cancel() {
-      const ticket = pending2;
+      const ticket = pending4;
       if (ticket?.reject) end(ticket, Error("Opening world-book confirmation cancelled"));
       else if (ticket) {
-        pending2 = null;
+        pending4 = null;
         onProposal(null);
         onProgress("");
       }
@@ -49677,9 +49332,9 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
       if (disposed) return;
       disposed = true;
       controller2.abort();
-      const ticket = pending2;
+      const ticket = pending4;
       if (ticket?.reject) end(ticket, Error("Opening card generation expired"));
-      else pending2 = null;
+      else pending4 = null;
     }
   });
 }
@@ -49687,7 +49342,7 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
 // packages/client/src/play/identity-action-model.js
 var names = ["defaultCrimeRecord", "defaultFemaleSensitivity", "openingBaselineItems", "emptyProfileExtras", "openingRoleSeed", "openingRoleTemplates", "setRoleState", "setPoolRoleAppearance", "applyOpeningStateToRoot", "openingPromptBlock", "openingSceneInstruction", "buildOpeningPrompt"];
 var plain = (value) => !!value && typeof value === "object" && !Array.isArray(value);
-var returned = /* @__PURE__ */ Symbol("return");
+var returned2 = /* @__PURE__ */ Symbol("return");
 var continued = /* @__PURE__ */ Symbol("continue");
 var walk = (node, visit3) => {
   if (!node || typeof node !== "object") return;
@@ -49716,7 +49371,7 @@ function createFixedIdentityActionModel(source) {
   const tick = () => {
     if (--fuel < 0 || depth > 32) throw Error("Identity transformation limit exceeded");
   };
-  const call = (name2, args) => {
+  const call2 = (name2, args) => {
     tick();
     if (name2 === "String") return String(args[0]);
     if (name2 === "isPlainObject") return plain(args[0]);
@@ -49736,7 +49391,7 @@ function createFixedIdentityActionModel(source) {
     depth++;
     try {
       const result = statement(fn.body, env);
-      return result?.[returned];
+      return result?.[returned2];
     } finally {
       depth--;
     }
@@ -49807,7 +49462,7 @@ function createFixedIdentityActionModel(source) {
       }
       case "CallExpression": {
         const args = node.arguments.map((item) => expression2(item, env));
-        if (node.callee.type === "Identifier") return call(node.callee.name, args);
+        if (node.callee.type === "Identifier") return call2(node.callee.name, args);
         if (path2(node.callee) === "Object.entries") {
           if (!plain(args[0])) throw Error("Invalid identity entries");
           return Object.entries(args[0]);
@@ -49829,11 +49484,11 @@ function createFixedIdentityActionModel(source) {
       case "BlockStatement":
         for (const item of node.body) {
           const result = statement(item, env);
-          if (result === continued || result && Object.hasOwn(result, returned)) return result;
+          if (result === continued || result && Object.hasOwn(result, returned2)) return result;
         }
         return;
       case "ReturnStatement":
-        return { [returned]: node.argument ? expression2(node.argument, env) : void 0 };
+        return { [returned2]: node.argument ? expression2(node.argument, env) : void 0 };
       case "ExpressionStatement":
         expression2(node.expression, env);
         return;
@@ -49862,7 +49517,7 @@ function createFixedIdentityActionModel(source) {
           });
           else throw Error("Unsupported identity loop binding");
           const result = statement(node.body, local);
-          if (result && result !== continued && Object.hasOwn(result, returned)) return result;
+          if (result && result !== continued && Object.hasOwn(result, returned2)) return result;
         }
         return;
       }
@@ -49872,18 +49527,18 @@ function createFixedIdentityActionModel(source) {
   fuel = 2e4;
   values = /* @__PURE__ */ Object.create(null);
   for (const [key2, node] of Object.entries(constants)) values[key2] = expression2(node, values);
-  const run = (name2, args) => {
+  const run2 = (name2, args) => {
     fuel = 2e4;
     depth = 0;
-    return call(name2, args);
+    return call2(name2, args);
   };
   if (values.OPENING_CHOICES.map((item) => item.id).join(",") !== "default,police_done,hospital_done,alisa_party,pool" || values.OPENING_PERKS.map((item) => item.id).join(",") !== "scholarship,lucky-user,yamane-huge") throw Error("Identity choices changed");
-  return Object.freeze({ choices: json(values.OPENING_CHOICES), perks: json(values.OPENING_PERKS), initialRoles: json(values.INITIAL_ROLE_NAMES), apply(root, identity) {
-    const copy2 = json(root);
-    run("applyOpeningStateToRoot", [copy2, json(identity)]);
+  return Object.freeze({ choices: json(values.OPENING_CHOICES), perks: json(values.OPENING_PERKS), initialRoles: json(values.INITIAL_ROLE_NAMES), apply(root2, identity) {
+    const copy2 = json(root2);
+    run2("applyOpeningStateToRoot", [copy2, json(identity)]);
     return json(copy2);
   }, message(identity) {
-    const result = run("buildOpeningPrompt", [json(identity)]);
+    const result = run2("buildOpeningPrompt", [json(identity)]);
     if (typeof result !== "string" || result.length > 4e3) throw Error("Identity message exceeds limit");
     return result;
   } });
@@ -50242,9 +49897,9 @@ Directives.defaultYaml = { explicit: false, version: "1.2" };
 Directives.defaultTags = { "!!": "tag:yaml.org,2002:" };
 
 // node_modules/yaml/browser/dist/doc/anchors.js
-function anchorIsValid(anchor) {
-  if (/[\x00-\x19\s,[\]{}]/.test(anchor)) {
-    const sa = JSON.stringify(anchor);
+function anchorIsValid(anchor2) {
+  if (/[\x00-\x19\s,[\]{}]/.test(anchor2)) {
+    const sa = JSON.stringify(anchor2);
     const msg = `Anchor must not contain whitespace or control characters: ${sa}`;
     throw new Error(msg);
   }
@@ -50439,8 +50094,8 @@ var Alias = class extends NodeBase {
 function getAliasCount(doc, node, anchors) {
   if (isAlias(node)) {
     const source = node.resolve(doc);
-    const anchor = anchors && source && anchors.get(source);
-    return anchor ? anchor.count * anchor.aliasCount : 0;
+    const anchor2 = anchors && source && anchors.get(source);
+    return anchor2 ? anchor2.count * anchor2.aliasCount : 0;
   } else if (isCollection(node)) {
     let count = 0;
     for (const item of node.items) {
@@ -50794,18 +50449,18 @@ ${indent}${text3.slice(fold + 1, end2)}`;
 }
 function consumeMoreIndentedLines(text3, i3, indent) {
   let end = i3;
-  let start = i3 + 1;
-  let ch2 = text3[start];
+  let start2 = i3 + 1;
+  let ch2 = text3[start2];
   while (ch2 === " " || ch2 === "	") {
-    if (i3 < start + indent) {
+    if (i3 < start2 + indent) {
       ch2 = text3[++i3];
     } else {
       do {
         ch2 = text3[++i3];
       } while (ch2 && ch2 !== "\n");
       end = i3;
-      start = i3 + 1;
-      ch2 = text3[start];
+      start2 = i3 + 1;
+      ch2 = text3[start2];
     }
   }
   return end;
@@ -50825,12 +50480,12 @@ function lineLengthOverLimit(str, lineWidth, indentLength) {
   const strLen = str.length;
   if (strLen <= limit2)
     return false;
-  for (let i3 = 0, start = 0; i3 < strLen; ++i3) {
+  for (let i3 = 0, start2 = 0; i3 < strLen; ++i3) {
     if (str[i3] === "\n") {
-      if (i3 - start > limit2)
+      if (i3 - start2 > limit2)
         return true;
-      start = i3 + 1;
-      if (strLen - start <= limit2)
+      start2 = i3 + 1;
+      if (strLen - start2 <= limit2)
         return false;
     }
   }
@@ -50844,19 +50499,19 @@ function doubleQuotedString(value, ctx) {
   const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
   const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
   let str = "";
-  let start = 0;
+  let start2 = 0;
   for (let i3 = 0, ch2 = json2[i3]; ch2; ch2 = json2[++i3]) {
     if (ch2 === " " && json2[i3 + 1] === "\\" && json2[i3 + 2] === "n") {
-      str += json2.slice(start, i3) + "\\ ";
+      str += json2.slice(start2, i3) + "\\ ";
       i3 += 1;
-      start = i3;
+      start2 = i3;
       ch2 = "\\";
     }
     if (ch2 === "\\")
       switch (json2[i3 + 1]) {
         case "u":
           {
-            str += json2.slice(start, i3);
+            str += json2.slice(start2, i3);
             const code = json2.substr(i3 + 2, 4);
             switch (code) {
               case "0000":
@@ -50890,14 +50545,14 @@ function doubleQuotedString(value, ctx) {
                   str += json2.substr(i3, 6);
             }
             i3 += 5;
-            start = i3 + 1;
+            start2 = i3 + 1;
           }
           break;
         case "n":
           if (implicitKey || json2[i3 + 2] === '"' || json2.length < minMultiLineLength) {
             i3 += 1;
           } else {
-            str += json2.slice(start, i3) + "\n\n";
+            str += json2.slice(start2, i3) + "\n\n";
             while (json2[i3 + 2] === "\\" && json2[i3 + 3] === "n" && json2[i3 + 4] !== '"') {
               str += "\n";
               i3 += 2;
@@ -50906,14 +50561,14 @@ function doubleQuotedString(value, ctx) {
             if (json2[i3 + 2] === " ")
               str += "\\";
             i3 += 1;
-            start = i3 + 1;
+            start2 = i3 + 1;
           }
           break;
         default:
           i3 += 1;
       }
   }
-  str = start ? str + json2.slice(start) : json2;
+  str = start2 ? str + json2.slice(start2) : json2;
   return implicitKey ? str : foldFlowLines(str, indent, FOLD_QUOTED, getFoldOptions(ctx, false));
 }
 function singleQuotedString(value, ctx) {
@@ -50992,10 +50647,10 @@ function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
     else
       break;
   }
-  let start = value.substring(0, startNlPos < startEnd ? startNlPos + 1 : startEnd);
-  if (start) {
-    value = value.substring(start.length);
-    start = start.replace(/\n+/g, `$&${indent}`);
+  let start2 = value.substring(0, startNlPos < startEnd ? startNlPos + 1 : startEnd);
+  if (start2) {
+    value = value.substring(start2.length);
+    start2 = start2.replace(/\n+/g, `$&${indent}`);
   }
   const indentSize = indent ? "2" : "1";
   let header = (startWithSpace ? indentSize : "") + chomp;
@@ -51013,14 +50668,14 @@ function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
         literalFallback = true;
       };
     }
-    const body2 = foldFlowLines(`${start}${foldedValue}${end}`, indent, FOLD_BLOCK, foldOptions);
+    const body2 = foldFlowLines(`${start2}${foldedValue}${end}`, indent, FOLD_BLOCK, foldOptions);
     if (!literalFallback)
       return `>${header}
 ${indent}${body2}`;
   }
   value = value.replace(/\n+/g, `$&${indent}`);
   return `|${header}
-${indent}${start}${value}${end}`;
+${indent}${start2}${value}${end}`;
 }
 function plainString(item, ctx, onComment, onChompKeep) {
   const { type, value } = item;
@@ -51160,10 +50815,10 @@ function stringifyProps(node, tagObj, { anchors, doc }) {
   if (!doc.directives)
     return "";
   const props = [];
-  const anchor = (isScalar(node) || isCollection(node)) && node.anchor;
-  if (anchor && anchorIsValid(anchor)) {
-    anchors.add(anchor);
-    props.push(`&${anchor}`);
+  const anchor2 = (isScalar(node) || isCollection(node)) && node.anchor;
+  if (anchor2 && anchorIsValid(anchor2)) {
+    anchors.add(anchor2);
+    props.push(`&${anchor2}`);
   }
   const tag = node.tag ?? (tagObj.default ? null : tagObj.tag);
   if (tag)
@@ -51574,23 +51229,23 @@ function stringifyFlowCollection({ items: items2 }, ctx, { flowChars, itemIndent
     lines.push(str);
     linesAtValue = lines.length;
   }
-  const { start, end } = flowChars;
+  const { start: start2, end } = flowChars;
   if (lines.length === 0) {
-    return start + end;
+    return start2 + end;
   } else {
     if (!reqNewline) {
       const len = lines.reduce((sum, line) => sum + line.length + 2, 2);
       reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
     }
     if (reqNewline) {
-      let str = start;
+      let str = start2;
       for (const line of lines)
         str += line ? `
 ${indentStep}${indent}${line}` : "\n";
       return `${str}
 ${indent}${end}`;
     } else {
-      return `${start}${fcPadding}${lines.join(" ")}${fcPadding}${end}`;
+      return `${start2}${fcPadding}${lines.join(" ")}${fcPadding}${end}`;
     }
   }
 }
@@ -52070,7 +51725,7 @@ function parseSexagesimal(str, asBigInt) {
   const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
   return sign === "-" ? num(-1) * res : res;
 }
-var timestamp2 = {
+var timestamp = {
   identify: (value) => value instanceof Date,
   default: true,
   tag: "tag:yaml.org,2002:timestamp",
@@ -52079,7 +51734,7 @@ var timestamp2 = {
   // assumed to be 00:00:00Z (start of day, UTC).
   test: RegExp("^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:(?:t|T|[ \\t]+)([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?)?$"),
   resolve(str) {
-    const match = str.match(timestamp2.test);
+    const match = str.match(timestamp.test);
     if (!match)
       throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
     const [, year, month, day, hour, minute, second] = match.map(Number);
@@ -52270,10 +51925,10 @@ function prepareIdentityAction(packet, snapshot, model) {
   } else if (Object.hasOwn(identity, "\u5F00\u573A\u9009\u9879") || Object.hasOwn(identity, "\u5F00\u573A\u9009\u9879\u8BF4\u660E")) throw Error("Unexpected identity perks");
   if (!plain2(baseline.stat_data?.["\u89D2\u8272"]) || model.initialRoles.some((name2) => !plain2(baseline.stat_data["\u89D2\u8272"][name2]))) throw Error("Identity initial roles unavailable");
   if (perks.some((item) => baseline.stat_data?.["\u7CFB\u7EDF"]?.[item.key] !== item.value)) throw Error("Identity perks have not been applied");
-  const root = json(baseline.stat_data);
-  root["\u7CFB\u7EDF"] = plain2(root["\u7CFB\u7EDF"]) ? root["\u7CFB\u7EDF"] : {};
-  root["\u7CFB\u7EDF"]["_user\u8EAB\u4EFD"] = json(identity);
-  const expected = { ...baseline, stat_data: model.apply(root, identity) };
+  const root2 = json(baseline.stat_data);
+  root2["\u7CFB\u7EDF"] = plain2(root2["\u7CFB\u7EDF"]) ? root2["\u7CFB\u7EDF"] : {};
+  root2["\u7CFB\u7EDF"]["_user\u8EAB\u4EFD"] = json(identity);
+  const expected = { ...baseline, stat_data: model.apply(root2, identity) };
   const raw = { ...input, schema: baseline.schema };
   if (baseline.mvu_schema) raw.mvu_schema = baseline.mvu_schema;
   else delete raw.mvu_schema;
@@ -52300,7 +51955,7 @@ function identityActionReview(value) {
 }
 function createIdentityActionBridge({ model, prepareBinding, onState = () => {
 }, deliverMessage, clock = () => performance.now(), wall = () => Date.now(), uuid = () => crypto.randomUUID() } = {}) {
-  let disposed = false, generation = 0, opening = null, ticket = null;
+  let disposed = false, generation2 = 0, opening = null, ticket = null;
   const emit = () => {
     if (disposed) return;
     try {
@@ -52309,7 +51964,7 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
     }
   };
   const authorized = (item) => !disposed && ticket === item && item.authorization?.isCurrent() === true;
-  const live = (item) => authorized(item) && generation === item.generation;
+  const live = (item) => authorized(item) && generation2 === item.generation;
   const endGuest = (item, error, result) => {
     if (item.settled) return;
     item.settled = true;
@@ -52333,7 +51988,7 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
     emit();
     endGuest(item, null, { ok: true, operationId: item.operationId, revision: item.receipt.result.revision, proposalReady: true });
   };
-  const submit = async (item, at4) => {
+  const submit2 = async (item, at4) => {
     try {
       if (!live(item) || wall() >= item.expiresAt || !Number.isFinite(at4) || at4 > clock() || clock() - at4 >= 1500) throw Error("Identity confirmation expired");
       const current4 = item.authorization.binding.getSnapshot();
@@ -52386,23 +52041,23 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
     beginOpening(openingId) {
       if (ticket && ["accepted", "pending", "unknown"].includes(ticket.state)) throw Error("Resolve the outstanding identity operation before selecting another opening");
       this.invalidate("Opening selection changed");
-      opening = { token: /* @__PURE__ */ Symbol("opening"), generation, openingId, completed: false };
+      opening = { token: /* @__PURE__ */ Symbol("opening"), generation: generation2, openingId, completed: false };
       return opening.token;
     },
     completeOpening(token, result) {
-      if (disposed || opening?.token !== token || opening.generation !== generation) return false;
+      if (disposed || opening?.token !== token || opening.generation !== generation2) return false;
       if (result?.ok !== true || !["empty-selection", "session-local"].includes(result.method)) throw Error("Invalid opening completion");
       opening.completed = true;
       opening.result = freeze4(bounded(result));
       return true;
     },
     failOpening(token, reason) {
-      if (opening?.token === token && opening.generation === generation) this.invalidate(reason);
+      if (opening?.token === token && opening.generation === generation2) this.invalidate(reason);
     },
     async request(packet) {
       packet = bounded(packet);
       if (disposed || ticket && ["preparing", "prepared", "accepted", "pending", "unknown"].includes(ticket.state) || !opening?.completed || opening.openingId !== packet.openingId) throw Error("A current completed opening is required");
-      const completed = opening, item = { id: uuid(), operationId: uuid(), generation, state: "preparing", settled: false, suppressed: false, expiresAt: wall() + 3e5 };
+      const completed = opening, item = { id: uuid(), operationId: uuid(), generation: generation2, state: "preparing", settled: false, suppressed: false, expiresAt: wall() + 3e5 };
       ticket = item;
       opening = null;
       const answer = new Promise((resolve, reject) => {
@@ -52413,7 +52068,7 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
       });
       try {
         item.authorization = await prepareBinding();
-        if (!live(item) || generation !== completed.generation || !completed.completed) throw Error("Identity owner changed");
+        if (!live(item) || generation2 !== completed.generation || !completed.completed) throw Error("Identity owner changed");
         const snapshot = item.authorization.binding.getSnapshot();
         item.intent = prepareIdentityAction(packet, snapshot, model);
         item.baseline = bounded(snapshot.variables);
@@ -52436,17 +52091,17 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
       item.state = "accepted";
       item.retry = false;
       emit();
-      return submit(item, at4);
+      return submit2(item, at4);
     },
     retryOperation(proposalId, { trusted = false, at: at4 } = {}) {
       const item = ticket;
       if (trusted !== true || !item || item.id !== proposalId || item.state !== "unknown" || item.inFlight || !authorized(item)) return Promise.reject(Error("This unknown identity operation cannot be retried"));
-      item.generation = generation;
+      item.generation = generation2;
       item.state = "accepted";
       item.retry = true;
       item.suppressed = false;
       emit();
-      return submit(item, at4);
+      return submit2(item, at4);
     },
     async retryMessage(proposalId, { trusted = false } = {}) {
       const item = ticket;
@@ -52461,7 +52116,7 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
       }
     },
     invalidate(reason = "Identity selection changed") {
-      generation++;
+      generation2++;
       opening = null;
       if (!ticket) return;
       const item = ticket;
@@ -52537,16 +52192,16 @@ function cardControlEventChecked(type, node, phases, now = performance.now()) {
 }
 function projectCardControlState(controls = [], nodes, { connected = false, apply: apply5 = true, preserve } = {}) {
   if (!Array.isArray(controls) || controls.length > 512) throw Error("Invalid card control state");
-  const seen = /* @__PURE__ */ new Set(), pending2 = [];
+  const seen = /* @__PURE__ */ new Set(), pending4 = [];
   for (const value of controls) {
     if (!value || Array.isArray(value) || Object.keys(value).length !== 2 || !Object.hasOwn(value, "id") || !Object.hasOwn(value, "checked") || !Number.isSafeInteger(value.id) || value.id < 1 || typeof value.checked !== "boolean" || seen.has(value.id)) throw Error("Invalid card control state");
     const node = nodes.get(value.id);
     if (!node || node.localName !== "input" || !["radio", "checkbox"].includes(node.type) || connected && !node.isConnected) throw Error("Card control is outside this view");
     const previous = preserve?.get(value.id);
     seen.add(value.id);
-    pending2.push([node, previous?.isConnected === true && previous.localName === "input" && ["radio", "checkbox"].includes(previous.type) ? previous.checked === true : value.checked]);
+    pending4.push([node, previous?.isConnected === true && previous.localName === "input" && ["radio", "checkbox"].includes(previous.type) ? previous.checked === true : value.checked]);
   }
-  if (apply5) for (const [node, checked] of pending2) node.checked = checked;
+  if (apply5) for (const [node, checked] of pending4) node.checked = checked;
 }
 
 // packages/client/src/play/card-composer.js
@@ -52695,19 +52350,19 @@ function cleanCardHtml(html2, { inertImages = false } = {}) {
 function splitCards(text3) {
   const source = String(text3 ?? "");
   const parts = [];
-  let offset2 = 0, lineOffset = 0, fence = null;
+  let offset2 = 0, lineOffset = 0, fence2 = null;
   for (const line of source.split("\n")) {
     const marker = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
-    if (!fence && marker) {
-      fence = { marker: marker[1], index: lineOffset, content: lineOffset + line.length + 1, card: /^```(?:html)?[\t ]*$/.test(line), labelled: /^```html/.test(line) };
-    } else if (fence && marker && marker[1][0] === fence.marker[0] && marker[1].length >= fence.marker.length && /^[\t ]*$/.test(marker[2])) {
-      const html2 = source.slice(fence.content, Math.max(fence.content, lineOffset - 1));
-      if (fence.card && /<(?:script|button|input|select|textarea)\b/i.test(html2) && (fence.labelled || /^\s*<(?:body|html)\b/i.test(html2) || isCompleteHtmlDocument(html2))) {
-        if (fence.index > offset2) parts.push({ text: source.slice(offset2, fence.index) });
+    if (!fence2 && marker) {
+      fence2 = { marker: marker[1], index: lineOffset, content: lineOffset + line.length + 1, card: /^```(?:html)?[\t ]*$/.test(line), labelled: /^```html/.test(line) };
+    } else if (fence2 && marker && marker[1][0] === fence2.marker[0] && marker[1].length >= fence2.marker.length && /^[\t ]*$/.test(marker[2])) {
+      const html2 = source.slice(fence2.content, Math.max(fence2.content, lineOffset - 1));
+      if (fence2.card && /<(?:script|button|input|select|textarea)\b/i.test(html2) && (fence2.labelled || /^\s*<(?:body|html)\b/i.test(html2) || isCompleteHtmlDocument(html2))) {
+        if (fence2.index > offset2) parts.push({ text: source.slice(offset2, fence2.index) });
         parts.push({ html: html2 });
         offset2 = lineOffset + line.length;
       }
-      fence = null;
+      fence2 = null;
     }
     lineOffset += line.length + 1;
   }
@@ -52716,9 +52371,9 @@ function splitCards(text3) {
   return parts;
 }
 function sourceRootPresentation(source) {
-  const root = purify_default.sanitize(source, { WHOLE_DOCUMENT: true, RETURN_DOM: true, ALLOWED_TAGS: ["html", "head", "body"], ALLOWED_ATTR: ["class", "style"], ALLOW_DATA_ATTR: false });
+  const root2 = purify_default.sanitize(source, { WHOLE_DOCUMENT: true, RETURN_DOM: true, ALLOWED_TAGS: ["html", "head", "body"], ALLOWED_ATTR: ["class", "style"], ALLOW_DATA_ATTR: false });
   const attributes = (node) => ({ className: node?.getAttribute("class") ?? "", style: node?.getAttribute("style") ?? "" });
-  return cardRootPresentation({ html: attributes(root), body: attributes(root.querySelector("body")) });
+  return cardRootPresentation({ html: attributes(root2), body: attributes(root2.querySelector("body")) });
 }
 function cardDocument(source) {
   const template = document.createElement("template");
@@ -52742,29 +52397,29 @@ function cardDocument(source) {
   return { html: html2, scripts, root: sourceRootPresentation(source), unsupported: [...new Set(unsupported)] };
 }
 function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
-  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters = [], schemaDeclarations = [], commandDeclarations = [];
+  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters2 = [], schemaDeclarations = [], commandDeclarations = [];
   let total = source.length, expanded = source.length, virtual = false;
-  const analyzed = /* @__PURE__ */ new Map(), pending2 = [];
+  const analyzed = /* @__PURE__ */ new Map(), pending4 = [];
   const read = (url, ownerHint) => {
     if (!url) throw Error("Blocked dependency URL");
-    const owner2 = ownerHint ?? owners.find((owner3) => trust.isEnabled(owner3, url) && trust.inspect(owner3, url)?.approved);
-    if (!owner2) throw Error("Rendering dependency is not downloaded: " + url);
-    const content = trust.read(owner2, url);
+    const owner3 = ownerHint ?? owners.find((owner4) => trust.isEnabled(owner4, url) && trust.inspect(owner4, url)?.approved);
+    if (!owner3) throw Error("Rendering dependency is not downloaded: " + url);
+    const content = trust.read(owner3, url);
     if (!seen.has(url)) {
       seen.add(url);
       total += content.length;
     }
     if (seen.size > DEPENDENCY_LIMITS.count || total > DEPENDENCY_LIMITS.bytes) throw Error("Rendering dependency graph exceeds limit");
-    const record = trust.inspect(owner2, url);
+    const record = trust.inspect(owner3, url);
     if (record?.depth !== void 0 && (!Number.isSafeInteger(record.depth) || record.depth < 0 || record.depth > DEPENDENCY_LIMITS.depth)) throw Error("Invalid rendering dependency depth");
-    return { content, owner: owner2, depth: record?.depth, builtin: record?.builtin ? mvuAdapter(url, record.adapterVersion) : null };
+    return { content, owner: owner3, depth: record?.depth, builtin: record?.builtin ? mvuAdapter(url, record.adapterVersion) : null };
   };
-  const collect = (content, base2, owner2, depth = -1) => pending2.push({ content, base: base2, owner: owner2, depth });
+  const collect = (content, base2, owner3, depth = -1) => pending4.push({ content, base: base2, owner: owner3, depth });
   const collectModules = () => {
-    while (pending2.length) {
-      pending2.sort((a, b2) => a.depth - b2.depth);
-      const { content, base: base2, owner: owner2, depth } = pending2.shift();
-      const analysisKey = JSON.stringify([owner2, base2]);
+    while (pending4.length) {
+      pending4.sort((a, b2) => a.depth - b2.depth);
+      const { content, base: base2, owner: owner3, depth } = pending4.shift();
+      const analysisKey = JSON.stringify([owner3, base2]);
       let keys2 = analyzed.get(content);
       if (keys2?.has(analysisKey)) continue;
       if (!keys2) {
@@ -52775,13 +52430,13 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
       if (depth > DEPENDENCY_LIMITS.depth) throw Error("Rendering dependency depth exceeds limit");
       for (const dependency of discoverDependencies(content, base2).filter((item) => item.kind === "module")) {
         if (!dependency.url) throw Error("Blocked or unresolved module: " + dependency.raw);
-        const next = read(dependency.url, owner2);
+        const next = read(dependency.url, owner3);
         if (next.builtin) {
           if (next.builtin.kind !== "mvu-facade") throw Error("Schema adapter requires complete declaration source confirmation; runtime Zod registration is unsupported");
           if (!isSideEffectModuleReference(content, dependency.url, base2)) throw Error("Built-in MVU adapter supports only a side-effect initialization import");
           if (Object.hasOwn(modules, dependency.url) && modules[dependency.url] !== "globalThis.__initializeBuiltinMvu(1);") throw Error("Conflicting built-in adapter modes across source owners");
           modules[dependency.url] = "globalThis.__initializeBuiltinMvu(1);";
-          if (!adapters.some((item) => item.url === dependency.url && item.owner === next.owner)) adapters.push({ ...next.builtin, owner: next.owner, replacement: "Tavern scoped MVU facade; original module is not executed" });
+          if (!adapters2.some((item) => item.url === dependency.url && item.owner === next.owner)) adapters2.push({ ...next.builtin, owner: next.owner, replacement: "Tavern scoped MVU facade; original module is not executed" });
           continue;
         }
         if (Object.hasOwn(modules, dependency.url)) {
@@ -52797,12 +52452,12 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   };
   const wrapper = loadWrapper(source);
   let identitySource;
-  let base, owner, baseDepth;
+  let base, owner2, baseDepth;
   if (wrapper) {
     virtual = true;
     const result = read(wrapper.url);
     source = result.content;
-    owner = result.owner;
+    owner2 = result.owner;
     base = wrapper.url;
     baseDepth = result.depth ?? 0;
     if (loadWrapper(source)) throw Error("Nested remote HTML wrappers are unsupported");
@@ -52810,11 +52465,11 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
       identitySource = source;
       source = adaptIdentityHtml(source, wrapper);
       runs.push({ code: identityLoaderBootstrap(wrapper), name: "identity-loader-adapter-v1.js" });
-      adapters.push({ ...wrapper, replacement: "Scoped HTML, storage and explicit proposal adapter; original wrapper is not executed" });
+      adapters2.push({ ...wrapper, replacement: "Scoped HTML, storage and explicit proposal adapter; original wrapper is not executed" });
     }
   }
   if (source.length > 1024 * 1024) throw Error("Card HTML exceeds 1 MiB");
-  const root = cardDocument(source).root;
+  const root2 = cardDocument(source).root;
   const template = document.createElement("template");
   template.innerHTML = source;
   for (const helper of helpers.filter((item) => item.enablementAmbiguous ? item.enabled : trust.isEnabled(item.owner, item.preferenceKey ?? item.key, item.enabled))) {
@@ -52828,7 +52483,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
     if (schemaDependencies.length) {
       for (const { item, record } of schemaDependencies) {
         trust.read(helper.owner, item.url);
-        adapters.push({ ...mvuAdapter(item.url, record.adapterVersion), owner: helper.owner, replacement: "Complete schema declaration handled by the backend interpreter" });
+        adapters2.push({ ...mvuAdapter(item.url, record.adapterVersion), owner: helper.owner, replacement: "Complete schema declaration handled by the backend interpreter" });
       }
       schemaDeclarations.push({ source: content, owner: helper.owner, key: helper.key, sha256: helper.contentDigest ?? trust.inspect(helper.owner, helper.key)?.digest });
       continue;
@@ -52836,7 +52491,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
     if (commandHookDeclaration(content)) {
       const declaration = { source: content, owner: helper.owner, key: helper.key };
       commandDeclarations.push(declaration);
-      adapters.push({ kind: "backend-command-hook", version: 1, ...declaration, replacement: "Source-owned precommit command processing; original script is not executed in display VMs" });
+      adapters2.push({ kind: "backend-command-hook", version: 1, ...declaration, replacement: "Source-owned precommit command processing; original script is not executed in display VMs" });
       continue;
     }
     collect(content, void 0, helper.owner);
@@ -52845,17 +52500,17 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   for (const script2 of template.content.querySelectorAll("script")) {
     const type = script2.getAttribute("type") ?? "";
     if (type && !["module", "text/javascript", "application/javascript", "text/babel", "text/jsx"].includes(type)) throw Error("Unsupported script type");
-    let code = script2.textContent, name2 = base ? base + "#inline-" + runs.length : "card-" + runs.length + ".js", scriptOwner = owner, scriptDepth = base ? baseDepth : -1;
+    let code = script2.textContent, name2 = base ? base + "#inline-" + runs.length : "card-" + runs.length + ".js", scriptOwner = owner2, scriptDepth = base ? baseDepth : -1;
     if (script2.hasAttribute("src")) {
       virtual = true;
       name2 = externalUrl(script2.getAttribute("src"), base);
-      const result = read(name2, owner);
+      const result = read(name2, owner2);
       code = result.content;
       scriptOwner = result.owner;
       scriptDepth = result.depth ?? (base ? baseDepth + 1 : 0);
       if (result.builtin) {
         if (result.builtin.kind !== "mvu-facade") throw Error("Schema adapter requires a complete Helper declaration");
-        adapters.push({ ...result.builtin, owner: scriptOwner, replacement: "Tavern scoped MVU facade; original script is not executed" });
+        adapters2.push({ ...result.builtin, owner: scriptOwner, replacement: "Tavern scoped MVU facade; original script is not executed" });
         code = "globalThis.__initializeBuiltinMvu(1);";
       }
     }
@@ -52868,7 +52523,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   }
   collectModules();
   const data3 = cardDocument(template.innerHTML);
-  return { ...data3, root, runs, modules, virtual, adapters, schemaDeclarations, commandDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
+  return { ...data3, root: root2, runs, modules, virtual, adapters: adapters2, schemaDeclarations, commandDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
 }
 function createDomBridge(doc, context, onProposal, onError, helperBinding) {
   const nodes = [doc.body], ids = new WeakMap([[doc.body, 0]]), disposers = [];
@@ -53001,11 +52656,11 @@ function createDomBridge(doc, context, onProposal, onError, helperBinding) {
 var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ source, enabled, disabledReason, scopeKey, context, onSend, composer, owners = [], helpers = [], helperBinding, createBinding, writeScope, writesBlocked = false, openingBinding }) {
   const diagnosticId = (0, import_react28.useId)();
   const frame = (0, import_react28.useRef)(null), cleanup = (0, import_react28.useRef)(() => {
-  }), generation = (0, import_react28.useRef)(0), sourceFrameRevision = (0, import_react28.useRef)(0);
+  }), generation2 = (0, import_react28.useRef)(0), sourceFrameRevision = (0, import_react28.useRef)(0);
   const sourceFrameKey = (0, import_react28.useMemo)(() => ++sourceFrameRevision.current, [source]);
   const [trustRevision, setTrustRevision] = (0, import_react28.useState)(renderingTrust.revision);
   (0, import_react28.useEffect)(() => renderingTrust.subscribe(() => {
-    generation.current++;
+    generation2.current++;
     cleanup.current();
     setTrustRevision(renderingTrust.revision());
   }), []);
@@ -53069,12 +52724,12 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
     setMvuNotice("");
     retryMvu.current = false;
     return () => {
-      generation.current++;
+      generation2.current++;
       cleanup.current();
     };
   }, [source, enabled, scopeKey, trustRevision, data3, JSON.stringify(openingBinding), runtimeRevision]);
   async function load() {
-    const current4 = ++generation.current;
+    const current4 = ++generation2.current;
     cleanup.current();
     setError("");
     replaceProposal("");
@@ -53094,10 +52749,10 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
     } catch {
     }
     const initialRoot = cardRootPresentation(data3.root);
-    const projectRoot = (root) => {
+    const projectRoot = (root2) => {
       for (const [key2, node] of [["html", doc.documentElement], ["body", doc.body]]) {
-        node.setAttribute("class", root[key2].className);
-        node.setAttribute("style", imageCss(root[key2].style));
+        node.setAttribute("class", root2[key2].className);
+        node.setAttribute("style", imageCss(root2[key2].style));
       }
     };
     projectRoot(initialRoot);
@@ -53112,13 +52767,13 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
     applyViewportMode();
     const readViewport = () => cardViewport({ width: ownFrame.clientWidth, height: ownFrame.clientHeight });
     const resize = () => {
-      if (current4 !== generation.current || frame.current !== ownFrame || !ownFrame.isConnected) return;
+      if (current4 !== generation2.current || frame.current !== ownFrame || !ownFrame.isConnected) return;
       const content = ownFrame.parentElement.parentElement, boundary = content.parentElement;
       const fillsOpening = viewportMode && content.classList.contains("dtv-play-rich") && content.children.length === 1 && boundary?.matches(".dtv-play-opening-body[data-dtv-card-viewport-boundary]");
       ownFrame.style.height = viewportMode ? fillsOpening ? "100%" : "clamp(362px,75dvh,800px)" : `${Math.max(1, Math.min(800, doc.body.scrollHeight))}px`;
       if (!controller2.signal.aborted && !viewportFrame) viewportFrame = requestAnimationFrame(() => {
         viewportFrame = 0;
-        if (current4 !== generation.current || frame.current !== ownFrame || !ownFrame.isConnected || controller2.signal.aborted) return;
+        if (current4 !== generation2.current || frame.current !== ownFrame || !ownFrame.isConnected || controller2.signal.aborted) return;
         if (ownFrame.clientWidth < 1 || ownFrame.clientHeight < 1) return;
         try {
           const value = readViewport();
@@ -53173,7 +52828,7 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
     };
     let cleaned = false;
     const receiveVariables = (value) => {
-      if (cleaned || current4 !== generation.current) return;
+      if (cleaned || current4 !== generation2.current) return;
       setMvuNotice(value.readState === "failed" ? translate("appearance.mvuRetained") : value.status === "unavailable" ? translate("appearance.mvuUnavailable") : "");
       virtualRuntime?.notifyVariables(value);
     };
@@ -53219,7 +52874,7 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
       setError(error2.message + (error2.operationId ? " \xB7 operationId: " + error2.operationId : ""));
     };
     images = observeImages(doc.body, { frame: frame.current, unavailable: translate("appearance.imageUnavailable"), onStatus: (value) => {
-      if (!cleaned && current4 === generation.current) setMedia(value);
+      if (!cleaned && current4 === generation2.current) setMedia(value);
     } });
     if (!enabled || data3.unsupported.length) return;
     if (doc.body.querySelectorAll("*").length > 2048) {
@@ -53228,7 +52883,7 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
     }
     try {
       if (!(data3.runs?.length || data3.scripts?.length)) return;
-      if (!await firstCardVisibility(ownFrame, controller2.signal) || cleaned || current4 !== generation.current) return;
+      if (!await firstCardVisibility(ownFrame, controller2.signal) || cleaned || current4 !== generation2.current) return;
       const requiresMvu = data3.adapters?.some((item) => ["mvu-facade", "backend-schema", "backend-command-hook"].includes(item.kind));
       if (createBinding) {
         if (requiresMvu) setMvuReading(true);
@@ -53238,9 +52893,9 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
           if (controller2.signal.aborted) return;
           if (requiresMvu) throw Object.assign(Error(translate("appearance.mvuReadFailed")), { code: "MVU_SNAPSHOT_READ_FAILED" });
         } finally {
-          if (current4 === generation.current) setMvuReading(false);
+          if (current4 === generation2.current) setMvuReading(false);
         }
-        if (current4 !== generation.current) {
+        if (current4 !== generation2.current) {
           binding?.dispose();
           return;
         }
@@ -53248,22 +52903,22 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
       if (data3.virtual) {
         if (data3.cardStorage) cardStorage = createCardScopedStorage({ storage: window.localStorage, owners, scopeKey, sourceIdentity: source });
         if (data3.identitySource && openingBinding) openingBridge.current = createIdentityOpeningBridge({ sourceIdentity: openingBinding, identitySource: data3.identitySource, signal: controller2.signal, onProposal: (value) => {
-          if (!cleaned && current4 === generation.current) setOpeningProposal(value);
+          if (!cleaned && current4 === generation2.current) setOpeningProposal(value);
         }, onProgress: (value) => {
-          if (!cleaned && current4 === generation.current) setOpeningProgress(value);
+          if (!cleaned && current4 === generation2.current) setOpeningProgress(value);
         } });
         const identity = await cardComposerIdentity(scopeKey, source);
-        if (cleaned || current4 !== generation.current) return;
+        if (cleaned || current4 !== generation2.current) return;
         let storage;
         try {
           storage = window.localStorage;
         } catch {
         }
         composerBridge = createCardComposerBridge({ identity, adapter: composer, storage, onClose: () => {
-          if (!cleaned && current4 === generation.current) {
+          if (!cleaned && current4 === generation2.current) {
             setClosed(true);
             queueMicrotask(() => {
-              if (current4 === generation.current) cleanup.current();
+              if (current4 === generation2.current) cleanup.current();
             });
           }
         } });
@@ -53294,10 +52949,10 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
             const signal = photoController.signal;
             setPhotoError("");
             selectedPhoto(file, signal).then((photo) => {
-              if (cleaned || ticket !== photoEpoch || current4 !== generation.current || !target.isConnected || target.ownerDocument !== doc) return;
+              if (cleaned || ticket !== photoEpoch || current4 !== generation2.current || !target.isConnected || target.ownerDocument !== doc) return;
               virtualRuntime?.dispatch({ ...value, photo }, { trusted: false });
             }, () => {
-              if (!signal.aborted && !cleaned && ticket === photoEpoch && current4 === generation.current) setPhotoError(translate("appearance.photoUnavailable"));
+              if (!signal.aborted && !cleaned && ticket === photoEpoch && current4 === generation2.current) setPhotoError(translate("appearance.photoUnavailable"));
             });
             return;
           }
@@ -53368,25 +53023,25 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
           model: createFixedIdentityActionModel(data3.identitySource),
           prepareBinding: async () => {
             const bound = await ensureWriteBinding(), epoch = writeEpoch, grantKey = JSON.stringify(writeRequest.peekGrant());
-            return { binding: bound, messageLease: { generation: current4, revision: proposalVersion.current }, isCurrent: () => !cleaned && !controller2.signal.aborted && current4 === generation.current && epoch === writeEpoch && writeBinding === bound && JSON.stringify(writeRequest?.peekGrant()) === grantKey };
+            return { binding: bound, messageLease: { generation: current4, revision: proposalVersion.current }, isCurrent: () => !cleaned && !controller2.signal.aborted && current4 === generation2.current && epoch === writeEpoch && writeBinding === bound && JSON.stringify(writeRequest?.peekGrant()) === grantKey };
           },
           onState: (value) => {
-            if (!cleaned && current4 === generation.current) setIdentityProposal(value);
+            if (!cleaned && current4 === generation2.current) setIdentityProposal(value);
           },
           deliverMessage: (message, lease) => {
-            if (cleaned || current4 !== generation.current || lease.generation !== current4 || lease.revision !== proposalVersion.current) throw Error("A newer message proposal belongs to this card");
+            if (cleaned || current4 !== generation2.current || lease.generation !== current4 || lease.revision !== proposalVersion.current) throw Error("A newer message proposal belongs to this card");
             replaceProposal(message);
           }
         });
         let acceptedView;
-        const displayView = (view, targetId, controlsCurrent = true) => {
-          if (cleaned || current4 !== generation.current) throw Error("Card view generation expired");
+        const displayView = (view, targetId2, controlsCurrent = true) => {
+          if (cleaned || current4 !== generation2.current) throw Error("Card view generation expired");
           if (!view || Array.isArray(view) || typeof view.html !== "string" || typeof view.styles !== "string" || !Number.isSafeInteger(view.bodyId) || view.bodyId <= 0 || JSON.stringify(view).length > 1024 * 1024) throw Error("Invalid card view");
           const controlsKey = JSON.stringify(view.controls ?? []);
-          const root = cardRootPresentation(view.root), rootKey = JSON.stringify(root);
+          const root2 = cardRootPresentation(view.root), rootKey = JSON.stringify(root2);
           const diagnosticView = photoDiagnostic ? { htmlChars: view.html.length, styleChars: view.styles.length, htmlChanged: acceptedView?.html !== view.html, stylesChanged: acceptedView?.styles !== view.styles, bodyChanged: acceptedView?.bodyId !== view.bodyId, rootChanged: acceptedView?.rootKey !== rootKey } : null;
           if (acceptedView?.html === view.html && acceptedView.styles === view.styles && acceptedView.bodyId === view.bodyId && acceptedView.rootKey === rootKey) {
-            if (targetId !== void 0 && !acceptedView.nodes.has(targetId)) throw Error("Layout target is not in this card");
+            if (targetId2 !== void 0 && !acceptedView.nodes.has(targetId2)) throw Error("Layout target is not in this card");
             projectCardControlState(view.controls, acceptedView.nodes, { connected: true, apply: controlsCurrent });
             if (controlsCurrent) acceptedView.controlsKey = controlsKey;
             photoDiagnostic?.view({ ...diagnosticView, reused: true });
@@ -53406,15 +53061,15 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
             if (!Number.isSafeInteger(id2) || id2 <= 0 || String(id2) !== marker || nodes.has(id2)) throw Error("Invalid card node identity");
             nodes.set(id2, node);
           }
-          if (targetId !== void 0 && !nodes.has(targetId)) throw Error("Layout target is not in this card");
+          if (targetId2 !== void 0 && !nodes.has(targetId2)) throw Error("Layout target is not in this card");
           applyCardUserAliases(template.content, context?.userName);
           projectCardControlState(view.controls, nodes, { preserve: controlsCurrent ? void 0 : acceptedView?.nodes });
           const style = doc.createElement("style");
           style.textContent = imageCss(view.styles);
           const focused = doc.activeElement, id = focused?.dataset?.dtvNode, selection = [focused?.selectionStart, focused?.selectionEnd], scroll = [doc.documentElement.scrollLeft, doc.documentElement.scrollTop];
-          projectRoot(root);
+          projectRoot(root2);
           images?.refresh();
-          viewportMode = usesCardViewport(view.html, view.styles, root);
+          viewportMode = usesCardViewport(view.html, view.styles, root2);
           applyViewportMode();
           photoDiagnostic?.beforeReplace(diagnosticView);
           doc.body.replaceChildren(template.content, style);
@@ -53438,7 +53093,7 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
         virtualRuntime = createVirtualCardRuntime({ html: data3.html, root: initialRoot, viewport: readViewport(), runs: data3.runs, modules: data3.modules, context: { ...context, boundGreeting: greetingReadView(context?.boundGreeting) }, variables: activeBinding?.getSnapshot(), cardStorage: cardStorage?.initial, identityOpening: !!openingBridge.current, identityAction: !!identityBridge.current, composer: composerBridge.initial }, {
           onOpening: async (openingId, { signal }) => {
             signal.throwIfAborted();
-            if (cleaned || current4 !== generation.current || !openingBridge.current || !identityBridge.current) throw Error("Opening card generation expired");
+            if (cleaned || current4 !== generation2.current || !openingBridge.current || !identityBridge.current) throw Error("Opening card generation expired");
             const action = identityBridge.current, token = action.beginOpening(openingId);
             try {
               const result = await openingBridge.current.request(openingId);
@@ -53452,31 +53107,31 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
           },
           onIdentityAction: (packet, { signal }) => {
             signal.throwIfAborted();
-            if (cleaned || current4 !== generation.current || !identityBridge.current) throw Error("Identity card generation expired");
+            if (cleaned || current4 !== generation2.current || !identityBridge.current) throw Error("Identity card generation expired");
             const action = identityBridge.current, abort = () => action.invalidate("Identity request cancelled");
             signal.addEventListener("abort", abort, { once: true });
             return action.request(packet).finally(() => signal.removeEventListener("abort", abort));
           },
           onStorage: (request2) => {
-            if (cleaned || current4 !== generation.current) throw Error("Card storage generation expired");
+            if (cleaned || current4 !== generation2.current) throw Error("Card storage generation expired");
             return cardStorage.request(request2);
           },
           onAction: async (request2) => {
             try {
-              if (cleaned || current4 !== generation.current) throw Error("Card input generation expired");
+              if (cleaned || current4 !== generation2.current) throw Error("Card input generation expired");
               const result = await composerBridge.request(request2);
-              if (!cleaned && current4 === generation.current) setError("");
+              if (!cleaned && current4 === generation2.current) setError("");
               return result;
             } catch (error2) {
-              if (!cleaned && current4 === generation.current) setError(error2.message);
+              if (!cleaned && current4 === generation2.current) setError(error2.message);
               throw error2;
             }
           },
           onResize: () => {
-            if (!cleaned && current4 === generation.current && frame.current?.contentDocument === doc) requestResize();
+            if (!cleaned && current4 === generation2.current && frame.current?.contentDocument === doc) requestResize();
           },
           onActionEnd: () => {
-            if (!cleaned && current4 === generation.current) composerBridge.finishRequest();
+            if (!cleaned && current4 === generation2.current) composerBridge.finishRequest();
           },
           onWrite: async ({ operation, value, options, cause, observedRevision, operationId, signal }) => {
             try {
@@ -53485,29 +53140,29 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
               signal?.throwIfAborted();
               const snapshot = writeBinding.getSnapshot();
               if (options !== null && options !== void 0 && (typeof options !== "object" || Array.isArray(options) || Object.keys(options).some((key2) => !["type", "message_id"].includes(key2)) || options.type !== void 0 && options.type !== "message" || options.message_id !== void 0 && options.message_id !== snapshot.scope?.messageId)) throw Error("Variable scope is bound to this card");
-              const submit = () => writeBinding.write({ operation, value, expectedRevision: observedRevision, operationId, cause, signal: signal ? AbortSignal.any([signal, writeController.signal]) : writeController.signal });
+              const submit2 = () => writeBinding.write({ operation, value, expectedRevision: observedRevision, operationId, cause, signal: signal ? AbortSignal.any([signal, writeController.signal]) : writeController.signal });
               let result;
               try {
-                result = await submit();
+                result = await submit2();
               } catch (error2) {
-                if (error2.code !== "MVU_WRITE_DENIED" || signal?.aborted || cleaned || current4 !== generation.current) throw error2;
+                if (error2.code !== "MVU_WRITE_DENIED" || signal?.aborted || cleaned || current4 !== generation2.current) throw error2;
                 await ensureWriteBinding(true);
                 signal?.throwIfAborted();
-                result = await submit();
+                result = await submit2();
               }
-              if (cleaned || current4 !== generation.current) throw Error("Variable write cancelled");
+              if (cleaned || current4 !== generation2.current) throw Error("Variable write cancelled");
               setError("");
               return result;
             } catch (error2) {
-              if (!cleaned && current4 === generation.current) setError(error2.message);
+              if (!cleaned && current4 === generation2.current) setError(error2.message);
               throw error2;
             }
           },
           onProposal: (value) => {
-            if (current4 === generation.current) replaceProposal(value);
+            if (current4 === generation2.current) replaceProposal(value);
           },
           onError: (error2) => {
-            if (current4 === generation.current) failRuntime(error2);
+            if (current4 === generation2.current) failRuntime(error2);
           },
           onGreetingReady: () => claimGreetingSelection(context?.boundGreeting?.selectionReceipt),
           onView: displayView,
@@ -53521,12 +53176,12 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
               photoDiagnostic?.clickReturned();
             } catch {
               photoDiagnostic?.rejected();
-              if (!cleaned && current4 === generation.current) setPhotoError(translate("appearance.photoUnavailable"));
+              if (!cleaned && current4 === generation2.current) setPhotoError(translate("appearance.photoUnavailable"));
             }
           },
           onMeasure: (request2, { signal, controlsCurrent }) => {
             signal.throwIfAborted();
-            if (cleaned || current4 !== generation.current || !frame.current?.isConnected || frame.current.contentDocument !== doc) throw Error("Card measurement generation expired");
+            if (cleaned || current4 !== generation2.current || !frame.current?.isConnected || frame.current.contentDocument !== doc) throw Error("Card measurement generation expired");
             if (!Number.isSafeInteger(request2.id) || request2.id < 0 || !["", null, void 0, "::before", "::after"].includes(request2.pseudo)) throw Error("Invalid card measurement");
             const nodes = displayView(request2.view, request2.id, controlsCurrent), node = nodes.get(request2.id);
             if (!node || node.ownerDocument !== doc || !node.isConnected || request2.id !== 0 && (node.getAttribute("data-dtv-node") !== String(request2.id) || node !== doc.body && !doc.body.contains(node))) throw Error("Layout target is not in this card");
@@ -53548,7 +53203,7 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
       }
       dom = createDomBridge(doc, context, replaceProposal, failRuntime, binding ?? helperBinding);
       const runtime = await createCardRuntime(dom.bridge, { modules: data3.modules });
-      if (current4 !== generation.current) {
+      if (current4 !== generation2.current) {
         runtime.dispose();
         return;
       }
@@ -53556,7 +53211,7 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
       for (const script2 of data3.runs ?? data3.scripts.map((code) => ({ code }))) runtime.evaluate(script2.code, script2);
       resize();
     } catch (error2) {
-      if (current4 === generation.current) {
+      if (current4 === generation2.current) {
         if (["MVU_SNAPSHOT_UNAVAILABLE", "MVU_SNAPSHOT_READ_FAILED"].includes(error2.code)) {
           retryMvu.current = true;
           setMvuFailure(true);
@@ -53650,7 +53305,7 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
   } catch {
   }
   const disabled = !context || context.disabled || !editable;
-  async function save(action = scope) {
+  async function save2(action = scope) {
     setBusy(true);
     setError("");
     try {
@@ -53728,9 +53383,9 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
         (0, import_react29.createElement)("p", null, translate("appearance.avatarScopeHint")),
         (0, import_react29.createElement)(AvatarInput, { value: avatar, onChange: setAvatar, disabled: busy2 }),
         (0, import_react29.createElement)("select", { "aria-label": translate("appearance.scope"), value: scope, disabled: busy2, onChange: (event) => setScope(event.target.value) }, (0, import_react29.createElement)("option", { value: "message" }, translate("appearance.single")), (0, import_react29.createElement)("option", { value: "playthrough" }, translate(role2 === "user" ? "appearance.allUsers" : "appearance.allCharacters"))),
-        (0, import_react29.createElement)("button", { type: "button", disabled: busy2 || !avatar, onClick: () => save() }, translate("appearance.apply")),
-        (0, import_react29.createElement)("button", { type: "button", disabled: busy2, onClick: () => save("reset-message") }, translate("appearance.resetMessage")),
-        (0, import_react29.createElement)("button", { type: "button", disabled: busy2, onClick: () => save("reset-playthrough") }, translate("appearance.resetPlaythrough")),
+        (0, import_react29.createElement)("button", { type: "button", disabled: busy2 || !avatar, onClick: () => save2() }, translate("appearance.apply")),
+        (0, import_react29.createElement)("button", { type: "button", disabled: busy2, onClick: () => save2("reset-message") }, translate("appearance.resetMessage")),
+        (0, import_react29.createElement)("button", { type: "button", disabled: busy2, onClick: () => save2("reset-playthrough") }, translate("appearance.resetPlaythrough")),
         (0, import_react29.createElement)("button", { type: "button", disabled: busy2, onClick: () => setEditing(false) }, translate("appearance.close")),
         error ? (0, import_react29.createElement)("p", { role: "alert" }, error) : null
       )
@@ -53745,10 +53400,10 @@ function characterAvatarUrl(id) {
 var import_react32 = require("react");
 
 // packages/client/src/play/chat-model.js
-function normalizedPath2(value) {
+function normalizedPath(value) {
   return typeof value === "string" ? value.replaceAll("\\", "/").replace(/\/+$/, "").toLocaleLowerCase() : "";
 }
-function rootSessionId4(playthrough) {
+function rootSessionId(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof value === "string" && value !== "" ? value : null;
 }
@@ -53801,8 +53456,8 @@ function contextProjection(message) {
 }
 function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false;
-  const root = normalizedPath2(workspace.rootPath);
-  return root !== "" && normalizedPath2(session.cwd) === root;
+  const root2 = normalizedPath(workspace.rootPath);
+  return root2 !== "" && normalizedPath(session.cwd) === root2;
 }
 function sessionHasConversationHistory(response) {
   return (response?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
@@ -53810,7 +53465,7 @@ function sessionHasConversationHistory(response) {
 function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
   if (typeof sessionId !== "string" || sessionId === "") return null;
   for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (rootSessionId4(playthrough) === sessionId) {
+    if (rootSessionId(playthrough) === sessionId) {
       return { playthrough, timeline: timelines[playthrough.path] ?? null };
     }
   }
@@ -53857,23 +53512,37 @@ async function loadCurrentPlaythrough(client, session, options = {}) {
   const catalog2 = await client.getCatalog();
   const playthroughs = catalog2.playthroughs ?? [];
   const sessionId = session.id ?? session.sessionId;
-  const pending2 = pendingSwipeForSession(client, sessionId);
-  const pendingOwner = pending2 && playthroughs.find((item) => item.id === pending2.playthrough.id && item.path === pending2.playthrough.path);
-  if (pendingOwner) return { workspace, playthrough: pendingOwner, timeline: pending2.timeline };
+  const pending4 = pendingSwipeForSession(client, sessionId);
+  const pendingOwner = pending4 && playthroughs.find((item) => item.id === pending4.playthrough.id && item.path === pending4.playthrough.path);
+  const expectedWorkspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  if (pendingOwner && (!pending4.operationKey || pending4.expectedWorkspaceScope === expectedWorkspaceScope)) return { workspace, playthrough: pendingOwner, timeline: pending4.timeline };
   const preferred = typeof options.preferredPlaythroughId === "string" ? playthroughs.find((item) => item.id === options.preferredPlaythroughId) : void 0;
   if (preferred !== void 0) {
-    const timeline = rootSessionId4(preferred) === sessionId ? await client.getTimeline(preferred) : await loadClassificationTimeline(client, preferred);
-    if (rootSessionId4(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
+    const timeline = rootSessionId(preferred) === sessionId ? await client.getTimeline(preferred) : await loadClassificationTimeline(client, preferred);
+    if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
       return { workspace, playthrough: preferred, timeline };
     }
+    if (timeline) {
+      const recovered = await restorePendingGeneration(client, preferred, timeline, { sessionId, expectedWorkspaceScope });
+      if (recovered) return { workspace, playthrough: preferred, timeline: recovered.timeline };
+    }
   }
-  const root = playthroughs.find((item) => rootSessionId4(item) === sessionId);
-  if (root !== void 0) {
-    return { workspace, playthrough: root, timeline: await client.getTimeline(root) };
+  const root2 = playthroughs.find((item) => rootSessionId(item) === sessionId);
+  if (root2 !== void 0) {
+    return { workspace, playthrough: root2, timeline: await client.getTimeline(root2) };
   }
   const timelines = await loadTimelines(client, playthroughs, options.concurrency);
   const match = findPlaythroughForSession(sessionId, catalog2, timelines);
-  return match === null ? null : { workspace, ...match };
+  if (match) return { workspace, ...match };
+  if (supportsGenerationRecovery(client)) {
+    for (const row of playthroughs) {
+      const timeline = timelines[row.path];
+      if (!timeline || row === preferred) continue;
+      const recovered = await restorePendingGeneration(client, row, timeline, { sessionId, expectedWorkspaceScope });
+      if (recovered) return { workspace, playthrough: row, timeline: recovered.timeline };
+    }
+  }
+  return null;
 }
 function projectTimelineVariant(node, variant2, messagesBySession = {}) {
   const messages = messagesBySession[variant2.sessionId]?.messages ?? messagesBySession[variant2.sessionId] ?? [];
@@ -53959,10 +53628,10 @@ function projectLiveTurns({
   const head = timelineHead(timeline);
   if (head !== null && head.sessionId !== sessionId) return [];
   const boundary = recordedEndSeq(timeline, sessionId);
-  const pending2 = [];
+  const pending4 = [];
   let turn = null;
   const appendTurn = () => {
-    if (turn !== null) pending2.push(turn);
+    if (turn !== null) pending4.push(turn);
     turn = null;
   };
   const createTurn = (node, triggerKind, userText = "") => ({
@@ -53999,8 +53668,8 @@ function projectLiveTurns({
     }
   }
   appendTurn();
-  if (pending2.length === 0) return pending2;
-  const tail = pending2[pending2.length - 1];
+  if (pending4.length === 0) return pending4;
+  const tail = pending4[pending4.length - 1];
   if (running) {
     const reasoning = assistantReasoning(partial?.blocks);
     const streamed = assistantText(partial?.blocks);
@@ -54008,7 +53677,7 @@ function projectLiveTurns({
     if (streamed !== "") tail.assistantText = streamed;
     tail.running = true;
   }
-  return pending2;
+  return pending4;
 }
 function latestUserNodeSeq(nodes) {
   let latest = -1;
@@ -54023,16 +53692,16 @@ function projectGreeting({
   characterResponse
 } = {}) {
   const selection = selectionResponse?.selection;
-  const character = characterResponse?.character;
-  if (typeof selection?.characterCardId !== "string" || selection.characterCardId === "" || selection.characterCardId !== openingCharacterId || character?.id !== selection.characterCardId) return null;
-  const allOptions = characterGreetingOptions(character);
+  const character2 = characterResponse?.character;
+  if (typeof selection?.characterCardId !== "string" || selection.characterCardId === "" || selection.characterCardId !== openingCharacterId || character2?.id !== selection.characterCardId) return null;
+  const allOptions = characterGreetingOptions(character2);
   if (!allOptions.some((option) => option.text.trim() !== "")) return null;
   const requested = Number(selection.character?.greetingIndex ?? 0);
   const selected = allOptions.find((option) => option.index === requested) ?? allOptions[0];
   const options = allOptions.filter((option) => option.index === selected.index || option.text.trim() !== "");
   return {
-    characterId: character.id,
-    characterName: character.data?.nickname || character.data?.name || character.name || character.id,
+    characterId: character2.id,
+    characterName: character2.data?.nickname || character2.data?.name || character2.name || character2.id,
     index: selected.index,
     text: selected.text,
     options
@@ -54049,12 +53718,12 @@ function adjacentGreetingIndex(greeting, direction) {
 
 // packages/client/src/play/turns.js
 function repairStoppedLeaf(timeline, messageState, sessionId) {
-  const stopped = messageState.stoppedRequest;
-  if (!stopped) return { timeline, changed: false };
+  const stopped2 = messageState.stoppedRequest;
+  if (!stopped2) return { timeline, changed: false };
   const path3 = activeTimelineEntries(timeline);
   const leaf = path3.at(-1);
   const previous = path3.at(-2);
-  if (!leaf || leaf.node.kind !== "qa" || leaf.node.variants.length !== 1 || leaf.variant.sessionId !== sessionId || leaf.variant.startEventId !== stopped.userEventId || leaf.variant.endEventId <= stopped.userEventId || leaf.variant.endEventId >= stopped.turnEndEventId || previous && previous.variant.sessionId !== sessionId || (timeline.nodes ?? []).some((node) => node.parentVariantId === leaf.variant.id)) return { timeline, changed: false };
+  if (!leaf || leaf.node.kind !== "qa" || leaf.node.variants.length !== 1 || leaf.variant.sessionId !== sessionId || leaf.variant.startEventId !== stopped2.userEventId || leaf.variant.endEventId <= stopped2.userEventId || leaf.variant.endEventId >= stopped2.turnEndEventId || previous && previous.variant.sessionId !== sessionId || (timeline.nodes ?? []).some((node) => node.parentVariantId === leaf.variant.id)) return { timeline, changed: false };
   const reply = messageState.messages?.find((message) => message.seq === leaf.variant.endEventId);
   const hasBody = Array.isArray(reply?.content) ? reply.content.some((block) => block.type === "text" && block.text?.trim()) : Boolean((reply?.text ?? "").trim());
   if (reply?.role !== "assistant" || hasBody) return { timeline, changed: false };
@@ -54090,7 +53759,7 @@ function isRealUserMessage(message) {
   const origin2 = messageOriginKind3(message);
   return message?.role === "user" && (origin2 === "user" || origin2 === "steering");
 }
-function extendHeadVariant(timeline, sessionId, endEventId) {
+function extendHeadVariant(timeline, sessionId, endEventId, messageState) {
   const head = timelineHead(timeline);
   if (head === null || head.sessionId !== sessionId) return { timeline, changed: false };
   let changed = false;
@@ -54098,8 +53767,9 @@ function extendHeadVariant(timeline, sessionId, endEventId) {
     if (node.id !== head.nodeId) return node;
     const variants = (node.variants ?? []).map((variant2) => {
       if (variant2.id !== head.variantId || variant2.sessionId !== sessionId || endEventId <= variant2.endEventId) return variant2;
+      requireCoordinates(variantFormatVersion(variant2), messageState);
       changed = true;
-      return { ...variant2, endEventId };
+      return withVariantFormat({ ...variant2, endEventId }, messageState.sessionFormatVersion);
     });
     return changed ? { ...node, variants } : node;
   });
@@ -54133,15 +53803,12 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
       displayOverride: null,
       parentVariantId,
       adoptedVariantId: variantId,
-      variants: [{
+      variants: [withVariantFormat({
         id: variantId,
         sessionId,
         startEventId: user.seq,
-        endEventId: assistant.seq,
-        ...Number.isSafeInteger(messageState.sessionFormatVersion) ? {
-          ext: { pmpDshTavern: { sessionFormatVersion: messageState.sessionFormatVersion } }
-        } : {}
-      }]
+        endEventId: assistant.seq
+      }, messageState.sessionFormatVersion)]
     });
     parentVariantId = variantId;
   };
@@ -54151,7 +53818,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
         appendPair();
       }
       if (user === null && continuationAssistant !== null) {
-        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq, messageState);
         nextTimeline = extended.timeline;
         changed ||= extended.changed;
         parentVariantId = timelineHead(nextTimeline)?.variantId ?? parentVariantId;
@@ -54167,7 +53834,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
   }
   appendPair();
   if (user === null && continuationAssistant !== null) {
-    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq, messageState);
     nextTimeline = extended.timeline;
     changed ||= extended.changed;
   }
@@ -54185,9 +53852,9 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
 }
 function createTurnReconciler(client) {
   if (client == null) throw new TypeError("playClient.required");
-  let pending2 = Promise.resolve();
+  let pending4 = Promise.resolve();
   return function reconcile(sessionId, playthrough) {
-    const task = pending2.then(async () => {
+    const task = pending4.then(async () => {
       const messages = await client.getMessages(sessionId);
       if (messages.incompleteTurn) return { timeline: null, added: [], changed: false };
       const initial = await client.getTimeline(playthrough);
@@ -54203,10 +53870,115 @@ function createTurnReconciler(client) {
       }, { initial });
       return { timeline, added, changed };
     });
-    pending2 = task.catch(() => {
+    pending4 = task.catch(() => {
     });
     return task;
   };
+}
+
+// packages/client/src/play/import.js
+function parseJsonl(text3) {
+  const rows = text3.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  if (rows.length === 0) throw new TypeError("play.import.empty");
+  if (rows[0]?.kind === "pmp-dsh-tavern-playthrough") throw new TypeError("play.import.unsupported");
+  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
+  let greeting = null;
+  const qa = [];
+  let pending4 = null;
+  for (const message of messages) {
+    if (message.is_user === true) {
+      if (pending4 !== null) throw new TypeError("play.import.unpaired");
+      pending4 = message.mes;
+    } else if (pending4 === null && qa.length === 0 && greeting === null) {
+      greeting = message.mes;
+    } else if (pending4 !== null) {
+      qa.push({ user: pending4, assistant: message.mes });
+      pending4 = null;
+    }
+  }
+  if (pending4 !== null) throw new TypeError("play.import.unpaired");
+  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
+}
+function parsePlaythroughImport(text3, fileName = "") {
+  if (typeof text3 !== "string" || text3.trim() === "") throw new TypeError("play.import.empty");
+  const parsed = parseJsonl(text3);
+  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
+}
+function rootSessionId2(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function playthroughDirectory(playthrough) {
+  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  if (!path3.endsWith("/timeline.json")) throw new TypeError("play.import.timelineRequired");
+  return path3.slice(0, -"/timeline.json".length);
+}
+function fallbackImportPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  if (typeof direct === "string" && direct !== "") return direct;
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
+  return typeof nested === "string" && nested !== "" ? nested : null;
+}
+async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
+  if (typeof client.getImportContextBinding === "function") {
+    return client.getImportContextBinding(sessionId);
+  }
+  const path3 = fallbackImportPath(playthrough, timeline);
+  return path3 === null ? null : { path: path3, state: "pending" };
+}
+async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
+  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
+  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
+  const document2 = JSON.parse((await client.getFile(binding.path)).content);
+  return { binding, document: document2 };
+}
+function assertLocallyMutable(timeline, messages) {
+  if ((timeline?.nodes?.length ?? 0) > 0 || messages?.incompleteTurn === true || (messages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant")) {
+    const error = new Error("play.import.locked");
+    error.code = "PLAY_IMPORT_CONTEXT_LOCKED";
+    throw error;
+  }
+}
+async function bindPlaythroughImport(client, playthrough, file, {
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  const document2 = parsePlaythroughImport(await file.text(), file.name);
+  const sessionId = rootSessionId2(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  const directory = playthroughDirectory(playthrough);
+  const token = String(randomUUID());
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError("play.import.idInvalid");
+  const contextPath = `${directory}/import-context-${token}.json`;
+  await client.createDirs(directory);
+  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
+  const bound = await client.putImportContextBinding(sessionId, { path: contextPath });
+  const [savedFile, savedBinding] = await Promise.all([
+    client.getFile(contextPath),
+    client.getImportContextBinding(sessionId)
+  ]);
+  const savedDocument = JSON.parse(savedFile.content);
+  if (bound?.path !== contextPath || savedBinding?.path !== contextPath || savedBinding?.state !== "pending" || savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length) {
+    throw new Error("play.import.verificationFailed");
+  }
+  return { sessionId, binding: savedBinding, document: document2 };
+}
+async function unbindPlaythroughImport(client, playthrough) {
+  const sessionId = rootSessionId2(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  await client.deleteImportContextBinding(sessionId);
+  const saved = await client.getImportContextBinding(sessionId);
+  if (saved !== null) throw new Error("play.import.verificationFailed");
+  return { sessionId, binding: null };
 }
 
 // packages/client/src/i18n/use-ui-settings.js
@@ -54254,38 +54026,38 @@ function useCardComposer({ sessionId, useInput, inputActions, active, blocked = 
   const state = useInput?.((value) => value) ?? null;
   const latest = (0, import_react31.useRef)(null);
   latest.current = { sessionId, state, active, blocked, send, onPending };
-  const [pending2, setPending] = (0, import_react31.useState)(false);
+  const [pending4, setPending] = (0, import_react31.useState)(false);
   const life = (0, import_react31.useRef)(null), request2 = (0, import_react31.useRef)(null);
-  const owner = (0, import_react31.useMemo)(() => ({ sessionId }), [sessionId, inputActions]);
+  const owner2 = (0, import_react31.useMemo)(() => ({ sessionId }), [sessionId, inputActions]);
   (0, import_react31.useLayoutEffect)(() => {
-    life.current = owner;
+    life.current = owner2;
     return () => {
-      if (life.current === owner) life.current = null;
-      if (request2.current?.owner === owner) {
-        request2.current.onPending?.(owner, false);
+      if (life.current === owner2) life.current = null;
+      if (request2.current?.owner === owner2) {
+        request2.current.onPending?.(owner2, false);
         request2.current = null;
       }
     };
-  }, [owner]);
+  }, [owner2]);
   const adapter = (0, import_react31.useMemo)(() => !inputActions ? null : createComposerAdapter({
     inputActions,
     getState: () => latest.current.state,
-    isCurrent: () => life.current === owner && latest.current.sessionId === sessionId && latest.current.active === true,
+    isCurrent: () => life.current === owner2 && latest.current.sessionId === sessionId && latest.current.active === true,
     isReady: () => !latest.current.blocked && request2.current === null,
     send: (text3, options) => {
-      request2.current = { owner, lease: options?.lease, onPending: latest.current.onPending };
-      request2.current.onPending?.(owner, true);
+      request2.current = { owner: owner2, lease: options?.lease, onPending: latest.current.onPending };
+      request2.current.onPending?.(owner2, true);
       setPending(true);
       return latest.current.send(text3, options);
     }
-  }), [owner, inputActions]);
+  }), [owner2, inputActions]);
   if (adapter) {
-    adapter.pending = pending2 && request2.current?.owner === owner;
+    adapter.pending = pending4 && request2.current?.owner === owner2;
     adapter.finishRequest = (lease) => {
-      if (request2.current?.owner === owner && request2.current.lease === lease) {
-        request2.current.onPending?.(owner, false);
+      if (request2.current?.owner === owner2 && request2.current.lease === lease) {
+        request2.current.onPending?.(owner2, false);
         request2.current = null;
-        if (life.current === owner) setPending(false);
+        if (life.current === owner2) setPending(false);
       }
     };
   }
@@ -54351,17 +54123,17 @@ function turnReconciler(client) {
   return reconcile;
 }
 async function loadChatState(client, sessionId, playthrough) {
-  let pending2 = pendingSwipeForSession(client, sessionId);
-  if (pending2?.error) {
-    await recoverCompletedSwipe(client, pending2);
-    pending2 = pendingSwipeForSession(client, sessionId);
+  let pending4 = pendingSwipeForSession(client, sessionId);
+  if (pending4?.error || pending4?.restored) {
+    await recoverCompletedSwipe(client, pending4);
+    pending4 = pendingSwipeForSession(client, sessionId);
   }
-  const pendingTimeline = pending2 ? await client.getTimeline(playthrough) : null;
-  const reconciled = pending2 === null ? await turnReconciler(client)(sessionId, playthrough) : {
+  const pendingTimeline = pending4 ? await client.getTimeline(playthrough) : null;
+  const reconciled = pending4 === null ? await turnReconciler(client)(sessionId, playthrough) : {
     timeline: {
-      ...pending2.timeline,
+      ...pending4.timeline,
       // Keep the preview's branch, but read display edits from durable metadata.
-      nodes: pending2.timeline.nodes.map((node) => ({
+      nodes: pending4.timeline.nodes.map((node) => ({
         ...node,
         displayOverride: pendingTimeline.nodes.find((item) => item.id === node.id)?.displayOverride ?? null
       }))
@@ -54393,11 +54165,11 @@ async function loadChatState(client, sessionId, playthrough) {
     })
   ];
   const userSelection = typeof client.getUserSelection === "function" ? await client.getUserSelection(playthrough?.ext?.pmpDshTavern?.rootSessionId ?? sessionId) : null;
-  const character = characterResponse?.character;
-  const characterData = character?.data ?? character;
+  const character2 = characterResponse?.character;
+  const characterData = character2?.data ?? character2;
   const macros2 = {
     user: userSelection?.user?.name || active?.resources?.user?.name || "User",
-    character: characterData?.nickname || characterData?.name || character?.name || "Assistant"
+    character: characterData?.nickname || characterData?.name || character2?.name || "Assistant"
   };
   const regexDiagnostics = [];
   const renderText = (text3, target, context) => {
@@ -54473,8 +54245,8 @@ async function loadChatState(client, sessionId, playthrough) {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     // Pending children are not durable playthrough members yet. Keep the
     // opening on the source's verified, read-only checkpoint until adoption.
-    greetingVariableScope: greetingCardScope({ playthrough, sessionId: pending2?.sourceSessionId ?? sessionId, characterId: bindings.characterId, greetingIndex: greeting?.index, timeline: pendingTimeline ?? timeline }),
-    pendingSwipeError: pending2?.error ?? null,
+    greetingVariableScope: greetingCardScope({ playthrough, sessionId: pending4?.sourceSessionId ?? sessionId, characterId: bindings.characterId, greetingIndex: greeting?.index, timeline: pendingTimeline ?? timeline }),
+    pendingSwipeError: pending4?.error ?? null,
     stoppedRequest: rootMessages?.stoppedRequest ?? null,
     timeline,
     turns,
@@ -54800,7 +54572,7 @@ function TargetedSwipeTransition({
     onChanged: changed,
     onError
   };
-  const renderSuffix = (turns, start, phase) => h27("div", {
+  const renderSuffix = (turns, start2, phase) => h27("div", {
     key: `${phase}:${transition.nodeId}`,
     className: "dtv-play-chat-frame",
     "data-phase": phase,
@@ -54809,7 +54581,7 @@ function TargetedSwipeTransition({
   }, h27(
     "div",
     { className: "dtv-play-chat-suffix-list" },
-    ...turns.slice(start).map((turn, index) => h27(Turn, {
+    ...turns.slice(start2).map((turn, index) => h27(Turn, {
       key: turn.id,
       turn,
       hideUser: index === 0,
@@ -55048,10 +54820,10 @@ function MowanChatView({ sessionId, useSession, useChat, useInput, inputActions,
         type: "button",
         className: "dtv-play-import-button",
         onClick: () => {
-          const pending2 = pendingSwipeForSession(playClient, sessionId);
-          if (pending2 === null) return;
-          finishPendingSwipe(playClient, pending2);
-          openSession(pending2.sourceSessionId, playthrough);
+          const pending4 = pendingSwipeForSession(playClient, sessionId);
+          if (pending4 === null) return;
+          finishPendingSwipe(playClient, pending4);
+          openSession(pending4.sourceSessionId, playthrough);
         }
       }, uiMessage("play.chat.returnToSavedReply"))
     ),
@@ -55074,6 +54846,53 @@ function MowanChatView({ sessionId, useSession, useChat, useInput, inputActions,
     ),
     h27("span", { ref: bottomAnchor, "aria-hidden": true })
   );
+}
+
+// packages/client/src/play/title.js
+function playthroughNumber(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+function isLegacyAutomaticTitle(title, number2) {
+  return title === "\u5468\u76EE" || title === `${number2}\u5468\u76EE` || title === `Playthrough ${number2}`;
+}
+function hasAutomaticPlaythroughTitle(playthrough) {
+  const number2 = playthroughNumber(playthrough);
+  if (number2 === null) return false;
+  const declared = playthrough?.ext?.pmpDshTavern?.autoTitle;
+  if (declared === true) return true;
+  if (declared === false) return false;
+  return isLegacyAutomaticTitle(playthrough?.title, number2);
+}
+function playthroughDisplayTitle(playthrough) {
+  const number2 = playthroughNumber(playthrough);
+  if (number2 !== null && hasAutomaticPlaythroughTitle(playthrough)) {
+    return translate("play.sidebar.defaultTitle", { number: number2 });
+  }
+  const title = playthrough?.title;
+  return typeof title === "string" && title !== "" ? title : String(playthrough?.id ?? "");
+}
+
+// packages/client/src/play/repair-session.js
+async function openRepairSession(ctx, playClient, switchToNative, workspace, playthrough) {
+  const current4 = await playClient.getWorkspace();
+  if (!workspace?.workspaceId || current4.workspaceId !== workspace.workspaceId || current4.rootPath !== workspace.rootPath || !isSafeCatalogSegment(playthrough.id)) throw new Error(translate("play.io.repairSelectionChanged"));
+  const command = `/tavern-repair assist ${playthrough.id}`;
+  const id = await ctx.sessions.create({ workspaceId: workspace.workspaceId });
+  try {
+    await switchToNative();
+    await ctx.uiWorkspace.openSession(id);
+    await ctx.sessions.using(id, { source: "controllerOperation" }, async (ref2) => {
+      const { session } = await ref2.ready;
+      await session.rename(translate("play.io.repairSessionTitle", { title: playthroughDisplayTitle(playthrough) }).slice(0, 120)).catch(() => {
+      });
+      const result = await session.command(command);
+      if (!result.ok || !result.value.matched) throw new Error(result.error?.message ?? command);
+    });
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+  } catch (error) {
+    window.alert(translate("play.io.repairDispatchFailed", { id, command, error: error.message }));
+  }
 }
 
 // packages/client/src/play/workspace-notice.js
@@ -55101,33 +54920,838 @@ function RpWorkspaceNotice() {
 // packages/client/src/play/sidebar.js
 var import_react36 = require("react");
 
+// packages/client/src/play/schema.js
+var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
+var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system", "developer", "tool"]);
+var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
+function isRecord4(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function fail3(label, detail) {
+  throw new TypeError(`${label}: ${detail}`);
+}
+function stringId(value, label) {
+  if (typeof value !== "string" || value.trim() === "") fail3(label, "must be a non-empty string");
+  return value;
+}
+function eventSeq(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) fail3(label, "must be a non-negative integer");
+  return value;
+}
+function extRecord(value, label) {
+  if (value === void 0) return void 0;
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  return value;
+}
+function normalizeChrome(value, label = "chrome") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!CHROME_MODES.has(value.mode)) fail3(label, "mode must be native or play");
+  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
+    fail3(label, "revision must be a non-empty string or null");
+  }
+  return { mode: value.mode, revision: value.revision ?? null };
+}
+function normalizeWorkspace(value, label = "workspace") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (typeof value.selected !== "boolean") fail3(label, "selected must be a boolean");
+  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
+    fail3(label, "rootPath must be a string or null");
+  }
+  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
+    fail3(label, "contractVersion must be a positive integer");
+  }
+  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord4).map((item) => ({
+    code: typeof item.code === "string" ? item.code : "",
+    message: typeof item.message === "string" ? item.message : ""
+  })) : [];
+  return {
+    selected: value.selected,
+    rootPath: value.rootPath ?? null,
+    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
+    contractVersion: value.contractVersion,
+    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
+    firstSelection: value.firstSelection === true,
+    warnings
+  };
+}
+function normalizeTimelineVariant(value, label = "variant") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
+  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
+  if (startEventId > endEventId) fail3(label, "startEventId must not exceed endEventId");
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    sessionId: stringId(value.sessionId, `${label}.sessionId`),
+    startEventId,
+    endEventId,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimelineNode(value, label = "node") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (value.kind !== "qa") fail3(label, "kind must be qa");
+  if (!Array.isArray(value.variants) || value.variants.length === 0) {
+    fail3(label, "variants must be a non-empty array");
+  }
+  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
+  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
+  if (!variants.some((item) => item.id === adoptedVariantId)) fail3(label, "adoptedVariantId must match a variant");
+  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
+    fail3(label, "displayOverride must be a string or null");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    kind: "qa",
+    displayOverride: value.displayOverride ?? null,
+    ...Object.hasOwn(value, "parentVariantId") ? {
+      parentVariantId: value.parentVariantId === null ? null : stringId(value.parentVariantId, `${label}.parentVariantId`)
+    } : {},
+    adoptedVariantId,
+    variants,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimeline(value, label = "timeline") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!Array.isArray(value.nodes)) fail3(label, "nodes must be an array");
+  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
+  const ids = /* @__PURE__ */ new Set();
+  const variantOwners = /* @__PURE__ */ new Map();
+  const tree = value.head !== void 0 || nodes.some((node) => Object.hasOwn(node, "parentVariantId"));
+  for (const node of nodes) {
+    if (ids.has(node.id)) fail3(label, `duplicate node id ${node.id}`);
+    ids.add(node.id);
+    for (const variant2 of node.variants) {
+      if (tree && variantOwners.has(variant2.id)) fail3(label, `duplicate tree variant id ${variant2.id}`);
+      variantOwners.set(variant2.id, node.id);
+    }
+  }
+  for (const [index, node] of nodes.entries()) {
+    if (!Object.hasOwn(node, "parentVariantId") || node.parentVariantId === null) continue;
+    const parentNodeId = variantOwners.get(node.parentVariantId);
+    if (parentNodeId === void 0) fail3(`${label}.nodes[${index}]`, "parentVariantId is unknown");
+    if (nodes.findIndex((item) => item.id === parentNodeId) >= index) fail3(`${label}.nodes[${index}]`, "parentVariantId must reference an earlier node");
+  }
+  let head;
+  if (value.head !== void 0) {
+    if (!isRecord4(value.head)) fail3(`${label}.head`, "must be an object");
+    head = {
+      sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
+      nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
+      variantId: stringId(value.head.variantId, `${label}.head.variantId`)
+    };
+    if (variantOwners.get(head.variantId) !== head.nodeId) fail3(`${label}.head`, "must reference a variant on its node");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { nodes, ...head === void 0 ? {} : { head }, ...ext === void 0 ? {} : { ext } };
+}
+function normalizeCatalog(value, label = "catalog") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!Array.isArray(value.playthroughs)) fail3(label, "playthroughs must be an array");
+  const playthroughs = value.playthroughs.map((item, index) => {
+    const itemLabel = `${label}.playthroughs[${index}]`;
+    if (!isRecord4(item)) fail3(itemLabel, "must be an object");
+    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
+    const archivedAt = ext2?.pmpDshTavern?.archivedAt;
+    if (archivedAt !== void 0 && !isArchiveTimestamp(archivedAt)) {
+      fail3(`${itemLabel}.ext.pmpDshTavern.archivedAt`, "must be a UTC ISO timestamp with milliseconds");
+    }
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      path: stringId(item.path, `${itemLabel}.path`),
+      ...typeof item.title === "string" ? { title: item.title } : {},
+      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
+      ...ext2 === void 0 ? {} : { ext: ext2 }
+    };
+  });
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { playthroughs, ...ext === void 0 ? {} : { ext } };
+}
+function parseJsonDocument(content, normalize, label) {
+  if (typeof content !== "string") fail3(label, "content must be a JSON string");
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    fail3(label, "content must be valid JSON");
+  }
+  return normalize(parsed, label);
+}
+function normalizeSessionMessages(value, label = "messages") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!Array.isArray(value.messages)) fail3(label, "messages must be an array");
+  if (typeof value.incompleteTurn !== "boolean") fail3(label, "incompleteTurn must be a boolean");
+  const stopped2 = value.stoppedRequest;
+  if (stopped2 != null && (!isRecord4(stopped2) || !["userEventId", "turnStartEventId", "turnEndEventId"].every((key2) => Number.isSafeInteger(stopped2[key2]) && stopped2[key2] >= 0) || stopped2.turnStartEventId >= stopped2.userEventId || stopped2.userEventId >= stopped2.turnEndEventId || value.incompleteTurn)) fail3(label, "invalid stopped request coordinates");
+  const messages = value.messages.map((item, index) => {
+    const itemLabel = `${label}.messages[${index}]`;
+    if (!isRecord4(item)) fail3(itemLabel, "must be an object");
+    if (!MESSAGE_ROLES.has(item.role)) fail3(itemLabel, "role is invalid");
+    if (!Array.isArray(item.content)) fail3(itemLabel, "content must be an array");
+    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail3(itemLabel, "seq must be a non-negative integer or null");
+    const fallbackKind = item.role === "tool" || item.role === "developer" ? "context" : item.role;
+    const origin2 = item.origin === void 0 ? { kind: fallbackKind } : (() => {
+      if (!isRecord4(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail3(`${itemLabel}.origin`, "kind is invalid");
+      if (item.origin.kind !== "context") return { kind: item.origin.kind };
+      const optional = (field, maximum) => {
+        const fieldValue = item.origin[field];
+        if (fieldValue !== null && fieldValue !== void 0 && (typeof fieldValue !== "string" || fieldValue.length > maximum)) {
+          fail3(`${itemLabel}.origin.${field}`, `must be a string up to ${maximum} characters or null`);
+        }
+        return typeof fieldValue === "string" && fieldValue !== "" ? fieldValue : null;
+      };
+      return {
+        kind: "context",
+        producer: optional("producer", 200),
+        form: optional("form", 64),
+        summary: optional("summary", 1e3)
+      };
+    })();
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      role: item.role,
+      content: item.content,
+      seq: item.seq,
+      text: projectContentText(item.content),
+      origin: origin2
+    };
+  });
+  return {
+    messages,
+    incompleteTurn: value.incompleteTurn,
+    ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {},
+    ...value.migratedFromV2 === true ? { migratedFromV2: true } : {},
+    ...stopped2 === void 0 ? {} : { stoppedRequest: stopped2 === null ? null : { userEventId: stopped2.userEventId, turnStartEventId: stopped2.turnStartEventId, turnEndEventId: stopped2.turnEndEventId } }
+  };
+}
+function normalizeFocus(value, label = "focus") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  const nullableId = (field, fieldLabel) => {
+    if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
+      fail3(label, `${fieldLabel} must be a non-empty string or null`);
+    }
+    return value[field];
+  };
+  return {
+    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
+    sessionId: nullableId("sessionId", "sessionId"),
+    nodeId: nullableId("nodeId", "nodeId"),
+    variantId: nullableId("variantId", "variantId")
+  };
+}
+function timelinePath(value, label = "timeline path") {
+  const path3 = typeof value === "string" ? value : value?.path;
+  stringId(path3, label);
+  if (!path3.endsWith("timeline.json")) fail3(label, "must point to timeline.json");
+  return path3;
+}
+function playthroughCharacterId(playthrough) {
+  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
+  if (typeof explicit === "string" && explicit !== "") return explicit;
+  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  const first = path3.split("/").filter(Boolean)[0];
+  return first || null;
+}
+
+// packages/client/src/play/sidebar-model.js
+var SIDEBAR_LOAD_CONCURRENCY = 4;
+function characterIdFromSelection(value) {
+  const selection = value?.selection ?? value;
+  const id = selection?.characterCardId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function rootSessionId3(playthrough) {
+  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function sessionTitle(session, id) {
+  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
+  if (typeof session?.title === "string" && session.title !== "") return session.title;
+  return id;
+}
+function timestamp2(value) {
+  if (Number.isFinite(value)) return value;
+  if (typeof value !== "string" || value === "") return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+function latestCharacterSessionActivity(character2, sessions) {
+  let latest = 0;
+  for (const playthrough of character2.playthroughs) {
+    for (const id of playthrough.sessionIds) latest = Math.max(latest, timestamp2(sessions[id]?.updatedAt));
+  }
+  for (const session of character2.unassigned) latest = Math.max(latest, timestamp2(sessions[session.id]?.updatedAt));
+  return latest;
+}
+function compareProjectedNames(left, right) {
+  const named = left.name.localeCompare(right.name, "zh-CN", { numeric: true, sensitivity: "base" });
+  return named !== 0 ? named : left.id.localeCompare(right.id);
+}
+function sortCharactersByRecentConversation(characters, sessions) {
+  return characters.toSorted((left, right) => {
+    const activity = latestCharacterSessionActivity(right, sessions) - latestCharacterSessionActivity(left, sessions);
+    if (activity !== 0) return activity;
+    const resourceUpdate = timestamp2(right.updatedAt) - timestamp2(left.updatedAt);
+    return resourceUpdate !== 0 ? resourceUpdate : compareProjectedNames(left, right);
+  });
+}
+function historicalCharacterName(playthrough, sessions, fallback) {
+  const preserved = playthrough?.ext?.pmpDshTavern?.characterName;
+  if (typeof preserved === "string" && preserved.trim() !== "") return preserved;
+  const root2 = rootSessionId3(playthrough);
+  if (root2 === null) return fallback;
+  const title = sessionTitle(sessions[root2], root2);
+  const inferred = title.replace(/\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/, "").trim();
+  return inferred !== "" && inferred !== root2 ? inferred : fallback;
+}
+function normalizedCharacterName(value) {
+  return String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+}
+function assessPlaythroughCharacterRelink({
+  playthrough,
+  target,
+  characters = [],
+  missingCharacters = []
+} = {}) {
+  const reference = playthrough?.ext?.pmpDshTavern ?? {};
+  const currentId = playthroughCharacterId(playthrough);
+  if (typeof target?.id !== "string" || target.id === "") return { automatic: false, reason: "target-missing" };
+  if (target.id === currentId) return { automatic: true, reason: "unchanged" };
+  if (typeof reference.characterSha256 === "string" && reference.characterSha256 !== "") {
+    const shaMatches = characters.filter((character2) => character2.sha256 === reference.characterSha256);
+    if (shaMatches.length === 1 && shaMatches[0].id === target.id) return { automatic: true, reason: "sha256" };
+  }
+  const name2 = normalizedCharacterName(reference.characterName);
+  if (name2 !== "") {
+    const missingNameMatches = missingCharacters.filter((character2) => normalizedCharacterName(character2.name) === name2);
+    const currentNameMatches = characters.filter((character2) => normalizedCharacterName(character2.name) === name2);
+    const missingIdentityIsUnique = missingNameMatches.length === 0 || missingNameMatches.length === 1 && missingNameMatches[0].id === currentId;
+    if (missingIdentityIsUnique && currentNameMatches.length === 1 && currentNameMatches[0].id === target.id) {
+      return { automatic: true, reason: "name" };
+    }
+  }
+  return { automatic: false, reason: "manual" };
+}
+function normalizedPath2(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+function requiresSystemWorkspaceConfirmation(value) {
+  const path3 = typeof value === "string" ? value.replaceAll("\\", "/") : "";
+  return /^c:\//i.test(path3) || path3 === "/" || path3 === "/usr" || path3.startsWith("/usr/") || path3 === "/System" || path3.startsWith("/System/");
+}
+function timelineFor(timelines, playthrough) {
+  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
+}
+function playthroughMembers(playthrough, timeline) {
+  const ids = /* @__PURE__ */ new Set();
+  const rootId = rootSessionId3(playthrough);
+  if (rootId !== null) ids.add(rootId);
+  if (typeof timeline?.head?.sessionId === "string" && timeline.head.sessionId !== "") {
+    ids.add(timeline.head.sessionId);
+  }
+  for (const head of timeline?.ext?.pmpDshTavern?.branchHeads ?? []) {
+    if (typeof head?.sessionId === "string" && head.sessionId !== "") ids.add(head.sessionId);
+  }
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant2 of node?.variants ?? []) {
+      if (typeof variant2?.sessionId === "string" && variant2.sessionId !== "") ids.add(variant2.sessionId);
+    }
+  }
+  return ids;
+}
+function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
+  const ids = /* @__PURE__ */ new Set();
+  if (workspace?.selected !== true) return ids;
+  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
+    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
+    if (item !== void 0) {
+      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
+      return ids;
+    }
+  }
+  const root2 = normalizedPath2(workspace.rootPath);
+  if (root2 === "") return ids;
+  for (const [id, session] of Object.entries(sessions)) {
+    if (normalizedPath2(session?.cwd) === root2) ids.add(id);
+  }
+  return ids;
+}
+var SessionCharacterBindingCache = class {
+  constructor() {
+    this.entries = /* @__PURE__ */ new Map();
+    this.generation = 0;
+  }
+  clear() {
+    this.generation += 1;
+    this.entries.clear();
+  }
+  get(client, sessionId) {
+    const cached = this.entries.get(sessionId);
+    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
+    const generation2 = this.generation;
+    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
+    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
+    this.entries.set(sessionId, { promise });
+    promise.then((value) => {
+      if (this.generation === generation2) this.entries.set(sessionId, { value });
+    });
+    return promise;
+  }
+};
+async function loadSessionCharacterBindings(client, sessionIds, {
+  concurrency = SIDEBAR_LOAD_CONCURRENCY,
+  cache = new SessionCharacterBindingCache()
+} = {}) {
+  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
+  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < ids.length) {
+      const index = cursor;
+      cursor += 1;
+      const id = ids[index];
+      result[id] = await cache.get(client, id);
+    }
+  };
+  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
+  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return result;
+}
+async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
+  const result = new Array(values.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < values.length) {
+      const index = cursor;
+      cursor += 1;
+      result[index] = await mapper(values[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
+  return result;
+}
+async function loadPlaySidebarResources(client) {
+  if (client == null) throw new TypeError("playClient.required");
+  const [workspace, characterResponse] = await Promise.all([
+    client.getWorkspace(),
+    client.getCharacters()
+  ]);
+  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
+  const missingCharacters = Array.isArray(characterResponse?.missingCharacters) ? characterResponse.missingCharacters : [];
+  const characterSorting = characterResponse?.sorting ?? { mode: "updated" };
+  if (workspace.selected !== true) return { workspace, characters, missingCharacters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
+  let catalog2;
+  try {
+    catalog2 = await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
+    catalog2 = { playthroughs: [] };
+  }
+  const timelines = {};
+  const diagnostics = [];
+  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
+    try {
+      timelines[playthrough.path] = await client.getTimeline(playthrough);
+    } catch (reason) {
+      diagnostics.push({
+        playthroughId: playthrough.id,
+        ...typeof reason?.code === "string" ? { code: reason.code } : {},
+        path: playthrough.path,
+        message: reason instanceof Error ? reason.message : String(reason)
+      });
+    }
+  });
+  return { workspace, characters, missingCharacters, characterSorting, catalog: catalog2, timelines, diagnostics };
+}
+function projectPlaySidebar({
+  workspace = { selected: false },
+  workspaceItems = [],
+  characters = [],
+  characterSorting = { mode: "updated" },
+  missingCharacters = [],
+  catalog: catalog2 = { playthroughs: [] },
+  timelines = {},
+  sessions = {},
+  sessionIds = [],
+  archivedSessionIds = [],
+  currentId = null,
+  activePlaythroughId = null,
+  sessionCharacters = {},
+  pendingSwipes: pendingSwipes2 = []
+} = {}) {
+  const archived = new Set(archivedSessionIds);
+  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
+  const characterById = /* @__PURE__ */ new Map();
+  const missingById = new Map(missingCharacters.map((item) => [item.id, item]));
+  const missingCharacterById = /* @__PURE__ */ new Map();
+  const ensureCharacter = (id, name2 = id) => {
+    if (!characterById.has(id) && !characters.some((item) => item?.id === id)) {
+      if (!missingCharacterById.has(id)) {
+        const missing = missingById.get(id);
+        missingCharacterById.set(id, {
+          id,
+          name: missing?.name ?? name2,
+          ...typeof missing?.sha256 === "string" ? { sha256: missing.sha256 } : {},
+          playthroughs: [],
+          unassigned: [],
+          missing: true
+        });
+      }
+      return missingCharacterById.get(id);
+    }
+    if (!characterById.has(id)) {
+      const resource2 = characters.find((item) => item?.id === id);
+      characterById.set(id, {
+        id,
+        name: name2,
+        ...typeof resource2?.updatedAt === "string" ? { updatedAt: resource2.updatedAt } : {},
+        playthroughs: [],
+        unassigned: []
+      });
+    }
+    return characterById.get(id);
+  };
+  for (const character2 of characters) {
+    if (typeof character2?.id !== "string" || character2.id === "") continue;
+    ensureCharacter(character2.id, typeof character2.name === "string" && character2.name !== "" ? character2.name : character2.id);
+  }
+  const claimedRpSessions = /* @__PURE__ */ new Set();
+  const archivedPlaythroughs = [];
+  for (const playthrough of catalog2.playthroughs ?? []) {
+    const rootId = rootSessionId3(playthrough);
+    const draft = rootId === null && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id;
+    const characterId = playthroughCharacterId(playthrough);
+    if (characterId === null) continue;
+    const characterReference = playthrough.ext?.pmpDshTavern ?? {};
+    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
+    for (const pending4 of pendingSwipes2) {
+      if (pending4.playthrough.id === playthrough.id && pending4.playthrough.path === playthrough.path) allMembers.add(pending4.sessionId);
+    }
+    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
+    for (const id of members) claimedRpSessions.add(id);
+    if (isPlaythroughArchived(playthrough)) {
+      archivedPlaythroughs.push({
+        ...playthrough,
+        characterName: characters.find((item) => item.id === characterId)?.name ?? historicalCharacterName(playthrough, sessions, characterId),
+        rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+        sessionIds: members,
+        missing: members.length === 0 && !draft
+      });
+      continue;
+    }
+    const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId));
+    if (characterGroup.missing === true && characterGroup.sha256 === void 0 && typeof characterReference.characterSha256 === "string") {
+      characterGroup.sha256 = characterReference.characterSha256;
+    }
+    characterGroup.playthroughs.push({
+      ...playthrough,
+      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
+      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+      sessionIds: members,
+      active: typeof activePlaythroughId === "string" && activePlaythroughId !== "" ? playthrough.id === activePlaythroughId : currentId !== null && members.includes(currentId),
+      missing: members.length === 0 && !draft
+    });
+  }
+  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
+  const otherSessions = [];
+  for (const id of ids) {
+    const session = sessions[id];
+    if (session == null || archived.has(id)) continue;
+    if (session.origin === "subagent") continue;
+    if (!rpSessionIds.has(id)) {
+      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
+      continue;
+    }
+    if (claimedRpSessions.has(id)) continue;
+    const characterId = sessionCharacters[id];
+    if (typeof characterId === "string" && characterId !== "") {
+      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
+      continue;
+    }
+    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
+  }
+  const projectedCharacters = [...characterById.values()];
+  return {
+    workspaceReady: workspace.selected === true,
+    rpSessionIds: [...rpSessionIds],
+    playSessionIds: [...claimedRpSessions],
+    characters: characterSorting?.mode === "updated" ? sortCharactersByRecentConversation(projectedCharacters, sessions) : projectedCharacters,
+    missingCharacters: [...missingCharacterById.values()],
+    otherSessions,
+    archivedPlaythroughs
+  };
+}
+function playthroughFocusTarget({ focus, playthrough, rpSessionIds = [] } = {}) {
+  const target = typeof focus?.sessionId === "string" ? focus.sessionId : playthrough?.rootSessionId;
+  return typeof target === "string" && new Set(rpSessionIds).has(target) ? target : null;
+}
+function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
+  if (workspace == null || session == null) return false;
+  if (workspace.selected !== true) return true;
+  const workspacePath = normalizedPath2(workspace.rootPath);
+  const sessionPath = normalizedPath2(session.cwd);
+  if (workspacePath === "" || sessionPath !== workspacePath) return true;
+  return characterIdFromSelection(selection) === null;
+}
+async function runAutomaticCharacterRelinks(recoveries, { attempted, isActive, relink, onError, onChanged }) {
+  let changed = false;
+  try {
+    for (const recovery of recoveries) {
+      if (!isActive()) break;
+      if (attempted.has(recovery.key)) continue;
+      attempted.add(recovery.key);
+      try {
+        await relink(recovery.missing.id, recovery.character.id);
+        changed = true;
+      } catch (reason) {
+        if (isActive()) onError(reason);
+      }
+    }
+  } finally {
+    if (changed) onChanged();
+  }
+}
+
+// packages/session-template/src/model.js
+var MAX_RESOURCE_ID_CHARACTERS = 200;
+var MAX_WORLD_BOOKS = 100;
+function stringOrNull(value) {
+  return typeof value === "string" && value !== "" && value.length <= MAX_RESOURCE_ID_CHARACTERS ? value : null;
+}
+function characterOptions(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
+  const result = {};
+  if (Number.isSafeInteger(value.greetingIndex) && value.greetingIndex >= 0) result.greetingIndex = value.greetingIndex;
+  if (typeof value.preferCharacterSystemPrompt === "boolean") result.preferCharacterSystemPrompt = value.preferCharacterSystemPrompt;
+  if (typeof value.preferCharacterPostHistory === "boolean") result.preferCharacterPostHistory = value.preferCharacterPostHistory;
+  return result;
+}
+var RP_SOURCES = /* @__PURE__ */ new Set(["command", "character-follow"]);
+var SANDBOX_MODES = /* @__PURE__ */ new Set(["read-only", "workspace-write", "danger-full-access"]);
+function rpState(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return { active: false, source: null, followSuppressed: false, sandboxBefore: null };
+  }
+  return {
+    active: value.active === true,
+    source: RP_SOURCES.has(value.source) ? value.source : null,
+    followSuppressed: value.followSuppressed === true,
+    sandboxBefore: SANDBOX_MODES.has(value.sandboxBefore) ? value.sandboxBefore : null
+  };
+}
+function normalizeTemplateSelection(value = {}) {
+  const worldBookIds = Array.isArray(value?.worldBookIds) ? [...new Set(value.worldBookIds.filter((item) => typeof item === "string" && item !== "" && item.length <= MAX_RESOURCE_ID_CHARACTERS))].slice(0, MAX_WORLD_BOOKS) : [];
+  return {
+    presetId: stringOrNull(value?.presetId),
+    characterCardId: stringOrNull(value?.characterCardId),
+    userId: stringOrNull(value?.userId),
+    worldBookIds,
+    character: characterOptions(value?.character),
+    rp: rpState(value?.rp)
+  };
+}
+var sessionTemplateModelConstants = Object.freeze({
+  maxResourceIdCharacters: MAX_RESOURCE_ID_CHARACTERS,
+  maxWorldBooks: MAX_WORLD_BOOKS
+});
+
+// packages/client/src/play/create.js
+var SAFE_SEGMENT2 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+function safeSegment(value, label) {
+  if (typeof value !== "string" || !SAFE_SEGMENT2.test(value)) {
+    throw new TypeError(`${label} must be a safe path segment`);
+  }
+  return value;
+}
+async function catalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
+    throw reason;
+  }
+}
+function playthroughCharacterId2(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.characterId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function rootSessionId4(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+async function ensureCharacterSelection(client, sessionId, characterId) {
+  const current4 = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(current4) !== characterId) {
+    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
+  }
+  const verified = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(verified) !== characterId) {
+    throw new Error("playthrough character selection did not persist");
+  }
+  return verified;
+}
+function latestCharacterPlaythrough(catalog2, characterId) {
+  let latest = null;
+  let latestNumber = 0;
+  let ordinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    ordinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    const number2 = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
+    if (latest === null || number2 >= latestNumber) {
+      latest = playthrough;
+      latestNumber = number2;
+    }
+  }
+  return latest;
+}
+async function playthroughIsReusable(client, playthrough) {
+  if (isPlaythroughArchived(playthrough)) return false;
+  try {
+    const sessionId = rootSessionId4(playthrough);
+    const timeline = await client.getTimeline(playthrough);
+    if ((timeline?.nodes?.length ?? 0) > 0) return false;
+    if (sessionId === null) {
+      return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
+    }
+    const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
+    if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
+    const history = await client.getMessages(sessionId);
+    if (history?.incompleteTurn === true) return false;
+    return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
+  } catch (reason) {
+    if (reason?.code === "PLAY_SESSION_NOT_FOUND") return false;
+    throw reason;
+  }
+}
+async function renamePlaythrough(client, playthrough, title) {
+  if (client == null) throw new TypeError("playClient.required");
+  const normalized = typeof title === "string" ? title.trim() : "";
+  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
+  const saved = await updateCatalog(client, (current4) => {
+    const freshIndex = current4.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
+    if (freshIndex < 0) throw new TypeError("play.rename.missing");
+    const freshPlaythroughs = [...current4.playthroughs];
+    const fresh = freshPlaythroughs[freshIndex];
+    freshPlaythroughs[freshIndex] = {
+      ...fresh,
+      title: normalized,
+      ext: {
+        ...fresh.ext,
+        pmpDshTavern: { ...fresh.ext?.pmpDshTavern, autoTitle: false }
+      }
+    };
+    return { ...current4, playthroughs: freshPlaythroughs };
+  });
+  const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
+  const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
+  if (renamed?.title !== normalized || renamed.ext?.pmpDshTavern?.autoTitle !== false) {
+    throw new Error("play.rename.verificationFailed");
+  }
+  return renamed;
+}
+function sourceSessionIdForCharacter(character2) {
+  const activePlaythrough = character2?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
+  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
+  const activeLoose = character2?.unassigned?.find((item) => item.active);
+  if (activeLoose !== void 0) return activeLoose.id;
+  const loose = character2?.unassigned?.find((item) => typeof item.id === "string");
+  if (loose !== void 0) return loose.id;
+  const rooted = character2?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
+  return rooted?.rootSessionId ?? null;
+}
+async function reusableOpeningDraft(client, characterId, configurationSelection) {
+  const latest = latestCharacterPlaythrough(await catalogOrEmpty(client), characterId);
+  if (!latest || isPlaythroughArchived(latest) || rootSessionId4(latest) || latest.ext?.pmpDshTavern?.draftId !== latest.id) return null;
+  let result;
+  try {
+    result = await client.getDraft(latest.id);
+  } catch (error) {
+    if (["PLAY_DRAFT_NOT_FOUND", "PLAY_DRAFT_ARCHIVED"].includes(error.code)) return null;
+    throw error;
+  }
+  const { draft, playthrough } = result;
+  if (draft.phase !== "draft" || draft.claim || draft.selection.characterCardId !== characterId || isPlaythroughArchived(playthrough) || rootSessionId4(playthrough)) return null;
+  if (configurationSelection && JSON.stringify(normalizeTemplateSelection(draft.selection)) !== JSON.stringify(normalizeTemplateSelection(configurationSelection))) return null;
+  return { ...result, sessionId: null, reused: true };
+}
+async function createCharacterPlaythrough(client, {
+  character: character2,
+  selectionFromSessionId = null,
+  configureSession = null,
+  configurationSource = null,
+  configurationSelection = null,
+  reuseEmpty = true,
+  creationId
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
+  const characterId = safeSegment(character2?.id, "character.id");
+  if (typeof client.postDraft === "function") {
+    const source = configurationSource ?? (selectionFromSessionId ? { mode: "current", sessionId: selectionFromSessionId } : null);
+    return creationRequest(
+      client,
+      ["draft", characterId, source, configurationSelection, reuseEmpty],
+      creationId,
+      async (identity, options) => ({ ...await client.postDraft({ characterId, ...source ? { source } : {}, ...identity }, options), reused: false }),
+      reuseEmpty ? () => reusableOpeningDraft(client, characterId, configurationSelection) : null
+    );
+  }
+  const catalog2 = reuseEmpty && typeof client.getCatalog === "function" ? await catalogOrEmpty(client) : null;
+  let latest = latestCharacterPlaythrough(catalog2, characterId);
+  let reusable = reuseEmpty && latest !== null && await playthroughIsReusable(client, latest);
+  if (reusable) {
+    const fresh = (await client.getCatalog()).playthroughs.find((item) => item.id === latest.id && item.path === latest.path);
+    reusable = fresh !== void 0 && !isPlaythroughArchived(fresh) && rootSessionId4(fresh) === rootSessionId4(latest);
+    if (reusable) latest = fresh;
+  }
+  if (reusable) {
+    const existingRoot = rootSessionId4(latest);
+    if (existingRoot !== null) {
+      if (typeof configureSession === "function") await configureSession(existingRoot);
+      await ensureCharacterSelection(client, existingRoot, characterId);
+      return { sessionId: existingRoot, playthrough: latest, reused: true };
+    }
+  }
+  throw Object.assign(new Error("This client requires the Host draft creation API (postDraft) to start a new playthrough safely."), { code: "PLAY_CREATION_UNAVAILABLE" });
+}
+function createPlaythroughController(client, dependencies = {}) {
+  const inFlight = /* @__PURE__ */ new Map();
+  let tail = Promise.resolve();
+  return {
+    create(args) {
+      const characterId = safeSegment(args?.character?.id, "character.id");
+      const reuseEmpty = args?.reuseEmpty === void 0 ? dependencies.reuseEmpty === void 0 ? true : dependencies.reuseEmpty : args.reuseEmpty;
+      if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
+      const key2 = JSON.stringify([characterId, reuseEmpty, args.creationId, args.configurationSource, args.selectionFromSessionId, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null]);
+      const existing = inFlight.get(key2);
+      if (existing !== void 0) return existing;
+      const task = tail.catch(() => {
+      }).then(() => createCharacterPlaythrough(client, {
+        ...dependencies,
+        ...args,
+        reuseEmpty
+      }));
+      tail = task;
+      inFlight.set(key2, task);
+      task.finally(() => {
+        if (inFlight.get(key2) === task) inFlight.delete(key2);
+      }).catch(() => {
+      });
+      return task;
+    }
+  };
+}
+
 // packages/client/src/play/diagnostics.js
 var import_react34 = require("react");
-
-// packages/client/src/play/title.js
-function playthroughNumber(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
-}
-function isLegacyAutomaticTitle(title, number2) {
-  return title === "\u5468\u76EE" || title === `${number2}\u5468\u76EE` || title === `Playthrough ${number2}`;
-}
-function hasAutomaticPlaythroughTitle(playthrough) {
-  const number2 = playthroughNumber(playthrough);
-  if (number2 === null) return false;
-  const declared = playthrough?.ext?.pmpDshTavern?.autoTitle;
-  if (declared === true) return true;
-  if (declared === false) return false;
-  return isLegacyAutomaticTitle(playthrough?.title, number2);
-}
-function playthroughDisplayTitle(playthrough) {
-  const number2 = playthroughNumber(playthrough);
-  if (number2 !== null && hasAutomaticPlaythroughTitle(playthrough)) {
-    return translate("play.sidebar.defaultTitle", { number: number2 });
-  }
-  const title = playthrough?.title;
-  return typeof title === "string" && title !== "" ? title : String(playthrough?.id ?? "");
-}
 
 // packages/client/src/play/diagnostics-state.js
 var DISMISSED_KEY = `${PLUGIN_ID}:workspace-diagnostics-dismissed:v1`;
@@ -55189,7 +55813,7 @@ function createWorkspaceDiagnostics(client, {
   } catch {
   }
   let snapshot = { resources: null, issues: [], loading: true, error: null, showSummary: false, availabilityReady: false };
-  let generation = 0;
+  let generation2 = 0;
   let disposed = false;
   let sessionAvailability = null;
   const listeners = /* @__PURE__ */ new Set();
@@ -55211,9 +55835,9 @@ function createWorkspaceDiagnostics(client, {
     const currentKeys = new Set(issues.map((issue) => issue.key));
     for (const key2 of dismissed) {
       try {
-        const [owner, , code] = JSON.parse(key2);
+        const [owner2, , code] = JSON.parse(key2);
         if (code === "PLAY_NO_AVAILABLE_SESSION" && !sessionAvailabilityReady(sessionAvailability)) continue;
-        if ((owner === scope || owner === "workspace-read") && !currentKeys.has(key2)) dismissed.delete(key2);
+        if ((owner2 === scope || owner2 === "workspace-read") && !currentKeys.has(key2)) dismissed.delete(key2);
       } catch {
         dismissed.delete(key2);
       }
@@ -55253,14 +55877,14 @@ function createWorkspaceDiagnostics(client, {
     },
     async refresh() {
       if (disposed) return;
-      const request2 = ++generation;
+      const request2 = ++generation2;
       commit({ resources: null, issues: [], loading: true, error: null });
       try {
         const resources = await load(client);
-        if (disposed || request2 !== generation) return;
+        if (disposed || request2 !== generation2) return;
         reconcile(resources);
       } catch (reason) {
-        if (disposed || request2 !== generation) return;
+        if (disposed || request2 !== generation2) return;
         const code = reason?.code || "PLAY_WORKSPACE_READ_FAILED";
         const issue = {
           key: JSON.stringify(["workspace-read", null, code]),
@@ -55274,7 +55898,7 @@ function createWorkspaceDiagnostics(client, {
     },
     dispose() {
       disposed = true;
-      generation++;
+      generation2++;
       listeners.clear();
       openListeners.clear();
     }
@@ -55301,10 +55925,14 @@ function workspaceDiagnosticReport(snapshot, issues = snapshot.issues) {
 
 // packages/client/src/play/operation-log-view.js
 var operations = /* @__PURE__ */ new Set([
+  "workspace.checkpoint.write",
   "workspace.bind",
   "workspace.dir.create",
   "workspace.file.write",
   "session.create",
+  "playthrough.generation",
+  "playthrough.fork",
+  "playthrough.rollback",
   "session.branch",
   "session.user-message",
   "session.import-context.bind",
@@ -55323,6 +55951,14 @@ var checkpoints = /* @__PURE__ */ new Set([
   "session.import-context.unbound",
   "session.import-lineage.copied",
   "workspace.bound",
+  "playthrough.generation.intent",
+  "playthrough.generation.send-intent",
+  "playthrough.fork.intent",
+  "playthrough.fork.child-verified",
+  "playthrough.fork.published",
+  "playthrough.rollback.child-verified",
+  "playthrough.rollback.head-verified",
+  "playthrough.rollback.intent",
   "workspace.directory.created",
   "workspace.file.written",
   "playthrough.timeline.updated",
@@ -55526,20 +56162,20 @@ function InvalidPlaythroughArchive({ client, controller: controller2, workspace,
   const [busy2, setBusy] = (0, import_react34.useState)(false);
   const [report, setReport] = (0, import_react34.useState)(null);
   const [failed, setFailed] = (0, import_react34.useState)(false);
-  const generation = (0, import_react34.useRef)(0);
+  const generation2 = (0, import_react34.useRef)(0);
   const scope = workspaceDiagnosticScope(workspace);
   (0, import_react34.useEffect)(() => {
-    generation.current++;
+    generation2.current++;
     setBusy(false);
     setReport(null);
     setFailed(false);
     return () => {
-      generation.current++;
+      generation2.current++;
     };
   }, [client, scope]);
   const archive = async () => {
-    const request2 = ++generation.current;
-    const isCurrent = () => generation.current === request2;
+    const request2 = ++generation2.current;
+    const isCurrent = () => generation2.current === request2;
     setBusy(true);
     setReport(null);
     setFailed(false);
@@ -55576,7 +56212,7 @@ function OperationLogsPanel({ client }) {
   const [status, setStatus] = (0, import_react34.useState)(null);
   const [copyStatus, setCopyStatus] = (0, import_react34.useState)(null);
   const [busy2, setBusy] = (0, import_react34.useState)(false);
-  const generation = (0, import_react34.useRef)(0);
+  const generation2 = (0, import_react34.useRef)(0);
   const filterHelpId = (0, import_react34.useId)();
   (0, import_react34.useEffect)(() => {
     setPage(null);
@@ -55584,11 +56220,11 @@ function OperationLogsPanel({ client }) {
     setBusy(false);
     setCopyStatus(null);
     return () => {
-      generation.current++;
+      generation2.current++;
     };
   }, [client]);
   const load = async (before) => {
-    const current4 = ++generation.current;
+    const current4 = ++generation2.current;
     setBusy(true);
     setStatus(null);
     try {
@@ -55597,23 +56233,23 @@ function OperationLogsPanel({ client }) {
         return;
       }
       const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 5 });
-      if (current4 === generation.current) setPage(value);
+      if (current4 === generation2.current) setPage(value);
     } catch (error) {
-      if (current4 === generation.current) {
+      if (current4 === generation2.current) {
         setPage(null);
         setStatus(error?.status === 404 ? "diagnostics.logsUnavailable" : error?.code === "LOG_CURSOR_EXPIRED" ? "diagnostics.logsExpired" : "diagnostics.logsFailed");
       }
     } finally {
-      if (current4 === generation.current) setBusy(false);
+      if (current4 === generation2.current) setBusy(false);
     }
   };
   const download = () => {
     if (!page) return;
     const url = URL.createObjectURL(new Blob([operationPageJsonl(page)], { type: "application/x-ndjson" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "tavern-operation-logs.jsonl";
-    anchor.click();
+    const anchor2 = document.createElement("a");
+    anchor2.href = url;
+    anchor2.download = "tavern-operation-logs.jsonl";
+    anchor2.click();
     setTimeout(() => URL.revokeObjectURL(url), 1e3);
   };
   const copyLocator = async (row) => {
@@ -55641,7 +56277,7 @@ function OperationLogsPanel({ client }) {
         if (event.currentTarget.open) {
           if (!page && !busy2) void load();
         } else {
-          generation.current++;
+          generation2.current++;
           setBusy(false);
         }
       }
@@ -55666,7 +56302,7 @@ function OperationLogsPanel({ client }) {
         placeholder: "operationId",
         "aria-describedby": filterHelpId,
         onChange: (event) => {
-          generation.current++;
+          generation2.current++;
           setBusy(false);
           setPage(null);
           setStatus(null);
@@ -55743,8 +56379,8 @@ var import_react35 = require("react");
 
 // packages/client/src/play/export.js
 function rootSessionId5(playthrough, timeline) {
-  const root = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  if (typeof root === "string" && root !== "") return root;
+  const root2 = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  if (typeof root2 === "string" && root2 !== "") return root2;
   for (const node of timeline?.nodes ?? []) {
     const variant2 = node.variants?.find((item) => item.id === node.adoptedVariantId);
     if (typeof variant2?.sessionId === "string") return variant2.sessionId;
@@ -55785,9 +56421,9 @@ function normalizeImportContext(value) {
 }
 function selectedGreetingState(selectionResponse, characterResponse) {
   const selection = selectionResponse?.selection;
-  const character = characterResponse?.character;
-  if (selection == null || character == null || character.id !== selection.characterCardId) return null;
-  const options = characterGreetingOptions(character);
+  const character2 = characterResponse?.character;
+  if (selection == null || character2 == null || character2.id !== selection.characterCardId) return null;
+  const options = characterGreetingOptions(character2);
   const requested = Number(selection.character?.greetingIndex ?? 0);
   const selectedIndex = Math.max(0, options.findIndex((item) => item.index === requested));
   const option = options[selectedIndex] ?? options[0];
@@ -55814,9 +56450,9 @@ async function loadPlaythroughExport(client, playthrough) {
   const timeline = await client.getTimeline(playthrough);
   const sessionIds = allSessionIds(timeline);
   const messagesBySession = await loadMessages2(client, sessionIds);
-  const root = rootSessionId5(playthrough, timeline);
-  const importContext = root === null ? null : normalizeImportContext((await loadPlaythroughImportContext(client, root, playthrough, timeline)).document);
-  const selectionResponse = root === null ? null : await client.getCharacterSelection(root);
+  const root2 = rootSessionId5(playthrough, timeline);
+  const importContext = root2 === null ? null : normalizeImportContext((await loadPlaythroughImportContext(client, root2, playthrough, timeline)).document);
+  const selectionResponse = root2 === null ? null : await client.getCharacterSelection(root2);
   const characterId = selectionResponse?.selection?.characterCardId;
   const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
   const timelineTurns = projectTimelineQa(timeline, messagesBySession);
@@ -55838,7 +56474,7 @@ async function loadPlaythroughExport(client, playthrough) {
   const greetingSwipeId = (importContext?.greeting ?? "") !== "" ? 0 : greetingState?.selectedIndex ?? 0;
   const [regexDocument, active] = await Promise.all([
     typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
-    root !== null && typeof client.getActive === "function" ? client.getActive(root) : null
+    root2 !== null && typeof client.getActive === "function" ? client.getActive(root2) : null
   ]);
   const bindings = {
     presetId: active?.selection?.presetId ?? null,
@@ -55856,11 +56492,11 @@ async function loadPlaythroughExport(client, playthrough) {
       resourceId: bindings.characterId
     })
   ];
-  const character = characterResponse?.character ?? null;
-  const characterData = character?.data ?? character;
+  const character2 = characterResponse?.character ?? null;
+  const characterData = character2?.data ?? character2;
   const greetingMacros = {
     user: active?.resources?.user?.name || "User",
-    character: characterData?.nickname || characterData?.name || character?.name || "Assistant"
+    character: characterData?.nickname || characterData?.name || character2?.name || "Assistant"
   };
   const render4 = (text3, target) => applyDisplayRegex(applyDisplayNameMacros(text3, greetingMacros), rules, bindings, target).text;
   return {
@@ -55873,7 +56509,7 @@ async function loadPlaythroughExport(client, playthrough) {
       userText: render4(turn.userText, "user"),
       ...selectAssistantDisplay(turn, (text3) => render4(text3, "assistant"))
     })),
-    character,
+    character: character2,
     importContext,
     greeting,
     greetingSwipes,
@@ -55994,18 +56630,18 @@ function safeFilename(value) {
 function downloadDocument(playthrough, document2) {
   const blob = new Blob([document2.content], { type: document2.mime });
   const url = URL.createObjectURL(blob);
-  const anchor = window.document.createElement("a");
-  anchor.href = url;
-  anchor.download = `${safeFilename(playthrough.title || playthrough.id)}.${document2.extension}`;
-  anchor.style.display = "none";
-  window.document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
+  const anchor2 = window.document.createElement("a");
+  anchor2.href = url;
+  anchor2.download = `${safeFilename(playthrough.title || playthrough.id)}.${document2.extension}`;
+  anchor2.style.display = "none";
+  window.document.body.append(anchor2);
+  anchor2.click();
+  anchor2.remove();
   queueMicrotask(() => URL.revokeObjectURL(url));
 }
-function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRelink }) {
+function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRepair, onRelink }) {
   installStyles2();
-  const root = (0, import_react35.useRef)(null);
+  const root2 = (0, import_react35.useRef)(null);
   const [open2, setOpen] = (0, import_react35.useState)(false);
   const [busy2, setBusy] = (0, import_react35.useState)(false);
   const [error, setError] = (0, import_react35.useState)("");
@@ -56014,7 +56650,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
   (0, import_react35.useEffect)(() => {
     if (!open2) return void 0;
     const close2 = (event) => {
-      if (!root.current?.contains(event.target)) setOpen(false);
+      if (!root2.current?.contains(event.target)) setOpen(false);
     };
     window.document.addEventListener("pointerdown", close2);
     return () => window.document.removeEventListener("pointerdown", close2);
@@ -56027,6 +56663,19 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       const snapshot = await loadPlaythroughExport(playClient, playthrough);
       const localizedPlaythrough = { ...snapshot.playthrough, title: displayTitle };
       downloadDocument(localizedPlaythrough, playthroughExportDocument({ ...snapshot, playthrough: localizedPlaythrough }, format));
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const repair = async () => {
+    if (busy2) return;
+    setBusy(true);
+    setError("");
+    try {
+      await onRepair();
       setOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -56070,7 +56719,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
   };
   return h30(
     "div",
-    { ref: root, className: "dtv-play-io", "data-placement": placement },
+    { ref: root2, className: "dtv-play-io", "data-placement": placement },
     h30("button", {
       type: "button",
       className: "dtv-play-io-trigger",
@@ -56086,6 +56735,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       "div",
       { className: "dtv-play-io-menu" },
       h30("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: rename }, uiMessage("play.io.rename")),
+      typeof onRepair !== "function" ? null : h30("button", { type: "button", className: "dtv-play-io-item", disabled: busy2, onClick: repair }, uiMessage("play.io.repair")),
       typeof onRelink !== "function" ? null : h30("button", {
         type: "button",
         className: "dtv-play-io-item",
@@ -56128,14 +56778,14 @@ var css9 = `
 function installStyles3() {
   installTavernStyle(`${PLUGIN_ID}-play-sidebar`, css9);
 }
-function Avatar({ character }) {
-  const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
+function Avatar({ character: character2 }) {
+  const fallback = (character2.name || character2.id).slice(0, 1).toUpperCase();
   return h31(
     "span",
     { className: "dtv-play-avatar", "aria-hidden": "true" },
     rawText(fallback),
     h31("img", {
-      src: `${API_V1}/characters/${encodeURIComponent(character.id)}/png`,
+      src: `${API_V1}/characters/${encodeURIComponent(character2.id)}/png`,
       alt: "",
       onError: (event) => {
         event.currentTarget.hidden = true;
@@ -56147,14 +56797,14 @@ function Rail({ model, scale, expandSidebar }) {
   return h31(
     "div",
     { className: "dtv-play-rail", style: { "--dtv-ui-scale": scale } },
-    ...model.characters.map((character) => h31("button", {
-      key: character.id,
+    ...model.characters.map((character2) => h31("button", {
+      key: character2.id,
       type: "button",
       className: "dtv-play-rail-button",
-      title: rawText(character.name),
-      "aria-label": rawText(character.name),
+      title: rawText(character2.name),
+      "aria-label": rawText(character2.name),
       onClick: expandSidebar
-    }, h31(Avatar, { character }))),
+    }, h31(Avatar, { character: character2 }))),
     h31("button", {
       type: "button",
       className: "dtv-play-rail-button",
@@ -56174,8 +56824,8 @@ function characterInsertionBoundary(event) {
   const bounds = target.getBoundingClientRect();
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
 }
-function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
-  const count = character.playthroughs.length + character.unassigned.length;
+function CharacterGroup({ character: character2, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, repairPlaythrough, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
+  const count = character2.playthroughs.length + character2.unassigned.length;
   return h31(
     "section",
     {
@@ -56192,7 +56842,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         className: "dtv-play-character-drag",
         disabled: reorderDisabled,
         title: uiMessage("preset.dragOrder"),
-        "aria-label": uiMessage("preset.dragNamed", { name: character.name }),
+        "aria-label": uiMessage("preset.dragNamed", { name: character2.name }),
         "aria-pressed": dragging,
         onPointerDown,
         onPointerMove,
@@ -56208,21 +56858,21 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           onClick: toggle
         },
         h31("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
-        h31(Avatar, { character }),
-        h31("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h31(Avatar, { character: character2 }),
+        h31("span", { className: "dtv-play-title" }, rawText(character2.name)),
         h31("span", { className: "dtv-play-count" }, rawText(String(count)))
       ),
       h31("button", {
         type: "button",
         className: "dtv-play-create",
         disabled: createDisabled,
-        title: uiMessage("play.sidebar.newPlaythrough", { name: character.name }),
-        "aria-label": uiMessage("play.sidebar.newPlaythrough", { name: character.name }),
-        onClick: () => createPlaythrough(character)
+        title: uiMessage("play.sidebar.newPlaythrough", { name: character2.name }),
+        "aria-label": uiMessage("play.sidebar.newPlaythrough", { name: character2.name }),
+        onClick: () => createPlaythrough(character2)
       }, creating ? "\u2026" : "+")
     ),
-    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h31("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
-    collapsed ? null : character.playthroughs.map((playthrough) => h31(
+    collapsed ? null : character2.playthroughs.length === 0 && character2.unassigned.length === 0 ? h31("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
+    collapsed ? null : character2.playthroughs.map((playthrough) => h31(
       "div",
       {
         key: playthrough.id,
@@ -56245,13 +56895,13 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
       h31(PlayIoMenu, {
         playClient,
         playthrough,
-        openSession,
+        onRepair: () => repairPlaythrough(playthrough),
         trigger: "\u22EF",
         placement: "sidebar",
-        onRelink: () => beginPlaythroughRelink(playthrough, character)
+        onRelink: () => beginPlaythroughRelink(playthrough, character2)
       })
     )),
-    collapsed || character.unassigned.length === 0 ? null : h31(
+    collapsed || character2.unassigned.length === 0 ? null : h31(
       "div",
       { className: "dtv-play-subgroup" },
       h31(
@@ -56264,9 +56914,9 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         },
         h31("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
         h31("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
-        h31("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
+        h31("span", { className: "dtv-play-count" }, rawText(String(character2.unassigned.length)))
       ),
-      unassignedOpen ? character.unassigned.map((session) => h31(
+      unassignedOpen ? character2.unassigned.map((session) => h31(
         "button",
         {
           key: session.id,
@@ -56281,7 +56931,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
     )
   );
 }
-function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
+function MissingCharacterGroup({ character: character2, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, repairPlaythrough, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
   return h31(
     "section",
     { className: "dtv-play-section dtv-play-missing-card", "data-open": !collapsed },
@@ -56298,19 +56948,19 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
         },
         h31("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
         h31("span", { className: "dtv-play-avatar", "aria-hidden": "true" }, "?"),
-        h31("span", { className: "dtv-play-title" }, rawText(character.name)),
-        h31("span", { className: "dtv-play-count" }, rawText(String(character.playthroughs.length)))
+        h31("span", { className: "dtv-play-title" }, rawText(character2.name)),
+        h31("span", { className: "dtv-play-count" }, rawText(String(character2.playthroughs.length)))
       ),
       h31("button", {
         type: "button",
         className: "dtv-play-relink",
         disabled: relinkDisabled,
         title: uiMessage("play.sidebar.relinkCharacter"),
-        "aria-label": uiMessage("play.sidebar.relinkCharacterNamed", { name: character.name }),
-        onClick: () => beginRelink(character)
+        "aria-label": uiMessage("play.sidebar.relinkCharacterNamed", { name: character2.name }),
+        onClick: () => beginRelink(character2)
       }, "\u21BB")
     ),
-    collapsed ? null : character.playthroughs.map((playthrough) => h31(
+    collapsed ? null : character2.playthroughs.map((playthrough) => h31(
       "div",
       {
         key: playthrough.id,
@@ -56333,10 +56983,10 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
       h31(PlayIoMenu, {
         playClient,
         playthrough,
-        openSession,
+        onRepair: () => repairPlaythrough(playthrough),
         trigger: "\u22EF",
         placement: "sidebar",
-        onRelink: () => beginPlaythroughRelink(playthrough, character)
+        onRelink: () => beginPlaythroughRelink(playthrough, character2)
       })
     ))
   );
@@ -56351,6 +57001,7 @@ function PlayWorkspaceBrowser({
   playthroughController,
   openSession,
   switchToNative,
+  startRepair,
   getActivePlaythroughId,
   subscribeActivePlaythroughId
 }) {
@@ -56460,11 +57111,11 @@ function PlayWorkspaceBrowser({
     const normalizedName = (value) => String(value ?? "").trim().toLocaleLowerCase("zh-CN");
     const recoveries = [];
     for (const missing of model.missingCharacters) {
-      let candidates = typeof missing.sha256 === "string" ? model.characters.filter((character) => character.sha256 === missing.sha256) : [];
+      let candidates = typeof missing.sha256 === "string" ? model.characters.filter((character2) => character2.sha256 === missing.sha256) : [];
       if (candidates.length !== 1) {
         const name2 = normalizedName(missing.name);
         const sameMissing = model.missingCharacters.filter((item) => normalizedName(item.name) === name2);
-        candidates = sameMissing.length === 1 ? model.characters.filter((character) => normalizedName(character.name) === name2) : [];
+        candidates = sameMissing.length === 1 ? model.characters.filter((character2) => normalizedName(character2.name) === name2) : [];
       }
       if (candidates.length !== 1) continue;
       const key2 = `${missing.id}\0${candidates[0].id}`;
@@ -56496,14 +57147,14 @@ function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
   };
-  const createPlaythrough = async (character) => {
+  const createPlaythrough = async (character2) => {
     if (creatingCharacterId !== null) return;
-    setCreatingCharacterId(character.id);
+    setCreatingCharacterId(character2.id);
     setStatus(null);
     try {
       const result = await creator.current.controller.create({
-        character,
-        selectionFromSessionId: sourceSessionIdForCharacter(character),
+        character: character2,
+        selectionFromSessionId: sourceSessionIdForCharacter(character2),
         reuseEmpty: typeof playClient.postDraft === "function"
       });
       openSession(result.sessionId, result.playthrough);
@@ -56521,9 +57172,11 @@ function PlayWorkspaceBrowser({
         openSession(null, playthrough);
         return;
       }
-      const pending2 = pendingSwipe(playClient, playthrough);
-      if (pending2 !== null) {
-        openSession(pending2.sessionId, playthrough);
+      const pending4 = supportsGenerationRecovery(playClient) ? await restorePendingGeneration(playClient, playthrough, await playClient.getTimeline(playthrough), {
+        expectedWorkspaceScope: JSON.stringify([resources.workspace.workspaceId, resources.workspace.rootPath])
+      }) : pendingSwipe(playClient, playthrough);
+      if (pending4 !== null) {
+        openSession(pending4.sessionId, playthrough);
         return;
       }
       const focus = await playClient.getFocus(playthrough);
@@ -56537,6 +57190,7 @@ function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
   };
+  const repairPlaythrough = (playthrough) => startRepair(resources.workspace, playthrough);
   const restorePlaythrough = async (playthrough) => {
     if (restoringId !== null) return;
     setRestoringId(playthrough.id);
@@ -56563,10 +57217,10 @@ function PlayWorkspaceBrowser({
   const moveCharacter = async (from, boundary) => {
     if (resources === null || reorderingCharacters || resources.characterSorting?.mode !== "custom") return;
     const reordered = reorderAtBoundary(model.characters, from, boundary);
-    const storedIds = new Set(resources.characters.map((character) => character.id));
-    const characterIds = reordered.map((character) => character.id).filter((id) => storedIds.has(id));
+    const storedIds = new Set(resources.characters.map((character2) => character2.id));
+    const characterIds = reordered.map((character2) => character2.id).filter((id) => storedIds.has(id));
     if (characterIds.every((id, index) => resources.characters[index]?.id === id)) return;
-    const byId = new Map(resources.characters.map((character) => [character.id, character]));
+    const byId = new Map(resources.characters.map((character2) => [character2.id, character2]));
     setResources((current4) => current4 === null ? null : {
       ...current4,
       characters: characterIds.map((id) => byId.get(id)).filter(Boolean)
@@ -56611,13 +57265,13 @@ function PlayWorkspaceBrowser({
       setReorderingCharacters(false);
     }
   };
-  const beginRelink = (character) => {
-    setRelinkRequest({ kind: "character", character });
+  const beginRelink = (character2) => {
+    setRelinkRequest({ kind: "character", character: character2 });
     setRelinkTargetId(resources?.characters[0]?.id ?? "");
   };
-  const beginPlaythroughRelink = (playthrough, character) => {
-    const target = resources?.characters.find((item) => item.id !== character.id);
-    setRelinkRequest({ kind: "playthrough", playthrough, character });
+  const beginPlaythroughRelink = (playthrough, character2) => {
+    const target = resources?.characters.find((item) => item.id !== character2.id);
+    setRelinkRequest({ kind: "playthrough", playthrough, character: character2 });
     setRelinkTargetId(target?.id ?? "");
   };
   const commitRelink = async () => {
@@ -56692,14 +57346,14 @@ function PlayWorkspaceBrowser({
       )
     ),
     resources !== null && model.characters.length === 0 ? h31("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
-    ...model.characters.flatMap((character, index) => [
+    ...model.characters.flatMap((character2, index) => [
       characterDragFrom !== null && characterDropIndex === index ? h31(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
       h31(CharacterGroup, {
-        key: character.id,
-        character,
+        key: character2.id,
+        character: character2,
         index,
         dragging: characterDragFrom === index,
-        reorderDisabled: reorderingCharacters || resources?.characterSorting?.mode !== "custom" || model.characters.length < 2 || !resources?.characters.some((item) => item.id === character.id),
+        reorderDisabled: reorderingCharacters || resources?.characterSorting?.mode !== "custom" || model.characters.length < 2 || !resources?.characters.some((item) => item.id === character2.id),
         onPointerDown: (event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -56724,16 +57378,17 @@ function PlayWorkspaceBrowser({
           setCharacterDragFrom(null);
           setCharacterDropIndex(null);
         },
-        collapsed: collapsedCharacters.has(character.id),
-        unassignedOpen: expandedUnassigned.has(character.id),
-        creating: creatingCharacterId === character.id,
+        collapsed: collapsedCharacters.has(character2.id),
+        unassignedOpen: expandedUnassigned.has(character2.id),
+        creating: creatingCharacterId === character2.id,
         createDisabled: !model.workspaceReady || creatingCharacterId !== null,
         createPlaythrough,
         playClient,
-        toggle: () => toggleSet(setCollapsedCharacters, character.id),
-        toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
+        toggle: () => toggleSet(setCollapsedCharacters, character2.id),
+        toggleUnassigned: () => toggleSet(setExpandedUnassigned, character2.id),
         openPlaythrough,
         openSession,
+        repairPlaythrough,
         beginPlaythroughRelink,
         diagnostics,
         diagnosticIds
@@ -56755,16 +57410,16 @@ function PlayWorkspaceBrowser({
         h31("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.missingCharacters")),
         h31("span", { className: "dtv-play-count" }, rawText(String(model.missingCharacters.length)))
       ),
-      missingOpen ? model.missingCharacters.map((character) => h31(MissingCharacterGroup, {
-        key: character.id,
-        character,
-        collapsed: collapsedMissingCharacters.has(character.id),
-        toggle: () => toggleSet(setCollapsedMissingCharacters, character.id),
+      missingOpen ? model.missingCharacters.map((character2) => h31(MissingCharacterGroup, {
+        key: character2.id,
+        character: character2,
+        collapsed: collapsedMissingCharacters.has(character2.id),
+        toggle: () => toggleSet(setCollapsedMissingCharacters, character2.id),
         beginRelink,
         beginPlaythroughRelink,
         relinkDisabled: (resources?.characters.length ?? 0) === 0 || relinkBusy,
         openPlaythrough,
-        openSession,
+        repairPlaythrough,
         playClient,
         diagnostics,
         diagnosticIds
@@ -56889,10 +57544,10 @@ function PlayWorkspaceBrowser({
         value: relinkTargetId,
         disabled: relinkBusy,
         onChange: (event) => setRelinkTargetId(event.currentTarget.value)
-      }, ...(resources?.characters ?? []).filter((character) => relinkRequest.kind !== "playthrough" || character.id !== relinkRequest.character.id).map((character) => h31("option", { key: character.id, value: character.id }, rawText(character.name)))),
+      }, ...(resources?.characters ?? []).filter((character2) => relinkRequest.kind !== "playthrough" || character2.id !== relinkRequest.character.id).map((character2) => h31("option", { key: character2.id, value: character2.id }, rawText(character2.name)))),
       relinkRequest.kind !== "playthrough" || assessPlaythroughCharacterRelink({
         playthrough: relinkRequest.playthrough,
-        target: resources?.characters.find((character) => character.id === relinkTargetId),
+        target: resources?.characters.find((character2) => character2.id === relinkTargetId),
         characters: resources?.characters,
         missingCharacters: resources?.missingCharacters
       }).automatic ? null : h31("p", { className: "dtv-play-relink-warning" }, uiMessage("play.sidebar.relinkMismatchWarning")),
@@ -57117,7 +57772,7 @@ function sessionViewTarget(selectedView, targetViewId, binding, shouldDefault) {
   if (binding === null) return selectedView === targetViewId ? "chat" : null;
   return shouldDefault(binding) ? defaultViewTarget(selectedView, targetViewId) : null;
 }
-function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete, shouldDefault, getBinding, subscribeBindings }) {
+function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete: complete3, shouldDefault, getBinding, subscribeBindings }) {
   const binding = (0, import_react38.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
   const hasStore = typeof useStore === "function";
   const selectedView = hasStore ? useStore((state) => state.view) : void 0;
@@ -57129,8 +57784,8 @@ function DefaultConversationViewAdapter({ useStore, actions, targetViewId, compl
       } catch {
       }
     }
-    if (binding != null) complete(binding);
-  }, [actions, binding, complete, hasStore, selectedView, shouldDefault, targetViewId]);
+    if (binding != null) complete3(binding);
+  }, [actions, binding, complete3, hasStore, selectedView, shouldDefault, targetViewId]);
   return null;
 }
 
@@ -57228,13 +57883,13 @@ async function loadDraftDisplay(client, draft, playthrough) {
     readRenderingWorkspace(client, () => getRegexDocument(client)),
     client.getTimeline(playthrough)
   ]);
-  const character = characterResponse.character, preset = presetResponse?.preset, user = userResponse?.user;
+  const character2 = characterResponse.character, preset = presetResponse?.preset, user = userResponse?.user;
   const bindings = { characterId: selection.characterCardId, presetId: selection.presetId };
-  const macros2 = { user: user?.name || "User", character: character?.data?.nickname || character?.name || "Assistant" };
-  const rules = [...regex.resource.rules, ...resourceRegexRules(preset, { kind: "preset", resourceId: selection.presetId }), ...resourceRegexRules(character, { kind: "character", resourceId: selection.characterCardId })];
+  const macros2 = { user: user?.name || "User", character: character2?.data?.nickname || character2?.name || "Assistant" };
+  const rules = [...regex.resource.rules, ...resourceRegexRules(preset, { kind: "preset", resourceId: selection.presetId }), ...resourceRegexRules(character2, { kind: "character", resourceId: selection.characterCardId })];
   const greeting = projectGreeting({ openingCharacterId: selection.characterCardId, selectionResponse: { selection }, characterResponse });
   const expanded = greeting ? applyDisplayNameMacros(greeting.text, macros2) : "";
-  const renderingSources = await identifyRenderingSources([...renderingInventory(character, { kind: "character", resourceId: selection.characterCardId }), ...renderingInventory(preset, { kind: "preset", resourceId: selection.presetId })]);
+  const renderingSources = await identifyRenderingSources([...renderingInventory(character2, { kind: "character", resourceId: selection.characterCardId }), ...renderingInventory(preset, { kind: "preset", resourceId: selection.presetId })]);
   const imported = draft.importContextRef ? JSON.parse((await client.getFile(draft.importContextRef.path)).content) : null;
   return {
     timeline,
@@ -57267,7 +57922,7 @@ function DraftOpening({ draftId, playClient, openSession, switchToNative, native
   styles2();
   const [loaded, setLoaded] = (0, import_react40.useState)(null), [display, setDisplay] = (0, import_react40.useState)(null), [error, setError] = (0, import_react40.useState)(""), [busy2, setBusy] = (0, import_react40.useState)(false);
   const [text3, setText] = (0, import_react40.useState)(""), [variableText, setVariableText] = (0, import_react40.useState)("");
-  const settings = useClientUiSettings(), current4 = (0, import_react40.useRef)(null), generation = (0, import_react40.useRef)(0), sending = (0, import_react40.useRef)(null), input = (0, import_react40.useRef)({ draft: "", draftRev: 0, phase: "plain", attachmentIds: [], occurrences: [] });
+  const settings = useClientUiSettings(), current4 = (0, import_react40.useRef)(null), generation2 = (0, import_react40.useRef)(0), sending = (0, import_react40.useRef)(null), input = (0, import_react40.useRef)({ draft: "", draftRev: 0, phase: "plain", attachmentIds: [], occurrences: [] });
   const variableRevision = (0, import_react40.useRef)(null), inputHydrated = (0, import_react40.useRef)(false);
   const recovering = (0, import_react40.useRef)(null);
   const life = (0, import_react40.useRef)(true), file = (0, import_react40.useRef)(null), operation = (0, import_react40.useRef)(null);
@@ -57282,7 +57937,7 @@ function DraftOpening({ draftId, playClient, openSession, switchToNative, native
   const report = (0, import_react40.useCallback)((value) => setError(value), []);
   useRestoredRenderingDisplay(display?.display, settings, report);
   const refresh = (0, import_react40.useCallback)(async () => {
-    const epoch = ++generation.current;
+    const epoch = ++generation2.current;
     let next = await playClient.getDraft(draftId);
     if (!inputHydrated.current) {
       inputHydrated.current = true;
@@ -57296,15 +57951,15 @@ function DraftOpening({ draftId, playClient, openSession, switchToNative, native
       input.current.draftRev++;
       setText(retained);
       if (!recovering.current) {
-        const pending2 = playClient.cancelDraft(draftId);
-        recovering.current = pending2;
-        pending2.finally(() => {
-          if (recovering.current === pending2) recovering.current = null;
+        const pending4 = playClient.cancelDraft(draftId);
+        recovering.current = pending4;
+        pending4.finally(() => {
+          if (recovering.current === pending4) recovering.current = null;
         }).catch(() => {
         });
       }
       const result = await recovering.current;
-      if (!life.current || epoch !== generation.current) return;
+      if (!life.current || epoch !== generation2.current) return;
       if (result.sessionId) {
         openSession(result.sessionId, next.playthrough);
         return;
@@ -57315,13 +57970,13 @@ function DraftOpening({ draftId, playClient, openSession, switchToNative, native
       setText(retained);
       next = await playClient.getDraft(draftId);
     }
-    if (!life.current || epoch !== generation.current) return;
+    if (!life.current || epoch !== generation2.current) return;
     if (next.draft.phase === "started") {
       openSession(next.draft.claim.sessionId, next.playthrough);
       return;
     }
     const projection = await loadDraftDisplay(playClient, next.draft, next.playthrough);
-    if (!life.current || epoch !== generation.current) return;
+    if (!life.current || epoch !== generation2.current) return;
     setLoaded(next);
     setDisplay(projection);
     if (variableRevision.current !== next.draft.variableRevision) {
@@ -57349,7 +58004,7 @@ function DraftOpening({ draftId, playClient, openSession, switchToNative, native
     return () => {
       window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
       life.current = false;
-      generation.current++;
+      generation2.current++;
       sending.current?.abort();
     };
   }, [refresh]);
@@ -57628,6 +58283,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
         diagnostics,
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
+        startRepair: (workspace, row) => openRepairSession(ctx, playClient, switchToNative, workspace, row),
         getActivePlaythroughId: () => preferredPlaythroughId,
         switchToNative,
         subscribeActivePlaythroughId: (listener) => {
@@ -57787,9 +58443,9 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
       conversationPhase: conversationPhase2,
       switchToNative,
       getComposerPending: () => openingRequest?.sessionId === sessionId,
-      onComposerPending: (owner, pending2) => {
-        if (pending2 && sessionId === openingSessionId) openingRequest = { sessionId, owner };
-        else if (!pending2 && openingRequest?.sessionId === sessionId && openingRequest.owner === owner) openingRequest = null;
+      onComposerPending: (owner2, pending4) => {
+        if (pending4 && sessionId === openingSessionId) openingRequest = { sessionId, owner: owner2 };
+        else if (!pending4 && openingRequest?.sessionId === sessionId && openingRequest.owner === owner2) openingRequest = null;
         else return;
         queueMicrotask(() => {
           syncOpeningEntries();
@@ -57820,9 +58476,9 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
         inject: (sessionId) => ({
           ...bindingProps(sessionId),
           playClient,
-          openSession: (targetId, playthrough = chatBindings.get(sessionId)?.playthrough) => {
-            setSwipeTransitionSource(targetId, sessionId);
-            return openPlaySession(targetId, playthrough);
+          openSession: (targetId2, playthrough = chatBindings.get(sessionId)?.playthrough) => {
+            setSwipeTransitionSource(targetId2, sessionId);
+            return openPlaySession(targetId2, playthrough);
           }
         })
       }, ScopedPlayChatView);
@@ -58043,10 +58699,10 @@ function errorMessage4(data3, status) {
   if (typeof data3?.error?.message === "string") return data3.error.message;
   return `HTTP ${status}`;
 }
-function createRequester(fetchImpl, root) {
+function createRequester(fetchImpl, root2) {
   return async function request2(method, path3, body2, { signal } = {}) {
     const hasBody = body2 !== void 0;
-    const response = await fetchImpl(`${root}${path3}`, {
+    const response = await fetchImpl(`${root2}${path3}`, {
       method,
       headers: hasBody ? { "Content-Type": "application/json" } : void 0,
       body: hasBody ? JSON.stringify(body2) : void 0,
@@ -58088,7 +58744,7 @@ function createLivePlayClient({
   const v1 = createRequester(fetchImpl, v1Root);
   const v2 = createRequester(fetchImpl, apiRoot);
   const managedRevisions = /* @__PURE__ */ new Map();
-  const coordinateVersions = /* @__PURE__ */ new Map();
+  const snapshotRevisions = /* @__PURE__ */ new WeakMap();
   function invalidateRevision(path3) {
     managedRevisions.delete(path3);
   }
@@ -58099,10 +58755,10 @@ function createLivePlayClient({
     const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
     return v1("GET", `/character-selection${query}`);
   }
-  async function getJsonFile(path3, normalize, label) {
+  async function getJsonFile(path3, normalize, label, options) {
     let response;
     try {
-      response = await v2("GET", `/workspace/files${pathQuery(path3)}`);
+      response = await v2("GET", `/workspace/files${pathQuery(path3)}`, void 0, options);
     } catch (error) {
       if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
         managedRevisions.set(path3, null);
@@ -58113,19 +58769,20 @@ function createLivePlayClient({
     const revision = fileRevision(response, label);
     const parsed = parseJsonDocument(content, normalize, label);
     managedRevisions.set(path3, revision);
+    snapshotRevisions.set(parsed, revision);
     return parsed;
   }
-  async function putJsonFile(path3, value, normalize, label, { expectedWorkspaceScope } = {}) {
+  async function putJsonFile(path3, value, normalize, label, { expectedWorkspaceScope, revision = expectedRevision(path3) } = {}) {
     const normalized = normalize(value, label);
     const body2 = {
       content: JSON.stringify(normalized),
-      expectedRevision: expectedRevision(path3),
+      expectedRevision: revision,
       ...expectedWorkspaceScope === void 0 ? {} : { expectedWorkspaceScope }
     };
     try {
       const response = await v2("PUT", `/workspace/files${pathQuery(path3)}`, body2);
-      const revision = fileRevision(response, label);
-      managedRevisions.set(path3, revision);
+      const revision2 = fileRevision(response, label);
+      managedRevisions.set(path3, revision2);
     } catch (error) {
       if (error?.status === 409 && error?.code === "PLAY_FILE_REVISION_CONFLICT") {
         invalidateRevision(path3);
@@ -58150,7 +58807,7 @@ function createLivePlayClient({
       const current4 = await getFresh();
       const next = await mutator(current4);
       try {
-        return await putFresh(next);
+        return await putFresh(next, snapshotRevisions.get(current4) ?? null);
       } catch (error) {
         if (error?.status !== 409 || error?.code !== "PLAY_FILE_REVISION_CONFLICT" || retry >= maxRetries) {
           throw error;
@@ -58158,7 +58815,19 @@ function createLivePlayClient({
       }
     }
   }
-  return {
+  function operationOptions(options = {}) {
+    const deadline = AbortSignal.timeout(35e3);
+    return { ...options, signal: options.signal ? AbortSignal.any([options.signal, deadline]) : deadline };
+  }
+  async function workspaceScope(options) {
+    const workspace = normalizeWorkspace(await v2("GET", "/workspace", void 0, options));
+    return JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  }
+  function mutationIdentity(options) {
+    const { operationKey, expectedWorkspaceScope, checkpointId, checkpointKey } = options ?? {};
+    return { operationKey, expectedWorkspaceScope, checkpointId, checkpointKey };
+  }
+  const client = {
     mode: "live",
     apiRoot,
     chromeEventsUrl: `${apiRoot}/chrome/events`,
@@ -58174,8 +58843,8 @@ function createLivePlayClient({
     async putChrome(mode) {
       return normalizeChrome(await v2("PUT", "/chrome", { mode }));
     },
-    async getWorkspace() {
-      return normalizeWorkspace(await v2("GET", "/workspace"));
+    async getWorkspace(options) {
+      return normalizeWorkspace(await v2("GET", "/workspace", void 0, operationOptions(options)));
     },
     async putWorkspace(path3) {
       return normalizeWorkspace(await v2("PUT", "/workspace", { path: path3 }));
@@ -58186,8 +58855,8 @@ function createLivePlayClient({
     async listFiles(prefix = "") {
       return v2("GET", `/workspace/files?list=${encodeURIComponent(prefix)}`);
     },
-    async getFile(path3) {
-      const response = await v2("GET", `/workspace/files${pathQuery(path3)}`);
+    async getFile(path3, options) {
+      const response = await v2("GET", `/workspace/files${pathQuery(path3)}`, void 0, options);
       return {
         path: response.path,
         content: fileContent(response, path3),
@@ -58203,7 +58872,7 @@ function createLivePlayClient({
       if (options !== null && typeof options === "object" && Object.hasOwn(options, "expectedWorkspaceScope")) {
         body2.expectedWorkspaceScope = options.expectedWorkspaceScope;
       }
-      return v2("PUT", `/workspace/files${pathQuery(path3)}`, body2);
+      return v2("PUT", `/workspace/files${pathQuery(path3)}`, { ...body2, checkpointId: options?.checkpointId, checkpointKey: options?.checkpointKey }, operationOptions(options));
     },
     getCatalog() {
       return getJsonFile("catalog.json", normalizeCatalog, "catalog");
@@ -58226,14 +58895,44 @@ function createLivePlayClient({
             throw error;
           }
         },
-        putFresh: (value) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog", options),
+        putFresh: (value, revision) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog", { ...options, revision }),
         mutator,
         options
       });
     },
-    getTimeline(playthrough) {
+    getTimeline(playthrough, options) {
       const path3 = timelinePath(playthrough);
-      return getJsonFile(path3, normalizeTimeline, "timeline");
+      return getJsonFile(path3, normalizeTimeline, "timeline", operationOptions(options));
+    },
+    getCheckpoint(row, scope, key2) {
+      const query = new URLSearchParams({ scope });
+      if (key2 !== void 0) query.set("key", key2);
+      return v2("GET", `/workspace/checkpoints/${encodeURIComponent(row.id)}?${query}`, void 0, operationOptions()).then((result) => result.checkpoint);
+    },
+    putCheckpoint(row, body2) {
+      return v2("PUT", `/workspace/checkpoints/${encodeURIComponent(row.id)}`, body2, operationOptions()).then((result) => result.checkpoint);
+    },
+    getSessionReceipt(key2, scope) {
+      return v2("GET", `/operation-receipts/${encodeURIComponent(key2)}?${new URLSearchParams({ scope })}`, void 0, operationOptions());
+    },
+    getSessionEvidence(id, bounds) {
+      const query = new URLSearchParams({ evidence: "inheritance", ...bounds });
+      return v2("GET", `/sessions/${encodeURIComponent(id)}/messages?${query}`, void 0, operationOptions());
+    },
+    getCoordinates(id) {
+      return v2("GET", `/sessions/${encodeURIComponent(id)}/coordinates`, void 0, operationOptions());
+    },
+    getRequestOutcome(id, query) {
+      return v2("GET", `/sessions/${encodeURIComponent(id)}/messages?${new URLSearchParams(query)}`, void 0, operationOptions());
+    },
+    rollbackPlaythrough(row, nodeId, variantId) {
+      return rollbackAtNode(client, row, nodeId, variantId);
+    },
+    forkPlaythrough(row, body2, options) {
+      return runBranchOperation(client, row, { ...body2, kind: "fork" }, options);
+    },
+    generation(row, body2, timeline) {
+      return runGenerationOperation(client, row, { ...body2, expectedRevision: body2.expectedRevision ?? snapshotRevisions.get(timeline) });
     },
     putTimeline(playthrough, timeline) {
       const path3 = timelinePath(playthrough);
@@ -58243,18 +58942,17 @@ function createLivePlayClient({
       const path3 = timelinePath(playthrough);
       return updateJsonFile({
         getFresh: () => getJsonFile(path3, normalizeTimeline, "timeline"),
-        putFresh: (value) => putJsonFile(path3, value, normalizeTimeline, "timeline"),
+        putFresh: (value, revision) => putJsonFile(path3, value, normalizeTimeline, "timeline", { revision }),
         mutator,
         options
       });
     },
     async getMessages(sessionId) {
-      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
-      if (Number.isSafeInteger(response.sessionFormatVersion)) coordinateVersions.set(sessionId, response.sessionFormatVersion);
+      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`, void 0, operationOptions());
       return normalizeSessionMessages(response);
     },
     async getImportContextBinding(sessionId) {
-      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/import-context`);
+      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/import-context`, void 0, operationOptions());
       return response?.binding ?? null;
     },
     async putImportContextBinding(sessionId, reference) {
@@ -58270,7 +58968,7 @@ function createLivePlayClient({
       if (typeof playthroughId !== "string" || playthroughId.trim() === "") {
         throw new TypeError("playthrough.id must be a non-empty string");
       }
-      const focus = normalizeFocus(await v2("GET", `/playthroughs/${encodeURIComponent(playthroughId)}/focus`));
+      const focus = normalizeFocus(await v2("GET", `/playthroughs/${encodeURIComponent(playthroughId)}/focus`, void 0, operationOptions()));
       if (focus.playthroughId !== playthroughId) {
         throw new TypeError("focus.playthroughId does not match playthrough.id");
       }
@@ -58282,10 +58980,12 @@ function createLivePlayClient({
       return v2("POST", `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId });
     },
     postUserMessage(sessionId, text3, options) {
-      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text3, ...options?.requestId ? { requestId: options.requestId } : {} }, options);
+      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text3, ...mutationIdentity(options), ...options?.requestId ? { requestId: options.requestId } : {} }, operationOptions(options));
     },
-    postDraft(body2) {
-      return v2("POST", "/drafts", body2);
+    async postDraft(body2, options) {
+      const expectedWorkspaceScope = body2.expectedWorkspaceScope ?? await workspaceScope(options);
+      options?.signal?.throwIfAborted();
+      return v2("POST", "/drafts", { ...body2, expectedWorkspaceScope }, options);
     },
     getDraft(id, options) {
       return v2("GET", `/drafts/${encodeURIComponent(id)}`, void 0, options);
@@ -58299,41 +58999,43 @@ function createLivePlayClient({
     cancelDraft(id) {
       return v2("POST", `/drafts/${encodeURIComponent(id)}/cancel`, {});
     },
-    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
+    postBranch(sessionId, atEventId, sessionFormatVersion, stateSource, options) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError("atEventId must be a non-negative integer");
       }
       return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/branch`, {
         atEventId,
+        ...mutationIdentity(options),
         ...stateSource === void 0 ? {} : { stateSource },
         ...sessionFormatVersion === void 0 ? {} : { sessionFormatVersion }
-      });
+      }, operationOptions(options));
     },
-    postSession(selectionFromSessionId, importContextRef, stateSource) {
+    postSession(selectionFromSessionId, importContextRef, stateSource, options) {
       const body2 = {
+        ...mutationIdentity(options),
         ...typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? { selectionFromSessionId } : {},
         ...importContextRef === void 0 ? {} : { importContextRef },
         ...stateSource === void 0 ? {} : { stateSource }
       };
-      return v2("POST", "/sessions", body2);
+      return v2("POST", "/sessions", body2, operationOptions(options));
     },
     getCharacterSelection,
     async getSelection(sessionId) {
       const response = await getCharacterSelection(sessionId);
       return response?.selection ?? null;
     },
-    putCharacterSelection(sessionId, characterCardId, character = {}) {
+    putCharacterSelection(sessionId, characterCardId, character2 = {}) {
       if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
       if (typeof characterCardId !== "string" || characterCardId === "") {
         throw new TypeError("characterCardId is required");
       }
-      if (character === null || typeof character !== "object" || Array.isArray(character)) {
+      if (character2 === null || typeof character2 !== "object" || Array.isArray(character2)) {
         throw new TypeError("character selection options must be an object");
       }
       return v1("POST", "/character-selection", {
         sessionId,
         characterCardId,
-        character
+        character: character2
       });
     },
     getCharacters() {
@@ -58394,6 +59096,7 @@ function createLivePlayClient({
       });
     }
   };
+  return client;
 }
 
 // packages/client/src/play/workspace-setting.js
@@ -58485,7 +59188,7 @@ function createChromeModeServiceCore({
   };
   const startEffect = (effect) => {
     if (!effect.active || disposed || snapshot.mode !== effect.mode) return;
-    const generation = ++effect.generation;
+    const generation2 = ++effect.generation;
     let result;
     try {
       result = effect.setup({ snapshot });
@@ -58494,7 +59197,7 @@ function createChromeModeServiceCore({
     }
     Promise.resolve(result).then((dispose) => {
       if (typeof dispose !== "function") return;
-      if (!effect.active || disposed || effect.generation !== generation || snapshot.mode !== effect.mode) {
+      if (!effect.active || disposed || effect.generation !== generation2 || snapshot.mode !== effect.mode) {
         safely(dispose);
         return;
       }
@@ -58762,9 +59465,9 @@ function initialLauncherAnchor() {
   }
   return clampLauncherAnchor({ x: window.innerWidth - 60, y: 14 }, viewport());
 }
-function persistLauncherAnchor(anchor) {
+function persistLauncherAnchor(anchor2) {
   try {
-    window.localStorage.setItem(LAUNCHER_STORAGE_KEY, JSON.stringify(anchor));
+    window.localStorage.setItem(LAUNCHER_STORAGE_KEY, JSON.stringify(anchor2));
   } catch {
   }
 }
@@ -59044,25 +59747,25 @@ function WorkspaceAdmission({ setting, state, error, busy: busy2, selectWorkspac
   );
 }
 function createSurfaceNavigation(commit) {
-  let guard = null, generation = 0;
+  let guard = null, generation2 = 0;
   return {
     register(beforeLeave) {
       guard = beforeLeave;
-      generation++;
+      generation2++;
       return () => {
         if (guard === beforeLeave) {
           guard = null;
-          generation++;
+          generation2++;
         }
       };
     },
     request(next, current4) {
-      const ticket = ++generation;
+      const ticket = ++generation2;
       if (next === current4) return true;
       const result = guard?.();
       if (result?.then) {
         Promise.resolve(result).then((allowed) => {
-          if (allowed !== false && ticket === generation) commit(next);
+          if (allowed !== false && ticket === generation2) commit(next);
         }).catch(() => {
         });
         return false;
@@ -59095,7 +59798,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     setMenuOpen(false);
     setDiagnosticPlaythroughId(playthroughId);
   }), [diagnostics, requestSurface]);
-  const [anchor, setAnchor] = (0, import_react43.useState)(initialLauncherAnchor);
+  const [anchor2, setAnchor] = (0, import_react43.useState)(initialLauncherAnchor);
   const [chromeMode, setChromeMode] = (0, import_react43.useState)(() => chromeService.getMode());
   const activeDraftId = (0, import_react43.useSyncExternalStore)(playSlots.subscribeDraft, playSlots.getActiveDraftId);
   const bindingTarget = (0, import_react42.useMemo)(() => activeDraftId ? createDraftResourceTarget({ client: playClient, draftId: activeDraftId, label: translate("play.draft.opening") }) : null, [activeDraftId, playClient]);
@@ -59103,7 +59806,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [chromeError, setChromeError] = (0, import_react43.useState)("");
   const [activeSnapshot, setActiveSnapshot] = (0, import_react43.useState)(null);
   const [assemblyState, setAssemblyState] = (0, import_react43.useState)({ presets: [], selection: null });
-  const [statusError, setStatusError] = (0, import_react43.useState)("");
+  const [statusError2, setStatusError] = (0, import_react43.useState)("");
   const [uiSettings, setUiSettings] = (0, import_react43.useState)(getClientUiSettings);
   const [conversationSettings, setConversationSettings] = (0, import_react43.useState)(getClientConversationSettings);
   const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react43.useState)({ text: translate("conversationSettings.saved"), error: false });
@@ -59262,18 +59965,18 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     };
   }, [surface]);
   const refreshRpWorkspace = (0, import_react43.useCallback)(async () => {
-    const generation = ++rpWorkspaceLoadGeneration.current;
+    const generation2 = ++rpWorkspaceLoadGeneration.current;
     setRpWorkspaceLoadState("loading");
     setRpWorkspaceError("");
     try {
       const workspace = await playClient.getWorkspace();
-      if (generation !== rpWorkspaceLoadGeneration.current) return null;
+      if (generation2 !== rpWorkspaceLoadGeneration.current) return null;
       const projected = projectRpWorkspaceSetting({ workspace, items: workspaceItems });
       setRpWorkspaceSetting(projected);
       setRpWorkspaceLoadState("ready");
       return projected;
     } catch (reason) {
-      if (generation !== rpWorkspaceLoadGeneration.current) return null;
+      if (generation2 !== rpWorkspaceLoadGeneration.current) return null;
       setRpWorkspaceError(reason instanceof Error ? reason.message : String(reason));
       setRpWorkspaceLoadState("error");
       return null;
@@ -59358,18 +60061,18 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }
   };
   const refreshStatus = (0, import_react43.useCallback)(async () => {
-    const generation = ++statusGeneration.current;
+    const generation2 = ++statusGeneration.current;
     try {
       const [next, assembly, openingAssembly] = await Promise.all([bindingTarget ? bindingTarget.active() : activeView(sessionId), tavernFetch(`${API_V1}/assembly-presets?sessionId=${encodeURIComponent(bindingTarget ? "" : sessionId ?? "")}`).then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       }), bindingTarget?.getSelection()]);
-      if (generation !== statusGeneration.current) return;
+      if (generation2 !== statusGeneration.current) return;
       setActiveSnapshot(next);
       setAssemblyState(bindingTarget ? { ...assembly, selection: openingAssembly } : assembly);
       setStatusError("");
     } catch (reason) {
-      if (generation !== statusGeneration.current) return;
+      if (generation2 !== statusGeneration.current) return;
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId, chromeMode, bindingTarget]);
@@ -59470,8 +60173,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      origin: anchor,
-      latest: anchor,
+      origin: anchor2,
+      latest: anchor2,
       moved: false
     };
   };
@@ -59596,7 +60299,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       selectWorkspace: selectRpWorkspace
     });
   }
-  const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale);
+  const placement = launcherPlacement(anchor2, viewport(), menuOpen, uiSettings.scale);
   const statuses = launcherResourceStatuses(activeSnapshot);
   statuses.assembly = { bound: Boolean(assemblyState.selection), title: assemblyState.selection?.name, titleKey: "nav.assembly.empty", count: assemblyState.selection ? 1 : 0 };
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
@@ -59648,7 +60351,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       h35(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h35("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: bindingTarget?.label || sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h35("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError2 === "" ? uiMessage("nav.menuTitle", { session: bindingTarget?.label || sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError2 })),
         h35(
           "button",
           {

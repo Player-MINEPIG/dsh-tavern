@@ -41,37 +41,20 @@ test('rename CAS replay preserves concurrent rows and fields', async () => {
   assert.equal(catalog.playthroughs[1].title, '并发')
 })
 
-test('create CAS replay recomputes number and does not repeat external side effects', async () => {
-  let catalog = { playthroughs: [{ ...playthrough }] }
-  let timelineValue = { nodes: [{ kind: 'qa' }] }
-  let attempts = 0
-  const calls = []
+test('new creation delegates publication to the Host with a stable identity on lost response', async () => {
+  const requests = []
   const client = {
-    async getCatalog() { return structuredClone(catalog) },
-    async getTimeline() { return structuredClone(timelineValue) },
-    async getMessages() { return { incompleteTurn: false, messages: [{ role: 'user' }] } },
-    async postSession() { calls.push('session'); return { sessionId: 'session-new' } },
-    async getCharacterSelection() { return { selection: { characterCardId: 'character-a' } } },
-    async putCharacterSelection() {},
-    async createDirs() { calls.push('dirs') },
-    async putTimeline() { calls.push('timeline'); timelineValue = { nodes: [] } },
-    async updateCatalog(mutator) {
-      attempts += 1
-      await mutator(structuredClone(catalog))
-      catalog.playthroughs.push({ id: 'pt-b', path: 'character-a/pt-b/timeline.json', ext: { pmpDshTavern: { characterId: 'character-a', playthroughNumber: 2 } } })
-      catalog = await mutator(structuredClone(catalog))
-      return catalog
+    async postDraft(body) {
+      requests.push(body)
+      if (requests.length === 1) throw Error('response lost')
+      return { playthrough, sessionId: null }
     },
   }
-  const result = await createCharacterPlaythrough(client, {
-    character: { id: 'character-a' },
-    randomUUID: () => '11111111-2222-4333-8444-555555555555',
-    now: () => new Date('2026-08-19T03:04:05.000Z'),
-  })
-  assert.equal(attempts, 1)
-  assert.deepEqual(calls, ['session', 'dirs', 'timeline'])
-  assert.equal(result.playthrough.title, '3周目')
-  assert.equal(catalog.playthroughs.some(item => item.id === 'pt-b'), true)
+  const args = { character: { id: 'character-a' }, reuseEmpty: false }
+  await assert.rejects(createCharacterPlaythrough(client, args), /response lost/)
+  assert.deepEqual((await createCharacterPlaythrough(client, args)).playthrough, playthrough)
+  assert.ok(requests[0].creationId)
+  assert.deepEqual(requests[0], requests[1])
 })
 
 test('node CAS replay applies local intent to fresh timeline and preserves unrelated edits', async () => {
@@ -101,8 +84,8 @@ test('first-QA swipe creates one clean session, preserves import context and app
   const client = {
     async getTimeline() { return structuredClone(value) },
     async getMessages(sessionId) {
-      if (sessionId === 'session-a') return { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 3, text: '旧回复' }] }
-      return { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 4, text: '新回复' }] }
+      if (sessionId === 'session-a') return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 3, text: '旧回复' }] }
+      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 4, text: '新回复' }] }
     },
     async getImportContextBinding() { return { path: 'character-a/pt-a/import-context.json' } },
     async postSession(sourceSessionId, importContextRef, stateSource) {
@@ -151,11 +134,11 @@ test('later swipe branches the current continuation exactly after the previous a
   const client = {
     async getTimeline() { return structuredClone(value) },
     async getMessages(sessionId) {
-      if (sessionId === 'session-current') return { incompleteTurn: false, messages: [
+      if (sessionId === 'session-current') return { sessionFormatVersion: 4, incompleteTurn: false, messages: [
         { role: 'user', seq: 4, text: '第二问' },
         { role: 'assistant', seq: 6, text: '旧回复' },
       ] }
-      return { incompleteTurn: false, messages: [
+      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [
         { role: 'user', seq: 4, text: '第二问' },
         { role: 'assistant', seq: 7, text: '新回复' },
       ] }
@@ -184,7 +167,7 @@ test('turn reconcile CAS replay does not duplicate an already recorded QA', asyn
   let value = { nodes: [] }
   let captured
   const client = {
-    async getMessages() { return { incompleteTurn: false, messages: [{ role: 'user', seq: 1 }, { role: 'assistant', seq: 2 }] } },
+    async getMessages() { return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 1 }, { role: 'assistant', seq: 2 }] } },
     async getTimeline() { return structuredClone(value) },
     async updateTimeline(_playthrough, mutator) {
       captured = await mutator(structuredClone(value))

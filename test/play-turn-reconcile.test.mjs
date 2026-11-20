@@ -5,6 +5,8 @@ import {
   createTurnReconciler,
 } from '../packages/client/src/play/turns.js'
 
+const v4 = { pmpDshTavern: { sessionFormatVersion: 4 } }
+
 function ids(prefix, sessionId, start, end) {
   return `${prefix}-${sessionId}-${start}-${end}`
 }
@@ -12,6 +14,7 @@ function ids(prefix, sessionId, start, end) {
 test('completed real message pairs append QA references without copying content', () => {
   const source = { nodes: [] }
   const result = appendCompletedTurns(source, {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { id: 'system', role: 'system', seq: 0, text: 'context' },
@@ -27,8 +30,8 @@ test('completed real message pairs append QA references without copying content'
   assert.equal(source.nodes.length, 0)
   assert.equal(result.added.length, 2)
   assert.deepEqual(result.timeline.nodes.map(node => node.variants[0]), [
-    { id: 'variant-session-a-1-3', sessionId: 'session-a', startEventId: 1, endEventId: 3 },
-    { id: 'variant-session-a-5-7', sessionId: 'session-a', startEventId: 5, endEventId: 7 },
+    { id: 'variant-session-a-1-3', sessionId: 'session-a', ext: v4, startEventId: 1, endEventId: 3 },
+    { id: 'variant-session-a-5-7', sessionId: 'session-a', ext: v4, startEventId: 5, endEventId: 7 },
   ])
   assert.equal(JSON.stringify(result.timeline).includes('hello'), false)
   assert.equal(JSON.stringify(result.timeline).includes('tool data'), false)
@@ -36,6 +39,7 @@ test('completed real message pairs append QA references without copying content'
 
 test('model-visible runtime context stays inside the preceding real user turn', () => {
   const result = appendCompletedTurns({ nodes: [] }, {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { id: 'user-1', role: 'user', seq: 9, text: '姐我饿了。' },
@@ -47,13 +51,14 @@ test('model-visible runtime context stays inside the preceding real user turn', 
   }, 'session-a', { idFactory: ids })
 
   assert.deepEqual(result.timeline.nodes.map(node => node.variants[0]), [
-    { id: 'variant-session-a-9-1421', sessionId: 'session-a', startEventId: 9, endEventId: 1421 },
-    { id: 'variant-session-a-1428-6497', sessionId: 'session-a', startEventId: 1428, endEventId: 6497 },
+    { id: 'variant-session-a-9-1421', sessionId: 'session-a', ext: v4, startEventId: 9, endEventId: 1421 },
+    { id: 'variant-session-a-1428-6497', sessionId: 'session-a', ext: v4, startEventId: 1428, endEventId: 6497 },
   ])
 })
 
 test('context-triggered parent output keeps a pointer range without becoming a human prompt', () => {
   const result = appendCompletedTurns({ nodes: [] }, {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { id: 'user-1', role: 'user', seq: 1, text: 'Start', origin: { kind: 'user' } },
@@ -63,12 +68,13 @@ test('context-triggered parent output keeps a pointer range without becoming a h
     ],
   }, 'session-a', { idFactory: ids })
   assert.deepEqual(result.timeline.nodes.map(node => node.variants[0]), [
-    { id: 'variant-session-a-1-4', sessionId: 'session-a', startEventId: 1, endEventId: 4 },
+    { id: 'variant-session-a-1-4', sessionId: 'session-a', ext: v4, startEventId: 1, endEventId: 4 },
   ])
 })
 
 test('a later completed subagent stage extends the active QA instead of appending a reply node', () => {
   const existing = appendCompletedTurns({ nodes: [] }, {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { role: 'user', seq: 1, origin: { kind: 'user' } },
@@ -76,6 +82,7 @@ test('a later completed subagent stage extends the active QA instead of appendin
     ],
   }, 'session-a', { idFactory: ids }).timeline
   const result = appendCompletedTurns(existing, {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { role: 'user', seq: 1, origin: { kind: 'user' } },
@@ -101,6 +108,7 @@ test('open or already-recorded turns never append a duplicate', () => {
     }],
   }
   const messages = {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { role: 'user', seq: 1 },
@@ -115,6 +123,7 @@ test('open or already-recorded turns never append a duplicate', () => {
 
 test('an interrupted durable assistant prefix becomes a normal QA reference', () => {
   const result = appendCompletedTurns({ nodes: [] }, {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { id: 'user-1', role: 'user', seq: 10, text: 'keep going' },
@@ -139,6 +148,7 @@ test('an interrupted durable assistant prefix becomes a normal QA reference', ()
       sessionId: 'session-a',
       startEventId: 10,
       endEventId: 12,
+      ext: v4,
     }],
   }])
   assert.equal(JSON.stringify(result.timeline).includes('visible interrupted prefix'), false)
@@ -153,7 +163,7 @@ test('reconciler serializes reread-before-write and survives a failed task', asy
   const client = {
     async getMessages() {
       calls.push('messages')
-      return { incompleteTurn: false, messages: [{ role: 'user', seq: 1 }, { role: 'assistant', seq: 2 }] }
+      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 1 }, { role: 'assistant', seq: 2 }] }
     },
     async getTimeline() { calls.push('timeline'); return timeline },
     async putTimeline(_playthrough, next) {

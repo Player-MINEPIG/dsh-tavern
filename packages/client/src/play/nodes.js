@@ -1,3 +1,6 @@
+import { rollbackAtNode } from './branch-recovery.js'
+import { supportsGenerationRecovery, runGeneration } from './generation.js'
+import { variantFormatVersion, withVariantFormat } from '../../../play/src/session-coordinates.js'
 import { beginPendingSwipe, finishPendingSwipe, pendingSwipeTimeline } from './pending-swipe.js'
 import { completedSwipePair, commitSwipeReply } from './swipe-completion.js'
 import { updateTimeline } from './mutations.js'
@@ -127,12 +130,15 @@ export function createPlayNodeController(client, {
         return { timeline: next, sessionId: focus.sessionId }
       })
     },
-    createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
+    createReplySwipe(playthrough, nodeId, { onStarted, variantId } = {}) {
+      if (supportsGenerationRecovery(client)) return schedule(playthrough, () => runGeneration(client, playthrough,
+        { kind: 'reply-swipe', nodeId, variantId }, { onStarted, delay, pollInterval, maxPolls }))
       return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough)
         const entries = activeTimelineEntries(timeline)
         const requestedIndex = entries.findIndex(entry => entry.node.id === nodeId)
         if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`)
+        if (variantId !== undefined && entries[requestedIndex].variant.id !== variantId) throw new Error('The active reply changed')
         let sourceNode = null
         let sourceIndex = -1
         let adopted = null
@@ -162,7 +168,7 @@ export function createPlayNodeController(client, {
         const forkEventId = parent?.variant.endEventId ?? -1
         const branch = parent === null
           ? await createRootSwipeSession(client, adopted.sessionId, {beforeReplyEventId:adopted.endEventId})
-          : await client.postBranch(adopted.sessionId, forkEventId, undefined, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId })
+          : await client.postBranch(adopted.sessionId, forkEventId, variantFormatVersion(parent.variant), { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId })
         const newSessionId = branch?.sessionId
         if (typeof newSessionId !== 'string' || newSessionId === '') {
           throw new TypeError('Branch response has no sessionId')
@@ -190,6 +196,8 @@ export function createPlayNodeController(client, {
     },
 
     retryStoppedRequest(playthrough,{sessionId,userEventId},{onStarted}={}){
+      if (supportsGenerationRecovery(client)) return schedule(playthrough, () => runGeneration(client, playthrough,
+        { kind: 'request-retry', sessionId, userEventId }, { onStarted, delay, pollInterval, maxPolls }))
       return schedule(playthrough,async()=>{
         const timeline=await client.getTimeline(playthrough),entries=activeTimelineEntries(timeline)
         if((timeline.head?.sessionId??playthrough.ext?.pmpDshTavern?.rootSessionId)!==sessionId)throw Error('The stopped request is not on the active session')
@@ -199,7 +207,7 @@ export function createPlayNodeController(client, {
         const parent=entries.at(-1),boundary=parent?.variant.endEventId??-1
         if(boundary>=userEventId)throw Error('The stopped request is already represented by a reply')
         const stateSource={sessionId,beforeUserEventId:userEventId}
-        const branch=parent?await client.postBranch(sessionId,boundary,source.sessionFormatVersion,stateSource):await createRootSwipeSession(client,sessionId,{beforeUserEventId:userEventId})
+        const branch=parent?await client.postBranch(sessionId,boundary,variantFormatVersion(parent.variant),stateSource):await createRootSwipeSession(client,sessionId,{beforeUserEventId:userEventId})
         const newSessionId=branch?.sessionId
         if(typeof newSessionId!=='string'||!newSessionId)throw Error('Retry created no session')
         const pending=beginPendingSwipe(client,{kind:'request-retry',playthrough,sessionId:newSessionId,sourceSessionId:sessionId,nodeId:`live-${userEventId}`,timeline:pendingSwipeTimeline(timeline,entries,entries.length,newSessionId)})
@@ -208,7 +216,9 @@ export function createPlayNodeController(client, {
           await client.postUserMessage(newSessionId,user.text)
           const pair=await waitForReply(newSessionId,boundary)
           const variantId=idFactory(pair.user.seq,pair.assistant.seq,newSessionId),nodeId=`qa-${variantId}`.slice(0,200)
-          const variant={id:variantId,sessionId:newSessionId,startEventId:pair.user.seq,endEventId:pair.assistant.seq,...(Number.isSafeInteger(pair.sessionFormatVersion)?{ext:{pmpDshTavern:{sessionFormatVersion:pair.sessionFormatVersion}}}:{})}
+          const variant = withVariantFormat({
+            id: variantId, sessionId: newSessionId, startEventId: pair.user.seq, endEventId: pair.assistant.seq,
+          }, pair.sessionFormatVersion)
           const next=await writeTimeline(playthrough,current=>{
             if(JSON.stringify(current.head)!==JSON.stringify(timeline.head))throw Error('Active reply changed during request retry')
             return timelineWithHead({...current,nodes:[...current.nodes,{id:nodeId,kind:'qa',displayOverride:null,parentVariantId:parent?.variant.id??null,adoptedVariantId:variantId,variants:[variant]}]},{sessionId:newSessionId,nodeId,variantId})
@@ -221,12 +231,14 @@ export function createPlayNodeController(client, {
       })
     },
 
-    forkPlaythrough(playthrough, nodeId) {
-      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }))
+    forkPlaythrough(playthrough, nodeId, variantId) {
+      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId, variantId }))
     },
 
-    rollbackPlaythrough(playthrough, nodeId) {
+    rollbackPlaythrough(playthrough, nodeId, variantId) {
       return schedule(playthrough, async () => {
+        if (typeof client.getCheckpoint === 'function') return rollbackAtNode(client, playthrough, nodeId, variantId)
+        if (typeof client.rollbackPlaythrough === 'function') return client.rollbackPlaythrough(playthrough, nodeId, variantId)
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId })
         const next = await writeTimeline(playthrough, timeline => {
           const current = nodeById(timeline, nodeId)

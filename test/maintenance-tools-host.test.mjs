@@ -1,18 +1,99 @@
 import { createSessionReader } from 'dsh-prompt-assembler/session-reader'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import assembler from 'dsh-prompt-assembler/plugin'
 import * as tavern from '../packages/tavern-loader/src/index.js'
+import { atomicPlayClient } from './fixtures/atomic-play-client.mjs'
+import { rollbackAtNode } from '../packages/client/src/play/branch-recovery.js'
+import { REPAIR_TOOL } from '../packages/tavern-loader/src/repair-command.js'
 import { MAINTENANCE_TOOL } from '../packages/tavern-loader/src/maintenance-tools.js'
 
 const root = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 
-test('official Host tools opt in, preview, clean, restore, remount and dispose without changing native sessions', { skip: !root }, async () => {
+async function verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, expectedWorkspaceScope }) {
+  const { LlmAdapter } = await load('@deepseek-ai/dsh-llm')
+  const answer = 'Offline swipe result'
+  class Offline extends LlmAdapter {
+    async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
+    async *stream() {
+      yield { type: 'block-start', index: 0, blockType: 'text' }
+      yield { type: 'text-delta', index: 0, text: answer }
+      yield { type: 'block-end', index: 0, block: { type: 'text', text: answer } }
+      yield { type: 'finish', reason: { kind: 'stop' } }
+    }
+  }
+  ctx.llm.registerAdapter(['offline'], new Offline())
+
+  const admitted = Promise.withResolvers()
+  const sends = []
+  const client = atomicPlayClient(workspace, workspace.host)
+  const prompt = workspace.host.promptSession.bind(workspace.host)
+  t.mock.method(workspace.host, 'promptSession', async request => {
+    sends.push(request)
+    try {
+      const result = await prompt(request)
+      admitted.resolve()
+      return result
+    } catch (error) {
+      admitted.reject(error)
+      throw error
+    }
+  })
+  const identity = { operationKey: randomUUID(), expectedWorkspaceScope }
+  const start = { ...identity, action: 'start', kind: 'reply-swipe', nodeId, expectedRevision: workspace.readFile(row.path).revision }
+  const generated = await client.generation(row, start)
+  await admitted.promise
+  const { agent } = await ctx.sessionController.resolveAgent(generated.sessionId)
+  await agent.whenIdle()
+
+  const read = createSessionReader(ctx)
+  const { events } = await read(generated.sessionId)
+  assert.equal(sends.length, 1)
+  assert.equal(sends[0].sessionId, generated.sessionId)
+  assert.equal(sends[0].text, 'offline fixture')
+  assert.ok(sends[0].requestId)
+  const inputs = events.filter(event => event.type === 'user/message' && event.data.source?.rpcId === sends[0].requestId)
+  assert.equal(inputs.length, 1, 'native prompt must echo its requestId in the durable user source')
+  const user = inputs[0]
+  const reply = events.find(event => event.type === 'assistant/message' && event.data.message.content.some(part => part.text === answer))
+  const end = events.find(event => event.type === 'turn/end' && event.seq > user.seq)
+  assert.equal(end?.data.reason.kind, 'completed')
+  assert.ok(user.seq < reply?.seq && reply.seq < end.seq)
+
+  const status = await client.generation(row, { ...identity, action: 'status' })
+  assert.equal(status.state, 'ready', JSON.stringify(status))
+  const finished = await client.generation(row, { ...identity, action: 'finish' })
+  const saved = JSON.parse(workspace.readFile(row.path).content)
+  assert.equal(saved.head.sessionId, generated.sessionId)
+  assert.deepEqual(saved.head, finished.timeline.head)
+  const variant = saved.nodes.find(node => node.id === nodeId).variants.find(item => item.id === saved.head.variantId)
+  assert.deepEqual([variant.startEventId, variant.endEventId], [user.seq, reply.seq])
+  assert.equal((await client.generation(row, start)).sessionId, generated.sessionId)
+  assert.equal(sends.length, 1)
+
+  const request = { nodeId, creationId: randomUUID(), expectedWorkspaceScope, expectedRevision: workspace.readFile(row.path).revision }
+  const fork = await client.forkPlaythrough(row, request)
+  assert.notEqual(fork.sessionId, generated.sessionId)
+  const child = await read(fork.sessionId)
+  assert.equal(child.inheritedEventCount, reply.seq + 1)
+  assert.equal(child.events[user.seq].data.source.rpcId, sends[0].requestId)
+  assert.equal(child.events[reply.seq].data.message.id, reply.data.message.id)
+  const catalog = JSON.parse(workspace.readFile('catalog.json').content)
+  const published = catalog.playthroughs.filter(item => item.id === fork.playthrough.id)
+  assert.deepEqual(published, [fork.playthrough])
+  assert.equal(published[0].ext.pmpDshTavern.rootSessionId, fork.sessionId)
+  assert.equal(JSON.parse(workspace.readFile(published[0].path).content).head.sessionId, fork.sessionId)
+  assert.equal(workspace.readFile(row.path).revision, request.expectedRevision)
+  assert.equal((await client.forkPlaythrough(row, request)).sessionId, fork.sessionId)
+}
+
+test('official Host runs chat repair, scoped maintenance tools and plugin disposal', { skip: !root }, async t => {
   const require = createRequire(join(resolve(root), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis')
@@ -42,15 +123,18 @@ test('official Host tools opt in, preview, clean, restore, remount and dispose w
     await ctx.plugin(((await load('@deepseek-ai/dsh-api-remote-access')).default ?? await load('@deepseek-ai/dsh-api-remote-access')))
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'offline', model: 'maintenance' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {}, bindPrompt: () => ({ commit() {}, [Symbol.dispose]() {} }) })
-    ctx.provide('attachments', { admitPromptContent: async content => content })
+    ctx.provide('attachments', { admitPromptContent: async content => content, imageLimits: { maxImageBytes: 1024,
+      maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
     new (await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine(ctx)
     ctx.provide('fs', {})
     await ctx.plugin((await load('@deepseek-ai/dsh-api-gateway')).TypertGatewayService, {})
     await ctx.plugin((await load('@deepseek-ai/dsh-api-session-controller')).SessionController, { nativeOpen: false })
     await ctx.plugin((await load('@deepseek-ai/dsh-api-workspace-controller')).WorkspaceController)
+    await ctx.plugin((await load('@deepseek-ai/dsh-commands')).CommandRuntime)
     await ctx.plugin(assembler, { storageDir: join(directory, 'assembler') })
     await mount(false)
+    assert.equal(ctx.tools.schemas().some(tool => tool.name === REPAIR_TOOL), false)
     assert.equal(ctx.tools.schemas().some(tool => tool.name === MAINTENANCE_TOOL), false)
     await handle.dispose()
     await mount(true)
@@ -65,17 +149,21 @@ test('official Host tools opt in, preview, clean, restore, remount and dispose w
     for (const row of rows) store.playWorkspaceStore.writeFile(row.path, '{"nodes":[]}', { expectedRevision: null, expectedRevisionPresent: true })
     store.playWorkspaceStore.writeFile('catalog.json', JSON.stringify({ playthroughs: rows }), { expectedRevision: null, expectedRevisionPresent: true })
     let seq = 0
-    const call = async arguments_ => {
+    const call = async (arguments_, name = MAINTENANCE_TOOL, expectError = false) => {
       const { agent } = await ctx.sessionController.resolveAgent(created.sessionId)
       const signal = new AbortController().signal
       const toolSet = await ctx.tools.resolve({ agent, modelSelection: agent.model.current(), signal })
       try {
-        const batch = await ctx.tools.execute({ agent, signal, toolSet, calls: [{ id: `maintenance-${++seq}`, name: MAINTENANCE_TOOL, arguments: arguments_ }] })
+        const batch = await ctx.tools.execute({ agent, signal, toolSet, calls: [{ id: `maintenance-${++seq}`, name, arguments: arguments_ }] })
         const result = batch.results[0].result
-        assert.equal(result.isError, false, JSON.stringify(result))
+        assert.equal(result.isError, expectError, JSON.stringify(result))
         return result.value
       } finally { toolSet.dispose() }
     }
+    const repair = await call({}, REPAIR_TOOL)
+    assert.deepEqual(repair.items, [{ id: rows[0].id, changes: [], remaining: [{
+      reason: 'PLAY_SESSION_NOT_FOUND', sessionId: 'missing-session-fixture',
+    }] }])
     const preview = await call({})
     assert.equal(preview.items.find(item => item.id === rows[0].id).status, 'invalid')
     assert.equal(preview.items.find(item => item.id === rows[1].id).status, 'available')
@@ -89,6 +177,85 @@ test('official Host tools opt in, preview, clean, restore, remount and dispose w
     await handle.dispose()
     assert.equal(ctx.tools.schemas().some(tool => tool.name === MAINTENANCE_TOOL), false)
     assert.deepEqual(await createSessionReader(ctx)(created.sessionId), nativeBefore)
+    await mount(true)
+    const { agent } = await ctx.sessionController.resolveAgent(created.sessionId)
+    assert.equal(ctx.commands.list(agent).filter(item => item.name === 'tavern-repair').length, 1)
+    const { session } = agent
+    session.append('turn/start', { turn: 1 })
+    session.append('step/start', { turn: 1, step: 1 })
+    const content = [{ type: 'text', text: 'offline fixture' }]
+    session.append('user/message', { role: 'user', id: 'question', content, source: { kind: 'user' } }, { surfaceOp: 'append' })
+    session.append('assistant/message', { turn: 1, step: 1, stream: [], message: {
+      role: 'assistant', id: 'reply', content, source: { kind: 'model', provider: 'offline', model: 'maintenance' },
+    } }, { surfaceOp: 'append' })
+    session.append('step/end', { turn: 1, step: 1 })
+    session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+    const beforeRepair = store.playWorkspaceStore.readFile(rows[1].path)
+    const fromTool = await call({ action: 'apply', id: rows[1].id }, REPAIR_TOOL)
+    assert.equal(fromTool.items[0].changes[0].added, 1)
+    store.playWorkspaceStore.writeFile(rows[1].path, beforeRepair.content, {
+      expectedRevision: store.playWorkspaceStore.readFile(rows[1].path).revision, expectedRevisionPresent: true,
+    })
+    session.append('sandbox/mode', { mode: 'read-only' })
+    await call({ action: 'apply' }, REPAIR_TOOL, true)
+    assert.equal(store.playWorkspaceStore.readFile(rows[1].path).content, beforeRepair.content)
+    await handle.dispose()
+    await mount(false)
+    const beforeCommand = session.snapshotEvents()
+    const command = await ctx.commands.execute(agent, '/tavern-repair', [], new AbortController().signal)
+    assert.equal(command.result.kind, 'success', JSON.stringify(command))
+    assert.match(command.result.text, /已检查 2 个周目/)
+    assert.match(command.result.text, /原生会话缺失/)
+    assert.match(command.result.text, /已修复 1 个/)
+    const repaired = JSON.parse(store.playWorkspaceStore.readFile(rows[1].path).content)
+    assert.deepEqual(repaired.nodes[0].variants[0].ext.pmpDshTavern, { sessionFormatVersion: 4 })
+    assert.deepEqual((await createSessionReader(ctx)(created.sessionId)).events.slice(beforeCommand.length).map(event => event.type), ['command/run', 'command/done'])
+    const repairChat = await ctx.sessionController.create({ workspaceId: store.playWorkspaceStore.get().workspaceId })
+    const { agent: repairAgent } = await ctx.sessionController.resolveAgent(repairChat.sessionId)
+    assert.notEqual(repairChat.sessionId, created.sessionId)
+    assert.equal(realpathSync(repairAgent.session.header.cwd), realpathSync(rp))
+    const executeRepair = id => ctx.commands.execute(repairAgent, `/tavern-repair assist ${id}`, [], new AbortController().signal)
+    const offset = repairAgent.session.snapshotEvents().length
+    assert.match((await executeRepair(rows[1].id)).result.text, /已检查 1 个周目，已修复 0 个/)
+    assert.deepEqual(repairAgent.session.snapshotEvents().slice(offset).map(event => event.type), ['command/run', 'command/done'])
+    const unresolved = await executeRepair(rows[0].id)
+    assert.equal(unresolved.result.kind, 'success', unresolved.result.text)
+    assert.match(unresolved.result.text, /已将待处理项提交/)
+    const queued = repairAgent.session.snapshotEvents().filter(event => event.type === 'agent/inbox/spliced').flatMap(event => event.data.inserted ?? [])
+    assert.equal(queued.length, 1)
+    assert.match(queued[0].content[0].text, /playthrough-missing/)
+    assert.deepEqual(agent.inbox.nextTurn, [])
+    assert.deepEqual(session.snapshotEvents().slice(beforeCommand.length).map(event => event.type), ['command/run', 'command/done'])
+    const workspace = store.playWorkspaceStore
+    const binding = workspace.get()
+    const row = rows[1], nodeId = repaired.nodes[0].id
+    const expectedWorkspaceScope = JSON.stringify([binding.workspaceId, binding.rootPath])
+    const client = atomicPlayClient(workspace, workspace.host)
+    const fork = t.mock.method(workspace.host, 'forkSession')
+    workspace.beforeRename = () => { throw new Error('interrupted before head write') }
+    await assert.rejects(rollbackAtNode(client, row, nodeId), /interrupted before head write/)
+    workspace.beforeRename = null
+    const checkpoint = await client.getCheckpoint(row, expectedWorkspaceScope)
+    assert.equal(checkpoint.released, false)
+    const receipt = await client.getSessionReceipt(checkpoint.data.nativeKey, expectedWorkspaceScope)
+    assert.equal(receipt.state, 'done')
+    const childId = receipt.result.sessionId
+    assert.notEqual(childId, created.sessionId)
+    assert.notEqual(JSON.parse(workspace.readFile(row.path).content).head?.sessionId, childId)
+    const previewPending = await ctx.commands.execute(repairAgent, '/tavern-repair preview', [], new AbortController().signal)
+    assert.match(previewPending.result.text, /可修复 1 个/)
+    assert.notEqual(JSON.parse(workspace.readFile(row.path).content).head?.sessionId, childId)
+    const recovered = await executeRepair(row.id)
+    assert.match(recovered.result.text, /已核实并恢复回退位置/)
+    assert.match(recovered.result.text, /备份/)
+    assert.equal(JSON.parse(workspace.readFile(row.path).content).head.sessionId, childId)
+    const rolled = await rollbackAtNode(client, row, nodeId)
+    assert.equal(rolled.sessionId, childId)
+    assert.equal(rolled.timeline.head.sessionId, rolled.sessionId)
+    assert.equal(fork.mock.callCount(), 1)
+    await verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, expectedWorkspaceScope })
+    await handle.dispose()
+    assert.equal(ctx.commands.list(agent).some(item => item.name === 'tavern-repair'), false)
   } finally {
     await ctx.fiber.dispose()
     rmSync(directory, { recursive: true, force: true })

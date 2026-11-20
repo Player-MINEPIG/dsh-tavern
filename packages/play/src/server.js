@@ -1,6 +1,10 @@
 import { API_V2 } from '../../identity.js'
 import { createChromeApiHandler, createChromeEventsHandler } from './chrome.js'
 import { httpError, parsePlayUrl, readBoundedJson, sendJson, sendPlayError } from './http.js'
+import { createCreationService } from './creation.js'
+import { createGenerationService } from './generation.js'
+import { createRollbackService } from './rollback.js'
+import { readSessionReceipt } from './session-receipts.js'
 import { createSessionApiHandler } from './sessions.js'
 import { validatePlayDocument } from './timeline.js'
 import { createWorkspaceApiHandler } from './workspace.js'
@@ -13,7 +17,7 @@ export function isPlayApiPath(url) {
 
 export function createPlayApiHandler({
   chromeStore, workspaceStore, host, validateFile = validatePlayDocument, now,
-  logger, operationOptions, operationJournal, membershipService, maintenanceService, resolveCharacter, relinkPlaythrough, drafts,
+  logger, operationOptions, operationJournal, rollbackService, creationService, generationService, membershipService, maintenanceService, resolveCharacter, relinkPlaythrough, drafts,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
@@ -22,6 +26,10 @@ export function createPlayApiHandler({
     : createWorkspaceApiHandler(workspaceStore, { validateFile, coordinates: host?.coordinates?.bind(host) })
   const sessionApi = host !== undefined && workspaceStore !== undefined
     ? createSessionApiHandler({ host, workspaceStore, now }) : null
+  const rollback = rollbackService ?? (sessionApi && createRollbackService(workspaceStore, host))
+  const creation = creationService ?? (sessionApi && createCreationService(workspaceStore, host))
+  const generation = generationService ?? (sessionApi && createGenerationService(workspaceStore, host))
+  workspaceStore?.connectOperations?.({ generation, rollback, creation, membership: membershipService })
   const operationDefaults = {
     ...(operationOptions ?? {}),
     ...(operationJournal ? { journal: operationJournal } : {}),
@@ -66,6 +74,20 @@ export function createPlayApiHandler({
     PUT: mutation('workspace.file.write', ({ req, res, searchParams, operation }) => workspaceApi.files(req, res, { method: 'PUT', searchParams, operation })),
   })
   route('/focus', sessionApi !== null, { GET: quiet(({ req, res, searchParams }) => sessionApi.focus(req, res, searchParams)) })
+  route('/workspace/checkpoints/:id', workspaceApi !== null, {
+    GET: quiet(({ res, id, searchParams }) => sendJson(res, 200, { ok: true,
+      checkpoint: workspaceStore.checkpoints.get(safeDecodeId(id, 'playthrough id'), searchParams.get('scope'), searchParams.get('key') ?? undefined) })),
+    PUT: mutation('workspace.checkpoint.write', async ({ req, res, id, operation }) => {
+      const playthroughId = safeDecodeId(id, 'playthrough id')
+      operation.identify({ playthroughId })
+      const checkpoint = workspaceStore.checkpoints.put(playthroughId, await readBoundedJson(req, 128 * 1024))
+      return sendJson(res, 200, { ok: true, checkpoint })
+    }),
+  })
+  route('/operation-receipts/:id', sessionApi !== null, {
+    GET: quiet(({ res, id, searchParams }) => sendJson(res, 200, { ok: true,
+      ...readSessionReceipt(workspaceStore, searchParams.get('scope'), safeDecodeId(id, 'operation key')) })),
+  })
   route('/playthroughs/:id/focus', sessionApi !== null, { GET: quiet(({ req, res, id }) => sessionApi.playthroughFocus(req, res, id)) })
   route('/playthroughs/:id/availability', maintenanceService !== undefined, {
     GET: quiet(async ({ id, res }) => sendJson(res, 200, { ok: true, ...await maintenanceService.inspect(safeDecodeId(id, 'playthrough id')) })),
@@ -107,7 +129,7 @@ export function createPlayApiHandler({
   ]) {
     route(`/sessions/:id/${suffix}`, sessionApi !== null, { [method]: {
       operation, result: action === 'userMessage' ? 'accepted' : 'completed',
-      action: ({ req, res, id, operation }) => sessionApi[action](req, res, id, operation),
+      action: ({ req, res, id, operation, searchParams }) => sessionApi[action](req, res, id, operation, searchParams),
     } })
   }
 

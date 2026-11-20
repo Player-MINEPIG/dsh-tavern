@@ -51,7 +51,7 @@ function downloadDocument(playthrough, document) {
   queueMicrotask(() => URL.revokeObjectURL(url))
 }
 
-export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement = 'composer', onRelink }) {
+export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement = 'composer', onRepair, onRelink }) {
   installStyles()
   const root = useRef(null)
   const [open, setOpen] = useState(false)
@@ -77,6 +77,20 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
       const snapshot = await loadPlaythroughExport(playClient, playthrough)
       const localizedPlaythrough = { ...snapshot.playthrough, title: displayTitle }
       downloadDocument(localizedPlaythrough, playthroughExportDocument({ ...snapshot, playthrough: localizedPlaythrough }, format))
+      setOpen(false)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const repair = async () => {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await onRepair()
       setOpen(false)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -130,6 +144,7 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
     }, rawText(trigger)),
     !open ? null : h('div', { className: 'dtv-play-io-menu' },
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: rename }, uiMessage('play.io.rename')),
+      typeof onRepair !== 'function' ? null : h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: repair }, uiMessage('play.io.repair')),
       typeof onRelink !== 'function' ? null : h('button', {
         type: 'button',
         className: 'dtv-play-io-item',

@@ -18,7 +18,7 @@ test('saved, interrupted and empty stopped swipes release the parent UI lock',as
   const playthrough={id:outcome,path:`${outcome}/timeline.json`},flags=[],errors=[],opened=[]
   const client={getTimeline:async()=>structuredClone(timeline),putTimeline:async(_p,value)=>{timeline=value},getFocus:async()=>timeline.head,
    getCharacterSelection:async()=>({selection:null}),postSession:async()=>({sessionId:'new'}),postUserMessage:async()=>({accepted:true}),
-   getMessages:async id=>({incompleteTurn:false,messages:[{role:'user',seq:1,text:'Neutral question'},...(id==='old'||outcome!=='empty'?[{role:'assistant',seq:2,text:'Neutral reply',interrupted:id==='new'&&outcome==='interrupted'}]:[])]})}
+   getMessages:async id=>({sessionFormatVersion:4,incompleteTurn:false,messages:[{role:'user',seq:1,text:'Neutral question'},...(id==='old'||outcome!=='empty'?[{role:'assistant',seq:2,text:'Neutral reply',interrupted:id==='new'&&outcome==='interrupted'}]:[])]})}
   function Parent(){const [pending,setPending]=useState(false);return h(PlayTurnActions,{turn:{...node,variant,assistantText:'Neutral reply'},playthrough,playClient:client,running:pending,openSession:id=>opened.push(id),onChanged:()=>{},onError:value=>errors.push(value),onSwipePending:(_id,value)=>{flags.push(value);setPending(value)}})}
   await act(()=>root.render(h(Parent,{key:outcome})))
   const next=()=>[...container.querySelectorAll('button')].find(button=>button.textContent==='›')
@@ -43,7 +43,7 @@ test('a cancelled ordinary request has a working retry button before any reply e
  const request={sessionId:'old',userEventId:1,turnStartEventId:0,turnEndEventId:3}
  const client={getTimeline:async()=>structuredClone(timeline),putTimeline:async(_p,value)=>{timeline=value},getFocus:async()=>timeline.head,
   postSession:async(_source,_import,stateSource)=>{assert.deepEqual(stateSource,{sessionId:'old',beforeUserEventId:1});return {sessionId:'new'}},postUserMessage:async()=>({accepted:true}),
-  getMessages:async id=>({incompleteTurn:false,stoppedRequest:id==='old'?request:null,messages:[{role:'user',seq:1,text:'Neutral question'},...(id==='new'?[{role:'assistant',seq:2,text:'Neutral answer'}]:[])]})}
+  getMessages:async id=>({sessionFormatVersion:4,incompleteTurn:false,stoppedRequest:id==='old'?request:null,messages:[{role:'user',seq:1,text:'Neutral question'},...(id==='new'?[{role:'assistant',seq:2,text:'Neutral answer'}]:[])]})}
  function Parent(){const [pending,setPending]=useState(false);return h(StoppedRequestActions,{request,nodeId:'live-1',playthrough,playClient:client,running:pending,openSession:id=>opened.push(id),onChanged:()=>{},onError:value=>{if(value)assert.fail(value)},onSwipePending:(_id,value)=>{flags.push(value);setPending(value)}})}
  await act(()=>root.render(h(Parent)))
  const button=container.querySelector('button');assert.equal(button.textContent,'›');assert.equal(button.disabled,false)

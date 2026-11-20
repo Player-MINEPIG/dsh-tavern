@@ -1,3 +1,4 @@
+import { creationRequest } from './creation-request.js'
 import { characterIdFromSelection } from './sidebar-model.js'
 import { loadPlaythroughImportContext } from './import.js'
 import { updateCatalog } from './mutations.js'
@@ -5,26 +6,12 @@ import { isPlaythroughArchived } from '../../../play/src/playthrough-state.js'
 import { normalizeTemplateSelection } from '../../../session-template/src/model.js'
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
-const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
 
 function safeSegment(value, label) {
   if (typeof value !== 'string' || !SAFE_SEGMENT.test(value)) {
     throw new TypeError(`${label} must be a safe path segment`)
   }
   return value
-}
-
-function safeSessionId(value) {
-  if (typeof value !== 'string' || !SAFE_SESSION_ID.test(value)) {
-    throw new TypeError('session.id must be a valid DSH session id')
-  }
-  return value
-}
-
-function isoNow(now) {
-  const value = now()
-  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError('now must return a valid Date')
-  return value.toISOString()
 }
 
 async function catalogOrEmpty(client) {
@@ -100,17 +87,7 @@ export async function playthroughIsReusable(client, playthrough) {
   }
 }
 
-export function nextPlaythroughNumber(catalog, characterId) {
-  let maximum = 0
-  let legacyOrdinal = 0
-  for (const playthrough of catalog?.playthroughs ?? []) {
-    if (playthroughCharacterId(playthrough) !== characterId) continue
-    legacyOrdinal += 1
-    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber
-    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal)
-  }
-  return maximum + 1
-}
+export { nextPlaythroughNumber } from '../../../play/src/creation-publication.js'
 
 export async function renamePlaythrough(client, playthrough, title) {
   if (client == null) throw new TypeError('playClient.required')
@@ -172,25 +149,18 @@ export async function createCharacterPlaythrough(client, {
   configurationSource = null,
   configurationSelection = null,
   reuseEmpty = true,
-  now = () => new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID(),
+  creationId,
 } = {}) {
   if (client == null) throw new TypeError('playClient.required')
   if (typeof reuseEmpty !== 'boolean') throw new TypeError('reuseEmpty must be a boolean')
   const characterId = safeSegment(character?.id, 'character.id')
   if (typeof client.postDraft === 'function') {
-    const pending = reuseEmpty ? await reusableOpeningDraft(client, characterId, configurationSelection) : null
-    if (pending) return pending
-    return { ...await client.postDraft({ characterId, ...(configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: 'current', sessionId: selectionFromSessionId } } : {}) }), reused: false }
+    const source = configurationSource ?? (selectionFromSessionId ? { mode: 'current', sessionId: selectionFromSessionId } : null)
+    return creationRequest(client, ['draft', characterId, source, configurationSelection, reuseEmpty], creationId,
+      async (identity, options) => ({ ...await client.postDraft({ characterId, ...(source ? { source } : {}), ...identity }, options), reused: false }),
+      reuseEmpty ? () => reusableOpeningDraft(client, characterId, configurationSelection) : null)
   }
-  const createdAt = isoNow(now)
-  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, 'playthrough.id')
-  const directory = `${characterId}/${playthroughId}`
-  const path = `${directory}/timeline.json`
-  const sourceId = typeof selectionFromSessionId === 'string' && selectionFromSessionId !== ''
-    ? selectionFromSessionId
-    : null
-  const catalog = await catalogOrEmpty(client)
+  const catalog = reuseEmpty && typeof client.getCatalog === 'function' ? await catalogOrEmpty(client) : null
   let latest = latestCharacterPlaythrough(catalog, characterId)
   let reusable = reuseEmpty && latest !== null && await playthroughIsReusable(client, latest)
   if (reusable) {
@@ -206,88 +176,8 @@ export async function createCharacterPlaythrough(client, {
       await ensureCharacterSelection(client, existingRoot, characterId)
       return { sessionId: existingRoot, playthrough: latest, reused: true }
     }
-    const created = await client.postSession(sourceId)
-    const sessionId = safeSessionId(created?.sessionId)
-    if (typeof configureSession === 'function') await configureSession(sessionId)
-    await ensureCharacterSelection(client, sessionId, characterId)
-    let attached
-    const savedCatalog = await updateCatalog(client, fresh => {
-      const index = fresh.playthroughs.findIndex(item => item.id === latest.id && item.path === latest.path)
-      if (index < 0) throw new Error('playthrough.create.missingVacancy')
-      const current = fresh.playthroughs[index]
-      if (isPlaythroughArchived(current)) throw new Error('playthrough.create.archivedVacancy')
-      const currentRoot = rootSessionId(current)
-      if (currentRoot !== null && currentRoot !== sessionId) throw new Error('playthrough.create.identityConflict')
-      attached = {
-        ...current,
-        lastOpenedAt: createdAt,
-        ext: {
-          ...(current.ext ?? {}),
-          pmpDshTavern: {
-            ...(current.ext?.pmpDshTavern ?? {}),
-            characterId,
-            rootSessionId: sessionId,
-          },
-        },
-      }
-      const playthroughs = [...fresh.playthroughs]
-      playthroughs[index] = attached
-      return { ...fresh, playthroughs }
-    })
-    attached ??= savedCatalog?.playthroughs?.find(item => item.id === latest.id && item.path === latest.path)
-    if (rootSessionId(attached) !== sessionId) throw new Error('playthrough vacancy attachment did not persist')
-    return { sessionId, playthrough: attached, reused: true, reattached: true }
   }
-  const created = await client.postSession(sourceId)
-  const sessionId = safeSessionId(created?.sessionId)
-  if (typeof configureSession === 'function') await configureSession(sessionId)
-  await ensureCharacterSelection(client, sessionId, characterId)
-
-  const playthrough = {
-    id: playthroughId,
-    path,
-    title: '周目',
-    lastOpenedAt: createdAt,
-    ext: {
-      pmpDshTavern: {
-        characterId,
-        characterName: character.name,
-        ...(typeof character.sha256 === 'string' ? { characterSha256: character.sha256 } : {}),
-        rootSessionId: sessionId,
-        playthroughNumber: 0,
-        autoTitle: true,
-      },
-    },
-  }
-
-  await client.createDirs(directory)
-  await client.putTimeline(playthrough, { nodes: [] })
-  let saved
-  const savedCatalog = await updateCatalog(client, fresh => {
-    const existing = fresh.playthroughs.find(item => item.id === playthroughId && item.path === path)
-    if (existing !== undefined) {
-      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) throw new Error('playthrough.create.identityConflict')
-      saved = existing
-      return fresh
-    }
-    const playthroughNumber = nextPlaythroughNumber(fresh, characterId)
-    const row = {
-      ...playthrough,
-      title: `${playthroughNumber}周目`,
-      ext: {
-        ...playthrough.ext,
-        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber, autoTitle: true },
-      },
-    }
-    saved = row
-    return { ...fresh, playthroughs: [...fresh.playthroughs, row] }
-  })
-  const savedTimeline = await client.getTimeline(playthrough)
-  saved ??= savedCatalog?.playthroughs?.find(item => item.id === playthroughId && item.path === path)
-  if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
-    throw new Error('playthrough verification failed')
-  }
-  return { sessionId, playthrough: saved, reused: false }
+  throw Object.assign(new Error('This client requires the Host draft creation API (postDraft) to start a new playthrough safely.'), { code: 'PLAY_CREATION_UNAVAILABLE' })
 }
 
 export function createPlaythroughController(client, dependencies = {}) {
@@ -300,7 +190,7 @@ export function createPlaythroughController(client, dependencies = {}) {
         ? (dependencies.reuseEmpty === undefined ? true : dependencies.reuseEmpty)
         : args.reuseEmpty
       if (typeof reuseEmpty !== 'boolean') throw new TypeError('reuseEmpty must be a boolean')
-      const key = JSON.stringify([characterId, reuseEmpty, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null])
+      const key = JSON.stringify([characterId, reuseEmpty, args.creationId, args.configurationSource, args.selectionFromSessionId, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null])
       const existing = inFlight.get(key)
       if (existing !== undefined) return existing
       const task = tail.catch(() => {}).then(() => createCharacterPlaythrough(client, {

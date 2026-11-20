@@ -2,7 +2,7 @@
 
 [English](RP_SECURE_MODE_en.md)
 
-本文说明Tavern 3.2.0在目标 DSH `0.2.2-rc.1` 上的 RP 工具拦截边界。
+本文说明Tavern 3.3.0在目标 DSH `0.2.2-rc.1` 上的 RP 工具拦截边界。
 
 RP 是会话叠加，不是 DSH agent preset。输入栏复用 DSH 原生权限菜单，并加入「RP 安全模式」；新 RP 周目默认选择它。选择其他权限即关闭 RP 安全模式，选择该项可重新开启；原生 Full access / Auto 的确认流程仍然保留。设置页和角色卡面板不再提供开关。运行中的变更在下一执行边界生效，期间原有保护继续有效。`/rp` 与 `/rp off` 仍可用。旧的 `rpFollowCharacter` API 配置保留用于历史绑定行为，不改变新周目的默认值。
 

@@ -38,7 +38,7 @@ test('official tool and developer messages survive the Host/client boundary with
     { id: 'reply', role: 'assistant', content: [{ type: 'text', text: 'Final answer' }] },
   ]
   const events = rows.map((message, seq) => ({ seq, data: { message } }))
-  const state = normalizeSessionMessages({ messages: projectMessages(rows, events), incompleteTurn: false })
+  const state = normalizeSessionMessages({ messages: projectMessages(rows, events), incompleteTurn: false, sessionFormatVersion: 4 })
   assert.equal(state.messages[1].origin.kind, 'context')
   assert.equal(state.messages[3].origin.kind, 'context')
   const reconciled = appendCompletedTurns({ nodes: [] }, state, 's-tool')
@@ -167,7 +167,7 @@ test('live play client parses JSON file envelopes and writes them as content str
     if (url.includes('/workspace/files?path=character-1%2Fplaythrough-1%2Ftimeline.json') && (options.method ?? 'GET') === 'GET') {
       return response({ ok: true, path: catalog.playthroughs[0].path, content: JSON.stringify(timeline), revision: timelineRevision })
     }
-    if (url.includes('/sessions/session-1/messages')) return response({ ok: true, ...messages })
+    if (url.includes('/sessions/session-1/messages')) return response({ ok: true, ...messages, sessionFormatVersion: 4 })
     if (url.includes('/sessions/session-1/import-context')) {
       return response({ ok: true, binding: (options.method ?? 'GET') === 'DELETE' ? null : { path: 'character-1/playthrough-1/import-context.json', state: 'pending' } })
     }
@@ -234,7 +234,7 @@ test('live play client parses JSON file envelopes and writes them as content str
   assert.ok(focusCall)
   assert.doesNotMatch(focusCall.url, /[?&]path=/)
   const branchCall = calls.find(item => item.url.endsWith('/branch'))
-  assert.equal(JSON.parse(branchCall.body).atEventId, 19)
+  assert.deepEqual(JSON.parse(branchCall.body), { atEventId: 19 })
   const selectionPosts = calls.filter(item => item.method === 'POST' && item.url === API_V1 + '/character-selection')
   const directSelection = selectionPosts.map(item => JSON.parse(item.body)).find(body => body.sessionId === 'session-2')
   const greetingSelection = selectionPosts.map(item => JSON.parse(item.body)).find(body => body.sessionId === 'session-1')

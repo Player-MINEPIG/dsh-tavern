@@ -140,13 +140,15 @@ test('an initialized legacy empty playthrough can start a separate new run and e
     getTimeline: async play => timelines.get(play.path), putTimeline: async (play, value) => { timelines.set(play.path, value) }, createDirs: async () => {},
     getMessages: async () => ({ messages: [], incompleteTurn: false }),
     getCharacterSelection: async () => ({ selection: { characterCardId: 'card' } }),
-    postSession: async from => { assert.equal(from, 'old'); f.create('new'); return { sessionId: 'new' } },
+    postDraft: async ({ source }) => { assert.equal(source.sessionId, 'old'); return { draft: { id: 'new-run' }, sessionId: null } },
   }
   // This was the exact mismatch: DSH is blank while the old MVU opening is persisted.
   assert.equal(await playthroughIsReusable(client, previous), true)
   await assert.rejects(f.read('old'), { code: 'MVU_MIGRATION_REQUIRED' })
   const created = await createCharacterPlaythrough(client, { character: { id: 'card' }, selectionFromSessionId: 'old', reuseEmpty: false, randomUUID: () => 'new-run' })
-  assert.equal(created.reused, false); assert.equal(created.sessionId, 'new')
+  assert.equal(created.reused, false); assert.equal(created.sessionId, null)
+  // First-send materialization creates the session that owns this new MVU instance.
+  f.create('new')
   assert.deepEqual(catalog.playthroughs[0], previous)
   const fresh = await f.read('new')
   assert.equal(fresh.content.stat_data.hp, 100); assert.equal(fresh.revision, 0); assert.equal(fresh.storedManagementMode, 'managed')

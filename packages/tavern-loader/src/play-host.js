@@ -92,6 +92,7 @@ export function createPlayHost({
     },
 
     async forkSession({ sessionId, atSeq, sessionFormatVersion, stateSource }, { operation } = {}) {
+      let attempted = false
       try {
         const coordinates = await this.coordinates(sessionId)
         requireCoordinates(sessionFormatVersion, coordinates)
@@ -100,6 +101,7 @@ export function createPlayHost({
           ? { ...stateSourceTarget(stateSource), sessionId, prefixEndEventId: atSeq }
           : { kind: 'fork', sessionId, atEventId: atSeq })
         if (typeof sessionController?.resolveAgent !== 'function') throw missing('session.resolveAgent')
+        attempted = true
         const value = await callSessionCreation(sessionController, 'fork', { sessionId, atSeq }, operation)
         if (typeof value?.sessionId !== 'string' || value.sessionId === '') throw missing('session.fork')
         operation?.checkpoint('session.created', { sessionId: value.sessionId })
@@ -128,7 +130,9 @@ export function createPlayHost({
         }
         return { sessionId: value.sessionId }
       } catch (error) {
-        throw mapHostError(error)
+        const failure = mapHostError(error)
+        if (!attempted) failure.rollbackForkNotAttempted = true
+        throw failure
       }
     },
 

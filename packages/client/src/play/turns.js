@@ -1,3 +1,4 @@
+import { requireCoordinates, variantFormatVersion, withVariantFormat } from '../../../play/src/session-coordinates.js'
 import { updateTimeline } from './mutations.js'
 import {
   activeTimelineEntries,
@@ -61,7 +62,7 @@ function isRealUserMessage(message) {
   return message?.role === 'user' && (origin === 'user' || origin === 'steering')
 }
 
-function extendHeadVariant(timeline, sessionId, endEventId) {
+function extendHeadVariant(timeline, sessionId, endEventId, messageState) {
   const head = timelineHead(timeline)
   if (head === null || head.sessionId !== sessionId) return { timeline, changed: false }
   let changed = false
@@ -70,8 +71,9 @@ function extendHeadVariant(timeline, sessionId, endEventId) {
     const variants = (node.variants ?? []).map(variant => {
       if (variant.id !== head.variantId || variant.sessionId !== sessionId
         || endEventId <= variant.endEventId) return variant
+      requireCoordinates(variantFormatVersion(variant), messageState)
       changed = true
-      return { ...variant, endEventId }
+      return withVariantFormat({ ...variant, endEventId }, messageState.sessionFormatVersion)
     })
     return changed ? { ...node, variants } : node
   })
@@ -108,15 +110,12 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
       displayOverride: null,
       parentVariantId,
       adoptedVariantId: variantId,
-      variants: [{
+      variants: [withVariantFormat({
         id: variantId,
         sessionId,
         startEventId: user.seq,
         endEventId: assistant.seq,
-        ...(Number.isSafeInteger(messageState.sessionFormatVersion) ? {
-          ext: { pmpDshTavern: { sessionFormatVersion: messageState.sessionFormatVersion } },
-        } : {}),
-      }],
+      }, messageState.sessionFormatVersion)],
     })
     parentVariantId = variantId
   }
@@ -126,7 +125,7 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
         appendPair()
       }
       if (user === null && continuationAssistant !== null) {
-        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq)
+        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq, messageState)
         nextTimeline = extended.timeline
         changed ||= extended.changed
         parentVariantId = timelineHead(nextTimeline)?.variantId ?? parentVariantId
@@ -145,7 +144,7 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
   }
   appendPair()
   if (user === null && continuationAssistant !== null) {
-    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq)
+    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq, messageState)
     nextTimeline = extended.timeline
     changed ||= extended.changed
   }

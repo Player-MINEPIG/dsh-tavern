@@ -1,3 +1,5 @@
+import { recoverDurableGeneration } from './generation.js'
+import { withVariantFormat } from '../../../play/src/session-coordinates.js'
 import {finishPendingSwipe} from './pending-swipe.js'
 import {updateTimeline} from './mutations.js'
 import {timelineWithHead} from '../../../play/src/timeline-tree.js'
@@ -18,8 +20,9 @@ export async function commitSwipeReply(client, pending, pair, {
   variantId = `swipe-${pending.sessionId}-${pair.user.seq}-${pair.assistant.seq}`,
   writeTimeline = transform => updateTimeline(client, pending.playthrough, transform),
 } = {}) {
-  const variant = {id:variantId,sessionId:pending.sessionId,startEventId:pair.user.seq,endEventId:pair.assistant.seq,
-    ...(Number.isSafeInteger(pair.sessionFormatVersion)?{ext:{pmpDshTavern:{sessionFormatVersion:pair.sessionFormatVersion}}}:{})}
+  const variant = withVariantFormat({
+    id: variantId, sessionId: pending.sessionId, startEventId: pair.user.seq, endEventId: pair.assistant.seq,
+  }, pair.sessionFormatVersion)
   const next = await writeTimeline(timeline => {
     const node = timeline.nodes.find(n => n.id === pending.nodeId)
     if (!node || !node.variants.some(v => v.sessionId === pending.sourceSessionId && (!pending.sourceVariantId || v.id === pending.sourceVariantId))) throw Error('Swipe source reply is no longer in this playthrough')
@@ -38,6 +41,7 @@ export async function commitSwipeReply(client, pending, pair, {
 }
 
 export async function recoverCompletedSwipe(client,pending) {
+  if (pending.operationKey) return recoverDurableGeneration(client, pending)
   // Request retries create a new QA, not a variant of an existing reply.
   if (!pending.error || pending.kind === 'request-retry') return null
   if (pending.recovery) return pending.recovery

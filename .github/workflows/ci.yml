@@ -55,5 +55,13 @@ jobs:
         run: git diff --exit-code -- dist/client.js
       - name: Verify panel close buttons outside desktop window controls
         run: node scripts/verify-shell-titlebar-browser.mjs
+      - name: Verify rollback navigation in Chrome
+        run: node scripts/verify-playthrough-rollback-browser.mjs
+      - name: Verify recovery commands on the supported DSH Host
+        env:
+          DSH_TAVERN_PROMPT_COMPAT_ROOT: ${{ runner.temp }}/tavern-official-host
+        run: |
+          npm install --prefix "$DSH_TAVERN_PROMPT_COMPAT_ROOT" --legacy-peer-deps=false --ignore-scripts --no-audit --no-fund @deepseek-ai/dsh@0.2.2-rc.1
+          node --test test/maintenance-tools-host.test.mjs test/draft-native-controls-host.test.mjs
       - name: Audit production dependencies
         run: npm audit --omit=dev

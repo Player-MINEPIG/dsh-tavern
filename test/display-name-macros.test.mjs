@@ -46,6 +46,7 @@ test('live display expands completed aliases and keeps existing manual display o
 test('reloading the same historical conversation follows the current user without name snapshots', async () => {
   let userName = 'Reader', timeline = { nodes: [] }
   const source = {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { id: 'u', role: 'user', seq: 1, content: [], text: '<user> asks' },

@@ -19,7 +19,7 @@ test('only a durable cancelled human request without assistant text offers a ret
  for(const change of [items=>items[3].data.reason.kind='completed',items=>items[2].data.message.content.push({type:'text',text:'Saved body'}),items=>items[1].data.source.kind='subagent-report',items=>items.push({seq:4,type:'turn/start',data:{turn:2}})]){
   const items=events();change(items);assert.equal(stoppedRequestFromEvents(items),null)
  }
- const value=normalizeSessionMessages({incompleteTurn:false,stoppedRequest:expected,messages:source.slice(1,3).map(event=>({id:(event.data.message??event.data).id,seq:event.seq,role:event.type==='user/message'?'user':'assistant',content:(event.data.message??event.data).content}))})
+ const value=normalizeSessionMessages({sessionFormatVersion:4,incompleteTurn:false,stoppedRequest:expected,messages:source.slice(1,3).map(event=>({id:(event.data.message??event.data).id,seq:event.seq,role:event.type==='user/message'?'user':'assistant',content:(event.data.message??event.data).content}))})
  assert.deepEqual(value.stoppedRequest,expected)
  assert.equal(appendCompletedTurns({nodes:[]},value,'old').added.length,0)
  const legacy=appendCompletedTurns({nodes:[]},{...value,stoppedRequest:null},'old').timeline
@@ -32,7 +32,7 @@ test('only a durable cancelled human request without assistant text offers a ret
 
 function fixture(later=false,stoppedAgain=false,legacy=false){
  const playthrough={id:'p',path:'p/timeline.json',ext:{pmpDshTavern:{rootSessionId:'old'}}}
- const parent={id:'parent',kind:'qa',parentVariantId:null,adoptedVariantId:'parent-v',variants:[{id:'parent-v',sessionId:'old',startEventId:1,endEventId:3}]}
+ const parent={id:'parent',kind:'qa',parentVariantId:null,adoptedVariantId:'parent-v',variants:[{id:'parent-v',sessionId:'old',startEventId:1,endEventId:3,ext:{pmpDshTavern:{sessionFormatVersion:4}}}]}
  let timeline={nodes:later?[parent]:[],head:later?{sessionId:'old',nodeId:'parent',variantId:'parent-v'}:null},writes=0,id=0,children=0
  const userSeq=later?5:1
  if(legacy){
@@ -60,7 +60,7 @@ for(const later of [false,true])test(`${later?'later':'first'} cancelled ordinar
  const creation=f.calls[0],coordinate={sessionId:'old',beforeUserEventId:f.stoppedRequest.userEventId}
  assert.deepEqual(creation.at(-1),coordinate)
  assert.equal(creation[0],later?'branch':'create')
- if(later)assert.equal(creation[2],3)
+ if(later)assert.deepEqual(creation.slice(2,4),[3,4])
  assert.deepEqual(f.calls[1],['send','new','Neutral stopped question'])
  await f.controller.createReplySwipe(f.playthrough,result.nodeId)
  assert.equal(f.timeline.nodes.at(-1).variants.length,2)

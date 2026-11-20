@@ -13,6 +13,7 @@ const noticeSource = readFileSync(new URL('../packages/client/src/play/notice.js
 test('Chat load registers a completed real turn before projecting it', async () => {
   const calls = []
   const messageState = {
+    sessionFormatVersion: 4,
     incompleteTurn: false,
     messages: [
       { id: 'user', role: 'user', seq: 1, content: [], text: 'Hello' },

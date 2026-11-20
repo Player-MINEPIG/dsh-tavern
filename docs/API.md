@@ -142,6 +142,8 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定含 path/hash/state/数量摘要及（已 claim 时）不含正文的 claim identity/event seq 摘要，不返回记录正文 | 已实现 |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
+| GET / PUT | `/workspace/checkpoints/:id` | 读取或按版本写入指定周目的调用方检查点。 | 已实现 |
+| GET | `/operation-receipts/:id` | 查询已绑定工作区中某次会话变更的回执。 | 已实现 |
 | GET | `/playthroughs/:id/focus` | 经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现 |
 | GET | `/playthroughs/:id/availability` | 检查指定周目的全部已保存会话引用，返回状态、原因、sessionIds 与 workspaceScope；只读 | 已实现 |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`；只把指定周目及其 root/swipe/branch 后代 session 重新绑定到一张现存角色卡。显式用户选择不受自动归类规则限制 | 已实现 |
@@ -169,6 +171,16 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 文件写入可选传入 `expectedWorkspaceScope`，值为工作区 `[workspaceId, rootPath]` 的 JSON 字符串。Host 核对当前绑定；类型不是字符串时返回 `400 PLAY_WORKSPACE_SCOPE_INVALID`，不匹配时返回 `409 PLAY_WORKSPACE_CHANGED`。catalog 内容相同也不能跨工作区重放该批归档。
 
 上面的 `availability` 是清理工具采用的严格缺失检查，不是一键归档的筛选条件。归档可收纳损坏或暂时不可用的周目；实际清理仍要求全部引用被确认缺失。
+
+### 周目修复命令与 Agent 工具
+
+`/tavern-repair assist <周目ID>` 先对该周目执行程序化修复。若仍有待处理的问题，Host 将诊断信息作为普通提示提交给调用会话的 Agent。遇到归档、待完成草稿或正在生成的回复时，仅返回报告。侧栏的修复入口会先在绑定的工作区新建普通会话，再调用此命令。
+
+DSH 聊天命令 `/tavern-repair [preview] [v3-v4 <周目ID>]` 在调用会话所属的已绑定扮演工作区内运行。默认检查整个 catalog 并应用可核实的修复。`v3-v4` 表示操作者确认所选周目的旧坐标仅来自 V3/V4，检查范围随之缩小到该 ID。
+
+启用 `maintenanceTools: true` 后，Agent 可调用 `tavern_repair_playthroughs`。可选参数为 `action`（默认 `preview`，或 `apply`）、单个周目 `id` 和布尔值 `knownV3V4`。将 `knownV3V4` 设为 true 需要明确的来源确认及 `id`。RP 安全模式和只读 Agent 可以预览。结果含 `applied`（执行模式）、`checked`（检查的周目数），以及存在改动或待处理项的 `items`。每个条目含 `id`、`changes`、`remaining` 及写入时的相对 `backup` 路径。每个待处理项有 `reason` 和已知的目标 ID。
+
+修复只写周目时间线。写入时核对工作区、目录和文件修订，并在原文件旁保留 `timeline.json.pre-repair-<原文件SHA256>`。再次运行会重新核实日志。逐类处理说明见[使用说明](USAGE_zh-CN.md#在聊天框修复周目)。
 
 ### 可选 agent 清理工具
 
@@ -228,6 +240,8 @@ async function queryCoordinates(sessionId) {
 返回的是 Host 当前读取到的**逻辑会话格式**，不保证磁盘上原始文件也已改写成该版本。调用者必须使用接口返回值，不能从软件版本字符串猜测，也不能把 `>= 3` 当作未来格式兼容承诺。字段名由 Tavern 定义，格式含义和转换规则由 DSH 上游定义。
 
 若本来就需要消息，直接读取 `GET /sessions/:id/messages` 的顶层 `sessionFormatVersion`、`migratedFromV2` 即可，不必再查此接口。消息响应中这两个字段可缺省，旧插件可能没有独立接口；缺失或 `null` 应视为未知。独立接口减少返回正文的需要，但实现仍会 inspect 会话，不能假定查询成本与历史长度无关。
+
+创建楼层、swipe 或重试变体时须使用同一次消息快照中的格式版本。Host 无法提供可用版本时，坐标校验返回 `503 PLAY_COORDINATES_UNAVAILABLE`。分支请求须传入所引用坐标自身的版本。已锁定时间线的恢复方式见[坐标迁移指南](DSH_0.1.7_MIGRATION.md)。
 
 #### 保存、比较和分支
 
@@ -300,7 +314,7 @@ v2 错误示例；`code` 在**响应顶层**，`error` 是字符串：
 - `origin.kind: "context"` 可附带 `producer`、`form`、`summary`。三者是有界的可选显示元数据；消息正文仍在原有 `text` / `content` 字段，不复制进 `origin`。
 - 为兼容旧客户端，新增字段是 additive；`role`、`seq`、`text`、`content` 与 `incompleteTurn` 的既有含义不变。旧服务端没有 `origin` 时，客户端只能按 `role` 做保守回退，无法可靠识别上下文注入。
 
-内置魔丸视图完全不渲染 reasoning 与 `origin.kind: "context"`，也不提供展开入口；需要检查运行细节时使用 DSH 原生“对话”视图。回复 swipe 是客户端对 branch/user-message/timeline CAS 的组合，不存在 `/swipe` 动词。点击由 `context` 触发的父输出时，控制器向活动分支前方寻找最近的真实 `user` / `steering`，从其前方重跑整轮，绝不会把 context 报告重新作为人类输入发送；若活动分支没有真实用户消息则显式失败。durable QA 提供复制、左右 swipe、分支新周目、同周目回退和显示层编辑；不再提供屏蔽。显示正则逐段决定 assistant 正文是否可见，但动作归属于 QA：多段输出只出现一组动作，全部正文被清空时仍保留该组动作以及非可视 provenance 与 timeline 指针。
+内置魔丸视图完全不渲染 reasoning 与 `origin.kind: "context"`，也不提供展开入口；需要检查运行细节时使用 DSH 原生“对话”视图。回复 swipe 由调用方先保存检查点，再向新会话发送带原生请求 ID 的提问，按对应回合的历史证据登记回复。点击由 `context` 触发的父输出时，控制器向活动分支前方寻找最近的真实 `user` / `steering`，从其前方重跑整轮，绝不会把 context 报告重新作为人类输入发送；若活动分支没有真实用户消息则显式失败。durable QA 提供复制、左右 swipe、分支新周目、同周目回退和显示层编辑；不再提供屏蔽。显示正则逐段决定 assistant 正文是否可见，但动作归属于 QA：多段输出只出现一组动作，全部正文被清空时仍保留该组动作以及非可视 provenance 与 timeline 指针。
 
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经被 claim，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行 JSON/schema/hash 校验，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际 assembly 必须携带公开 `agent/inbox/spliced` 投影的非负 `claimEventSeqs`；loader 才把绑定持久转为 `claimed`，并在同一 claim identity 的重复 assembly 中重放相同的转义、untrusted、只读上下文。没有 claim 的 view/assembly 不注入，也不会消费 pending；已 claim 的 `turn/end` 才转为 `consumed`，并保存安全整数结束 event seq、turn 与 `reason.kind` 的非正文终态元数据，不写成 DSH 历史。DSH provider 在同一 turn/end 前的 request retry 复用同一 claim；`agent/request-error` 不消费或重置。Tavern swipe 通过公开 branch endpoint，在分叉点早于来源终态时复制 selection 和不含正文的 import lineage；子 session 必须出现新的 public claim 才注入，旧 claim 不直接复用。中断后原 session 的新用户 claim 不再注入。
 
@@ -308,26 +322,15 @@ import-context 修改由 session 权威状态锁定：只要存在 DSH user/assi
 
 timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。QA 节点的产品字段为 `id`、`kind`、`displayOverride`、可选 `parentVariantId`、`adoptedVariantId`、`variants` 和可选 `ext`；未声明的顶层字段会以 `PLAY_TIMELINE_INVALID` 拒绝，第三方元数据应放在 `ext`。v2 不提供隐藏或屏蔽 QA 的字段。树状字段为 additive：节点可带 `parentVariantId: string | null`，指向较早 QA 的 variant；timeline 可带 `head: { sessionId, nodeId, variantId }`。`nodeId/variantId` 必须指向同一 QA，但 `head.sessionId` 可是刚由 DSH branch 创建、尚未产生下一轮 QA 的 continuation session。活动显示路径从 `head.variantId` 沿 `parentVariantId` 反向求祖先；未带树字段的平面文档仍按原节点顺序读取，下一次完成 QA 对账会写入明确 head/parent。树文档的 variant id 必须全局唯一、parent 只能指向较早节点且不得成环。focus 不另存第二份状态；稳定 focus 从 timeline head 派生，空 timeline 才回退 catalog 的 rootSessionId。
 
-bundled live client 只发送 URL 编码后的 playthrough id，并拒绝服务端返回的 id 不匹配或缺失/非法字段。稳定 focus 的 activeTimelinePath 字段仅作为旧 binding 兼容数据保留，已 deprecated/ignored；普通 timeline PUT 不再更新它。路径 mutation 已在进程内目标锁中逐段 `lstat` 拒绝 symlink/junction，逐层创建并 realpath 复核；临时文件使用排他 `wx`，写入和 rename 前复验父目录。服务端 CAS 已实现；内置 live client 已实现受管 revision 缓存、`null` create-only、409 作废陈旧缓存和有限冲突重放（默认最多重试 3 次，可配置 1–5）。内置周目生命周期 caller（rename、create catalog append、node metadata/adopt、swipe/回退 timeline head、turn reconcile）使用 `updateCatalog` / `updateTimeline`；mutator 每次只基于 fresh document 重算本地意图，外部 session/branch/user-message/目录/timeline create-only 副作用不会在 CAS 重放中重复。旧自定义 client 若只有 get/put 会走一次兼容 fallback，不提供并发重放保证。
+bundled live client 只发送 URL 编码后的 playthrough id，并拒绝服务端返回的 id 不匹配或缺失/非法字段。稳定 focus 的 activeTimelinePath 字段仅作为旧 binding 兼容数据保留，已 deprecated/ignored；普通 timeline PUT 不再更新它。路径 mutation 已在进程内目标锁中逐段 `lstat` 拒绝 symlink/junction，逐层创建并 realpath 复核；临时文件使用排他 `wx`，写入和 rename 前复验父目录。服务端 CAS 已实现；内置 live client 已实现受管 revision 缓存、`null` create-only、409 作废陈旧缓存和有限冲突重放（默认最多重试 3 次，可配置 1–5）。内置周目生命周期 caller（rename、create catalog append、node metadata/adopt、已有变体切换、turn reconcile）使用 `updateCatalog` / `updateTimeline`；mutator 每次只基于 fresh document 重算本地意图，外部 session/branch/user-message/目录/timeline create-only 副作用不会在 CAS 重放中重复。旧自定义 client 若只有 get/put 会走一次兼容 fallback，不提供并发重放保证。
 
 ### 周目生命周期组合语义
 
-v2 没有把角色卡、周目和 greeting 做成一个不可替换的后端大接口；第三方前端可以用公开
-session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 前端的组合顺序是：
-
-1. 读取角色目录并检查该角色最后一个周目是否仍为空；若为空则复用它，否则调用
-   `POST /sessions` 创建真实 blank DSH session；
-2. 对已有来源 session，使用 v2 的 `selectionFromSessionId` 复制 Tavern selection；无来源
-   session 再通过 v1 绑定角色卡；
-3. 在已绑定工作区根内创建角色/周目目录，写入空 `timeline.json`，再写入 catalog，最后重新
-   读取并校验；自动显示名随当前语言使用 `{number}周目` / `Playthrough {number}`，主动重命名则按原文显示并可通过 catalog 重新读取确认。
+内置客户端通过 `POST /drafts` 创建开场草稿。Host 先保存创建意图，再写入时间线和周目目录。客户端重试时沿用同一个 `creationId` 和 `expectedWorkspaceScope`。开场草稿在首次发送时才分配原生会话。其他前端可自行组合会话和工作区文件原语。自动标题按当前语言显示，手工改名沿用保存的文字。
 
 角色解绑或换绑是例外：`POST /v1/character-selection` 在写 selection 前检查 session 是否属于角色不一致的周目。若存在冲突，返回 409 `CHARACTER_PLAYTHROUGH_DETACH_REQUIRED`，`error.details.conflicts[]` 含 `playthroughId`、`playthroughTitle`、`sessionId`、`expectedCharacterId`、`requestedCharacterId` 与 `descendantSessionCount`，且本次 selection 不写入。前端取得用户确认后，应逐项调用 `POST /v2/playthroughs/:id/detach-session`，全部成功后重试原 v1 请求。detach 由服务端根据 timeline 树计算，客户端不得自行猜测或重写后代关系。
 
-detach 删除目标 session 的所有 variant 以及以其为父节点的全部后代 variant，不重挂幸存节点；同一节点的兄弟 swipe 和其他分支保留。若 root 被移除，catalog 清除 `rootSessionId` 与旧 import-context 引用，但保留周目行、名称和编号。下次新建同角色周目时，bundled client 为该空周目创建新的 DSH root session 并以 catalog CAS 重新挂入，不创建新目录或新编号。操作不会删除、归档或改名任何 DSH session。
-
-这里的“周目事务”是前端对公开原子操作的组合，不等同于服务端跨文件事务。单个客户端的
-controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败不由跨文件事务包裹：workspace bind、目录创建、普通文件与 catalog/timeline 写入、周目 detach，以及 session create/branch/user-message 和 import-context PUT/DELETE 都各自在单次变更请求内使用一个 `operationId` 写 `ctx.logger`；客户端依据已完成阶段、回读结果和稳定错误码恢复。不同 API 请求不共享 operationId，chrome、GET 和浏览器前端操作仍保持安静；不得把组合流程宣传为原子提交。
+detach 删除目标 session 的所有 variant 以及以其为父节点的全部后代 variant，不重挂幸存节点；同一节点的兄弟 swipe 和其他分支保留。若 root 被移除，catalog 清除 `rootSessionId` 与旧 import-context 引用，但保留周目行、名称和编号。解除根绑定前，Host 保存目标周目及预期版本。若第二次写入中断，重复原请求或运行周目修复，均会核对时间线与目录，补上仍缺的步骤。原生 DSH 会话保留。
 
 ### 外部记录导入上下文
 
@@ -645,11 +648,19 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 ### Tavern 周目分支组合
 
-内置 RP 视图不覆盖 DSH 原生 fork。它在目标 adopted assistant 的 `endEventId` 调用公开 `POST /sessions/:id/branch`，先用 `/messages` 验证子 session 继承了该 durable user/assistant 区间，再创建新周目目录和截至该 QA 的 timeline 副本。副本只把目标 adopted variant 的 `sessionId` 重定向到子 session，随后用 catalog CAS 追加新周目并通过按 id 的 focus 校验。这样新周目保留 DSH 权威上下文，再次从侧边栏进入时也会打开可继续对话的 branch session；源 timeline、源 variant 和 DSH 原始消息不变。
+**从这里分支为新周目**和**在本周目从这里继续**都调用已有的会话分支原语。调用方先记录起始版本和选中回复，验证子会话继承的问答，再决定写哪些文件。新周目需要新的时间线与目录条目；在本周目继续只改活动位置，保留后续节点。重新生成和重试已停止的提问则组合创建或分支会话、提交带标识的提问、查询对应原生回合及按版本写入时间线。
 
-这仍是现有原子 API 的客户端组合，不是跨 session、目录、timeline、catalog 的大事务。branch 已成功而后续文件写入失败时可能留下未归档的 DSH 子 session 或工作区孤儿文件；每一步由现有 `ctx.logger` operation 记录，客户端不通过删除原始历史来伪造回滚。
+### 可恢复的原子调用
 
-“在本周目从这里继续”复用相同的 DSH branch 与 inherited durable range 校验，但不创建目录、timeline 副本或 catalog 条目。客户端仅以 timeline CAS 把 `head` 移到 `{ continuationSessionId, targetNodeId, targetVariantId }`；旧后续节点仍保存在树中，但不属于当前活动路径。下一条真实消息完成后以目标 variant 为 parent 追加新 QA。它不是删除/改写 DSH 历史，也不伪造用户或 assistant 消息。
+`scope` 是 `GET /workspace` 返回的 `[workspaceId, rootPath]` 编码成的 JSON 字符串。写请求的 `expectedWorkspaceScope` 使用相同值。原有会话和文件操作仍可独立调用。
+
+- `GET /workspace/checkpoints/:id?scope=…` 返回 `{ok,checkpoint}`，缺失时为 `null`。加 `key` 可查询原操作。记录含 `key`、`owner`、`data`、整数 `revision` 和 `released`。
+- `PUT /workspace/checkpoints/:id` 首次传 `{key,owner,data,expectedRevision:null,expectedTimelineRevision,expectedWorkspaceScope}`，其中时间线版本取自文件读取。一个周目同时允许一个调用方占用。后续用返回的检查点版本、相同 key 和 owner 及完整新 data 更新，最后一次传 `released:true` 释放。冲突返回 409。`data` 的结构由调用方定义，Host 按原样保存。建议只存标识和进度，避免写入正文或密码。 可另传 `expectedBinding: {path, rootSessionId, characterId}`，在取得检查点时核对目标绑定，缺失的 ID 填 `null`。
+- `POST /sessions`、`POST /sessions/:id/branch`、`POST /sessions/:id/user-message` 可传 `operationKey` 和 `expectedWorkspaceScope`，每个 key 对应一次变更及其输入。执行受检查点保护的变更或文件写入时，同时传 `checkpointId` 和 `checkpointKey`。写文件仍需文件自己的 `expectedRevision`。同一检查点可覆盖多个不同 key 的原子操作。
+- `GET /operation-receipts/:id?scope=…` 中的 id 为原子变更的 key，状态为 `missing`、`pending` 或 `done`。已完成的请求可以取回同一结果。原生操作结果未知时保持待核实。回执在后端保存输入指纹，查询返回进度和已知结果标识，省略提问正文及其指纹。
+- 核对分支继承的回复时，使用 `GET /sessions/:id/messages?evidence=inheritance&start=…&end=…`，比较源与子会话的端点。核对提问时，使用 `GET /sessions/:id/messages?requestId=…&boundary=…&version=…&stage=sending`，已确认受理时传 `accepted`。返回 `ready` 后可登记结果坐标。请求 ID、继承边界和原生回合共同确定回复归属。
+
+例如，一个第三方历史查看器只想从某条回复创建对照会话，可以向 `POST /sessions/:id/branch` 提交 `{atEventId,sessionFormatVersion,expectedWorkspaceScope,operationKey}`。响应丢失时沿用原 key 查询回执，取得子会话 ID 后打开即可。若另需记录书签，可以先申请检查点，核实子会话后按书签文件的版本写入。若 DSH 在返回子会话标识前退出，仍须保留待定结果供核对。周目修复会列出归属其他客户端的检查点，由拥有该记录的客户端解释。
 
 ### 后端 operation log utility
 

@@ -2,7 +2,7 @@
 
 [English](INSTALLATION_en.md)
 
-Tavern 3.2.0 需要独立安装并启用 Assembler 1.2.0。两个组件分别交付，Tavern 不内嵌 Assembler，不自动下载或启动它。必需 peer 范围为 `~1.2.0`。服务分工与可选 Memory Manager 见[接入说明](ASSEMBLER_INTEGRATION.md)。
+Tavern 3.3.0 需要独立安装并启用 Assembler 1.2.0。两个组件分别交付，Tavern 不内嵌 Assembler，不自动下载或启动它。必需 peer 范围为 `~1.2.0`。服务分工与可选 Memory Manager 见[接入说明](ASSEMBLER_INTEGRATION.md)。
 
 装配规则的 CRUD、应用、预览、实际请求引用与旧进阶配置读取见[请求装配器](REQUEST_ASSEMBLY.md)。当前支持 DSH **0.2.2-rc.1**，要求 Node `>=24.9.0`。Tavern 前端嵌入 DSH Web 与桌面端，不提供额外独立 Web UI。
 
@@ -18,10 +18,10 @@ Host 与 DSH crypto peer 范围均为 `>=0.2.2-rc.1 <0.2.3-0`。范围内后续�
    https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
    ```
 
-2. Tavern 3.2.0。
+2. Tavern 3.3.0。
 
    ```text
-   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
+   https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.3.0/pmp-dsh-tavern-3.3.0.tgz
    ```
 
 按 GUI 提示重载或重启 Host。已安装独立 Assembler 时，先核对版本和启用状态。仅将包登记到 profile 不代表其 bundle 已启用。
@@ -30,7 +30,7 @@ Host 与 DSH crypto peer 范围均为 `>=0.2.2-rc.1 <0.2.3-0`。范围内后续�
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.3.0/pmp-dsh-tavern-3.3.0.tgz
 ```
 
 这里安装的是预构建 Release 附件，不要求从 npm 下载 Assembler 1.2.0。DSH 的其他运行依赖与 Tavern 的普通依赖仍按各自的安装机制提供。
@@ -40,19 +40,22 @@ Market 的“已安装，重启后生效”表示软件包已登记，不证明�
 新版仅支持 stock core 标准策略。进阶扩展冻结在 Assembler 1.1.0 / DSH 0.2.0-rc.2，不承诺后续适配。插件安装不会修改 DSH 核心。
 
 <a id="upgrade-to-3-2-0"></a>
-## 升级到 3.2.0
+<a id="upgrade-to-3-3-0"></a>
+## 升级到 3.3.0
 
-从 3.1.5 升级：备份数据并停止 Host，按上述安装顺序更新独立 Assembler 至 1.2.0，再更新 Tavern 至 3.2.0。保留原数据目录，确认两个 bundle 均启用后重启。
+从 3.2.0 升级时，备份 RP 工作区并停止 Host，保留已启用的独立 Assembler 1.2.0，使用上方链接更新 Tavern 后重启。需要检查旧周目时，打开侧栏中该周目的 **⋯ → 修复周目**。
+
+从 3.1.5 升级：备份数据并停止 Host，按上述安装顺序更新独立 Assembler 至 1.2.0，再更新 Tavern 至 3.3.0。保留原数据目录，确认两个 bundle 均启用后重启。
 
 ### 从内嵌 Assembler 的旧版本升级
 
 1. 停止目标 Host。备份 Tavern 持久目录、Assembler 持久目录、RP 工作区和对应 DSH 数据。
 2. 在同一 profile 安装独立 Assembler 1.2.0，并将其 bundle 设为启用。
 3. 默认 Assembler 存储继续使用 `<DSH_HOME>/dsh-prompt-assembler/`。不要删除该目录或复制一份空目录覆盖它。
-4. 若旧 Tavern 配置含 `assemblerStorageDir`，将原值移到独立 Assembler 的 `storageDir`，再删除旧 Tavern 字段。Tavern 3.2.0 拒绝该旧字段，不会忽略它后打开另一份策略库。保留 Tavern 自己的 `storageDir`。
+4. 若旧 Tavern 配置含 `assemblerStorageDir`，将原值移到独立 Assembler 的 `storageDir`，再删除旧 Tavern 字段。Tavern 3.3.0 拒绝该旧字段，不会忽略它后打开另一份策略库。保留 Tavern 自己的 `storageDir`。
 5. 旧 Tavern `security` 曾同时转发给 Assembler。将需要继续作用于装配 API 的设置复制到独立 Assembler 的 `security`。保留 Tavern `security` 中适用于 Tavern 自身 API 的设置。
 6. 卸载旧 Tavern 软件包，保留数据目录。GUI 使用“卸载 pmp-dsh-tavern”；CLI 使用 `dsh plugin --profile web remove pmp-dsh-tavern`。不要清除 Tavern、Assembler 或 DSH 的数据。
-7. 使用上面的 3.2.0 附件直链重新安装 Tavern，确认两个 bundle 均启用后启动 Host。核对角色卡、策略、会话选择与 Trace，再执行[运行时验证](TESTING.md)。
+7. 使用上面的 3.3.0 附件直链重新安装 Tavern，确认两个 bundle 均启用后启动 Host。核对角色卡、策略、会话选择与 Trace，再执行[运行时验证](TESTING.md)。
 
 pnpm 覆盖安装可能保留旧包内嵌的 Assembler 文件，导致解析到 1.1.2。此次从内嵌版本升级必须先卸载旧 Tavern 软件包再重新安装；单独覆盖更新不保证清除旧副本。
 
@@ -88,7 +91,7 @@ Tavern 通过 `peerDependencies` 声明共享 Assembler。DSH profile 使用 `no
 使用目标 DSH 初始化的独立测试 profile。先在该 profile 安装并启用独立 Assembler。Tavern 开发依赖由 lockfile 固定到经过审查的 GitHub Release 安装包和完整性，不依赖 Assembler 1.2.0 已发布到 npm。
 
 ```sh
-git clone --branch v3.2.0 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v3.3.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
@@ -102,7 +105,7 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 npm run pack:release -- --assembler node_modules/dsh-prompt-assembler
 ```
 
-命令重建两个前端并输出独立的 Tavern 与 Assembler tgz。Tavern 的编辑器会编入复用的前端 SDK，但不会加载另一个 Assembler Host 或独立客户端实例。输出 Tavern 包不得含 `node_modules/dsh-prompt-assembler`。安装验收必须使用最终 tgz 或实际发布附件，不能用源码目录的依赖替代。
+命令构建 Tavern 前端并输出两个独立的 tgz。Assembler 有 build 脚本时运行它；否则使用包内预构建的 `dist/client.js`。Tavern 的编辑器会编入复用的前端 SDK，但不会加载另一个 Assembler Host 或独立客户端实例。输出 Tavern 包不得含 `node_modules/dsh-prompt-assembler`。安装验收必须使用最终 tgz 或实际发布附件，不能用源码目录的依赖替代。
 
 ### 数据与源码安装器
 

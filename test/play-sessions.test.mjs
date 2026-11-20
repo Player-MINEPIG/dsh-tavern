@@ -379,7 +379,7 @@ test('createPlayHost maps DSH controllers to the Tavern Host port', async () => 
       },
       async inspect(sessionId) {
         recorded.push(['inspect', sessionId])
-        return { events: [{ type: 'turn/end', seq: 4, data: {} }] }
+        return { meta: { version: 4 }, events: [{ type: 'turn/end', seq: 4, data: {} }] }
       },
       async page(request, signal) {
         recorded.push(['page', request, signal])
@@ -411,7 +411,7 @@ test('createPlayHost maps DSH controllers to the Tavern Host port', async () => 
   })
   assert.equal(await host.createDirectory({ path: '/play', name: 'Alice' }), '/play/Alice')
   assert.deepEqual(await host.createSession({ workspaceId: 'ws-new', title: 'Alice 1' }), { sessionId: 's-new' })
-  await assert.rejects(() => host.forkSession({ sessionId: 's1', atSeq: 3 }), error => {
+  await assert.rejects(() => host.forkSession({ sessionId: 's1', atSeq: 3, sessionFormatVersion: 4 }), error => {
     assert.equal(error.status, 409)
     assert.equal(error.code, 'PLAY_FORK_UNAVAILABLE')
     return true
@@ -421,6 +421,8 @@ test('createPlayHost maps DSH controllers to the Tavern Host port', async () => 
     events: [{ type: 'event', event: { type: 'turn/end', seq: 4, data: {} } }],
     hasMore: false,
     throughSeq: 4,
+    sessionFormatVersion: 4,
+    migratedFromV2: false,
   })
   assert.deepEqual(recorded.find(call => call[0] === 'create'), ['create', { workspaceId: 'ws-new' }])
   assert.deepEqual(recorded.find(call => call[0] === 'rename'), ['rename', { sessionId: 's-new', title: 'Alice 1' }])

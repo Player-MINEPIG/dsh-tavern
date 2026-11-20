@@ -8,9 +8,14 @@ For project contracts, DSH version compatibility, or release evidence, use the t
 
 - Preserve the current architecture during ordinary maintenance: DSH durable history is authoritative, integration uses public DSH extension points, and native DSH and original sessions remain usable after Tavern is removed. When changing these decisions, explain the external behavior, compatibility, and migration costs, then implement the user-approved decision.
 - Keep public APIs as composable primitives. Before adding an endpoint, check existing Tavern APIs and public DSH extension points, identify the missing capability, and leave composition policy to callers. Use the [API scope](docs/API.md#api-scope) as the current boundary.
-- Use branches, worktrees, and commits as requested by the user or required by the active project workflow. The maintainer has authorized directly pushing completed commits whenever the repository has a configured remote. Complete local validation first, then push the current intended branch without repeated confirmation; do not force-push or broaden the change scope. PR creation, tags, and releases also require explicit user authorization.
 - Read private development plans only when explicitly provided as a workspace. Without explicit approval, do not copy private-plan content, repository coordinates, user data, or absolute local paths into the public repository.
 - Installation, uninstallation, migration, and data writes against real DSH profiles must fall within the task's authorization. Ordinary code changes do not automatically authorize these operations.
+
+## Development and release
+
+- Start work branches from the latest remote `dev`. Integrate features and fixes through PRs targeting `dev`, after the applicable checks pass. The maintainer authorizes pushing validated work branches to the configured remote; do not force-push. Opening a PR requires explicit authorization.
+- Use `dev` for ordinary integration and deployment. A deployment does not advance `main` or create a version tag.
+- For an explicitly requested formal release, select and validate a candidate from `dev`. Obtain maintainer confirmation of its exact commit and version before fast-forwarding `main` to that commit and tagging the same commit. If a fast-forward is impossible, stop and reconcile the history; never reset `main` or move a published tag.
 
 ## Documentation
 
@@ -31,9 +36,9 @@ Command definitions live in [package.json](package.json). Select according to th
 | Documentation only | Check content, links, and diff; no build or test suite needed |
 | Localized logic | `node --test test/<relevant-file>.test.mjs` |
 | Cross-module behavior | `npm test` |
-| Client bundle changes | Relevant tests and `npm run build`; `dist/client.js` is generated |
+| Client bundle changes | Run relevant tests and `npm run build`; include any resulting change to the tracked `dist/client.js` |
 | Full build and test coverage needed | `npm run check` |
-| Protocol, installation/package contents, or release preparation | `npm run verify:2.0`, plus runtime acceptance appropriate to the task |
+| Protocol, installation/package contents, or release preparation | `npm run verify:2.0` (selected tests, build, and package dry run), plus runtime acceptance appropriate to the task |
 
 For DSH integration changes, see the [compatibility reference](.agents/skills/dsh-tavern-development/references/dsh-compatibility.md) for real Host, browser, and migration checks and what they establish.
 

@@ -4,6 +4,7 @@ import { CLIENT_REFRESH_EVENT, CLIENT_UI_SETTINGS_EVENT } from '../../../identit
 import { getClientUiSettings, translate } from '../i18n.js'
 import { MowanChatView } from './chat.js'
 import { loadCurrentPlaythrough } from './chat-model.js'
+import { openRepairSession } from './repair-session.js'
 import { PlayWorkspaceBrowser } from './sidebar.js'
 import { PlaySessionDock } from './notice.js'
 import { DefaultConversationViewAdapter } from './view-default.js'
@@ -86,6 +87,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
         diagnostics,
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
+        startRepair: (workspace, row) => openRepairSession(ctx, playClient, switchToNative, workspace, row),
         getActivePlaythroughId: () => preferredPlaythroughId,
         switchToNative,
         subscribeActivePlaythroughId: listener => {

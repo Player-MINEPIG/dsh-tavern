@@ -10,10 +10,11 @@ import { createHash } from 'node:crypto'
 import assembler from 'dsh-prompt-assembler/plugin'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { characterMvuId, normalizeVariables, compileMvuSchema } from '../packages/mvu-adapter/src/index.js'
+import { createCreationService } from '../packages/play/src/creation.js'
 import { createPlayHost } from '../packages/tavern-loader/src/play-host.js'
 const root = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 
-test('stock Host applies draft model, reasoning and permission before first send, with RP secure by default', { skip: !root }, async () => {
+test('stock Host applies draft controls, forks the verified reply once across remount, and defaults the next opening to secure RP', { skip: !root }, async () => {
   const require = createRequire(join(resolve(root), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt'), llm = await load('@deepseek-ai/dsh-llm')
@@ -34,7 +35,8 @@ test('stock Host applies draft model, reasoning and permission before first send
     await ctx.plugin(((await load('@deepseek-ai/dsh-api-remote-access')).default ?? await load('@deepseek-ai/dsh-api-remote-access')))
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'offline', model: 'draft-test' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {}, bindPrompt: () => ({ commit() {}, [Symbol.dispose]() {} }) })
-    ctx.provide('attachments', { admitPromptContent: async content => content })
+    ctx.provide('attachments', { admitPromptContent: async content => content,
+      imageLimits: { maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
     await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default)
     new (await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine(ctx)
@@ -80,6 +82,25 @@ test('stock Host applies draft model, reasoning and permission before first send
     assert.deepEqual(errors, [])
     assert.equal(requests.length, 1)
     assert.equal(requests[0].reasoningEffort, 'low')
+    const workspace = store.playWorkspaceStore
+    const source = await workspace.host.inspectSession(first.sessionId)
+    const start = source.events.find(event => event.type === 'user/message').seq
+    const end = source.events.find(event => event.type === 'assistant/message').seq
+    const variant = { id: 'a1', sessionId: first.sessionId, startEventId: start, endEventId: end, ext: { pmpDshTavern: { sessionFormatVersion: source.meta.version } } }
+    const timeline = JSON.stringify({ nodes: [{ id: 'q1', kind: 'qa', adoptedVariantId: variant.id, variants: [variant] }] })
+    const file = workspace.writeFile(created.playthrough.path, timeline, { expectedRevision: workspace.readFile(created.playthrough.path).revision, expectedRevisionPresent: true })
+    const forkRequest = { nodeId: 'q1', variantId: variant.id, creationId: 'first-fork', expectedRevision: file.revision,
+      expectedWorkspaceScope: JSON.stringify([workspace.get().workspaceId, playRoot]) }
+    const forked = await createCreationService(workspace, workspace.host).run(id, forkRequest)
+    assert.equal(forked.timeline.head.sessionId, forked.sessionId)
+    assert.equal(store.sessionSelections.get(forked.sessionId).characterCardId, character.id)
+    assert.equal((await workspace.host.inspectSession(forked.sessionId)).inheritedEventCount, end + 1)
+    const sessionCount = ctx.sessions.list().length
+    await handle.dispose(); await mount()
+    const replayed = await createCreationService(store.playWorkspaceStore, store.playWorkspaceStore.host).run(id, forkRequest)
+    assert.equal(replayed.playthrough.id, forked.playthrough.id)
+    assert.equal(ctx.sessions.list().length, sessionCount)
+    assert.equal(store.playWorkspaceStore.readFile(created.playthrough.path).content, timeline)
     const secure = store.playthroughDrafts.create({ characterId: character.id })
     const second = await store.playthroughDrafts.materialize(secure.draft.id, { expectedRevision: 0, operationId: 'secure', text: 'SECOND INPUT' })
     assert.equal(store.sessionSelections.get(second.sessionId).rp.active, true)

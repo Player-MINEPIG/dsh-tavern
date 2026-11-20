@@ -7,9 +7,9 @@
 分别使用 0.2.2-rc.1 依赖根验证准入与标准 Host 行为。范围测试中的未来 RC 和正式版只检查版本策略，不表示已实际运行该版本。Web 验收额外检查窄窗口中 RP / Trace 被收进“更多”后的打开与取消固定、会话切换、空白草稿返回和卸载恢复。
 
 <a id="backend-compatibility"></a>
-## 3.2.0 兼容范围
+## 3.3.0 兼容范围
 
-Tavern 3.2.0 与独立标准 Assembler 1.2.0 的 Host 准入范围为 `>=0.2.2-rc.1 <0.2.3-0`。目标官方运行时为 [0.2.2-rc.1](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-rc.1)（`66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`）。必需 peers 为 Cordis `4.1.0`、同范围的 DSH crypto 与 Assembler `~1.2.0`。Assembler 作为独立 profile 组件安装并启用。后续 0.2.2 RC 和正式版按策略准入，不表示已经逐版验收；0.2.3 及其预发布需重新评估。
+Tavern 3.3.0 与独立标准 Assembler 1.2.0 的 Host 准入范围为 `>=0.2.2-rc.1 <0.2.3-0`。目标官方运行时为 [0.2.2-rc.1](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-rc.1)（`66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`）。必需 peers 为 Cordis `4.1.0`、同范围的 DSH crypto 与 Assembler `~1.2.0`。Assembler 作为独立 profile 组件安装并启用。后续 0.2.2 RC 和正式版按策略准入，不表示已经逐版验收；0.2.3 及其预发布需重新评估。
 
 后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
 
@@ -21,14 +21,14 @@ Tavern 3.2.0 与独立标准 Assembler 1.2.0 的 Host 准入范围为 `>=0.2.2-r
 
 Tavern 的独立测试要求 Node.js `>=24.9.0`；目标 DSH `0.2.2-rc.1` 要求 Node.js `>=24.9.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
-在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖通过 lockfile 固定 Assembler 的 GitHub 源码归档，并包含测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.2-rc.1`。插件运行时由目标 DSH 提供官方 peer，独立 Assembler 则由用户安装并启用。
+在仓库根目录运行 `npm ci --legacy-peer-deps` 安装锁定依赖后，再运行以下命令，定义以 [package.json](../package.json) 为准。开发依赖通过 lockfile 固定 Assembler 的 GitHub Release 安装包及其完整性校验值，并包含测试需要的官方 `@deepseek-ai/dsh-llm` `0.2.2-rc.1`。插件运行时由目标 DSH 提供官方 peer，独立 Assembler 则由用户安装并启用。
 
 | 改动范围 | 检查 |
 | --- | --- |
 | 仅文档 | 检查内容、中英文对应、相对链接与 diff，无需构建 |
 | 局部逻辑 | `node --test test/<相关文件>.test.mjs` |
 | 跨模块行为 | `npm test` |
-| 客户端 bundle | 相关测试及 `npm run build`；`dist/client.js` 是生成文件 |
+| 客户端 bundle | 运行相关测试和 `npm run build`，将生成的 `dist/client.js` 变更一起提交 |
 | 完整构建与测试 | `npm run check` |
 | 协议、安装、打包或发布准备 | `npm run verify:2.0`，并补充受影响的运行时检查 |
 
@@ -37,7 +37,7 @@ Tavern 的独立测试要求 Node.js `>=24.9.0`；目标 DSH `0.2.2-rc.1` 要求
 <a id="patch-release-documents"></a>
 ## 补丁发布的文档同步
 
-兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。已完成本地验证的提交按 AGENTS.md 中既有授权推送；创建 tag 和 Release 仍需明确授权。
+兼容性 bug 修复可使用补丁版本；单纯纠正文档不必升版。准备发布时，应一次性完成最终版本、变更记录、中英文文档和安装示例，交付审核通过即可直接发布的候选。候选文档不保留“准备发布”“未发布”或旧版本安装占位；待审核、待发布状态记录在交接说明及 `.local/`。审核发现问题后再修改或回滚候选。包版本、Git tag、GitHub Release 和固定版本安装示例应一致，已发布的 tag 不得移动或覆盖。工作分支按[开发与发布规范](../AGENTS.md#development-and-release)推送；候选准备本身不授权推送或发布。
 
 | 文件或发布内容 | 何时更新 |
 | --- | --- |
@@ -49,7 +49,7 @@ Tavern 的独立测试要求 Node.js `>=24.9.0`；目标 DSH `0.2.2-rc.1` 要求
 | 架构、迁移、安全文档与图 | 核对目标版本、迁移白名单、安全维护线和图源 revision；行为说明仅在对应设计、数据格式或安全边界变化时改写 |
 | Git tag 与 GitHub Release | 正式发布时创建对应 tag 和简短发布说明，说明修复、目标 DSH、升级方式及已知限制 |
 
-发布前逐项核对中英文 README 的版本说明与更新内容、安装命令、SECURITY 维护线、迁移工具支持列表、API 影响说明，以及图源与生成页面的版本和源码 revision。旧版本号只应出现在变更历史或仍支持的迁移说明中。推送后从 GitHub 默认分支和目标 tag 重新读取中英文 README，确认其内容与验收提交一致，再发布 Release。
+发布前逐项核对中英文 README 的版本说明与更新内容、安装命令、SECURITY 维护线、迁移工具支持列表、API 影响说明，以及图源与生成页面的版本和源码 revision。旧版本号可保留在变更历史、升级路径和兼容边界说明中。正式发布时，从 `dev` 选取并验证候选，由维护者确认具体提交和版本，再将 `main` 快进到该提交并在同一提交创建 tag。发布 Release 前核实远端 `main` 和 tag 均指向已确认的提交，并核对中英文 README 的安装示例。
 
 每次验收的日志、截图、测试数量和发布说明草稿放在 Git 忽略的 `.local/`；PR 摘要给出相关证据。`docs/` 保留可复用的方法，不累积逐次发布的验收记录。中英文对应文件在同一变更中同步。
 
@@ -91,7 +91,7 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 
 运行 `node --test test/tavern-bundle.test.mjs` 与 `npm test`，验证 Tavern 只消费独立服务，不创建 Host 或独立客户端副本。包内容与 lifecycle 是两个边界，分别检查。运行 `DSH_TAVERN_PROMPT_COMPAT_ROOT=<官方依赖目录> node --test test/host-client-discovery.test.mjs`，检查官方 patch loader 锚定声明的 Host 文件，并在官方浏览器模块图中发现 Tavern。
 
-使用开发 checkout 之外的临时 profile，保留 DSH 的 `nodeLinker: hoisted` 与 `autoInstallPeers: false`。通过 `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler` 生成两个独立 tgz，先安装并启用 Assembler 1.2.0，再安装 Tavern 3.2.0。检查 Tavern 包没有 `bundleDependencies`、普通 Assembler 子依赖或嵌套 Assembler 文件。开发依赖的源码归档与 lockfile 也要通过干净的 `npm ci --legacy-peer-deps` 验证，不能依赖 npm 上存在 1.2.0。
+使用开发 checkout 之外的临时 profile，保留 DSH 的 `nodeLinker: hoisted` 与 `autoInstallPeers: false`。通过 `npm run pack:release -- --assembler node_modules/dsh-prompt-assembler` 生成两个独立 tgz，先安装并启用 Assembler 1.2.0，再安装 Tavern 3.3.0。检查 Tavern 包没有 `bundleDependencies`、普通 Assembler 子依赖或嵌套 Assembler 文件。开发依赖的发布包与 lockfile 也要通过干净的 `npm ci --legacy-peer-deps` 验证，不能依赖 npm 上存在 1.2.0。
 
 在 0.2.2-rc.1 分别执行以下检查：
 
@@ -100,7 +100,7 @@ node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test
 3. 比较 Host 实际服务 `version`、Tavern SDK 解析地址和独立包版本。不以包导入成功、目录存在或安装命令退出成功代替服务验证。SDK 兼容但服务版本不兼容时仍须明确拒绝。
 4. 打开独立装配器与 Tavern 编辑器，保存并应用策略，核对刷新同步、未保存草稿、会话切换与关闭。Tavern 的客户端不得注册第二个独立 Assembler 配置入口或 overlay。
 5. 停用、重新启用和卸载 Tavern。独立 Assembler、第三个消费者、已保存策略与会话选择应保留；Tavern 来源和 provider 应释放。再停用或卸载 Assembler，确认消费者停止，不恢复私有副本。
-6. 从 3.0.5 或内嵌候选升级。保留默认 Assembler 目录，另以自定义 `assemblerStorageDir` 和原先转发的安全配置验证[升级步骤](INSTALLATION.md#upgrade-to-3-2-0)。旧字段必须在写入新资源前被拒绝；移到独立配置并删除旧字段后，原策略和选择仍可读取。
+6. 从 3.0.5 或内嵌候选升级。保留默认 Assembler 目录，另以自定义 `assemblerStorageDir` 和原先转发的安全配置验证[升级步骤](INSTALLATION.md#upgrade-to-3-3-0)。旧字段必须在写入新资源前被拒绝；移到独立配置并删除旧字段后，原策略和选择仍可读取。
 
 真实 GUI 另分别使用最终 Release 附件直链与固定 Git 提交地址安装，记录输入、profile/lock 解析来源及实际加载版本。Release 网页地址应被拒绝，仓库安装不应自行选择附件。安装前停止 CLI 目标 Host；GUI 按自己的重载或重启提示操作。保留升级前副本，不在真实用户 profile 中执行卸载试验。
 
@@ -145,6 +145,11 @@ node --test test/play-sessions.test.mjs
 ## 失效周目归档与清理回归
 
 运行 `node --test test/play-maintenance.test.mjs test/play-cleanup.test.mjs test/play-archive.test.mjs` 和 `node scripts/verify-play-maintenance-browser.mjs`。临时工作区覆盖诊断中无法打开的多周目归档，包括损坏、缺失和读取错误；同时检查健康周目与草稿保留、CAS 和工作区切换。清理单独覆盖全部引用缺失的严格判据、存活分支、空引用、取消、大小写目录别名、共享导入上下文、中断与恢复冲突。Chrome 夹具验证真实 React 按钮、结果数量、旧 Host、切换和卸载后的响应隔离。
+
+
+运行 `node --test test/generation-recovery.test.mjs`，验证丢失响应后如何组合带回执的会话创建、提问和文件版本写入，以及修复命令能否登记已核实的回复并避免重复发送。
+
+PR 的 Node 24/26 全量任务包含回退、生成、创建和根会话解绑的故障注入测试。发布检查还安装固定版本的官方 DSH，在离线 provider 和临时工作区运行 `test/maintenance-tools-host.test.mjs` 与 `test/draft-native-controls-host.test.mjs`。Chrome 通过 `node scripts/verify-playthrough-rollback-browser.mjs` 验证点击回退实际打开已保存的子会话。
 
 设置 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 为目标官方 runtime 后运行 `node --test test/maintenance-tools-host.test.mjs`。真实 Cordis、工具与 Session controller 验证默认关闭、启用、预览、清理、恢复、重新挂载和卸载后工具释放，并对照原生会话未变。该测试只使用临时数据，不调用真实模型。
 

@@ -41,7 +41,7 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
       calls.push(`messages:${sessionId}`)
       if (sessionId === 'session-old') {
         return {
-          incompleteTurn: false,
+          sessionFormatVersion: 4, incompleteTurn: false,
           messages: [
             { role: 'user', seq: 1, text: 'Earlier user prompt' },
             { role: 'assistant', seq: 3, text: 'Earlier answer' },
@@ -53,7 +53,7 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
       polls += 1
       return polls === 1
         ? { incompleteTurn: true, messages: [{ role: 'user', seq: 4, text: 'Original user prompt' }] }
-        : { incompleteTurn: false, messages: [
+        : { sessionFormatVersion: 4, incompleteTurn: false, messages: [
           { role: 'user', seq: 4, text: 'Original user prompt' },
           { role: 'assistant', seq: 7, text: 'New answer' },
         ] }
@@ -87,6 +87,7 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
     sessionId: 'session-new',
     startEventId: 4,
     endEventId: 7,
+    ext: { pmpDshTavern: { sessionFormatVersion: 4 } },
   })
   assert.deepEqual(calls, [
     'timeline',
@@ -176,7 +177,7 @@ test('retrying a context output swipes the nearest preceding real user turn', as
   const client = {
     async getTimeline() { return structuredClone(timeline) },
     async getMessages(sessionId) {
-      if (sessionId === 'session-new') return { incompleteTurn: false, messages: [
+      if (sessionId === 'session-new') return { sessionFormatVersion: 4, incompleteTurn: false, messages: [
         { role: 'user', seq: 1, text: 'Human prompt', origin: { kind: 'user' } },
         { role: 'assistant', seq: 5, text: 'Retry' },
       ] }

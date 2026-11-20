@@ -6,6 +6,11 @@ import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuth
 import { createDraftPreviewContext } from './draft-preview-context.js'
 import { PlayMaintenanceService } from '../../play/src/maintenance.js'
 import { PlayCleanupService } from '../../play/src/cleanup.js'
+import { createCreationService } from '../../play/src/creation.js'
+import { createGenerationService } from '../../play/src/generation.js'
+import { createRollbackService } from '../../play/src/rollback.js'
+import { createCheckpointRepair } from './checkpoint-repair.js'
+import { installRepairCommand } from './repair-command.js'
 import { installMaintenanceTools } from './maintenance-tools.js'
 import { PlaythroughDrafts } from './playthrough-drafts.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
@@ -404,7 +409,11 @@ export function apply(ctx, config = {}) {
     onSelectionCopied: (sessionId, from) => { assemblyPresets.copySelection(from, sessionId); reconcileRpAfterSelection(sessionId) },
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
+  const rollbackService = createRollbackService(playWorkspaceStore, playHost)
+  const creationService = createCreationService(playWorkspaceStore, playHost)
+  const generationService = createGenerationService(playWorkspaceStore, playHost)
   const playMemberships = new PlayMembershipService(playWorkspaceStore)
+  playWorkspaceStore.connectOperations({ generation: generationService, rollback: rollbackService, creation: creationService, membership: playMemberships })
   importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
     presetStore: store,
@@ -599,6 +608,44 @@ export function apply(ctx, config = {}) {
         .filter(record => record.id !== playthrough.id && record.rootPath === playWorkspaceStore.get().rootPath)
         .map(record => record.importContextRef?.path).filter(Boolean),
     ],
+  })
+  const checkpoints = createCheckpointRepair(playWorkspaceStore, playHost)
+  installRepairCommand(ctx, {
+    repairDraftCreations: options => playthroughDrafts.repairCreations(options),
+    recoverOperations: [
+      checkpoints.repair,
+      (row, options) => playMemberships.repairDetach(row, options),
+      (row, options) => creationService.repair(row, options),
+      (row, options) => generationService.repair(row, options),
+    ],
+    dismissDetach: (id, operationId, scope) => playMemberships.dismissDetach(id, operationId, scope),
+    dismissFork: async (id, key, scope) => await checkpoints.dismiss('tavern.fork', id, key, scope) || creationService.dismiss(id, key, scope),
+    dismissGeneration: async (id, operationKey, expectedWorkspaceScope) => await checkpoints.dismiss('tavern.generation', id, operationKey, expectedWorkspaceScope) || generationService.run(id, {
+      action: 'dismiss', operationKey, expectedWorkspaceScope,
+    }, operationContext('playthrough.generation', { playthroughId: id })),
+    isRollbackActive: rollbackService.isActive,
+    dismissRollback: async (id, key, scope) => await checkpoints.dismiss('tavern.rollback', id, key, scope) || rollbackService.dismiss(id, key),
+    async resumeRollback(id, request, beforeWrite) {
+      const operation = operationContext('playthrough.rollback', { playthroughId: id })
+      operation.start()
+      try {
+        const result = await rollbackService.run(id, { ...request, resumeOnly: true }, operation, beforeWrite)
+        operation.success()
+        return result
+      } catch (error) { operation.failure(error); throw error }
+    },
+    store: playWorkspaceStore, host: playHost, isDraftProtected: playMaintenance.isDraftProtected,
+    getCharacter: id => characterStore.get(id),
+    deriveMessages(record) {
+      const sessions = ctx.get('sessions')
+      const session = sessions.get(record.meta.id) ?? sessions.prepare(record.meta.id, {
+        seed: record.events, meta: record.meta, inheritedEventCount: record.inheritedEventCount, eventState: 'detached',
+      })
+      return session.deriveMessages()
+    },
+  }, {
+    enableTool: config.maintenanceTools === true,
+    blocksWrites: agent => rpMode.blocksWrites(agent) || rpMode.currentSandbox(agent?.session) === 'read-only',
   })
   if (config.maintenanceTools === true) installMaintenanceTools(ctx, {
     workspaceStore: playWorkspaceStore, maintenance: playMaintenance, cleanup: playCleanup,
@@ -859,6 +906,7 @@ export function apply(ctx, config = {}) {
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
     const playApi = createPlayApiHandler({
+      rollbackService, creationService, generationService,
       maintenanceService: playMaintenance,
       drafts: playthroughDrafts,
       chromeStore,
