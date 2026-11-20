@@ -1,6 +1,6 @@
 # pmp-dsh-tavern
 
-Tavern 3.2.0 uses independent shared [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.2.0. Install and enable Assembler before Tavern. Tavern carries no private Assembler package and starts no additional instance. See [integration](docs/ASSEMBLER_INTEGRATION_en.md). Current versions support Standard only; Advanced remains frozen at DSH 0.2.0-rc.2.
+Tavern 3.3.0 uses independent shared [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.2.0. Install and enable Assembler before Tavern. Tavern carries no private Assembler package and starts no additional instance. See [integration](docs/ASSEMBLER_INTEGRATION_en.md). Current versions support Standard only; Advanced remains frozen at DSH 0.2.0-rc.2.
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is an optional viewing and management extension. Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.
 
@@ -10,13 +10,13 @@ Tavern 3.2.0 uses independent shared [dsh-prompt-assembler](https://github.com/P
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-This README describes Tavern **3.2.0**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
+This README describes Tavern **3.3.0**. Combined installation with the independent assembler, bounded MVU and prompt templates is in [the integration guide](docs/ASSEMBLER_INTEGRATION_en.md); older full documentation remains at its Git tag.
 
-Version 3.2.0 and Assembler 1.2.0 target DSH 0.2.2-rc.1, Cordis 4.1.0 and Node >=24.9. Cold session reads use public observation leases. Reasoning effort follows the native DSH model selection and is no longer editable in presets. Existing V4 history and references need no migration.
+Version 3.3.0 fixes coordinate-version errors when reading older playthroughs. Choose **⋯ → Repair playthrough** to open a normal chat in the RP workspace. The command backs up and repairs verifiable records first and asks the agent to investigate unresolved issues. Use `/tavern-repair preview` in chat for a read-only workspace check. [Repair scope and usage](docs/USAGE_en.md#repair-playthroughs-from-chat)
 
 > Current Tavern source targets DSH **0.2.2-rc.1**, with independent assembler integration, scoped MVU, read-only prompt templates and RP rendering. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
 >
-> From 3.1.5, back up data and stop the Host, then update independent Assembler to 1.2.0 followed by Tavern to 3.2.0. Older versions that bundled Assembler require removing the old Tavern package while retaining data before installing the two independent components. The default Assembler data directory stays unchanged. Follow the [upgrade steps](docs/INSTALLATION_en.md#upgrade-to-3-2-0) for custom storage and security settings previously forwarded to Assembler. The DSH range remains `>=0.2.2-rc.1 <0.2.3-0`. Existing V4 sessions and references need no conversion. Earlier formats use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
+> From 3.1.5, back up data and stop the Host, then update independent Assembler to 1.2.0 followed by Tavern to 3.3.0. Older versions that bundled Assembler require removing the old Tavern package while retaining data before installing the two independent components. The default Assembler data directory stays unchanged. Follow the [upgrade steps](docs/INSTALLATION_en.md#upgrade-to-3-3-0) for custom storage and security settings previously forwarded to Assembler. The DSH range remains `>=0.2.2-rc.1 <0.2.3-0`. Existing V4 sessions and references need no conversion. Earlier formats use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
@@ -58,13 +58,13 @@ Promo video: [Tavern 3.0.0](https://www.bilibili.com/video/BV1oxpG6pE1v/) (see t
 
 ### 0. Install
 
-Use DSH `0.2.2-rc.1`, Node `>=24.9.0`, and an initialized profile. In GUI **Plugins → Add plugin**, paste the [Assembler 1.2.0 tarball](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz) attachment URL, install it, and enable it. Then install and enable [Tavern 3.2.0](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz). Restart the Host when the GUI requests it. A Release webpage is not an installation address.
+Use DSH `0.2.2-rc.1`, Node `>=24.9.0`, and an initialized profile. In GUI **Plugins → Add plugin**, paste the [Assembler 1.2.0 tarball](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz) attachment URL, install it, and enable it. Then install and enable [Tavern 3.3.0](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.3.0/pmp-dsh-tavern-3.3.0.tgz). Restart the Host when the GUI requests it. A Release webpage is not an installation address.
 
 For CLI installation, stop the target Host and install both components in this order:
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.3.0/pmp-dsh-tavern-3.3.0.tgz
 ```
 
 Tavern requires Assembler `~1.2.0` and does not download or start it automatically. If Assembler is already installed independently, check its version and enabled state. Standard uses public DSH interfaces. Advanced remains frozen at Assembler 1.1.0 / DSH 0.2.0-rc.2. See [integration](docs/ASSEMBLER_INTEGRATION_en.md).

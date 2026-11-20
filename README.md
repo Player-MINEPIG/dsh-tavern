@@ -1,6 +1,6 @@
 # pmp-dsh-tavern
 
-Tavern 3.2.0 使用独立共享的 [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.2.0。先安装并启用 Assembler，再安装 Tavern。Tavern 不携带或自动启动另一份 Assembler，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。新版仅支持标准版，进阶扩展冻结于 DSH 0.2.0-rc.2。
+Tavern 3.3.0 使用独立共享的 [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.2.0。先安装并启用 Assembler，再安装 Tavern。Tavern 不携带或自动启动另一份 Assembler，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。新版仅支持标准版，进阶扩展冻结于 DSH 0.2.0-rc.2。
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) 是可选的查看与管理扩展。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
 
@@ -10,13 +10,13 @@ Tavern 3.2.0 使用独立共享的 [dsh-prompt-assembler](https://github.com/Pla
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-本文描述 Tavern **3.2.0**。独立 assembler、受限 MVU 与提示词模板的组合安装见[接入说明](docs/ASSEMBLER_INTEGRATION.md)；旧版完整文档保留在对应 Git tag。
+本文描述 Tavern **3.3.0**。独立 assembler、受限 MVU 与提示词模板的组合安装见[接入说明](docs/ASSEMBLER_INTEGRATION.md)；旧版完整文档保留在对应 Git tag。
 
-3.2.0 与 Assembler 1.2.0 适配 DSH 0.2.2-rc.1、Cordis 4.1.0 和 Node >=24.9。会话冷读取使用公开观察接口并释放句柄；推理强度遵循 DSH 原生模型选择，预设编辑器不再提供该项修改。已有 V4 历史与引用无需迁移。
+3.3.0 修复旧周目读取问答楼层时的坐标版本报错，并增加 **周目 ⋯ → 修复周目**。程序先备份并修复可核实的记录；仍有问题时，新开的 RP 工作区普通会话会交给 Agent 核对。也可以在聊天框输入 `/tavern-repair preview` 先预览。[修复范围与用法](docs/USAGE_zh-CN.md#在聊天框修复周目)
 
 > 当前 Tavern 源码适配 DSH **0.2.2-rc.1**，提供独立 assembler 接入、受限 MVU、只读提示词模板与 RP 渲染。[变更记录](CHANGELOG.md) · [MIT License](LICENSE)。
 >
-> 从 3.1.5 升级时，备份数据并停止目标 Host，先更新独立 Assembler 至 1.2.0，再更新 Tavern 至 3.2.0。更早仍内嵌 Assembler 的版本须先卸载旧 Tavern 软件包并保留数据，再安装两个独立组件，避免 pnpm 残留旧副本。默认 Assembler 数据目录保持不变；自定义存储与原先转发的安全配置按[升级步骤](docs/INSTALLATION.md#upgrade-to-3-2-0)处理。本版 DSH 范围为 `>=0.2.2-rc.1 <0.2.3-0`。已有 V4 会话与引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md)单向迁移。不支持旧版 Host。
+> 从 3.1.5 升级时，备份数据并停止目标 Host，先更新独立 Assembler 至 1.2.0，再更新 Tavern 至 3.3.0。更早仍内嵌 Assembler 的版本须先卸载旧 Tavern 软件包并保留数据，再安装两个独立组件，避免 pnpm 残留旧副本。默认 Assembler 数据目录保持不变；自定义存储与原先转发的安全配置按[升级步骤](docs/INSTALLATION.md#upgrade-to-3-3-0)处理。本版 DSH 范围为 `>=0.2.2-rc.1 <0.2.3-0`。已有 V4 会话与引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md)单向迁移。不支持旧版 Host。
 >
 > Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md)。
 >
@@ -56,13 +56,13 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-请使用 DSH `0.2.2-rc.1`、Node `>=24.9.0` 与已初始化的 profile。在 GUI 的“插件 → 添加插件”中，先粘贴 [Assembler 1.2.0 安装包](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz)的附件直链，安装并启用；再安装并启用 [Tavern 3.2.0](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz)。按界面提示重启 Host。不要把 Release 网页地址当成安装地址。
+请使用 DSH `0.2.2-rc.1`、Node `>=24.9.0` 与已初始化的 profile。在 GUI 的“插件 → 添加插件”中，先粘贴 [Assembler 1.2.0 安装包](https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz)的附件直链，安装并启用；再安装并启用 [Tavern 3.3.0](https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.3.0/pmp-dsh-tavern-3.3.0.tgz)。按界面提示重启 Host。不要把 Release 网页地址当成安装地址。
 
 命令行安装前停止目标 Host，按同一顺序安装两个组件：
 
 ```sh
 dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-prompt-assembler/releases/download/v1.2.0/dsh-prompt-assembler-1.2.0.tgz
-dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.2.0/pmp-dsh-tavern-3.2.0.tgz
+dsh plugin --profile web add https://github.com/Player-MINEPIG/dsh-tavern/releases/download/v3.3.0/pmp-dsh-tavern-3.3.0.tgz
 ```
 
 Tavern 要求 Assembler `~1.2.0`，不会自动下载或启动它。已有独立 Assembler 时先核对版本与启用状态。标准版通过 DSH 公开接口运行；进阶扩展冻结于 Assembler 1.1.0 / DSH 0.2.0-rc.2，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。

@@ -2,7 +2,7 @@
 
 [中文](RP_SECURE_MODE.md)
 
-This page describes Tavern 3.2.0's RP tool-interception boundary on target DSH `0.2.2-rc.1`.
+This page describes Tavern 3.3.0's RP tool-interception boundary on target DSH `0.2.2-rc.1`.
 
 RP is a session overlay, not a DSH agent preset. The composer reuses the native DSH permission menu and adds **RP secure mode**, selected by default for new RP playthroughs. Choosing another permission leaves RP; choosing this option re-enables it. Native Full access / Auto confirmations remain intact. Settings and character panels no longer have the switch. Changes during execution apply at the next execution boundary, with existing protection retained until then. `/rp` and `/rp off` remain supported. The legacy `rpFollowCharacter` API setting remains for historical binding behavior and does not change the default for new playthroughs.
 
