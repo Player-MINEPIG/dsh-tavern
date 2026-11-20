@@ -257,3 +257,20 @@ test('a stale visible swipe is rejected before native work, and a running turn c
   f.append(turn('prompt',{rpcId:f.rpc(),turn:3}).slice(0,2))
   await assert.rejects(f.run('dismiss'),{code:'PLAY_GENERATION_BUSY'})
 })
+
+test('reopened service observes the admitted RPC in the durable inbox before user/message is written', async t => {
+  const f=await fixture(t), admission=Promise.withResolvers()
+  f.host.promptSession=async({requestId})=>{
+    f.append([{type:'agent/inbox/spliced',data:{target:'next-turn',start:0,inserted:[{role:'user',source:{kind:'user',rpcId:requestId}}]}}])
+    await admission.promise
+  }
+  await f.run('start')
+  const reopened=f.reload(), status=()=>reopened.run('p',{...f.request,action:'status'})
+  try {
+    assert.equal((await status()).state,'waiting')
+    f.append([{type:'turn/start',data:{turn:2}}])
+    assert.equal((await status()).state,'running')
+    f.append([{type:'turn/end',data:{turn:2,reason:{kind:'aborted'}}}])
+    assert.equal((await status()).state,'uncertain')
+  } finally {admission.resolve();await f.settle()}
+})

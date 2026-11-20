@@ -6,10 +6,10 @@ function requestKey() {
   return Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')
 }
 
-function project(client, playthrough, timeline, entry, expectedWorkspaceScope) {
+function project(client, playthrough, timeline, entry, expectedWorkspaceScope, restored = false) {
   const previous = pendingSwipe(client, playthrough)
   if (previous?.operationKey === entry.operationKey && previous.expectedWorkspaceScope === expectedWorkspaceScope) return previous
-  return beginPendingSwipe(client, { ...entry, playthrough, expectedWorkspaceScope,
+  return beginPendingSwipe(client, { ...entry, playthrough, expectedWorkspaceScope, restored,
     timeline: pendingSwipeTimeline(timeline, activeTimelineEntries(timeline), entry.sourceIndex, entry.sessionId) })
 }
 
@@ -33,6 +33,13 @@ async function complete(client, pending) {
 export async function recoverDurableGeneration(client, pending) {
   const status = await call(client, pending, 'status')
   if (status.state === 'ready' || status.state === 'done') return complete(client, pending)
+  if (status.state === 'stopped') {
+    try { await complete(client, pending) }
+    catch (error) { if (pending.error !== error.message) finishPendingSwipe(client, pending, error) }
+  } else if (status.state === 'uncertain') {
+    const error = statusError(status)
+    if (pending.error !== error.message) finishPendingSwipe(client, pending, error)
+  } else if (pending.restored) pending.error = null
   return null
 }
 
@@ -53,7 +60,7 @@ export async function restorePendingGeneration(client, playthrough, timeline, { 
   }
   const entry = status.pending
   if (!entry.sessionId || (sessionId && entry.sessionId !== sessionId)) return null
-  const pending = project(client, playthrough, timeline, entry, expectedWorkspaceScope)
+  const pending = project(client, playthrough, timeline, entry, expectedWorkspaceScope, true)
   if (status.state === 'ready') return complete(client, pending)
   if (status.state === 'stopped') {
     try { await complete(client, pending) } catch (error) { finishPendingSwipe(client, pending, error) }

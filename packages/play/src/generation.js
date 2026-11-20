@@ -207,6 +207,7 @@ export function createGenerationService(store, host, { waitMs = 30_000 } = {}) {
 
   async function finish(row, path, scope, record, { apply, beforeWrite, signal, operation } = {}) {
     if (record.stage === 'done') return { ok: true, ...resultHead(record), timeline: currentTimeline(row, scope, record).timeline }
+    if (record.stage === 'stopped') throw outcomeError('stopped')
     if (active.has(path) && record.stage !== 'sending') throw busy()
     const outcome = await generationOutcome(host, record)
     signal?.throwIfAborted()

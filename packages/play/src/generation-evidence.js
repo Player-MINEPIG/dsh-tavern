@@ -83,7 +83,12 @@ export async function generationOutcome(host, record) {
   }
   const users = events.filter(e => isUser(e) && (e.data?.message ?? e.data).source?.rpcId === record.requestId)
   if (!users.length) {
-    if (events.some(isUser) || record.stage === 'sending') return { state: 'uncertain' }
+    const admission = events.find(e => e.type === 'agent/inbox/spliced' && e.data?.inserted?.some(
+      message => message?.role === 'user' && message.source?.rpcId === record.requestId))
+    if (admission && !events.some(e => e.seq > admission.seq && e.type === 'turn/end')) {
+      return { state: events.some(e => e.seq > admission.seq && e.type === 'turn/start') ? 'running' : 'waiting' }
+    }
+    if (events.some(isUser) || record.stage === 'sending' || admission) return { state: 'uncertain' }
     return { state: 'waiting' }
   }
   if (users.length !== 1) return { state: 'uncertain' }
