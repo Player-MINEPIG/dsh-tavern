@@ -10,7 +10,6 @@ import { pathToFileURL } from 'node:url'
 import assembler from 'dsh-prompt-assembler/plugin'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { createCreationService } from '../packages/play/src/creation.js'
-import { createGenerationService } from '../packages/play/src/generation.js'
 import { createRollbackService } from '../packages/play/src/rollback.js'
 import { createContractOperation } from '../packages/play/src/operation-contract.js'
 import { REPAIR_TOOL } from '../packages/tavern-loader/src/repair-command.js'
@@ -18,7 +17,7 @@ import { MAINTENANCE_TOOL } from '../packages/tavern-loader/src/maintenance-tool
 
 const root = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 
-async function verifyGenerationAndFork({ ctx, load, workspace, row, nodeId, expectedWorkspaceScope }) {
+async function verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, expectedWorkspaceScope }) {
   const { LlmAdapter } = await load('@deepseek-ai/dsh-llm')
   const answer = 'Offline swipe result'
   class Offline extends LlmAdapter {
@@ -34,19 +33,18 @@ async function verifyGenerationAndFork({ ctx, load, workspace, row, nodeId, expe
 
   const admitted = Promise.withResolvers()
   const sends = []
-  const generation = createGenerationService(workspace, {
-    ...workspace.host,
-    async promptSession(request) {
-      sends.push(request)
-      try {
-        const result = await workspace.host.promptSession(request)
-        admitted.resolve()
-        return result
-      } catch (error) {
-        admitted.reject(error)
-        throw error
-      }
-    },
+  const generation = workspace.generationGuards
+  const prompt = workspace.host.promptSession.bind(workspace.host)
+  t.mock.method(workspace.host, 'promptSession', async request => {
+    sends.push(request)
+    try {
+      const result = await prompt(request)
+      admitted.resolve()
+      return result
+    } catch (error) {
+      admitted.reject(error)
+      throw error
+    }
   })
   const operation = name => createContractOperation({ operation: name, meta: { playthroughId: row.id } })
   const generationOp = operation('playthrough.generation')
@@ -100,7 +98,7 @@ async function verifyGenerationAndFork({ ctx, load, workspace, row, nodeId, expe
   assert.equal((await creation.run(row.id, request, creationOp)).sessionId, fork.sessionId)
 }
 
-test('official Host runs chat repair, scoped maintenance tools and plugin disposal', { skip: !root }, async () => {
+test('official Host runs chat repair, scoped maintenance tools and plugin disposal', { skip: !root }, async t => {
   const require = createRequire(join(resolve(root), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis')
@@ -251,7 +249,7 @@ test('official Host runs chat repair, scoped maintenance tools and plugin dispos
     assert.notEqual(rolled.sessionId, created.sessionId)
     assert.equal(rolled.timeline.head.sessionId, rolled.sessionId)
     assert.equal((await rollback.run(rows[1].id, rollbackRequest, operation)).sessionId, rolled.sessionId)
-    await verifyGenerationAndFork({ ctx, load, workspace, row: rows[1], nodeId: repaired.nodes[0].id,
+    await verifyGenerationAndFork({ t, ctx, load, workspace, row: rows[1], nodeId: repaired.nodes[0].id,
       expectedWorkspaceScope: rollbackRequest.expectedWorkspaceScope })
     await handle.dispose()
     assert.equal(ctx.commands.list(agent).some(item => item.name === 'tavern-repair'), false)
