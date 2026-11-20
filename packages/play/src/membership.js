@@ -1,4 +1,4 @@
-import { detachSession, detachSessionFromTimeline, repairDetachIntent } from './detach.js'
+import { detachSession, detachSessionFromTimeline, dismissDetachIntent, hasPendingDetachIntent, repairDetachIntent } from './detach.js'
 import { httpError } from './http.js'
 import { parseCatalogJson, parseTimelineJson, validatePlayDocument } from './timeline.js'
 
@@ -201,6 +201,14 @@ export class PlayMembershipService {
 
   detach(playthroughId, sessionId, { operation } = {}) {
     return detachSession(this, playthroughId, sessionId, operation)
+  }
+
+  hasPendingDetach(row) {
+    return hasPendingDetachIntent(this.workspaceStore, row.id)
+  }
+
+  dismissDetach(id, operationId, scope) {
+    dismissDetachIntent(this.workspaceStore, id, operationId, scope)
   }
 
   repairDetach(row, options = {}) {

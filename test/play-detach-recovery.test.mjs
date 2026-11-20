@@ -147,3 +147,37 @@ for (const target of [path, 'catalog.json']) {
     assert.equal(service.readCatalog().catalog.playthroughs[0].ext, undefined)
   })
 }
+
+test('dismissing a conflicting detach requires its exact operation and workspace and leaves edits intact', async t => {
+  const f = await fixture(t)
+  f.interrupt('catalog.json')
+  f.edit(path, timeline => ({ ...timeline, ext: { newer: 'keep this edit' } }))
+  const service = f.restart()
+  const repair = service.repairDetach(f.row, { apply: true })
+  const { code, operationId } = repair.remaining[0]
+  assert.equal(code, 'PLAY_FILE_REVISION_CONFLICT')
+  assert.equal(service.hasPendingDetach(f.row), true)
+  const binding = f.store.get()
+  const scope = JSON.stringify([binding.workspaceId, binding.rootPath])
+  const before = [path, 'catalog.json'].map(p => f.store.readFile(p).content)
+  assert.throws(() => service.dismissDetach('p', 'another-operation', scope), { code: 'PLAY_DETACH_PENDING' })
+  assert.throws(() => service.dismissDetach('p', operationId, 'other workspace'), { code: 'PLAY_WORKSPACE_CHANGED' })
+  assert.equal(service.hasPendingDetach(f.row), true)
+  service.dismissDetach('p', operationId, scope)
+  assert.equal(f.restart().hasPendingDetach(f.row), false)
+  assert.equal(service.repairDetach(f.row, { apply: true }), null)
+  assert.deepEqual([path, 'catalog.json'].map(p => f.store.readFile(p).content), before)
+})
+
+test('root detach checks competing operations before recording any intent or changing files', async t => {
+  const f = await fixture(t)
+  const before = [path, 'catalog.json'].map(p => f.store.readFile(p).revision)
+  f.store.assertPlaythroughAvailable = (row, kind) => {
+    assert.equal(row.id, 'p')
+    assert.equal(kind, 'detach')
+    throw Object.assign(new Error('reserved by rollback'), { code: 'PLAY_ROLLBACK_BUSY' })
+  }
+  assert.throws(() => f.service.detach('p', root), { code: 'PLAY_ROLLBACK_BUSY' })
+  assert.equal(f.service.hasPendingDetach(f.row), false)
+  assert.deepEqual([path, 'catalog.json'].map(p => f.store.readFile(p).revision), before)
+})

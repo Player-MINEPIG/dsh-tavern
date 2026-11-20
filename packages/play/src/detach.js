@@ -3,7 +3,7 @@ import { unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { atomicJson, readJsonFile } from './atomic-json.js'
 import { httpError } from './http.js'
-import { parseTimelineJson, validatePlayDocument } from './timeline.js'
+import { isSafeCatalogSegment, parseTimelineJson, validatePlayDocument } from './timeline.js'
 
 const EXTENSION_KEY = 'pmpDshTavern'
 const BRANCH_HEADS_KEY = 'branchHeads'
@@ -141,6 +141,21 @@ function readIntent(path) {
   catch (error) { if (error.code !== 'ENOENT') throw error }
 }
 
+export function hasPendingDetachIntent(store, id) {
+  return Boolean(readIntent(intentLocation(store, id).path))
+}
+
+export function dismissDetachIntent(store, id, operationId, scope) {
+  const location = intentLocation(store, id)
+  if (!store.get().rootPath || location.scope !== scope) throw httpError(409, 'The RP workspace changed', 'PLAY_WORKSPACE_CHANGED')
+  const intent = readIntent(location.path)
+  if (!isSafeCatalogSegment(id) || !intent || intent.playthroughId !== id
+    || typeof operationId !== 'string' || intent.operationId !== operationId) {
+    throw httpError(409, 'No pending root detachment matches this operation ID', 'PLAY_DETACH_PENDING')
+  }
+  unlinkSync(location.path)
+}
+
 function writeDocument(store, file, content, scope) {
   return store.writeFile(file.path, content, {
     expectedRevision: file.revision, expectedRevisionPresent: true, expectedWorkspaceScope: scope, validate: validatePlayDocument,
@@ -254,6 +269,7 @@ export function detachSession(service, playthroughId, sessionId, operation) {
       }
       return { ok: true, detached: result.changed, playthroughId, sessionId, detachedSessionIds: result.changed ? result.detachedSessionIds : [], empty }
     }
+    store.assertPlaythroughAvailable?.(row, 'detach')
     intent = {
       stage: 'prepared', operationId: operation?.operationId ?? randomUUID(), playthroughId, sessionId, path: row.path,
       timelineBefore: file.revision, timelineAfter: result.changed ? digest(JSON.stringify(result.timeline)) : file.revision,
