@@ -1,5 +1,8 @@
 # pmp-dsh-tavern
 
+[![GitHub stars](https://img.shields.io/github/stars/Player-MINEPIG/dsh-tavern?style=flat&logo=github&label=GitHub%20stars)](https://github.com/Player-MINEPIG/dsh-tavern)
+[![DSH Market downloads (30d)](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fawesome-dsh-plugin.com%2Fp%2FPlayer-MINEPIG%2Fdsh-tavern%2F&query=%2F%2Fheader%2F%2Fspan%5Bnormalize-space%28text%28%29%29%3D%27Downloads%20%2830d%29%27%5D%2Fb%2Ftext%28%29&label=DSH%20Market%20downloads%20%2830d%29&color=blue)](https://awesome-dsh-plugin.com/p/Player-MINEPIG/dsh-tavern/)
+
 Tavern 3.2.0 uses independent shared [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.2.0. Install and enable Assembler before Tavern. Tavern carries no private Assembler package and starts no additional instance. See [integration](docs/ASSEMBLER_INTEGRATION_en.md). Current versions support Standard only; Advanced remains frozen at DSH 0.2.0-rc.2.
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) is an optional viewing and management extension. Tavern does not depend on it. Without it, or after removing it, world books and MVU use source defaults; existing sessions and resources remain available.

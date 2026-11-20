@@ -1,5 +1,8 @@
 # pmp-dsh-tavern
 
+[![GitHub Star 数](https://img.shields.io/github/stars/Player-MINEPIG/dsh-tavern?style=flat&logo=github&label=GitHub%20stars)](https://github.com/Player-MINEPIG/dsh-tavern)
+[![DSH Market 近 30 天下载量](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fawesome-dsh-plugin.com%2Fp%2FPlayer-MINEPIG%2Fdsh-tavern%2F&query=%2F%2Fheader%2F%2Fspan%5Bnormalize-space%28text%28%29%29%3D%27Downloads%20%2830d%29%27%5D%2Fb%2Ftext%28%29&label=DSH%20Market%20%E8%BF%91%2030%20%E5%A4%A9%E4%B8%8B%E8%BD%BD%E9%87%8F&color=blue)](https://awesome-dsh-plugin.com/zh/p/Player-MINEPIG/dsh-tavern/)
+
 Tavern 3.2.0 使用独立共享的 [dsh-prompt-assembler](https://github.com/Player-MINEPIG/dsh-prompt-assembler) 1.2.0。先安装并启用 Assembler，再安装 Tavern。Tavern 不携带或自动启动另一份 Assembler，见[接入说明](docs/ASSEMBLER_INTEGRATION.md)。新版仅支持标准版，进阶扩展冻结于 DSH 0.2.0-rc.2。
 
 [dsh-memory-manager v1.0.0](https://github.com/Player-MINEPIG/dsh-memory-manager/releases/tag/v1.0.0) 是可选的查看与管理扩展。Tavern 不依赖它；未安装或卸载后，世界书和 MVU 使用来源默认行为，原会话与资源保留。
