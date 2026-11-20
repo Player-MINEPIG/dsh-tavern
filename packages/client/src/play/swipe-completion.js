@@ -1,3 +1,4 @@
+import { recoverDurableGeneration } from './generation.js'
 import { withVariantFormat } from '../../../play/src/session-coordinates.js'
 import {finishPendingSwipe} from './pending-swipe.js'
 import {updateTimeline} from './mutations.js'
@@ -40,6 +41,7 @@ export async function commitSwipeReply(client, pending, pair, {
 }
 
 export async function recoverCompletedSwipe(client,pending) {
+  if (pending.operationKey) return recoverDurableGeneration(client, pending)
   // Request retries create a new QA, not a variant of an existing reply.
   if (!pending.error || pending.kind === 'request-retry') return null
   if (pending.recovery) return pending.recovery

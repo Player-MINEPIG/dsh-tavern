@@ -139,6 +139,17 @@ async function readAllHistory(host, sessionId) {
   return { events: collected, coordinates }
 }
 
+export async function readSessionMessages(host, sessionId) {
+  const { events, coordinates } = await readAllHistory(host, requireSessionId(sessionId))
+  const derived = await host.deriveMessages?.({ sessionId, events })
+  return {
+    messages: projectMessages(derived ?? messagesFromEvents(events), events),
+    incompleteTurn: hasOpenTurn(events),
+    stoppedRequest: stoppedRequestFromEvents(events),
+    ...coordinates,
+  }
+}
+
 async function requireMutableImportContext(host, sessionId) {
   const binding = typeof host.getImportContextBinding === 'function'
     ? await host.getImportContextBinding(sessionId)
@@ -269,18 +280,7 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
     },
 
     async messages(_req, res, sessionId) {
-      requireSessionId(sessionId)
-      const { events, coordinates } = await readAllHistory(host, sessionId)
-      const derived = typeof host.deriveMessages === 'function'
-        ? await host.deriveMessages({ sessionId, events })
-        : messagesFromEvents(events)
-      return sendJson(res, 200, {
-        ok: true,
-        messages: projectMessages(derived ?? messagesFromEvents(events), events),
-        incompleteTurn: hasOpenTurn(events),
-        stoppedRequest: stoppedRequestFromEvents(events),
-        ...coordinates,
-      })
+      return sendJson(res, 200, { ok: true, ...await readSessionMessages(host, sessionId) })
     },
 
     async coordinates(_req, res, sessionId) {

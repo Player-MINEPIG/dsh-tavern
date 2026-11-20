@@ -1,3 +1,4 @@
+import { runGeneration } from './generation.js'
 import { variantFormatVersion, withVariantFormat } from '../../../play/src/session-coordinates.js'
 import { beginPendingSwipe, finishPendingSwipe, pendingSwipeTimeline } from './pending-swipe.js'
 import { completedSwipePair, commitSwipeReply } from './swipe-completion.js'
@@ -128,12 +129,15 @@ export function createPlayNodeController(client, {
         return { timeline: next, sessionId: focus.sessionId }
       })
     },
-    createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
+    createReplySwipe(playthrough, nodeId, { onStarted, variantId } = {}) {
+      if (typeof client.generation === 'function') return schedule(playthrough, () => runGeneration(client, playthrough,
+        { kind: 'reply-swipe', nodeId, variantId }, { onStarted, delay, pollInterval, maxPolls }))
       return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough)
         const entries = activeTimelineEntries(timeline)
         const requestedIndex = entries.findIndex(entry => entry.node.id === nodeId)
         if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`)
+        if (variantId !== undefined && entries[requestedIndex].variant.id !== variantId) throw new Error('The active reply changed')
         let sourceNode = null
         let sourceIndex = -1
         let adopted = null
@@ -191,6 +195,8 @@ export function createPlayNodeController(client, {
     },
 
     retryStoppedRequest(playthrough,{sessionId,userEventId},{onStarted}={}){
+      if (typeof client.generation === 'function') return schedule(playthrough, () => runGeneration(client, playthrough,
+        { kind: 'request-retry', sessionId, userEventId }, { onStarted, delay, pollInterval, maxPolls }))
       return schedule(playthrough,async()=>{
         const timeline=await client.getTimeline(playthrough),entries=activeTimelineEntries(timeline)
         if((timeline.head?.sessionId??playthrough.ext?.pmpDshTavern?.rootSessionId)!==sessionId)throw Error('The stopped request is not on the active session')
@@ -224,8 +230,8 @@ export function createPlayNodeController(client, {
       })
     },
 
-    forkPlaythrough(playthrough, nodeId) {
-      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }))
+    forkPlaythrough(playthrough, nodeId, variantId) {
+      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId, variantId }))
     },
 
     rollbackPlaythrough(playthrough, nodeId, variantId) {
