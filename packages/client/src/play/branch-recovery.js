@@ -97,6 +97,13 @@ async function publishFork(client, checkpoint, source, child, write) {
   return {ok: true, playthrough, timeline, sessionId: child}
 }
 
+function matchRecordedSource(timeline, data) {
+  const node = timeline.nodes.find(node => node.id === data.nodeId)
+  const variant = node?.variants.find(variant => variant.id === data.variantId)
+  if (!variant || variant.sessionId !== data.source || variant.startEventId !== data.start || variant.endEventId !== data.end) throw conflict()
+  if (variantFormatVersion(variant) !== undefined && variantFormatVersion(variant) !== data.version) throw conflict()
+}
+
 async function publish(client, row, checkpoint, {signal, beforeWrite, preview, allowBranch}) {
   const {key, owner, data} = checkpoint
   const scope = data.scope
@@ -106,6 +113,7 @@ async function publish(client, row, checkpoint, {signal, beforeWrite, preview, a
   let receipt = await client.getSessionReceipt(data.nativeKey, scope)
   if (receipt.state === 'missing' && allowBranch) {
     const source = JSON.parse((await client.getFile(row.path)).content)
+    matchRecordedSource(source, data)
     if (activeAnchor(source) !== data.anchor) throw conflict()
     signal.throwIfAborted()
     await client.postBranch(data.source, data.end, data.version, undefined, {...ownership, operationKey: data.nativeKey, signal})
@@ -120,6 +128,7 @@ async function publish(client, row, checkpoint, {signal, beforeWrite, preview, a
   if (question !== data.questionId || answer !== data.answerId || evidence.inheritedEventCount !== data.end + 1 || evidence.hasOwnTurns) throw conflict()
   const file = await client.getFile(row.path)
   let timeline = JSON.parse(file.content)
+  matchRecordedSource(timeline, data)
   const head = {sessionId: child, nodeId: data.nodeId, variantId: data.variantId}
   const matches = view => view?.sessionId === child && view.nodeId === data.nodeId && view.variantId === data.variantId
   const done = owner === 'tavern.rollback' && matches(timeline.head)
@@ -127,7 +136,8 @@ async function publish(client, row, checkpoint, {signal, beforeWrite, preview, a
   async function write(path, previous, content) {
     if (preview) return
     signal.throwIfAborted()
-    beforeWrite?.(previous, path)
+    await beforeWrite?.(previous, path)
+    signal.throwIfAborted()
     await client.putFile(path, content, {...ownership, expectedRevision: previous?.revision ?? null, signal})
   }
   let result
