@@ -2,8 +2,8 @@
 
 ## 3.3.0 — Playthrough repair
 
-- 同周目回退由后端串行提交，记录子会话与时间线写入进度。创建前的只读检查超时可直接重试，中断后可核对并继续，回退后在首个新楼层出现前切换回复也能回到正确子会话。
-- The Host protects same-playthrough rollbacks against competing writes, records partial progress and resumes verified head updates. A stalled read before fork creation can be retried immediately. Switching replies before the first new QA preserves the rollback child.
+- 同周目回退组合带回执的会话分支和按版本写入时间线。调用方保存进度，Host 验证检查点归属。创建前的只读检查超时可直接重试，中断后可核对并继续，回退后在首个新楼层出现前切换回复也能回到正确子会话。
+- Same-playthrough rollbacks compose a keyed session fork with a revision-checked timeline write. The caller records progress under a Host-enforced checkpoint. A stalled read before fork creation can be retried immediately. Switching replies before the first new QA preserves the rollback child.
 
 - 重新生成回复和重试停止的提问会保留原生请求 ID。刷新后可接回子会话并登记已核实的回复。开场草稿、新分支周目和根会话解绑支持在写入中断后恢复。
 - Reply generation and stopped-request retries keep a durable native request identity. Reopening the playthrough can recover the child and verified reply. Draft creation, forks into new playthroughs and root detachment can resume partial publication.

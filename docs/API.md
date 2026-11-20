@@ -142,9 +142,8 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定含 path/hash/state/数量摘要及（已 claim 时）不含正文的 claim identity/event seq 摘要，不返回记录正文 | 已实现 |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
-| POST | `/playthroughs/:id/fork` | 传入 `nodeId`、可选的可见 `variantId`、稳定的 `creationId`、`expectedRevision` 和 `expectedWorkspaceScope`。Host 核实继承的问答并登记新周目；响应丢失时沿用同一创建标识。 | 已实现 |
-| POST / GET | `/playthroughs/:id/generation` | POST 以 `action: start`、`operationKey`、时间线版本和工作区启动。重新生成传 `kind: reply-swipe`、`nodeId` 及可见 `variantId`；重试传 `kind: request-retry`、`sessionId` 和 `userEventId`。GET 用 `scope` 及可选的 `key` 查询状态。POST 的 `finish`、`dismiss` 需要同一工作区和操作标识。 | 已实现 |
-| POST | `/playthroughs/:id/rollback` | 后端从当前分支的回复创建子会话并提交回退位置。请求传 `{ nodeId, variantId?, expectedRevision, expectedWorkspaceScope }`，scope 为 `[workspaceId, rootPath]` 的 JSON 字符串。返回 `{ ok, sessionId, timeline }`。冲突或目标改变返回 409，未完成的步骤可在周目修复报告中查看。 | 已实现 |
+| GET / PUT | `/workspace/checkpoints/:id` | 读取或按版本写入指定周目的调用方检查点。 | 已实现 |
+| GET | `/operation-receipts/:id` | 查询已绑定工作区中某次会话变更的回执。 | 已实现 |
 | GET | `/playthroughs/:id/focus` | 经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现 |
 | GET | `/playthroughs/:id/availability` | 检查指定周目的全部已保存会话引用，返回状态、原因、sessionIds 与 workspaceScope；只读 | 已实现 |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`；只把指定周目及其 root/swipe/branch 后代 session 重新绑定到一张现存角色卡。显式用户选择不受自动归类规则限制 | 已实现 |
@@ -315,7 +314,7 @@ v2 错误示例；`code` 在**响应顶层**，`error` 是字符串：
 - `origin.kind: "context"` 可附带 `producer`、`form`、`summary`。三者是有界的可选显示元数据；消息正文仍在原有 `text` / `content` 字段，不复制进 `origin`。
 - 为兼容旧客户端，新增字段是 additive；`role`、`seq`、`text`、`content` 与 `incompleteTurn` 的既有含义不变。旧服务端没有 `origin` 时，客户端只能按 `role` 做保守回退，无法可靠识别上下文注入。
 
-内置魔丸视图完全不渲染 reasoning 与 `origin.kind: "context"`，也不提供展开入口；需要检查运行细节时使用 DSH 原生“对话”视图。回复 swipe 由 Host 保存生成意图，发送一次带有请求 ID 的原生提问，再按原生回合证据登记回复。点击由 `context` 触发的父输出时，控制器向活动分支前方寻找最近的真实 `user` / `steering`，从其前方重跑整轮，绝不会把 context 报告重新作为人类输入发送；若活动分支没有真实用户消息则显式失败。durable QA 提供复制、左右 swipe、分支新周目、同周目回退和显示层编辑；不再提供屏蔽。显示正则逐段决定 assistant 正文是否可见，但动作归属于 QA：多段输出只出现一组动作，全部正文被清空时仍保留该组动作以及非可视 provenance 与 timeline 指针。
+内置魔丸视图完全不渲染 reasoning 与 `origin.kind: "context"`，也不提供展开入口；需要检查运行细节时使用 DSH 原生“对话”视图。回复 swipe 由调用方先保存检查点，再向新会话发送带原生请求 ID 的提问，按对应回合的历史证据登记回复。点击由 `context` 触发的父输出时，控制器向活动分支前方寻找最近的真实 `user` / `steering`，从其前方重跑整轮，绝不会把 context 报告重新作为人类输入发送；若活动分支没有真实用户消息则显式失败。durable QA 提供复制、左右 swipe、分支新周目、同周目回退和显示层编辑；不再提供屏蔽。显示正则逐段决定 assistant 正文是否可见，但动作归属于 QA：多段输出只出现一组动作，全部正文被清空时仍保留该组动作以及非可视 provenance 与 timeline 指针。
 
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经被 claim，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行 JSON/schema/hash 校验，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际 assembly 必须携带公开 `agent/inbox/spliced` 投影的非负 `claimEventSeqs`；loader 才把绑定持久转为 `claimed`，并在同一 claim identity 的重复 assembly 中重放相同的转义、untrusted、只读上下文。没有 claim 的 view/assembly 不注入，也不会消费 pending；已 claim 的 `turn/end` 才转为 `consumed`，并保存安全整数结束 event seq、turn 与 `reason.kind` 的非正文终态元数据，不写成 DSH 历史。DSH provider 在同一 turn/end 前的 request retry 复用同一 claim；`agent/request-error` 不消费或重置。Tavern swipe 通过公开 branch endpoint，在分叉点早于来源终态时复制 selection 和不含正文的 import lineage；子 session 必须出现新的 public claim 才注入，旧 claim 不直接复用。中断后原 session 的新用户 claim 不再注入。
 
@@ -327,7 +326,7 @@ bundled live client 只发送 URL 编码后的 playthrough id，并拒绝服务�
 
 ### 周目生命周期组合语义
 
-内置客户端通过 `POST /drafts` 创建开场草稿。Host 先保存创建意图，再写入时间线和周目目录。客户端重试时沿用同一个 `creationId` 和 `expectedWorkspaceScope`。开场草稿在首次发送时才分配原生会话。自定义客户端创建新周目需要提供 `postDraft`，从现有回复分支为新周目需要提供 `forkPlaythrough`。底层 `/sessions` 和 `/sessions/:id/branch` 可单独调用，调用方负责其后续登记。自动标题按当前语言显示，手工改名沿用保存的文字。
+内置客户端通过 `POST /drafts` 创建开场草稿。Host 先保存创建意图，再写入时间线和周目目录。客户端重试时沿用同一个 `creationId` 和 `expectedWorkspaceScope`。开场草稿在首次发送时才分配原生会话。其他前端可自行组合会话和工作区文件原语。自动标题按当前语言显示，手工改名沿用保存的文字。
 
 角色解绑或换绑是例外：`POST /v1/character-selection` 在写 selection 前检查 session 是否属于角色不一致的周目。若存在冲突，返回 409 `CHARACTER_PLAYTHROUGH_DETACH_REQUIRED`，`error.details.conflicts[]` 含 `playthroughId`、`playthroughTitle`、`sessionId`、`expectedCharacterId`、`requestedCharacterId` 与 `descendantSessionCount`，且本次 selection 不写入。前端取得用户确认后，应逐项调用 `POST /v2/playthroughs/:id/detach-session`，全部成功后重试原 v1 请求。detach 由服务端根据 timeline 树计算，客户端不得自行猜测或重写后代关系。
 
@@ -649,9 +648,19 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 ### Tavern 周目分支组合
 
-“从这里分支为新周目”调用 `POST /playthroughs/:id/fork`。Host 在分支前保存源周目、选中的回复、原时间线版本和创建标识，核实子会话继承的问答，再登记新时间线和周目目录。中断后，同一创建请求可继续；修复命令也能核对尚未完成的登记。原生创建结果不明确时，报告保留最后一步与操作 ID，供人工核对。
+**从这里分支为新周目**和**在本周目从这里继续**都调用已有的会话分支原语。调用方先记录起始版本和选中回复，验证子会话继承的问答，再决定写哪些文件。新周目需要新的时间线与目录条目；在本周目继续只改活动位置，保留后续节点。重新生成和重试已停止的提问则组合创建或分支会话、提交带标识的提问、查询对应原生回合及按版本写入时间线。
 
-“在本周目从这里继续”调用 `POST /playthroughs/:id/rollback`。Host 在创建子会话前记录目标周目、回复和时间线版本，核实子会话继承的问答，复制选择项和导入上下文，再以版本校验写入并读回 `head`。并发修改同一周目会收到 409。切到另一条回复再切回时，即使还没有新的问答，也会回到该子会话。旧后续节点保存在树中。下一条真实回复完成后，才会追加以回退位置为父节点的新问答。
+### 可恢复的原子调用
+
+`scope` 是 `GET /workspace` 返回的 `[workspaceId, rootPath]` 编码成的 JSON 字符串。写请求的 `expectedWorkspaceScope` 使用相同值。原有会话和文件操作仍可独立调用。
+
+- `GET /workspace/checkpoints/:id?scope=…` 返回 `{ok,checkpoint}`，缺失时为 `null`。加 `key` 可查询原操作。记录含 `key`、`owner`、`data`、整数 `revision` 和 `released`。
+- `PUT /workspace/checkpoints/:id` 首次传 `{key,owner,data,expectedRevision:null,expectedTimelineRevision,expectedWorkspaceScope}`，其中时间线版本取自文件读取。一个周目同时允许一个调用方占用。后续用返回的检查点版本、相同 key 和 owner 及完整新 data 更新，最后一次传 `released:true` 释放。冲突返回 409。`data` 的结构由调用方定义，Host 按原样保存。建议只存标识和进度，避免写入正文或密码。
+- `POST /sessions`、`POST /sessions/:id/branch`、`POST /sessions/:id/user-message` 可传 `operationKey` 和 `expectedWorkspaceScope`，每个 key 对应一次变更及其输入。执行受检查点保护的变更或文件写入时，同时传 `checkpointId` 和 `checkpointKey`。写文件仍需文件自己的 `expectedRevision`。同一检查点可覆盖多个不同 key 的原子操作。
+- `GET /operation-receipts/:id?scope=…` 中的 id 为原子变更的 key，状态为 `missing`、`pending` 或 `done`。已完成的请求可以取回同一结果。原生操作结果未知时保持待核实。回执在后端保存输入指纹，查询返回进度和已知结果标识，省略提问正文及其指纹。
+- 核对分支继承的回复时，使用 `GET /sessions/:id/messages?evidence=inheritance&start=…&end=…`，比较源与子会话的端点。核对提问时，使用 `GET /sessions/:id/messages?requestId=…&boundary=…&version=…&stage=sending`，已确认受理时传 `accepted`。返回 `ready` 后可登记结果坐标。请求 ID、继承边界和原生回合共同确定回复归属。
+
+例如，一个第三方历史查看器只想从某条回复创建对照会话，可以向 `POST /sessions/:id/branch` 提交 `{atEventId,sessionFormatVersion,expectedWorkspaceScope,operationKey}`。响应丢失时沿用原 key 查询回执，取得子会话 ID 后打开即可。若另需记录书签，可以先申请检查点，核实子会话后按书签文件的版本写入。若 DSH 在返回子会话标识前退出，仍须保留待定结果供核对。周目修复会列出归属其他客户端的检查点，由拥有该记录的客户端解释。
 
 ### 后端 operation log utility
 

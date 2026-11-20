@@ -147,6 +147,8 @@ node --test test/play-sessions.test.mjs
 运行 `node --test test/play-maintenance.test.mjs test/play-cleanup.test.mjs test/play-archive.test.mjs` 和 `node scripts/verify-play-maintenance-browser.mjs`。临时工作区覆盖诊断中无法打开的多周目归档，包括损坏、缺失和读取错误；同时检查健康周目与草稿保留、CAS 和工作区切换。清理单独覆盖全部引用缺失的严格判据、存活分支、空引用、取消、大小写目录别名、共享导入上下文、中断与恢复冲突。Chrome 夹具验证真实 React 按钮、结果数量、旧 Host、切换和卸载后的响应隔离。
 
 
+运行 `node --test test/generation-recovery.test.mjs`，验证丢失响应后如何组合带回执的会话创建、提问和文件版本写入，以及修复命令能否登记已核实的回复并避免重复发送。
+
 PR 的 Node 24/26 全量任务包含回退、生成、创建和根会话解绑的故障注入测试。发布检查还安装固定版本的官方 DSH，在离线 provider 和临时工作区运行 `test/maintenance-tools-host.test.mjs` 与 `test/draft-native-controls-host.test.mjs`。Chrome 通过 `node scripts/verify-playthrough-rollback-browser.mjs` 验证点击回退实际打开已保存的子会话。
 
 设置 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 为目标官方 runtime 后运行 `node --test test/maintenance-tools-host.test.mjs`。真实 Cordis、工具与 Session controller 验证默认关闭、启用、预览、清理、恢复、重新挂载和卸载后工具释放，并对照原生会话未变。该测试只使用临时数据，不调用真实模型。
