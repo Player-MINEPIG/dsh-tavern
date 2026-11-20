@@ -3,14 +3,14 @@ import { rawText, uiMessage } from '../i18n.js'
 
 const operations = new Set([
   'workspace.bind', 'workspace.dir.create', 'workspace.file.write', 'session.create',
-  'session.branch', 'session.user-message', 'session.import-context.bind',
+  'playthrough.rollback', 'session.branch', 'session.user-message', 'session.import-context.bind',
   'session.import-context.unbind', 'playthrough.session.detach',
   'playthrough.character.relink', 'plugin.start', 'plugin.stop', 'rp.policy', 'trace.record',
 ])
 const checkpoints = new Set([
   'session.created', 'session.selection.copied', 'session.import-context.bound',
   'session.import-context.unbound', 'session.import-lineage.copied', 'workspace.bound',
-  'workspace.directory.created', 'workspace.file.written', 'playthrough.timeline.updated',
+  'playthrough.rollback.child-verified', 'playthrough.rollback.head-verified', 'playthrough.rollback.intent', 'workspace.directory.created', 'workspace.file.written', 'playthrough.timeline.updated',
   'playthrough.catalog.updated', 'playthrough.catalog.restored',
 ])
 

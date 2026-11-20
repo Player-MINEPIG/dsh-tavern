@@ -237,7 +237,7 @@ export function PlayTurnActions({
       label: uiMessage('play.chat.rollbackPlaythrough'),
       disabled,
       onClick: () => mutate(async () => {
-        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id)
+        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id, turn.variant.id)
         openSession(result.sessionId, playthrough)
       }),
     }),

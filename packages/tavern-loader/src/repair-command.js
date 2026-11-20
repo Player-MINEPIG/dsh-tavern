@@ -2,9 +2,10 @@ import { isSafeCatalogSegment } from '../../play/src/timeline.js'
 import { repairPlaythroughs, repairWorkspaceBinding } from './playthrough-repair.js'
 
 export const REPAIR_TOOL = 'tavern_repair_playthroughs'
-const hint = '[preview] [v3-v4 <周目ID>] | assist <周目ID>'
+const hint = '[preview] [v3-v4 <周目ID>] | assist <周目ID> | dismiss-rollback <周目ID> <操作ID>'
 const usage = '/tavern-repair ' + hint
 const reasons = {
+  'rollback-pending': '回退未完成。已确认子会话且原时间线未变时，可在原楼层重试回退；结果未知时请核对操作记录和原生会话',
   'unknown-coordinate-origin': '坐标缺少版本。确认该周目的坐标仅来自 V3/V4 后，可执行 /tavern-repair v3-v4 <周目ID>',
   'possible-v3-offset': '事件编号可能已移动，需核对原问答或旧日志',
   'unverified-message-range': '日志无法核实提问和回复的位置',
@@ -36,6 +37,7 @@ function formatReport(result) {
   const lines = [`已检查 ${result.checked} 个周目，${result.applied ? '已修复' : '可修复'} ${changed} 个。`]
   for (const item of result.items) {
     const details = []
+    if (item.changes.some(change => change.kind === 'rollback-recovered')) details.push('已核实并恢复回退位置')
     const stamps = item.changes.filter(change => change.kind === 'format-marker').length
     if (stamps) details.push(`补齐 ${stamps} 个版本标记`)
     const turns = item.changes.find(change => change.kind === 'reconcile-turns')
@@ -43,7 +45,7 @@ function formatReport(result) {
     if (turns?.extended) details.push('将续写接回原楼层')
     if (turns?.removed) details.push('移除误记为回复的取消楼层')
     for (const problem of item.remaining) {
-      const target = [problem.sessionId, problem.nodeId, problem.variantId, problem.characterId].filter(Boolean).join(' / ')
+      const target = [problem.sessionId, problem.nodeId, problem.variantId, problem.characterId, problem.stage, problem.operationId, problem.code].filter(Boolean).join(' / ')
       const explanation = reasons[problem.reason] ?? problem.reason
       details.push(target ? target + ' · ' + explanation : explanation)
     }
@@ -63,7 +65,7 @@ async function assistRepair(dependencies, { agent, signal, id }) {
     const report = await repairPlaythroughs(dependencies, { agent, signal, id })
     text = formatReport(report)
     issues = report.items.flatMap(item => item.remaining)
-    if (!issues.length || issues.some(issue => protectedReasons.has(issue.reason))) return { kind: 'success', text }
+    if (!issues.length || issues.some(issue => protectedReasons.has(issue.reason) || issue.code === 'PLAY_ROLLBACK_BUSY')) return { kind: 'success', text }
   } catch (error) {
     signal?.throwIfAborted()
     text = `周目 ${id} 的程序化检查失败。${error.message}`
@@ -95,6 +97,11 @@ export function installRepairCommand(ctx, dependencies, { enableTool, blocksWrit
       input: { hint },
       async handler({ agent, rawInput, signal }) {
         const args = String(rawInput ?? '').trim().split(/\s+/).filter(Boolean)
+        if (args.length === 3 && args[0] === 'dismiss-rollback' && isSafeCatalogSegment(args[1])) {
+          repairWorkspaceBinding(dependencies.store, agent)
+          dependencies.dismissRollback(args[1], args[2])
+          return { kind: 'success', text: '已结束这次待处理回退，子会话和时间线均已保留。' }
+        }
         if (args.length === 2 && args[0] === 'assist' && isSafeCatalogSegment(args[1])) {
           return assistRepair(dependencies, { agent, signal, id: args[1] })
         }

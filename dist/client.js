@@ -10263,6 +10263,10 @@ var zh_CN_default = Object.freeze({
   "diagnostics.logsOperation.session.user-message": "\u53D1\u9001\u7528\u6237\u6D88\u606F",
   "diagnostics.logsOperation.session.import-context.bind": "\u7ED1\u5B9A\u5BFC\u5165\u4E0A\u4E0B\u6587",
   "diagnostics.logsOperation.session.import-context.unbind": "\u89E3\u7ED1\u5BFC\u5165\u4E0A\u4E0B\u6587",
+  "diagnostics.logsOperation.playthrough.rollback": "\u56DE\u9000\u5468\u76EE",
+  "diagnostics.logsResult.playthrough.rollback.child-verified": "\u5DF2\u6838\u5B9E\u5B50\u4F1A\u8BDD\u7EE7\u627F\u7684\u95EE\u7B54",
+  "diagnostics.logsResult.playthrough.rollback.head-verified": "\u5DF2\u8BFB\u56DE\u5E76\u6838\u5B9E\u5468\u76EE\u56DE\u9000\u4F4D\u7F6E",
+  "diagnostics.logsResult.playthrough.rollback.intent": "\u5DF2\u8BB0\u5F55\u56DE\u9000\u76EE\u6807",
   "diagnostics.logsOperation.playthrough.session.detach": "\u79FB\u9664\u5468\u76EE\u4F1A\u8BDD\u5173\u8054",
   "diagnostics.logsOperation.playthrough.character.relink": "\u91CD\u65B0\u5173\u8054\u89D2\u8272",
   "diagnostics.logsOperation.plugin.start": "\u542F\u52A8 Tavern",
@@ -11414,6 +11418,10 @@ var en_default = Object.freeze({
   "diagnostics.logsOperation.session.user-message": "Send user message",
   "diagnostics.logsOperation.session.import-context.bind": "Bind import context",
   "diagnostics.logsOperation.session.import-context.unbind": "Unbind import context",
+  "diagnostics.logsOperation.playthrough.rollback": "Roll back playthrough",
+  "diagnostics.logsResult.playthrough.rollback.child-verified": "Inherited question and reply verified",
+  "diagnostics.logsResult.playthrough.rollback.head-verified": "Saved rollback head verified",
+  "diagnostics.logsResult.playthrough.rollback.intent": "Rollback intent saved",
   "diagnostics.logsOperation.playthrough.session.detach": "Detach playthrough session",
   "diagnostics.logsOperation.playthrough.character.relink": "Relink character",
   "diagnostics.logsOperation.plugin.start": "Start Tavern",
@@ -21848,7 +21856,7 @@ function storedBranchHeads(timeline, variants) {
     if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
     const branch = variants.get(value.branchVariantId);
     const head = variants.get(value.variantId);
-    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || head.variant.sessionId !== value.sessionId) continue;
+    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || typeof value.sessionId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(value.sessionId)) continue;
     result.set(value.branchVariantId, {
       sessionId: value.sessionId,
       nodeId: value.nodeId,
@@ -23426,8 +23434,9 @@ function createPlayNodeController(client, {
     forkPlaythrough(playthrough, nodeId) {
       return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }));
     },
-    rollbackPlaythrough(playthrough, nodeId) {
+    rollbackPlaythrough(playthrough, nodeId, variantId) {
       return schedule(playthrough, async () => {
+        if (typeof client.rollbackPlaythrough === "function") return client.rollbackPlaythrough(playthrough, nodeId, variantId);
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId });
         const next = await writeTimeline(playthrough, (timeline) => {
           const current4 = nodeById2(timeline, nodeId);
@@ -23708,7 +23717,7 @@ function PlayTurnActions({
       label: uiMessage("play.chat.rollbackPlaythrough"),
       disabled,
       onClick: () => mutate(async () => {
-        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id);
+        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id, turn.variant.id);
         openSession(result.sessionId, playthrough);
       })
     }),
@@ -55383,6 +55392,7 @@ var operations = /* @__PURE__ */ new Set([
   "workspace.dir.create",
   "workspace.file.write",
   "session.create",
+  "playthrough.rollback",
   "session.branch",
   "session.user-message",
   "session.import-context.bind",
@@ -55401,6 +55411,9 @@ var checkpoints = /* @__PURE__ */ new Set([
   "session.import-context.unbound",
   "session.import-lineage.copied",
   "workspace.bound",
+  "playthrough.rollback.child-verified",
+  "playthrough.rollback.head-verified",
+  "playthrough.rollback.intent",
   "workspace.directory.created",
   "workspace.file.written",
   "playthrough.timeline.updated",
@@ -58184,6 +58197,7 @@ function createLivePlayClient({
   const v1 = createRequester(fetchImpl, v1Root);
   const v2 = createRequester(fetchImpl, apiRoot);
   const managedRevisions = /* @__PURE__ */ new Map();
+  const snapshotRevisions = /* @__PURE__ */ new WeakMap();
   function invalidateRevision(path3) {
     managedRevisions.delete(path3);
   }
@@ -58208,19 +58222,20 @@ function createLivePlayClient({
     const revision = fileRevision(response, label);
     const parsed = parseJsonDocument(content, normalize, label);
     managedRevisions.set(path3, revision);
+    snapshotRevisions.set(parsed, revision);
     return parsed;
   }
-  async function putJsonFile(path3, value, normalize, label, { expectedWorkspaceScope } = {}) {
+  async function putJsonFile(path3, value, normalize, label, { expectedWorkspaceScope, revision = expectedRevision(path3) } = {}) {
     const normalized = normalize(value, label);
     const body2 = {
       content: JSON.stringify(normalized),
-      expectedRevision: expectedRevision(path3),
+      expectedRevision: revision,
       ...expectedWorkspaceScope === void 0 ? {} : { expectedWorkspaceScope }
     };
     try {
       const response = await v2("PUT", `/workspace/files${pathQuery(path3)}`, body2);
-      const revision = fileRevision(response, label);
-      managedRevisions.set(path3, revision);
+      const revision2 = fileRevision(response, label);
+      managedRevisions.set(path3, revision2);
     } catch (error) {
       if (error?.status === 409 && error?.code === "PLAY_FILE_REVISION_CONFLICT") {
         invalidateRevision(path3);
@@ -58245,7 +58260,7 @@ function createLivePlayClient({
       const current4 = await getFresh();
       const next = await mutator(current4);
       try {
-        return await putFresh(next);
+        return await putFresh(next, snapshotRevisions.get(current4) ?? null);
       } catch (error) {
         if (error?.status !== 409 || error?.code !== "PLAY_FILE_REVISION_CONFLICT" || retry >= maxRetries) {
           throw error;
@@ -58321,7 +58336,7 @@ function createLivePlayClient({
             throw error;
           }
         },
-        putFresh: (value) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog", options),
+        putFresh: (value, revision) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog", { ...options, revision }),
         mutator,
         options
       });
@@ -58329,6 +58344,16 @@ function createLivePlayClient({
     getTimeline(playthrough) {
       const path3 = timelinePath(playthrough);
       return getJsonFile(path3, normalizeTimeline, "timeline");
+    },
+    async rollbackPlaythrough(playthrough, nodeId, variantId) {
+      const workspace = await this.getWorkspace();
+      const timeline = await this.getTimeline(playthrough);
+      return v2("POST", `/playthroughs/${encodeURIComponent(playthrough.id)}/rollback`, {
+        nodeId,
+        variantId,
+        expectedRevision: snapshotRevisions.get(timeline),
+        expectedWorkspaceScope: JSON.stringify([workspace.workspaceId, workspace.rootPath])
+      });
     },
     putTimeline(playthrough, timeline) {
       const path3 = timelinePath(playthrough);
@@ -58338,7 +58363,7 @@ function createLivePlayClient({
       const path3 = timelinePath(playthrough);
       return updateJsonFile({
         getFresh: () => getJsonFile(path3, normalizeTimeline, "timeline"),
-        putFresh: (value) => putJsonFile(path3, value, normalizeTimeline, "timeline"),
+        putFresh: (value, revision) => putJsonFile(path3, value, normalizeTimeline, "timeline", { revision }),
         mutator,
         options
       });

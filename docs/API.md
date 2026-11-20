@@ -142,6 +142,7 @@ loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`�
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定含 path/hash/state/数量摘要及（已 claim 时）不含正文的 claim identity/event seq 摘要，不返回记录正文 | 已实现 |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
+| POST | `/playthroughs/:id/rollback` | 后端从当前分支的回复创建子会话并提交回退位置。请求传 `{ nodeId, variantId?, expectedRevision, expectedWorkspaceScope }`，scope 为 `[workspaceId, rootPath]` 的 JSON 字符串。返回 `{ ok, sessionId, timeline }`。冲突或目标改变返回 409，未完成的步骤可在周目修复报告中查看。 | 已实现 |
 | GET | `/playthroughs/:id/focus` | 经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现 |
 | GET | `/playthroughs/:id/availability` | 检查指定周目的全部已保存会话引用，返回状态、原因、sessionIds 与 workspaceScope；只读 | 已实现 |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`；只把指定周目及其 root/swipe/branch 后代 session 重新绑定到一张现存角色卡。显式用户选择不受自动归类规则限制 | 已实现 |
@@ -320,7 +321,7 @@ import-context 修改由 session 权威状态锁定：只要存在 DSH user/assi
 
 timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。QA 节点的产品字段为 `id`、`kind`、`displayOverride`、可选 `parentVariantId`、`adoptedVariantId`、`variants` 和可选 `ext`；未声明的顶层字段会以 `PLAY_TIMELINE_INVALID` 拒绝，第三方元数据应放在 `ext`。v2 不提供隐藏或屏蔽 QA 的字段。树状字段为 additive：节点可带 `parentVariantId: string | null`，指向较早 QA 的 variant；timeline 可带 `head: { sessionId, nodeId, variantId }`。`nodeId/variantId` 必须指向同一 QA，但 `head.sessionId` 可是刚由 DSH branch 创建、尚未产生下一轮 QA 的 continuation session。活动显示路径从 `head.variantId` 沿 `parentVariantId` 反向求祖先；未带树字段的平面文档仍按原节点顺序读取，下一次完成 QA 对账会写入明确 head/parent。树文档的 variant id 必须全局唯一、parent 只能指向较早节点且不得成环。focus 不另存第二份状态；稳定 focus 从 timeline head 派生，空 timeline 才回退 catalog 的 rootSessionId。
 
-bundled live client 只发送 URL 编码后的 playthrough id，并拒绝服务端返回的 id 不匹配或缺失/非法字段。稳定 focus 的 activeTimelinePath 字段仅作为旧 binding 兼容数据保留，已 deprecated/ignored；普通 timeline PUT 不再更新它。路径 mutation 已在进程内目标锁中逐段 `lstat` 拒绝 symlink/junction，逐层创建并 realpath 复核；临时文件使用排他 `wx`，写入和 rename 前复验父目录。服务端 CAS 已实现；内置 live client 已实现受管 revision 缓存、`null` create-only、409 作废陈旧缓存和有限冲突重放（默认最多重试 3 次，可配置 1–5）。内置周目生命周期 caller（rename、create catalog append、node metadata/adopt、swipe/回退 timeline head、turn reconcile）使用 `updateCatalog` / `updateTimeline`；mutator 每次只基于 fresh document 重算本地意图，外部 session/branch/user-message/目录/timeline create-only 副作用不会在 CAS 重放中重复。旧自定义 client 若只有 get/put 会走一次兼容 fallback，不提供并发重放保证。
+bundled live client 只发送 URL 编码后的 playthrough id，并拒绝服务端返回的 id 不匹配或缺失/非法字段。稳定 focus 的 activeTimelinePath 字段仅作为旧 binding 兼容数据保留，已 deprecated/ignored；普通 timeline PUT 不再更新它。路径 mutation 已在进程内目标锁中逐段 `lstat` 拒绝 symlink/junction，逐层创建并 realpath 复核；临时文件使用排他 `wx`，写入和 rename 前复验父目录。服务端 CAS 已实现；内置 live client 已实现受管 revision 缓存、`null` create-only、409 作废陈旧缓存和有限冲突重放（默认最多重试 3 次，可配置 1–5）。内置周目生命周期 caller（rename、create catalog append、node metadata/adopt、swipe timeline head、turn reconcile）使用 `updateCatalog` / `updateTimeline`；mutator 每次只基于 fresh document 重算本地意图，外部 session/branch/user-message/目录/timeline create-only 副作用不会在 CAS 重放中重复。旧自定义 client 若只有 get/put 会走一次兼容 fallback，不提供并发重放保证。
 
 ### 周目生命周期组合语义
 
@@ -661,7 +662,7 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 这仍是现有原子 API 的客户端组合，不是跨 session、目录、timeline、catalog 的大事务。branch 已成功而后续文件写入失败时可能留下未归档的 DSH 子 session 或工作区孤儿文件；每一步由现有 `ctx.logger` operation 记录，客户端不通过删除原始历史来伪造回滚。
 
-“在本周目从这里继续”复用相同的 DSH branch 与 inherited durable range 校验，但不创建目录、timeline 副本或 catalog 条目。客户端仅以 timeline CAS 把 `head` 移到 `{ continuationSessionId, targetNodeId, targetVariantId }`；旧后续节点仍保存在树中，但不属于当前活动路径。下一条真实消息完成后以目标 variant 为 parent 追加新 QA。它不是删除/改写 DSH 历史，也不伪造用户或 assistant 消息。
+“在本周目从这里继续”调用 `POST /playthroughs/:id/rollback`。Host 在创建子会话前记录目标周目、回复和时间线版本，核实子会话继承的问答，复制选择项和导入上下文，再以版本校验写入并读回 `head`。并发修改同一周目会收到 409。切到另一条回复再切回时，即使还没有新的问答，也会回到该子会话。旧后续节点保存在树中。下一条真实回复完成后，才会追加以回退位置为父节点的新问答。
 
 ### 后端 operation log utility
 

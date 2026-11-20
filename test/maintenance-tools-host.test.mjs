@@ -8,6 +8,8 @@ import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import assembler from 'dsh-prompt-assembler/plugin'
 import * as tavern from '../packages/tavern-loader/src/index.js'
+import { createRollbackService } from '../packages/play/src/rollback.js'
+import { createContractOperation } from '../packages/play/src/operation-contract.js'
 import { REPAIR_TOOL } from '../packages/tavern-loader/src/repair-command.js'
 import { MAINTENANCE_TOOL } from '../packages/tavern-loader/src/maintenance-tools.js'
 
@@ -43,7 +45,8 @@ test('official Host runs chat repair, scoped maintenance tools and plugin dispos
     await ctx.plugin(((await load('@deepseek-ai/dsh-api-remote-access')).default ?? await load('@deepseek-ai/dsh-api-remote-access')))
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'offline', model: 'maintenance' }), saveSelection: async () => {} })
     ctx.provide('fileUploads', { registerAgentResolver: () => () => {}, bindPrompt: () => ({ commit() {}, [Symbol.dispose]() {} }) })
-    ctx.provide('attachments', { admitPromptContent: async content => content })
+    ctx.provide('attachments', { admitPromptContent: async content => content, imageLimits: { maxImageBytes: 1024,
+      maxImagesPerMessage: 4, maxMessageImageBytes: 4096, maxImagePixels: 4096, maxImageDimension: 1024, mediaTypes: ['image/png'] } })
     ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
     new (await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine(ctx)
     ctx.provide('fs', {})
@@ -145,6 +148,24 @@ test('official Host runs chat repair, scoped maintenance tools and plugin dispos
     assert.match(queued[0].content[0].text, /playthrough-missing/)
     assert.deepEqual(agent.inbox.nextTurn, [])
     assert.deepEqual(session.snapshotEvents().slice(beforeCommand.length).map(event => event.type), ['command/run', 'command/done'])
+    const workspace = store.playWorkspaceStore
+    const binding = workspace.get()
+    const rollbackRequest = { nodeId: repaired.nodes[0].id, expectedRevision: workspace.readFile(rows[1].path).revision,
+      expectedWorkspaceScope: JSON.stringify([binding.workspaceId, binding.rootPath]) }
+    const rollback = createRollbackService(workspace, workspace.host)
+    const operation = createContractOperation({ operation: 'playthrough.rollback', meta: { playthroughId: rows[1].id } })
+    workspace.beforeRename = () => { throw new Error('interrupted before head write') }
+    await assert.rejects(rollback.run(rows[1].id, rollbackRequest, operation), /interrupted before head write/)
+    workspace.beforeRename = null
+    const previewPending = await ctx.commands.execute(repairAgent, '/tavern-repair preview', [], new AbortController().signal)
+    assert.match(previewPending.result.text, /回退未完成/)
+    const recovered = await executeRepair(rows[1].id)
+    assert.match(recovered.result.text, /已核实并恢复回退位置/)
+    assert.match(recovered.result.text, /备份/)
+    const rolled = await rollback.run(rows[1].id, rollbackRequest, operation)
+    assert.notEqual(rolled.sessionId, created.sessionId)
+    assert.equal(rolled.timeline.head.sessionId, rolled.sessionId)
+    assert.equal((await rollback.run(rows[1].id, rollbackRequest, operation)).sessionId, rolled.sessionId)
     await handle.dispose()
     assert.equal(ctx.commands.list(agent).some(item => item.name === 'tavern-repair'), false)
   } finally {

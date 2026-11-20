@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto'
 import { basename, join, resolve } from 'node:path'
 import { atomicJson, readJsonFile } from './atomic-json.js'
 import { httpError, readBoundedJson, sendJson } from './http.js'
-import { parseTimelineJson } from './timeline.js'
+import { parseCatalogJson, parseTimelineJson } from './timeline.js'
 import { validateTimelineCoordinates } from './session-coordinates.js'
 import { assertNoLink, assertSafeRoot, isSystemDiskPath, posixPlayPath, resolvePlayPath, splitRelativeSegments } from './paths.js'
 
@@ -132,6 +132,7 @@ export class PlayWorkspaceStore {
     this.path = join(this.storageDir, BINDING_FILE)
     this.host = host ?? {}
     this.now = now
+    this.writeReservations = new Map()
     this.targetGuards = new Set()
     this.bindingEpoch = Symbol()
     this.mutationEpoch = Symbol()
@@ -146,6 +147,9 @@ export class PlayWorkspaceStore {
   }
 
   persist(next) {
+    if (this.writeReservations.size && (next.workspaceId !== this.binding.workspaceId || next.rootPath !== this.binding.rootPath)) {
+      throw httpError(409, 'A playthrough rollback is in progress', 'PLAY_ROLLBACK_BUSY')
+    }
     atomicJson(this.path, next, MAX_BINDING_BYTES)
     if (this.binding.rootPath !== next.rootPath || this.binding.workspaceId !== next.workspaceId) { this.bindingEpoch = Symbol(); this.mutationEpoch = Symbol() }
     this.binding = next
@@ -252,6 +256,14 @@ export class PlayWorkspaceStore {
     })
   }
 
+  async withReservedTimeline(row, callback) {
+    const key = realpathSync.native(resolvePlayPath(requireRoot(this.binding), row.path, { mustExist: true }))
+    if (this.writeReservations.has(key)) throw httpError(409, 'A rollback is in progress for this playthrough', 'PLAY_ROLLBACK_BUSY')
+    const token = Symbol()
+    this.writeReservations.set(key, { token, row })
+    try { return await callback(token) } finally { this.writeReservations.delete(key) }
+  }
+
   withTargetGuard(relativePath, operation) {
     const key = (this.binding.rootPath ?? '') + '\\0' + posixPlayPath(relativePath)
     if (this.targetGuards.has(key)) throw httpError(409, 'path target is busy', 'PLAY_PATH_BUSY')
@@ -299,7 +311,7 @@ export class PlayWorkspaceStore {
     return managed ? this.withTargetGuard(posix, operation) : operation()
   }
 
-  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false, expectedWorkspaceScope } = {}) {
+  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false, expectedWorkspaceScope, reservation } = {}) {
     const checkWorkspace = () => {
       if (expectedWorkspaceScope === undefined) return
       if (typeof expectedWorkspaceScope !== 'string') throw httpError(400, 'expectedWorkspaceScope must be a string', 'PLAY_WORKSPACE_SCOPE_INVALID')
@@ -315,6 +327,21 @@ export class PlayWorkspaceStore {
     }
     const posix = posixPlayPath(relativePath)
     const managed = isManagedDocument(posix)
+    if (this.writeReservations.size && managed) {
+      const absolute = resolvePlayPath(root, posix)
+      const owner = existsSync(absolute) && this.writeReservations.get(realpathSync.native(absolute))
+      if (owner && owner.token !== reservation) {
+        throw httpError(409, 'Playthrough rollback in progress; retry this change after it finishes', 'PLAY_ROLLBACK_BUSY')
+      }
+      if (posix === 'catalog.json') {
+        const rows = parseCatalogJson(content).playthroughs
+        for (const { row } of this.writeReservations.values()) {
+          if (JSON.stringify(rows.find(item => item.id === row.id)) !== JSON.stringify(row)) {
+            throw httpError(409, 'Cannot change a playthrough during its rollback', 'PLAY_ROLLBACK_BUSY')
+          }
+        }
+      }
+    }
     if (managed) assertExpectedRevision(expectedRevision, expectedRevisionPresent)
     return this.withTargetGuard(posix, () => {
       const segments = splitRelativeSegments(posix)

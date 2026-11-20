@@ -5,11 +5,28 @@ import {stateSourceTarget,stoppedRequestFromEvents} from './stopped-request.js'
 const MAX_BODY_BYTES = 64 * 1024
 const SESSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
 
-function requireSessionId(value) {
+export function requireSessionId(value) {
   if (typeof value !== 'string' || !SESSION_ID_PATTERN.test(value)) {
     throw httpError(400, 'Invalid session id', 'PLAY_SESSION_INVALID')
   }
   return value
+}
+
+export async function copyBranchContext(host, sessionId, childSessionId, atEventId, operation, { selectionCopied = false } = {}) {
+  try {
+    if (!selectionCopied && typeof host.copySelection === 'function') {
+      await host.copySelection(sessionId, childSessionId)
+      operation?.checkpoint('session.selection.copied', { sessionId: childSessionId })
+    }
+    if (typeof host.copyImportContextLineage === 'function') {
+      await host.copyImportContextLineage(sessionId, childSessionId, atEventId)
+      operation?.checkpoint('session.import-lineage.copied', { sessionId: childSessionId })
+    }
+  } catch (error) {
+    const failure = httpError(502, 'Fork succeeded but branch context copy failed', 'PLAY_BRANCH_COPY_FAILED')
+    failure.cause = error
+    throw failure
+  }
 }
 
 export function hasOpenTurn(events) {
@@ -227,25 +244,12 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         throw httpError(400, 'stateSource requires the branch source and exactly one later reply or stopped-request coordinate', 'PLAY_STATE_SOURCE_INVALID')
       }
       const created = await host.forkSession({ sessionId, atSeq: body.atEventId,
-        ...(stateSource === undefined ? {} : { stateSource }),
+        ...(body.stateSource === undefined ? {} : { stateSource: body.stateSource }),
         ...(body.sessionFormatVersion === undefined ? {} : { sessionFormatVersion: body.sessionFormatVersion }),
       }, { operation })
       const childSessionId = requireSessionId(created?.sessionId)
       operation?.checkpoint('session.created', { sessionId: childSessionId })
-      try {
-        if (typeof host.copySelection === 'function') {
-          await host.copySelection(sessionId, childSessionId)
-          operation?.checkpoint('session.selection.copied', { sessionId: childSessionId })
-        }
-        if (typeof host.copyImportContextLineage === 'function') {
-          await host.copyImportContextLineage(sessionId, childSessionId, body.atEventId)
-          operation?.checkpoint('session.import-lineage.copied', { sessionId: childSessionId })
-        }
-      } catch (error) {
-        const failure = httpError(502, 'Fork succeeded but branch context copy failed', 'PLAY_BRANCH_COPY_FAILED')
-        failure.cause = error
-        throw failure
-      }
+      await copyBranchContext(host, sessionId, childSessionId, body.atEventId, operation)
       return sendJson(res, 201, { ok: true, sessionId: childSessionId })
     },
 

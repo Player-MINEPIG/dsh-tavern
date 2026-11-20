@@ -6,6 +6,7 @@ import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuth
 import { createDraftPreviewContext } from './draft-preview-context.js'
 import { PlayMaintenanceService } from '../../play/src/maintenance.js'
 import { PlayCleanupService } from '../../play/src/cleanup.js'
+import { createRollbackService } from '../../play/src/rollback.js'
 import { installRepairCommand } from './repair-command.js'
 import { installMaintenanceTools } from './maintenance-tools.js'
 import { PlaythroughDrafts } from './playthrough-drafts.js'
@@ -405,6 +406,7 @@ export function apply(ctx, config = {}) {
     onSelectionCopied: (sessionId, from) => { assemblyPresets.copySelection(from, sessionId); reconcileRpAfterSelection(sessionId) },
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
+  const rollbackService = createRollbackService(playWorkspaceStore, playHost)
   const playMemberships = new PlayMembershipService(playWorkspaceStore)
   importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
@@ -602,6 +604,17 @@ export function apply(ctx, config = {}) {
     ],
   })
   installRepairCommand(ctx, {
+    isRollbackActive: rollbackService.isActive,
+    dismissRollback: (id, opId) => rollbackService.dismiss(id, opId),
+    async resumeRollback(id, request, beforeWrite) {
+      const operation = operationContext('playthrough.rollback', { playthroughId: id })
+      operation.start()
+      try {
+        const result = await rollbackService.run(id, { ...request, resumeOnly: true }, operation, beforeWrite)
+        operation.success()
+        return result
+      } catch (error) { operation.failure(error); throw error }
+    },
     store: playWorkspaceStore, host: playHost, isDraftProtected: playMaintenance.isDraftProtected,
     getCharacter: id => characterStore.get(id),
     deriveMessages(record) {
@@ -874,6 +887,7 @@ export function apply(ctx, config = {}) {
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
     const playApi = createPlayApiHandler({
+      rollbackService,
       maintenanceService: playMaintenance,
       drafts: playthroughDrafts,
       chromeStore,

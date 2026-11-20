@@ -67,6 +67,7 @@ export function createLivePlayClient({
   const v1 = createRequester(fetchImpl, v1Root)
   const v2 = createRequester(fetchImpl, apiRoot)
   const managedRevisions = new Map()
+  const snapshotRevisions = new WeakMap()
 
   function invalidateRevision(path) {
     managedRevisions.delete(path)
@@ -97,14 +98,15 @@ export function createLivePlayClient({
     const revision = fileRevision(response, label)
     const parsed = parseJsonDocument(content, normalize, label)
     managedRevisions.set(path, revision)
+    snapshotRevisions.set(parsed, revision)
     return parsed
   }
 
-  async function putJsonFile(path, value, normalize, label, { expectedWorkspaceScope } = {}) {
+  async function putJsonFile(path, value, normalize, label, { expectedWorkspaceScope, revision = expectedRevision(path) } = {}) {
     const normalized = normalize(value, label)
     const body = {
       content: JSON.stringify(normalized),
-      expectedRevision: expectedRevision(path),
+      expectedRevision: revision,
       ...(expectedWorkspaceScope === undefined ? {} : { expectedWorkspaceScope }),
     }
     try {
@@ -138,7 +140,7 @@ export function createLivePlayClient({
       const current = await getFresh()
       const next = await mutator(current)
       try {
-        return await putFresh(next)
+        return await putFresh(next, snapshotRevisions.get(current) ?? null)
       } catch (error) {
         if (error?.status !== 409 || error?.code !== 'PLAY_FILE_REVISION_CONFLICT' || retry >= maxRetries) {
           throw error
@@ -228,7 +230,7 @@ export function createLivePlayClient({
             throw error
           }
         },
-        putFresh: value => putJsonFile('catalog.json', value, normalizeCatalog, 'catalog', options),
+        putFresh: (value, revision) => putJsonFile('catalog.json', value, normalizeCatalog, 'catalog', { ...options, revision }),
         mutator,
         options,
       })
@@ -237,6 +239,15 @@ export function createLivePlayClient({
     getTimeline(playthrough) {
       const path = timelinePath(playthrough)
       return getJsonFile(path, normalizeTimeline, 'timeline')
+    },
+
+    async rollbackPlaythrough(playthrough, nodeId, variantId) {
+      const workspace = await this.getWorkspace()
+      const timeline = await this.getTimeline(playthrough)
+      return v2('POST', `/playthroughs/${encodeURIComponent(playthrough.id)}/rollback`, {
+        nodeId, variantId, expectedRevision: snapshotRevisions.get(timeline),
+        expectedWorkspaceScope: JSON.stringify([workspace.workspaceId, workspace.rootPath]),
+      })
     },
 
     putTimeline(playthrough, timeline) {
@@ -248,7 +259,7 @@ export function createLivePlayClient({
       const path = timelinePath(playthrough)
       return updateJsonFile({
         getFresh: () => getJsonFile(path, normalizeTimeline, 'timeline'),
-        putFresh: value => putJsonFile(path, value, normalizeTimeline, 'timeline'),
+        putFresh: (value, revision) => putJsonFile(path, value, normalizeTimeline, 'timeline', { revision }),
         mutator,
         options,
       })

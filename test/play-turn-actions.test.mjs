@@ -59,7 +59,7 @@ test('a generated swipe opens its session from admission rather than completion'
 
 test('same-playthrough rollback shares the message action row and navigates its branch session', () => {
   const source = readFileSync(new URL('../packages/client/src/play/turn-actions.js', import.meta.url), 'utf8')
-  assert.match(source, /rollbackPlaythrough\(playthrough, turn\.id\)/)
+  assert.match(source, /rollbackPlaythrough\(playthrough, turn\.id, turn\.variant\.id\)/)
   assert.match(source, /play\.chat\.rollbackPlaythrough/)
-  assert.match(source, /rollbackPlaythrough\(playthrough, turn\.id\)[\s\S]*openSession\(result\.sessionId, playthrough\)/)
+  assert.match(source, /rollbackPlaythrough\(playthrough, turn\.id, turn\.variant\.id\)[\s\S]*openSession\(result\.sessionId, playthrough\)/)
 })

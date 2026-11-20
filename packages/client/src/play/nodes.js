@@ -228,8 +228,9 @@ export function createPlayNodeController(client, {
       return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }))
     },
 
-    rollbackPlaythrough(playthrough, nodeId) {
+    rollbackPlaythrough(playthrough, nodeId, variantId) {
       return schedule(playthrough, async () => {
+        if (typeof client.rollbackPlaythrough === 'function') return client.rollbackPlaythrough(playthrough, nodeId, variantId)
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId })
         const next = await writeTimeline(playthrough, timeline => {
           const current = nodeById(timeline, nodeId)

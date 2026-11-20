@@ -189,6 +189,8 @@ Import files and binding summaries live under the selected play workspace root. 
 
 In the sidebar, choose **⋯ → Repair playthrough** on the affected run. Tavern opens a new chat in the normal interface in the bound RP workspace and checks only that run. The command backs up and fixes verifiable records first. If that resolves everything, the chat contains the report. If issues remain, the agent investigates them in that chat and explains any missing evidence. Archived runs, pending drafts and turns in progress are reported and skipped.
 
+When you roll back in the same playthrough, the Host reserves its timeline, verifies the inherited reply, then saves the child as the active session. You can switch replies before the first new QA and return to that child. A timeout or interrupted write appears in the repair report with a checkpoint and operation ID. Repair can finish a verified pending rollback while the original timeline still matches. If DSH stopped before confirming the fork, inspect the native sessions and operation log. After deciding to abandon that attempt, enter `/tavern-repair dismiss-rollback <playthrough-id> <operation-id>`; this retains the timeline and native sessions.
+
 Enter `/tavern-repair` in a DSH chat in the bound RP workspace. The command checks that workspace’s catalog, saves an exact backup beside each changed `timeline.json`, and reports repairs, backup paths and outstanding issues. Use `/tavern-repair preview` for a read-only preview. Archived runs and pending drafts are reported as skipped.
 
 | Symptom | Action |

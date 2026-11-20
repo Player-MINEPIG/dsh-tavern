@@ -2,6 +2,7 @@ import { readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { appendCompletedTurns } from '../../client/src/play/turns.js'
 import { automaticStampBounds, automaticStampRefusal, uniqueMessageCoordinates } from '../../play/src/coordinate-recovery.js'
+import { canResumeRollback, readRollback } from '../../play/src/rollback.js'
 import { referencedPlaythroughSessions } from '../../play/src/maintenance.js'
 import { resolvePlayPath } from '../../play/src/paths.js'
 import { isPlaythroughArchived } from '../../play/src/playthrough-state.js'
@@ -89,7 +90,7 @@ async function reconcileHead(timeline, cut, host, deriveMessages, result) {
 
 // Inspect durable references directly so a locked timeline can be repaired.
 // Use the same message projection and reconciliation as opening a playthrough.
-async function repairRow(row, { store, host, isDraftProtected, getCharacter, deriveMessages }, options) {
+async function repairRow(row, { store, host, isDraftProtected, getCharacter, deriveMessages, resumeRollback, isRollbackActive }, options) {
   const { signal, apply, v3v4, scope, binding, checkCatalog, owners } = options
   const result = { id: row.id, changes: [], remaining: [] }
   const issue = (reason, details = {}) => result.remaining.push({ reason, ...details })
@@ -105,6 +106,29 @@ async function repairRow(row, { store, host, isDraftProtected, getCharacter, der
   const file = store.readFile(row.path, { validate: validatePlayDocument })
   if (owners.get(realpathSync.native(resolvePlayPath(binding.rootPath, row.path, { mustExist: true }))) !== 1) {
     issue('shared-timeline')
+    return result
+  }
+  const rollback = readRollback(store, row.id)
+  if (rollback && !['done', 'dismissed'].includes(rollback.stage)) {
+    const details = { operationId: rollback.operationId, stage: rollback.stage, nodeId: rollback.nodeId,
+      sessionId: rollback.child ?? rollback.source }
+    if (isRollbackActive?.(row.id)) {
+      issue('rollback-pending', { ...details, code: 'PLAY_ROLLBACK_BUSY' })
+      return result
+    }
+    if (!apply || !resumeRollback || !canResumeRollback(rollback)) {
+      issue('rollback-pending', details)
+      return result
+    }
+    try {
+      await resumeRollback(row.id, { nodeId: rollback.nodeId, expectedRevision: file.revision, expectedWorkspaceScope: scope },
+        current => {
+          checkCatalog()
+          if (isDraftProtected(row)) throw new Error('Protected draft')
+          result.backup = backupTimeline(binding.rootPath, row.path, current)
+        })
+      result.changes.push({ kind: 'rollback-recovered', sessionId: rollback.child })
+    } catch (error) { issue('rollback-pending', { ...details, code: error.code ?? 'repair-unavailable' }) }
     return result
   }
   const lease = store.captureReadLease([row.path])
