@@ -9,9 +9,8 @@ import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import assembler from 'dsh-prompt-assembler/plugin'
 import * as tavern from '../packages/tavern-loader/src/index.js'
-import { createCreationService } from '../packages/play/src/creation.js'
-import { createRollbackService } from '../packages/play/src/rollback.js'
-import { createContractOperation } from '../packages/play/src/operation-contract.js'
+import { atomicPlayClient } from './fixtures/atomic-play-client.mjs'
+import { rollbackAtNode } from '../packages/client/src/play/branch-recovery.js'
 import { REPAIR_TOOL } from '../packages/tavern-loader/src/repair-command.js'
 import { MAINTENANCE_TOOL } from '../packages/tavern-loader/src/maintenance-tools.js'
 
@@ -33,7 +32,7 @@ async function verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, e
 
   const admitted = Promise.withResolvers()
   const sends = []
-  const generation = workspace.generationGuards
+  const client = atomicPlayClient(workspace, workspace.host)
   const prompt = workspace.host.promptSession.bind(workspace.host)
   t.mock.method(workspace.host, 'promptSession', async request => {
     sends.push(request)
@@ -46,11 +45,9 @@ async function verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, e
       throw error
     }
   })
-  const operation = name => createContractOperation({ operation: name, meta: { playthroughId: row.id } })
-  const generationOp = operation('playthrough.generation')
   const identity = { operationKey: randomUUID(), expectedWorkspaceScope }
   const start = { ...identity, action: 'start', kind: 'reply-swipe', nodeId, expectedRevision: workspace.readFile(row.path).revision }
-  const generated = await generation.run(row.id, start, generationOp)
+  const generated = await client.generation(row, start)
   await admitted.promise
   const { agent } = await ctx.sessionController.resolveAgent(generated.sessionId)
   await agent.whenIdle()
@@ -69,21 +66,19 @@ async function verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, e
   assert.equal(end?.data.reason.kind, 'completed')
   assert.ok(user.seq < reply?.seq && reply.seq < end.seq)
 
-  const status = await generation.run(row.id, { ...identity, action: 'status' }, generationOp)
+  const status = await client.generation(row, { ...identity, action: 'status' })
   assert.equal(status.state, 'ready', JSON.stringify(status))
-  const finished = await generation.run(row.id, { ...identity, action: 'finish' }, generationOp)
+  const finished = await client.generation(row, { ...identity, action: 'finish' })
   const saved = JSON.parse(workspace.readFile(row.path).content)
   assert.equal(saved.head.sessionId, generated.sessionId)
   assert.deepEqual(saved.head, finished.timeline.head)
   const variant = saved.nodes.find(node => node.id === nodeId).variants.find(item => item.id === saved.head.variantId)
   assert.deepEqual([variant.startEventId, variant.endEventId], [user.seq, reply.seq])
-  assert.equal((await generation.run(row.id, start, generationOp)).sessionId, generated.sessionId)
+  assert.equal((await client.generation(row, start)).sessionId, generated.sessionId)
   assert.equal(sends.length, 1)
 
-  const creation = createCreationService(workspace, workspace.host)
-  const creationOp = operation('playthrough.fork')
   const request = { nodeId, creationId: randomUUID(), expectedWorkspaceScope, expectedRevision: workspace.readFile(row.path).revision }
-  const fork = await creation.run(row.id, request, creationOp)
+  const fork = await client.forkPlaythrough(row, request)
   assert.notEqual(fork.sessionId, generated.sessionId)
   const child = await read(fork.sessionId)
   assert.equal(child.inheritedEventCount, reply.seq + 1)
@@ -95,7 +90,7 @@ async function verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, e
   assert.equal(published[0].ext.pmpDshTavern.rootSessionId, fork.sessionId)
   assert.equal(JSON.parse(workspace.readFile(published[0].path).content).head.sessionId, fork.sessionId)
   assert.equal(workspace.readFile(row.path).revision, request.expectedRevision)
-  assert.equal((await creation.run(row.id, request, creationOp)).sessionId, fork.sessionId)
+  assert.equal((await client.forkPlaythrough(row, request)).sessionId, fork.sessionId)
 }
 
 test('official Host runs chat repair, scoped maintenance tools and plugin disposal', { skip: !root }, async t => {
@@ -233,24 +228,32 @@ test('official Host runs chat repair, scoped maintenance tools and plugin dispos
     assert.deepEqual(session.snapshotEvents().slice(beforeCommand.length).map(event => event.type), ['command/run', 'command/done'])
     const workspace = store.playWorkspaceStore
     const binding = workspace.get()
-    const rollbackRequest = { nodeId: repaired.nodes[0].id, expectedRevision: workspace.readFile(rows[1].path).revision,
-      expectedWorkspaceScope: JSON.stringify([binding.workspaceId, binding.rootPath]) }
-    const rollback = createRollbackService(workspace, workspace.host)
-    const operation = createContractOperation({ operation: 'playthrough.rollback', meta: { playthroughId: rows[1].id } })
+    const row = rows[1], nodeId = repaired.nodes[0].id
+    const expectedWorkspaceScope = JSON.stringify([binding.workspaceId, binding.rootPath])
+    const client = atomicPlayClient(workspace, workspace.host)
+    const fork = t.mock.method(workspace.host, 'forkSession')
     workspace.beforeRename = () => { throw new Error('interrupted before head write') }
-    await assert.rejects(rollback.run(rows[1].id, rollbackRequest, operation), /interrupted before head write/)
+    await assert.rejects(rollbackAtNode(client, row, nodeId), /interrupted before head write/)
     workspace.beforeRename = null
+    const checkpoint = await client.getCheckpoint(row, expectedWorkspaceScope)
+    assert.equal(checkpoint.released, false)
+    const receipt = await client.getSessionReceipt(checkpoint.data.nativeKey, expectedWorkspaceScope)
+    assert.equal(receipt.state, 'done')
+    const childId = receipt.result.sessionId
+    assert.notEqual(childId, created.sessionId)
+    assert.notEqual(JSON.parse(workspace.readFile(row.path).content).head?.sessionId, childId)
     const previewPending = await ctx.commands.execute(repairAgent, '/tavern-repair preview', [], new AbortController().signal)
-    assert.match(previewPending.result.text, /回退未完成/)
-    const recovered = await executeRepair(rows[1].id)
+    assert.match(previewPending.result.text, /可修复 1 个/)
+    assert.notEqual(JSON.parse(workspace.readFile(row.path).content).head?.sessionId, childId)
+    const recovered = await executeRepair(row.id)
     assert.match(recovered.result.text, /已核实并恢复回退位置/)
     assert.match(recovered.result.text, /备份/)
-    const rolled = await rollback.run(rows[1].id, rollbackRequest, operation)
-    assert.notEqual(rolled.sessionId, created.sessionId)
+    assert.equal(JSON.parse(workspace.readFile(row.path).content).head.sessionId, childId)
+    const rolled = await rollbackAtNode(client, row, nodeId)
+    assert.equal(rolled.sessionId, childId)
     assert.equal(rolled.timeline.head.sessionId, rolled.sessionId)
-    assert.equal((await rollback.run(rows[1].id, rollbackRequest, operation)).sessionId, rolled.sessionId)
-    await verifyGenerationAndFork({ t, ctx, load, workspace, row: rows[1], nodeId: repaired.nodes[0].id,
-      expectedWorkspaceScope: rollbackRequest.expectedWorkspaceScope })
+    assert.equal(fork.mock.callCount(), 1)
+    await verifyGenerationAndFork({ t, ctx, load, workspace, row, nodeId, expectedWorkspaceScope })
     await handle.dispose()
     assert.equal(ctx.commands.list(agent).some(item => item.name === 'tavern-repair'), false)
   } finally {
