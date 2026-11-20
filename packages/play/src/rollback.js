@@ -52,7 +52,7 @@ function checkChild(child, record) {
 // operation logs, lost responses and restarts. DSH assigns the fork ID, so a
 // crash inside that call must never cause an automatic second fork.
 export function createRollbackService(store, host, { waitMs = 30_000 } = {}) {
-  const active = new Set()
+  const active = new Map()
   function dismiss(id, operationId) {
     const path = recordPath(store, id)
     const record = readRollback(store, id)
@@ -116,6 +116,13 @@ export function createRollbackService(store, host, { waitMs = 30_000 } = {}) {
         if (deadline.aborted) throw pendingError('Rollback timed out. Open Repair playthrough to check its checkpoint.')
         if (!lease()) throw conflict()
       }
+      // Read-only work may be abandoned on timeout. Native mutations keep
+      // ownership until their outcome is known, even after the response expires.
+      let mutatingHost = false
+      const mutateHost = async action => {
+        mutatingHost = true
+        try { return await action() } finally { mutatingHost = false }
+      }
       const run = async () => {
         ensureCurrent()
         await validateTimelineCoordinates(timeline, sessionId => host.coordinates(sessionId))
@@ -128,12 +135,12 @@ export function createRollbackService(store, host, { waitMs = 30_000 } = {}) {
           operation.checkpoint('playthrough.rollback.intent', { playthroughId: id, sessionId: record.source })
           let created
           try {
-            created = await host.forkSession({ sessionId: record.source, atSeq: record.end, sessionFormatVersion: record.version }, {
+            created = await mutateHost(() => host.forkSession({ sessionId: record.source, atSeq: record.end, sessionFormatVersion: record.version }, {
               operation: { checkpoint(event, meta) {
                 if (event === 'session.created') save({ stage: 'created', child: requireSessionId(meta.sessionId) })
                 operation.checkpoint(event, meta)
               } },
-            })
+            }))
           } catch (error) {
             if (error.rollbackForkNotAttempted && !record.child) save({ stage: 'dismissed' })
             throw error
@@ -147,13 +154,13 @@ export function createRollbackService(store, host, { waitMs = 30_000 } = {}) {
         ensureCurrent()
         operation.checkpoint('playthrough.rollback.child-verified')
         if (record.stage !== 'ready') {
-          await copyBranchContext(host, record.source, record.child, record.end, {
+          await mutateHost(() => copyBranchContext(host, record.source, record.child, record.end, {
             checkpoint(event, meta) {
               save({ stage: event === 'session.selection.copied' ? 'selection-copied' : 'ready' })
               operation.checkpoint(event, meta)
               ensureCurrent()
             },
-          }, { selectionCopied: record.stage === 'selection-copied' })
+          }, { selectionCopied: record.stage === 'selection-copied' }))
           if (record.stage !== 'ready') save({ stage: 'ready' })
         }
         ensureCurrent()
@@ -173,12 +180,18 @@ export function createRollbackService(store, host, { waitMs = 30_000 } = {}) {
         save({ stage: 'done' })
         return { ok: true, sessionId: record.child, timeline: next }
       }
-      active.add(path)
-      const task = run().finally(() => active.delete(path))
+      const release = () => {
+        if (active.get(path) === reservation) active.delete(path)
+      }
+      active.set(path, reservation)
+      const task = run().finally(release)
       // If the native call stalls, release unrelated writes and surface a pending
       // result. Late completion records its child but cannot publish a stale head.
-      const timeout = new Promise((_, reject) => deadline.addEventListener('abort', () => reject(
-        pendingError('Rollback timed out. Open Repair playthrough to check its checkpoint.')), { once: true }))
+      const timeout = new Promise((_, reject) => deadline.addEventListener('abort', () => {
+        if (!mutatingHost) release()
+        reject(record ? pendingError('Rollback timed out. Open Repair playthrough to check its checkpoint.')
+          : httpError(504, 'Checking session history timed out before branch creation. Retry the rollback.', 'PLAY_ROLLBACK_PREFLIGHT_TIMEOUT'))
+      }, { once: true }))
       try {
         return await Promise.race([task, timeout])
       } catch (error) {
@@ -189,5 +202,9 @@ export function createRollbackService(store, host, { waitMs = 30_000 } = {}) {
       }
     })
   }
-  return { run: rollback, dismiss, isActive: id => active.has(recordPath(store, id)) }
+  function hasPending(id) {
+    const record = readRollback(store, id)
+    return Boolean(record && !['dismissed', 'done'].includes(record.stage))
+  }
+  return { run: rollback, dismiss, hasPending, isActive: id => active.has(recordPath(store, id)) }
 }

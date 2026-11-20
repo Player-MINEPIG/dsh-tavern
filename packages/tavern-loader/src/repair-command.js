@@ -2,9 +2,13 @@ import { isSafeCatalogSegment } from '../../play/src/timeline.js'
 import { repairPlaythroughs, repairWorkspaceBinding } from './playthrough-repair.js'
 
 export const REPAIR_TOOL = 'tavern_repair_playthroughs'
-const hint = '[preview] [v3-v4 <周目ID>] | assist <周目ID> | dismiss-rollback <周目ID> <操作ID>'
+const hint = '[preview] [v3-v4 <周目ID>] | assist <周目ID> | dismiss-rollback/dismiss-fork/dismiss-generation/dismiss-detach <周目ID> <操作标识>'
 const usage = '/tavern-repair ' + hint
 const reasons = {
+  'detach-pending': '根会话解绑尚未完成，请核对目录与时间线后继续修复',
+  'fork-creation-pending': '分支周目尚未登记完成，请核对原生子会话和操作记录',
+  'draft-creation-pending': '新周目草稿尚未登记完成，请核对草稿与目录',
+  'generation-pending': '重新生成或重试尚未登记，需核对原生会话、请求和活动回复',
   'rollback-pending': '回退未完成。已确认子会话且原时间线未变时，可在原楼层重试回退；结果未知时请核对操作记录和原生会话',
   'unknown-coordinate-origin': '坐标缺少版本。确认该周目的坐标仅来自 V3/V4 后，可执行 /tavern-repair v3-v4 <周目ID>',
   'possible-v3-offset': '事件编号可能已移动，需核对原问答或旧日志',
@@ -38,6 +42,13 @@ function formatReport(result) {
   for (const item of result.items) {
     const details = []
     if (item.changes.some(change => change.kind === 'rollback-recovered')) details.push('已核实并恢复回退位置')
+    const recoveries = {
+      'detach-recovered': '根会话解绑', 'generation-recovered': '重新生成或重试的回复',
+      'fork-creation-recovered': '新分支周目登记', 'draft-creation-recovered': '新周目草稿登记',
+    }
+    for (const change of item.changes) {
+      if (recoveries[change.kind]) details.push((result.applied ? '已完成' : '可恢复') + recoveries[change.kind])
+    }
     const stamps = item.changes.filter(change => change.kind === 'format-marker').length
     if (stamps) details.push(`补齐 ${stamps} 个版本标记`)
     const turns = item.changes.find(change => change.kind === 'reconcile-turns')
@@ -45,13 +56,14 @@ function formatReport(result) {
     if (turns?.extended) details.push('将续写接回原楼层')
     if (turns?.removed) details.push('移除误记为回复的取消楼层')
     for (const problem of item.remaining) {
-      const target = [problem.sessionId, problem.nodeId, problem.variantId, problem.characterId, problem.stage, problem.operationId, problem.code].filter(Boolean).join(' / ')
+      const target = [problem.sessionId, problem.nodeId, problem.variantId, problem.characterId, problem.stage, problem.operationId, problem.operationKey, problem.code].filter(Boolean).join(' / ')
       const explanation = reasons[problem.reason] ?? problem.reason
       details.push(target ? target + ' · ' + explanation : explanation)
     }
-    if (item.backup) details.push(`备份 ${item.backup}`)
+    for (const path of new Set([item.backup, ...(item.backups ?? [])].filter(Boolean))) details.push(`备份 ${path}`)
     lines.push(`${item.id} · ${details.join('；')}`)
   }
+  for (const path of result.backups ?? []) lines.push(`备份 ${path}`)
   return lines.join('\n')
 }
 
@@ -65,7 +77,7 @@ async function assistRepair(dependencies, { agent, signal, id }) {
     const report = await repairPlaythroughs(dependencies, { agent, signal, id })
     text = formatReport(report)
     issues = report.items.flatMap(item => item.remaining)
-    if (!issues.length || issues.some(issue => protectedReasons.has(issue.reason) || issue.code === 'PLAY_ROLLBACK_BUSY')) return { kind: 'success', text }
+    if (!issues.length || issues.some(issue => protectedReasons.has(issue.reason) || ['PLAY_ROLLBACK_BUSY', 'PLAY_GENERATION_BUSY', 'PLAY_CREATION_BUSY'].includes(issue.code))) return { kind: 'success', text }
   } catch (error) {
     signal?.throwIfAborted()
     text = `周目 ${id} 的程序化检查失败。${error.message}`
@@ -97,10 +109,14 @@ export function installRepairCommand(ctx, dependencies, { enableTool, blocksWrit
       input: { hint },
       async handler({ agent, rawInput, signal }) {
         const args = String(rawInput ?? '').trim().split(/\s+/).filter(Boolean)
-        if (args.length === 3 && args[0] === 'dismiss-rollback' && isSafeCatalogSegment(args[1])) {
-          repairWorkspaceBinding(dependencies.store, agent)
-          dependencies.dismissRollback(args[1], args[2])
-          return { kind: 'success', text: '已结束这次待处理回退，子会话和时间线均已保留。' }
+        const dismiss = new Map([
+          ['dismiss-rollback', dependencies.dismissRollback], ['dismiss-generation', dependencies.dismissGeneration],
+          ['dismiss-fork', dependencies.dismissFork], ['dismiss-detach', dependencies.dismissDetach],
+        ]).get(args[0])
+        if (args.length === 3 && dismiss && isSafeCatalogSegment(args[1])) {
+          const binding = repairWorkspaceBinding(dependencies.store, agent)
+          await dismiss(args[1], args[2], JSON.stringify([binding.workspaceId, binding.rootPath]))
+          return { kind: 'success', text: '已结束指定的待处理操作，原生会话和已有文件均已保留。' }
         }
         if (args.length === 2 && args[0] === 'assist' && isSafeCatalogSegment(args[1])) {
           return assistRepair(dependencies, { agent, signal, id: args[1] })

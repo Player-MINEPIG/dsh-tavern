@@ -34,6 +34,8 @@ The Host adapter also recognizes the official `session/workspace-attach-failed` 
 | `session.import-context.bound` / `session.import-context.unbound` | Binding / unbinding call returned successfully |
 | `session.import-lineage.copied` | Lineage copy call returned successfully; a source lineage need not exist |
 | `workspace.bound` / `workspace.directory.created` / `workspace.file.written` | Respective call returned successfully; the entire frontend workflow need not be complete |
+| `playthrough.generation.intent` / `playthrough.generation.send-intent` | Recorded the source reply / native request identity before submission. Recovery verifies the native turn using this identity. |
+| `playthrough.fork.intent` / `playthrough.fork.child-verified` / `playthrough.fork.published` | Recorded the target, verified the inherited QA, and read back the new playthrough registration. |
 | `playthrough.rollback.child-verified` / `playthrough.rollback.head-verified` | Verified the child’s inherited QA endpoints / read back the saved child, node and variant from the timeline. |
 | `playthrough.rollback.intent` | Saved the target and starting revision before asking DSH to fork. The Host also keeps a private recovery record when operation logging is off. |
 | `playthrough.timeline.updated` / `playthrough.catalog.updated` | File write returned successfully; another file or selection operation may still fail |
@@ -42,7 +44,7 @@ The Host adapter also recognizes the official `session/workspace-attach-failed` 
 
 Each mutation has at most one terminal; process termination or storage faults can leave incomplete evidence. Completion does not guarantee browser receipt or asynchronous generation completion. Disconnecting does not automatically cancel business work; reread state before retrying. A missing terminal is not failure and does not authorize automatic replay.
 
-`route` is a fixed template such as `/sessions/:id/branch`, never a query string or actual URL. Operation names remain workspace.bind, workspace.dir.create, workspace.file.write, session.create, session.branch, playthrough.rollback, session.user-message, session.import-context.bind, session.import-context.unbind, playthrough.session.detach and playthrough.character.relink. Coverage does not include all v1/v3 APIs. Checkpoints update sessionId/playthroughId on subsequent records; after a branch creation checkpoint, sessionId refers to the child. Use operationId for the full chain: a sessionId filter can omit the start record.
+`route` is a fixed template such as `/sessions/:id/branch`, never a query string or actual URL. Operation names remain workspace.bind, workspace.dir.create, workspace.file.write, session.create, session.branch, playthrough.rollback, playthrough.fork, playthrough.generation, session.user-message, session.import-context.bind, session.import-context.unbind, playthrough.session.detach and playthrough.character.relink. Coverage does not include all v1/v3 APIs. Checkpoints update sessionId/playthroughId on subsequent records; after a branch creation checkpoint, sessionId refers to the child. Use operationId for the full chain: a sessionId filter can omit the start record.
 
 Plugin lifecycle uses the same semantics: plugin.start emits started → completed (ready); normal plugin.stop emits completed (disposed). Abnormal exit does not fabricate a stop. RP / Trace only report failures caught at existing business sites; no additional DSH agent-lifecycle or model-execution log listener is installed.
 

@@ -34,6 +34,8 @@ Host 适配器也识别官方 `session/workspace-attach-failed` 错误：DSH 可
 | `session.import-context.bound` / `session.import-context.unbound` | 绑定／解绑调用已成功返回 |
 | `session.import-lineage.copied` | lineage 复制调用已成功返回；不保证存在可复制的 lineage |
 | `workspace.bound` / `workspace.directory.created` / `workspace.file.written` | 对应绑定、目录创建、文件写入调用已成功返回；不表示整个前端工作流完成 |
+| `playthrough.generation.intent` / `playthrough.generation.send-intent` | 已持久记录源回复／即将提交的原生提问标识。修复会按该标识核实原生回合。 |
+| `playthrough.fork.intent` / `playthrough.fork.child-verified` / `playthrough.fork.published` | 已记录分支目标、核实子会话继承的问答、读回新周目登记。 |
 | `playthrough.rollback.child-verified` / `playthrough.rollback.head-verified` | 已核实子会话继承的问答端点／已从时间线读回并核实子会话、楼层和变体。 |
 | `playthrough.rollback.intent` | 已在调用 DSH 前保存目标与起始时间线版本。关闭操作日志后，后端仍保存独立的恢复记录。 |
 | `playthrough.timeline.updated` / `playthrough.catalog.updated` | 对应文件写入已成功返回；另一文件或选择操作仍可能失败 |
@@ -42,7 +44,7 @@ Host 适配器也识别官方 `session/workspace-attach-failed` 错误：DSH 可
 
 每次变更请求最多一个终态；进程中止、存储故障会让记录不完整。`operation.completed` 不保证浏览器已收到响应，也不保证异步生成已完成。客户端断开不自动取消业务；回读状态再决定是否重试。没有终态不等于失败，也不能自动重放。
 
-`route` 只写固定模板，如 `/sessions/:id/branch`，不含查询串或实际 URL。operation 名保持：`workspace.bind`、`workspace.dir.create`、`workspace.file.write`、`session.create`、`session.branch`、`playthrough.rollback`、`session.user-message`、`session.import-context.bind`、`session.import-context.unbind`、`playthrough.session.detach`、`playthrough.character.relink`。不承诺覆盖所有 v1/v3 API。检查点更新后续记录的 sessionId/playthroughId；分支的 sessionId 在创建检查点后指向子会话。查完整链条用 operationId，不能只靠 sessionId 筛选得到开始记录。
+`route` 只写固定模板，如 `/sessions/:id/branch`，不含查询串或实际 URL。operation 名保持：`workspace.bind`、`workspace.dir.create`、`workspace.file.write`、`session.create`、`session.branch`、`playthrough.rollback`、`playthrough.fork`、`playthrough.generation`、`session.user-message`、`session.import-context.bind`、`session.import-context.unbind`、`playthrough.session.detach`、`playthrough.character.relink`。不承诺覆盖所有 v1/v3 API。检查点更新后续记录的 sessionId/playthroughId；分支的 sessionId 在创建检查点后指向子会话。查完整链条用 operationId，不能只靠 sessionId 筛选得到开始记录。
 
 插件启动和正常停止也使用同一事件语义：`plugin.start` 为 started → completed (`ready`)，`plugin.stop` 为 completed (`disposed`)；异常退出不伪造停止记录。RP／Trace 只保留既有业务处理处捕获的失败，不新增 DSH agent 生命周期或模型执行日志监听。
 

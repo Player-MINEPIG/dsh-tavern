@@ -120,7 +120,7 @@ function turnReconciler(client) {
 
 export async function loadChatState(client, sessionId, playthrough) {
   let pending = pendingSwipeForSession(client, sessionId)
-  if (pending?.error) {
+  if (pending?.error || pending?.restored) {
     await recoverCompletedSwipe(client, pending)
     pending = pendingSwipeForSession(client, sessionId)
   }

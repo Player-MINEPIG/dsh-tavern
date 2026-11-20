@@ -1,3 +1,7 @@
+import { Readable } from 'node:stream'
+import { createPlayApiHandler } from '../packages/play/src/server.js'
+import { createLivePlayClient } from '../packages/client/src/play/live.js'
+import { loadCurrentPlaythrough } from '../packages/client/src/play/chat-model.js'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -273,4 +277,38 @@ test('reopened service observes the admitted RPC in the durable inbox before use
     f.append([{type:'turn/end',data:{turn:2,reason:{kind:'aborted'}}}])
     assert.equal((await status()).state,'uncertain')
   } finally {admission.resolve();await f.settle()}
+})
+
+test('two live clients and a remounted Host preserve a pending reply across concurrent writes and refresh', async t => {
+  const f = await fixture(t, { later: true })
+  const connect = store => {
+    const api = createPlayApiHandler({ workspaceStore: store, host: f.host, chromeStore: {} })
+    return () => createLivePlayClient({ fetchImpl: async (url, options) => {
+      const req = Readable.from(options.body ? [Buffer.from(options.body)] : [])
+      Object.assign(req, { url, method: options.method })
+      const res = { setHeader() {}, end(body) { this.body = body } }
+      await api(req, res)
+      return new Response(res.body, { status: res.statusCode })
+    } })
+  }
+  const tab = connect(f.store)
+  const first = tab()
+  const opened = await first.generation(f.row, { ...f.request, variantId: 'target-v' })
+  assert.equal(opened.sessionId, 'new')
+  await f.settle()
+  const afterRestart = connect(new PlayWorkspaceStore(f.storage))
+  const second = afterRestart()
+  await assert.rejects(second.rollbackPlaythrough(f.row, 'first', 'first-v'), { code: 'PLAY_GENERATION_PENDING' })
+  await assert.rejects(second.updateTimeline(f.row, timeline => ({
+    ...timeline, head: { sessionId: 'old', nodeId: 'first', variantId: 'first-v' },
+  })), { code: 'PLAY_GENERATION_PENDING' })
+  await second.updateTimeline(f.row, timeline => ({
+    ...timeline, nodes: timeline.nodes.map(node => ({ ...node, displayOverride: 'display edit' })),
+  }))
+  f.append(turn('prompt', { rpcId: f.rpc(), turn: 3 }))
+  const reopened = await loadCurrentPlaythrough(afterRestart(), { id: 'new', cwd: f.store.get().rootPath })
+  assert.equal(reopened.playthrough.id, f.row.id)
+  assert.equal(reopened.timeline.head.sessionId, 'new')
+  assert.equal(reopened.timeline.nodes.at(-1).displayOverride, 'display edit')
+  assert.deepEqual(f.counts(), [1, 1])
 })

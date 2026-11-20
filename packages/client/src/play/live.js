@@ -84,10 +84,10 @@ export function createLivePlayClient({
     return v1('GET', `/character-selection${query}`)
   }
 
-  async function getJsonFile(path, normalize, label) {
+  async function getJsonFile(path, normalize, label, options) {
     let response
     try {
-      response = await v2('GET', `/workspace/files${pathQuery(path)}`)
+      response = await v2('GET', `/workspace/files${pathQuery(path)}`, undefined, options)
     } catch (error) {
       if (error?.status === 404 && error?.code === 'PLAY_PATH_NOT_FOUND') {
         managedRevisions.set(path, null)
@@ -149,6 +149,28 @@ export function createLivePlayClient({
     }
   }
 
+  // Bound each HTTP step independently. A queued model turn may take much
+  // longer than a request; generation polls its durable status between steps.
+  function operationOptions(options = {}) {
+    const deadline = AbortSignal.timeout(35_000)
+    return { ...options, signal: options.signal ? AbortSignal.any([options.signal, deadline]) : deadline }
+  }
+
+  async function workspaceScope(options) {
+    const workspace = normalizeWorkspace(await v2('GET', '/workspace', undefined, options))
+    return JSON.stringify([workspace.workspaceId, workspace.rootPath])
+  }
+
+  async function submitPlaythroughOperation(playthrough, name, body, timeline, callerOptions) {
+    const options = operationOptions(callerOptions)
+    const expectedWorkspaceScope = body.expectedWorkspaceScope ?? await workspaceScope(options)
+    const snapshot = timeline ?? await getJsonFile(timelinePath(playthrough), normalizeTimeline, 'timeline', options)
+    options?.signal?.throwIfAborted()
+    return v2('POST', `/playthroughs/${encodeURIComponent(playthrough.id)}/${name}`, {
+      ...body, expectedWorkspaceScope, expectedRevision: snapshotRevisions.get(snapshot),
+    }, options)
+  }
+
   return {
     mode: 'live',
     apiRoot,
@@ -169,8 +191,8 @@ export function createLivePlayClient({
       return normalizeChrome(await v2('PUT', '/chrome', { mode }))
     },
 
-    async getWorkspace() {
-      return normalizeWorkspace(await v2('GET', '/workspace'))
+    async getWorkspace(options) {
+      return normalizeWorkspace(await v2('GET', '/workspace', undefined, operationOptions(options)))
     },
 
     async putWorkspace(path) {
@@ -185,8 +207,8 @@ export function createLivePlayClient({
       return v2('GET', `/workspace/files?list=${encodeURIComponent(prefix)}`)
     },
 
-    async getFile(path) {
-      const response = await v2('GET', `/workspace/files${pathQuery(path)}`)
+    async getFile(path, options) {
+      const response = await v2('GET', `/workspace/files${pathQuery(path)}`, undefined, options)
       return {
         path: response.path,
         content: fileContent(response, path),
@@ -236,18 +258,30 @@ export function createLivePlayClient({
       })
     },
 
-    getTimeline(playthrough) {
+    getTimeline(playthrough, options) {
       const path = timelinePath(playthrough)
-      return getJsonFile(path, normalizeTimeline, 'timeline')
+      return getJsonFile(path, normalizeTimeline, 'timeline', operationOptions(options))
     },
 
-    async rollbackPlaythrough(playthrough, nodeId, variantId) {
-      const workspace = await this.getWorkspace()
-      const timeline = await this.getTimeline(playthrough)
-      return v2('POST', `/playthroughs/${encodeURIComponent(playthrough.id)}/rollback`, {
-        nodeId, variantId, expectedRevision: snapshotRevisions.get(timeline),
-        expectedWorkspaceScope: JSON.stringify([workspace.workspaceId, workspace.rootPath]),
-      })
+    rollbackPlaythrough(playthrough, nodeId, variantId) {
+      return submitPlaythroughOperation(playthrough, 'rollback', { nodeId, variantId })
+    },
+
+    forkPlaythrough(playthrough, body, options) {
+      return submitPlaythroughOperation(playthrough, 'fork', body, undefined, options)
+    },
+
+    async generation(playthrough, body, timeline) {
+      if (body.action === 'start') return submitPlaythroughOperation(playthrough, 'generation', body, timeline)
+      const options = operationOptions()
+      const expectedWorkspaceScope = body.expectedWorkspaceScope ?? await workspaceScope(options)
+      const path = `/playthroughs/${encodeURIComponent(playthrough.id)}/generation`
+      if (body.action === 'status') {
+        const query = new URLSearchParams({ scope: expectedWorkspaceScope })
+        if (body.operationKey) query.set('key', body.operationKey)
+        return v2('GET', path + '?' + query, undefined, options)
+      }
+      return v2('POST', path, { ...body, expectedWorkspaceScope }, options)
     },
 
     putTimeline(playthrough, timeline) {
@@ -306,7 +340,11 @@ export function createLivePlayClient({
     postUserMessage(sessionId, text, options) {
       return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text, ...(options?.requestId ? { requestId: options.requestId } : {}) }, options)
     },
-    postDraft(body) { return v2('POST', '/drafts', body) },
+    async postDraft(body, options) {
+      const expectedWorkspaceScope = body.expectedWorkspaceScope ?? await workspaceScope(options)
+      options?.signal?.throwIfAborted()
+      return v2('POST', '/drafts', { ...body, expectedWorkspaceScope }, options)
+    },
     getDraft(id, options) { return v2('GET', `/drafts/${encodeURIComponent(id)}`, undefined, options) },
     putDraft(id, patch) { return v2('PUT', `/drafts/${encodeURIComponent(id)}`, patch) },
     materializeDraft(id, body, options) { return v2('POST', `/drafts/${encodeURIComponent(id)}/materialize`, body, options) },

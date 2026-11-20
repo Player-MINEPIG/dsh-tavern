@@ -12,7 +12,7 @@ import { stoppedRequestFromEvents } from '../../play/src/stopped-request.js'
 import { timelineHead } from '../../play/src/timeline-tree.js'
 import { parseCatalogJson, validatePlayDocument } from '../../play/src/timeline.js'
 
-function backupTimeline(root, path, file) {
+function backupFile(root, path, file) {
   const relative = path + '.pre-repair-' + file.revision
   const target = resolvePlayPath(root, relative)
   const bytes = readFileSync(resolvePlayPath(root, path, { mustExist: true }))
@@ -90,7 +90,7 @@ async function reconcileHead(timeline, cut, host, deriveMessages, result) {
 
 // Inspect durable references directly so a locked timeline can be repaired.
 // Use the same message projection and reconciliation as opening a playthrough.
-async function repairRow(row, { store, host, isDraftProtected, getCharacter, deriveMessages, resumeRollback, isRollbackActive }, options) {
+async function repairRow(row, { store, host, isDraftProtected, getCharacter, deriveMessages, resumeRollback, isRollbackActive, recoverOperations = [] }, options) {
   const { signal, apply, v3v4, scope, binding, checkCatalog, owners } = options
   const result = { id: row.id, changes: [], remaining: [] }
   const issue = (reason, details = {}) => result.remaining.push({ reason, ...details })
@@ -125,11 +125,24 @@ async function repairRow(row, { store, host, isDraftProtected, getCharacter, der
         current => {
           checkCatalog()
           if (isDraftProtected(row)) throw new Error('Protected draft')
-          result.backup = backupTimeline(binding.rootPath, row.path, current)
+          result.backup = backupFile(binding.rootPath, row.path, current)
         })
       result.changes.push({ kind: 'rollback-recovered', sessionId: rollback.child })
     } catch (error) { issue('rollback-pending', { ...details, code: error.code ?? 'repair-unavailable' }) }
     return result
+  }
+  for (const recover of recoverOperations) {
+    const report = await recover(row, { apply, signal, beforeWrite(current, path = row.path) {
+      checkCatalog()
+      if (isDraftProtected(row)) throw new Error('Protected draft')
+      if (path === 'catalog.json') options.catalogWrite()
+      if (current) (result.backups ??= []).push(backupFile(binding.rootPath, path, current))
+    } })
+    if (report) {
+      result.changes.push(...report.changes)
+      result.remaining.push(...report.remaining)
+      return result
+    }
   }
   const lease = store.captureReadLease([row.path])
   let timeline = JSON.parse(file.content)
@@ -200,7 +213,7 @@ async function repairRow(row, { store, host, isDraftProtected, getCharacter, der
   if (apply && result.changes.length) {
     const content = JSON.stringify(timeline, null, 2) + '\n'
     validatePlayDocument(row.path, content)
-    result.backup = backupTimeline(binding.rootPath, row.path, file)
+    result.backup = backupFile(binding.rootPath, row.path, file)
     store.writeFile(row.path, content, { validate: validatePlayDocument, expectedRevision: file.revision,
       expectedRevisionPresent: true, expectedWorkspaceScope: scope })
   }
@@ -220,35 +233,68 @@ export async function repairPlaythroughs(dependencies, { agent, signal, apply = 
   const { store } = dependencies
   const binding = repairWorkspaceBinding(store, agent)
   const scope = JSON.stringify([binding.workspaceId, binding.rootPath])
-  let file
-  try { file = store.readFile('catalog.json') } catch (error) {
-    if (!id && error.code === 'PLAY_PATH_NOT_FOUND') return { applied: apply, checked: 0, items: [] }
+  const checkScope = () => {
+    signal?.throwIfAborted()
+    const current = store.get()
+    if (current.workspaceId !== binding.workspaceId || current.rootPath !== binding.rootPath) {
+      throw Object.assign(new Error('工作区已变更，请重新执行。'), { code: 'PLAY_WORKSPACE_CHANGED' })
+    }
+  }
+  checkScope()
+  const draftBackups = new Set()
+  const items = await dependencies.repairDraftCreations?.({ id, apply, signal, beforeWrite(current, path) {
+    checkScope()
+    if (current) draftBackups.add(backupFile(binding.rootPath, path, current))
+  } }) ?? []
+  checkScope()
+  const reportedDrafts = new Set(items.map(item => item.id))
+  const finish = () => ({
+    applied: apply, checked: items.length, items: items.filter(item => item.changes.length || item.remaining.length),
+    ...(draftBackups.size ? { backups: [...draftBackups] } : {}),
+  })
+  const catalogSnapshot = () => {
+    const file = store.readFile('catalog.json')
+    const rows = parseCatalogJson(file.content).playthroughs
+    const lease = store.captureReadLease(['catalog.json'])
+    const owners = new Map()
+    for (const row of rows) {
+      try {
+        const path = realpathSync.native(resolvePlayPath(binding.rootPath, row.path, { mustExist: true }))
+        owners.set(path, 1 + (owners.get(path) ?? 0))
+      } catch { /* The per-row read reports missing and invalid paths. */ }
+    }
+    return { rows, owners, checkCatalog() {
+      checkScope()
+      if (!lease() || store.readFile('catalog.json').revision !== file.revision) {
+        throw Object.assign(new Error('周目目录已变更，请重新执行。'), { code: 'PLAY_FILE_REVISION_CONFLICT' })
+      }
+    } }
+  }
+  let snapshot
+  try { snapshot = catalogSnapshot() } catch (error) {
+    if (error.code === 'PLAY_PATH_NOT_FOUND' && (!id || reportedDrafts.has(id))) return finish()
     throw error
   }
-  const { playthroughs } = parseCatalogJson(file.content)
-  const targets = id === undefined ? playthroughs : playthroughs.filter(row => row.id === id)
-  if (!targets.length && id) throw new Error('找不到指定的周目 ID。')
-  const lease = store.captureReadLease(['catalog.json'])
-  const checkCatalog = () => {
-    signal?.throwIfAborted()
-    if (!lease() || store.readFile('catalog.json').revision !== file.revision) throw Object.assign(new Error('工作区或周目目录已变更，请重新执行。'), { code: 'PLAY_FILE_REVISION_CONFLICT' })
-  }
-  const owners = new Map()
-  for (const row of playthroughs) {
-    try {
-      const path = realpathSync.native(resolvePlayPath(binding.rootPath, row.path, { mustExist: true }))
-      owners.set(path, 1 + (owners.get(path) ?? 0))
-    } catch { /* The per-row read reports missing and invalid paths. */ }
-  }
-  const items = []
+  const targets = snapshot.rows.filter(row => !reportedDrafts.has(row.id) && (!id || row.id === id))
+  if (id && !targets.length && !reportedDrafts.has(id)) throw new Error('找不到指定的周目 ID。')
   for (const row of targets) {
+    let writesCatalog = false
     try {
-      checkCatalog()
-      items.push(await repairRow(row, dependencies, { signal, apply, v3v4, scope, binding, owners, checkCatalog }))
+      snapshot.checkCatalog()
+      const current = snapshot.rows.find(item => item.id === row.id)
+      if (!current || current.path !== row.path) throw Object.assign(new Error('Playthrough changed'), { code: 'PLAY_FILE_REVISION_CONFLICT' })
+      items.push(await repairRow(current, dependencies, {
+        signal, apply, v3v4, scope, binding, owners: snapshot.owners, checkCatalog: snapshot.checkCatalog,
+        catalogWrite() { writesCatalog = true },
+      }))
     } catch (error) {
       signal?.throwIfAborted()
       items.push({ id: row.id, changes: [], remaining: [{ reason: error.code ?? 'repair-unavailable' }] })
     }
+    if (writesCatalog) {
+      checkScope()
+      snapshot = catalogSnapshot()
+    }
   }
-  return { applied: apply, checked: items.length, items: items.filter(item => item.changes.length || item.remaining.length) }
+  return finish()
 }

@@ -135,3 +135,31 @@ test('recovery retries the failed lineage copy without repeating selection or cr
   assert.deepEqual(calls, ['selection', 'lineage', 'lineage'])
   assert.equal(forks(), 1)
 })
+
+test('a stalled history check can be retried immediately and its late result cannot release the new owner', async t => {
+  const { host, store, req, operation, forks } = await fixture(t)
+  const firstRead = deferred()
+  const copying = deferred()
+  const finishCopy = deferred()
+  const coordinates = host.coordinates
+  host.coordinates = () => {
+    host.coordinates = coordinates
+    return firstRead.promise
+  }
+  host.copySelection = async () => { copying.resolve(); await finishCopy.promise }
+  const service = createRollbackService(store, host, { waitMs: 100 })
+  const run = () => service.run('run', req, operation())
+  const hold = setInterval(() => {}, 1000)
+  t.after(() => clearInterval(hold))
+  await assert.rejects(run(), { code: 'PLAY_ROLLBACK_PREFLIGHT_TIMEOUT' })
+  assert.equal(readRollback(store, 'run'), undefined)
+  assert.equal(service.isActive('run'), false)
+  const retry = run()
+  await copying.promise
+  firstRead.resolve(await coordinates())
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(service.isActive('run'), true)
+  finishCopy.resolve()
+  assert.equal((await retry).timeline.head.sessionId, 'child')
+  assert.equal(forks(), 1)
+})

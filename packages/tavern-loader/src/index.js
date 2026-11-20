@@ -6,6 +6,8 @@ import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuth
 import { createDraftPreviewContext } from './draft-preview-context.js'
 import { PlayMaintenanceService } from '../../play/src/maintenance.js'
 import { PlayCleanupService } from '../../play/src/cleanup.js'
+import { createCreationService } from '../../play/src/creation.js'
+import { createGenerationService } from '../../play/src/generation.js'
 import { createRollbackService } from '../../play/src/rollback.js'
 import { installRepairCommand } from './repair-command.js'
 import { installMaintenanceTools } from './maintenance-tools.js'
@@ -407,7 +409,10 @@ export function apply(ctx, config = {}) {
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
   const rollbackService = createRollbackService(playWorkspaceStore, playHost)
+  const creationService = createCreationService(playWorkspaceStore, playHost)
+  const generationService = createGenerationService(playWorkspaceStore, playHost)
   const playMemberships = new PlayMembershipService(playWorkspaceStore)
+  playWorkspaceStore.connectOperations({ generation: generationService, rollback: rollbackService, creation: creationService, membership: playMemberships })
   importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
     presetStore: store,
@@ -604,6 +609,17 @@ export function apply(ctx, config = {}) {
     ],
   })
   installRepairCommand(ctx, {
+    repairDraftCreations: options => playthroughDrafts.repairCreations(options),
+    recoverOperations: [
+      (row, options) => playMemberships.repairDetach(row, options),
+      (row, options) => creationService.repair(row, options),
+      (row, options) => generationService.repair(row, options),
+    ],
+    dismissDetach: (id, operationId, scope) => playMemberships.dismissDetach(id, operationId, scope),
+    dismissFork: (id, operationId, scope) => creationService.dismiss(id, operationId, scope),
+    dismissGeneration: (id, operationKey, expectedWorkspaceScope) => generationService.run(id, {
+      action: 'dismiss', operationKey, expectedWorkspaceScope,
+    }, operationContext('playthrough.generation', { playthroughId: id })),
     isRollbackActive: rollbackService.isActive,
     dismissRollback: (id, opId) => rollbackService.dismiss(id, opId),
     async resumeRollback(id, request, beforeWrite) {
@@ -887,7 +903,7 @@ export function apply(ctx, config = {}) {
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
     const playApi = createPlayApiHandler({
-      rollbackService,
+      rollbackService, creationService, generationService,
       maintenanceService: playMaintenance,
       drafts: playthroughDrafts,
       chromeStore,

@@ -2,9 +2,11 @@
 
 ## 3.3.0 — Playthrough repair
 
-- 同周目回退由后端串行提交，记录子会话与时间线写入进度。中断后可核对并继续，回退后在首个新楼层出现前切换回复也能回到正确子会话。
-- The Host protects same-playthrough rollbacks against competing writes, records partial progress and resumes verified head updates. Switching replies before the first new QA preserves the rollback child.
+- 同周目回退由后端串行提交，记录子会话与时间线写入进度。创建前的只读检查超时可直接重试，中断后可核对并继续，回退后在首个新楼层出现前切换回复也能回到正确子会话。
+- The Host protects same-playthrough rollbacks against competing writes, records partial progress and resumes verified head updates. A stalled read before fork creation can be retried immediately. Switching replies before the first new QA preserves the rollback child.
 
+- 重新生成回复和重试停止的提问会保留原生请求 ID。刷新后可接回子会话并登记已核实的回复。开场草稿、新分支周目和根会话解绑支持在写入中断后恢复。
+- Reply generation and stopped-request retries keep a durable native request identity. Reopening the playthrough can recover the child and verified reply. Draft creation, forks into new playthroughs and root detachment can resume partial publication.
 - 修复 [#28](https://github.com/Player-MINEPIG/dsh-tavern/issues/28) 涉及的楼层坐标版本问题。新记录保存版本；旧引用只在原生历史能核实时恢复，来源不明的记录会列出原因。
 - 新增 `/tavern-repair preview` 与 `/tavern-repair`。可预览或备份后修复缺失问答、未接回的续写和取消后误记的楼层。侧栏 **周目 ⋯ → 修复周目** 在 RP 工作区新开普通会话，先执行程序化修复，再将待处理项交给 Agent。
 - From 3.2.0, update Tavern and keep the enabled independent Assembler 1.2.0. New QA references store their session format. Recovery checks old references against durable DSH history and reports ambiguous coordinates.

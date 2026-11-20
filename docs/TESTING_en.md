@@ -146,6 +146,9 @@ Current DSH acceptance covers the stock Standard backend only. Legacy advanced H
 
 Run `node --test test/play-maintenance.test.mjs test/play-cleanup.test.mjs test/play-archive.test.mjs` and `node scripts/verify-play-maintenance-browser.mjs`. Temporary workspaces cover archive of multiple diagnostic failures, including corruption, missing data, and read failures, while preserving healthy runs and drafts, CAS, and workspace identity. Cleanup separately covers strict all-reference absence, surviving branches, empty references, cancellation, case aliases, shared import context, interrupted cleanup, and restore conflicts. The Chrome fixture checks real React buttons, counts, older Hosts, and response isolation after switching or unmounting.
 
+
+The Node 24 and 26 PR jobs run failure injection for rollbacks, generation, creation and root detachment. The release job installs the supported DSH version and runs `test/maintenance-tools-host.test.mjs` and `test/draft-native-controls-host.test.mjs` against a temporary workspace with an offline provider. Run `node scripts/verify-playthrough-rollback-browser.mjs` to verify in Chrome that clicking rollback opens the saved child.
+
 Set `DSH_TAVERN_PROMPT_COMPAT_ROOT` to the target official runtime and run `node --test test/maintenance-tools-host.test.mjs`. Real Cordis, tools, and Session controller check default-disabled behavior, opt-in, preview, clean, restore, remount, and disposal while native sessions remain unchanged. This uses temporary data and no real model calls.
 
 On an isolated target Web Host, check the diagnostics entry, batch archive, the archive box after refresh, and restoration. Check the same interaction and forwarding on the desktop Host separately. Browser fixtures and official-module tests alone do not establish official desktop application acceptance. Do not manufacture missing logs or execute cleanup against real user workspaces for acceptance.

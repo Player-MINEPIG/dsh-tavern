@@ -5,6 +5,7 @@ const CHECKPOINTS = new Set([
   'session.created', 'session.selection.copied', 'session.import-context.bound',
   'session.import-context.unbound', 'session.import-lineage.copied',
   'workspace.bound', 'workspace.directory.created', 'workspace.file.written',
+  'playthrough.generation.intent', 'playthrough.generation.send-intent', 'playthrough.fork.intent', 'playthrough.fork.child-verified', 'playthrough.fork.published',
   'playthrough.rollback.child-verified', 'playthrough.rollback.head-verified', 'playthrough.rollback.intent', 'playthrough.timeline.updated', 'playthrough.catalog.updated', 'playthrough.catalog.restored',
 ])
 

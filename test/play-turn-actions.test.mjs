@@ -49,7 +49,7 @@ test('right swipe adopts the next variant or generates one at the end', () => {
 test('forking a playthrough refreshes shared sidebar classification before navigation', () => {
   const source = readFileSync(new URL('../packages/client/src/play/turn-actions.js', import.meta.url), 'utf8')
   assert.match(source, /CLIENT_REFRESH_EVENT/)
-  assert.match(source, /forkPlaythrough\(playthrough, turn\.id\)[\s\S]*dispatchEvent\(new Event\(CLIENT_REFRESH_EVENT\)\)[\s\S]*openSession\(result\.sessionId, result\.playthrough\)/)
+  assert.match(source, /forkPlaythrough\(playthrough, turn\.id, turn\.variant\.id\)[\s\S]*dispatchEvent\(new Event\(CLIENT_REFRESH_EVENT\)\)[\s\S]*openSession\(result\.sessionId, result\.playthrough\)/)
 })
 
 test('a generated swipe opens its session from admission rather than completion', () => {

@@ -6896,7 +6896,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     contentTypes: standard ? policy.contentTypes : Object.fromEntries(Object.entries(types2).map(([kind, input]) => [kind, input.checked])),
     fragments: standard ? policy.fragments : JSON.parse(fragments.value)
   });
-  async function call(suffix = "", method = "GET", body2) {
+  async function call2(suffix = "", method = "GET", body2) {
     const response = await request2(`${root}${suffix}?sessionId=${encodeURIComponent(sessionId)}`, { method, signal: abort.signal, headers: { "Content-Type": "application/json" }, ...body2 ? { body: JSON.stringify(body2) } : {} });
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error ?? "History API failed");
@@ -6924,7 +6924,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     }
   }
   previewButton.onclick = () => action(previewButton, async () => {
-    const result = await call("/preview", "POST", { policy: draft(), ...embedded ? { backend } : {} });
+    const result = await call2("/preview", "POST", { policy: draft(), ...embedded ? { backend } : {} });
     if (disposed) return;
     show("preview");
     results.replaceChildren();
@@ -6970,7 +6970,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
   });
   if (saveButton) saveButton.onclick = () => action(saveButton, async () => {
     const savingGeneration = editGeneration;
-    const result = await call("", "PUT", { policy: draft(), expectedRevision: revision });
+    const result = await call2("", "PUT", { policy: draft(), expectedRevision: revision });
     if (disposed) return;
     policy = result.policy;
     revision = result.revision;
@@ -6979,7 +6979,7 @@ ${block.text}` : `\u3014${block.type}\u3015`).join("\n\n");
     onSaved();
     status.textContent = `\u5DF2\u4FDD\u5B58\u7248\u672C ${revision}\u3002\u4ECE\u4E0B\u4E00\u6B65${standard ? "\u539F\u751F" : "\u8FDB\u9636"}\u8BF7\u6C42\u751F\u6548\uFF1B\u540C\u4E00\u6B65\u91CD\u8BD5\u548C\u8FC7\u53BB\u7684\u5BA1\u8BA1\u8BB0\u5F55\u4E0D\u53D8\u3002${dirty ? " \u4ECD\u6709\u4FDD\u5B58\u671F\u95F4\u7684\u65B0\u4FEE\u6539\u5F85\u4FDD\u5B58\u3002" : ""}`;
   });
-  const ready = (value !== void 0 ? Promise.resolve({ policy: value, revision: 0 }) : sessionId ? call() : Promise.resolve({ policy: DEFAULT_HISTORY_POLICY, revision: 0 })).then((result) => {
+  const ready = (value !== void 0 ? Promise.resolve({ policy: value, revision: 0 }) : sessionId ? call2() : Promise.resolve({ policy: DEFAULT_HISTORY_POLICY, revision: 0 })).then((result) => {
     if (disposed) return;
     standard = embedded ? backend === "native" : result.capabilities?.mode === "standard";
     title.textContent = `\u6A21\u578B\u5386\u53F2\u7B5B\u9009 \xB7 ${standard ? "\u6807\u51C6\u7248" : "\u8FDB\u9636\u7248"}`;
@@ -10263,6 +10263,13 @@ var zh_CN_default = Object.freeze({
   "diagnostics.logsOperation.session.user-message": "\u53D1\u9001\u7528\u6237\u6D88\u606F",
   "diagnostics.logsOperation.session.import-context.bind": "\u7ED1\u5B9A\u5BFC\u5165\u4E0A\u4E0B\u6587",
   "diagnostics.logsOperation.session.import-context.unbind": "\u89E3\u7ED1\u5BFC\u5165\u4E0A\u4E0B\u6587",
+  "diagnostics.logsOperation.playthrough.generation": "\u91CD\u65B0\u751F\u6210\u6216\u91CD\u8BD5\u56DE\u590D",
+  "diagnostics.logsOperation.playthrough.fork": "\u5206\u652F\u4E3A\u65B0\u5468\u76EE",
+  "diagnostics.logsResult.playthrough.generation.intent": "\u5DF2\u4FDD\u5B58\u751F\u6210\u76EE\u6807",
+  "diagnostics.logsResult.playthrough.generation.send-intent": "\u5DF2\u5728\u53D1\u9001\u524D\u8BB0\u5F55\u63D0\u95EE\u8BF7\u6C42",
+  "diagnostics.logsResult.playthrough.fork.child-verified": "\u5DF2\u6838\u5B9E\u65B0\u5206\u652F\u7EE7\u627F\u7684\u95EE\u7B54",
+  "diagnostics.logsResult.playthrough.fork.published": "\u5DF2\u767B\u8BB0\u65B0\u5206\u652F\u5468\u76EE",
+  "diagnostics.logsResult.playthrough.fork.intent": "\u5DF2\u4FDD\u5B58\u5206\u652F\u76EE\u6807",
   "diagnostics.logsOperation.playthrough.rollback": "\u56DE\u9000\u5468\u76EE",
   "diagnostics.logsResult.playthrough.rollback.child-verified": "\u5DF2\u6838\u5B9E\u5B50\u4F1A\u8BDD\u7EE7\u627F\u7684\u95EE\u7B54",
   "diagnostics.logsResult.playthrough.rollback.head-verified": "\u5DF2\u8BFB\u56DE\u5E76\u6838\u5B9E\u5468\u76EE\u56DE\u9000\u4F4D\u7F6E",
@@ -11418,6 +11425,13 @@ var en_default = Object.freeze({
   "diagnostics.logsOperation.session.user-message": "Send user message",
   "diagnostics.logsOperation.session.import-context.bind": "Bind import context",
   "diagnostics.logsOperation.session.import-context.unbind": "Unbind import context",
+  "diagnostics.logsOperation.playthrough.generation": "Generate a new reply",
+  "diagnostics.logsOperation.playthrough.fork": "Fork a playthrough",
+  "diagnostics.logsResult.playthrough.generation.intent": "Generation target saved",
+  "diagnostics.logsResult.playthrough.generation.send-intent": "Prompt request identified before sending",
+  "diagnostics.logsResult.playthrough.fork.child-verified": "Forked reply verified",
+  "diagnostics.logsResult.playthrough.fork.published": "New playthrough published",
+  "diagnostics.logsResult.playthrough.fork.intent": "Fork target saved",
   "diagnostics.logsOperation.playthrough.rollback": "Roll back playthrough",
   "diagnostics.logsResult.playthrough.rollback.child-verified": "Inherited question and reply verified",
   "diagnostics.logsResult.playthrough.rollback.head-verified": "Saved rollback head verified",
@@ -18469,7 +18483,7 @@ function machine(interpreterVersion = 2) {
       }
     }
   };
-  const call = (fn, args) => {
+  const call2 = (fn, args) => {
     tick();
     if (fn?.[FUNCTION]) {
       const env = copyEnv(fn.env);
@@ -18637,7 +18651,7 @@ function machine(interpreterVersion = 2) {
           if (!value || typeof value !== "object" || capability(value)) fail("MVU_SCHEMA_CODE", "Own-property test requires data");
           return Object.hasOwn(value, safeKey(key2));
         }
-        return call(evaluate(node.callee, env), node.arguments.map((a) => evaluate(a, env)));
+        return call2(evaluate(node.callee, env), node.arguments.map((a) => evaluate(a, env)));
       }
       case "BinaryExpression": {
         const operation = binary[node.operator];
@@ -18723,7 +18737,7 @@ function machine(interpreterVersion = 2) {
     }
     fail("MVU_SCHEMA_CODE", `Unsupported statement: ${node.type}`);
   }
-  return { evaluate, statement, call, tick, declare };
+  return { evaluate, statement, call: call2, tick, declare };
 }
 function inspectAst(root, interpreterVersion = 2) {
   const allowed = /* @__PURE__ */ new Set(["Program", "ImportDeclaration", "ImportSpecifier", "ExportNamedDeclaration", "VariableDeclaration", "VariableDeclarator", "Identifier", "Literal", "ArrayExpression", "ObjectExpression", "Property", "SpreadElement", "MemberExpression", "ArrowFunctionExpression", "FunctionExpression", "AssignmentPattern", "ChainExpression", "ForOfStatement", "CallExpression", "BinaryExpression", "LogicalExpression", "ConditionalExpression", "UnaryExpression", "AssignmentExpression", "BlockStatement", "ReturnStatement", "IfStatement", "ExpressionStatement"]);
@@ -18978,8 +18992,8 @@ function htmlLoaderScript(source) {
 var literal2 = (node) => node?.type === "Literal" && typeof node.value === "string" ? node.value : null;
 function loadCall(node, name2, localBindings) {
   if (node?.type !== "ExpressionStatement") return false;
-  const call = node.expression, member = call?.callee, selector = member?.object;
-  return call.type === "CallExpression" && call.arguments.length === 1 && member.type === "MemberExpression" && !member.computed && member.property.name === "load" && selector.type === "CallExpression" && selector.callee.type === "Identifier" && ["$", "jQuery"].includes(selector.callee.name) && !localBindings.has(selector.callee.name) && selector.arguments.length === 1 && literal2(selector.arguments[0]) === "body" && call.arguments[0].type === "Identifier" && call.arguments[0].name === name2;
+  const call2 = node.expression, member = call2?.callee, selector = member?.object;
+  return call2.type === "CallExpression" && call2.arguments.length === 1 && member.type === "MemberExpression" && !member.computed && member.property.name === "load" && selector.type === "CallExpression" && selector.callee.type === "Identifier" && ["$", "jQuery"].includes(selector.callee.name) && !localBindings.has(selector.callee.name) && selector.arguments.length === 1 && literal2(selector.arguments[0]) === "body" && call2.arguments[0].type === "Identifier" && call2.arguments[0].name === name2;
 }
 function inspectHtmlLoader(source) {
   const code = htmlLoaderScript(source);
@@ -19333,9 +19347,9 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
     revokeMvuBinding(capability2, remove) {
       return revokeRemote({ grantId: capability2 }, remove);
     },
-    register({ scope, owners, runs, modules, html: html2, adapters = [], schemaDeclarations = [], downloaded, enabled, onRevoke }) {
+    register({ scope, owners, runs, modules, html: html2, adapters: adapters2 = [], schemaDeclarations = [], downloaded, enabled, onRevoke }) {
       if (downloaded !== true || enabled !== true) throw Error("Card execution requires available sources and enabled scripts");
-      const source = JSON.stringify({ version: 1, scope, owners, runs, modules, html: html2, adapters, schemaDeclarations });
+      const source = JSON.stringify({ version: 1, scope, owners, runs, modules, html: html2, adapters: adapters2, schemaDeclarations });
       const boundScope = JSON.parse(source).scope;
       const entry = { grant: null, generation: 0, onRevoke, executionId: crypto.randomUUID(), started: false };
       entries2.add(entry);
@@ -19575,7 +19589,7 @@ function createSharedSourceDownloads({ lookup, download }) {
 
 // packages/client/src/play/rendering-trust.js
 function createRenderingTrust({ candidates = MVU_ADAPTERS, budget = createRenderingCacheBudget() } = {}) {
-  const installs = /* @__PURE__ */ new Map(), records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), adapters = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
+  const installs = /* @__PURE__ */ new Map(), records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), adapters2 = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
   let revision = 0, generation = 0;
   let inactiveBytes = () => 0;
   let cacheReady = async () => {
@@ -19634,20 +19648,20 @@ function createRenderingTrust({ candidates = MVU_ADAPTERS, budget = createRender
     setAdapterIntents(value) {
       const next = value === void 0 ? [] : normalizeRenderingAdapters(value).entries;
       const pairs2 = next.map((item) => [keyFor(item.owner, item.source), item.mode]);
-      if (JSON.stringify([...adapters]) === JSON.stringify(pairs2)) return;
-      adapters.clear();
-      for (const [key2, mode] of pairs2) adapters.set(key2, mode);
+      if (JSON.stringify([...adapters2]) === JSON.stringify(pairs2)) return;
+      adapters2.clear();
+      for (const [key2, mode] of pairs2) adapters2.set(key2, mode);
       emit();
     },
     adapterIntent(owner, source) {
-      return adapters.get(keyFor(owner, source));
+      return adapters2.get(keyFor(owner, source));
     },
     builtinCandidate(source) {
       return candidates.find((item) => item.url === source) ?? null;
     },
     selection(owner) {
       const selected = (values) => [...values].filter(([key2]) => JSON.parse(key2)[0] === owner).sort((a, b2) => a[0].localeCompare(b2[0]));
-      return { enablement: selected(intentions), adapters: selected(adapters) };
+      return { enablement: selected(intentions), adapters: selected(adapters2) };
     },
     async stage(owner, source, content) {
       if (typeof owner !== "string" || owner.length > 300 || typeof source !== "string" || source.length > 2048 || typeof content !== "string" || content.length > MAX_RENDER_SOURCE) throw Error("Rendering source exceeds limit");
@@ -19687,7 +19701,7 @@ function createRenderingTrust({ candidates = MVU_ADAPTERS, budget = createRender
         if (externalUrl(item.url) !== item.url || item.depth !== void 0 && (!Number.isSafeInteger(item.depth) || item.depth < 0 || item.depth > DEPENDENCY_LIMITS.depth)) throw Error("Invalid cached dependency");
         if (item.builtin === true) {
           const adapter = candidates.find((candidate) => candidate.url === item.url);
-          if (!adapter || item.adapter !== adapter.kind || item.adapterVersion !== adapter.version || adapters.get(keyFor(owner, item.url)) === "original") throw Error("Invalid built-in adapter selection");
+          if (!adapter || item.adapter !== adapter.kind || item.adapterVersion !== adapter.version || adapters2.get(keyFor(owner, item.url)) === "original") throw Error("Invalid built-in adapter selection");
           return { owner, source: item.url, depth: item.depth, approved: true, builtin: true, adapter: adapter.kind, adapterVersion: adapter.version };
         }
         if (typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE) throw Error("Invalid cached dependency");
@@ -19763,15 +19777,15 @@ var hydrateInventory = (inventory) => {
   });
 };
 function hostDependencyStore({ request: request2 = tavernFetch, legacy: legacy2 } = {}) {
-  const call = cacheRequest(request2);
+  const call2 = cacheRequest(request2);
   let initializing;
   async function ready() {
     initializing ??= (async () => {
       if (!legacy2) return;
       const entries2 = await legacy2.list();
       if (!entries2.length) return;
-      const inventory = await call("/graphs?metadata=1"), known = new Set(inventory.graphs.map((record) => record.owner));
-      for (const { owner, ...record } of entries2) if (!known.has(owner)) await call(ownerPath(owner, "/import"), { method: "POST", body: record });
+      const inventory = await call2("/graphs?metadata=1"), known = new Set(inventory.graphs.map((record) => record.owner));
+      for (const { owner, ...record } of entries2) if (!known.has(owner)) await call2(ownerPath(owner, "/import"), { method: "POST", body: record });
     })().catch((error) => {
       initializing = null;
       throw error;
@@ -19780,7 +19794,7 @@ function hostDependencyStore({ request: request2 = tavernFetch, legacy: legacy2 
   }
   const operation = async (path3, options) => {
     await ready();
-    return call(path3, options);
+    return call2(path3, options);
   };
   const get = (owner) => operation(ownerPath(owner));
   return {
@@ -19797,15 +19811,15 @@ function hostDependencyStore({ request: request2 = tavernFetch, legacy: legacy2 
   };
 }
 function hostOpeningDataStore({ request: request2 = tavernFetch, legacy: legacy2 } = {}) {
-  const call = cacheRequest(request2);
+  const call2 = cacheRequest(request2);
   let initializing;
   async function ready() {
     initializing ??= (async () => {
       if (!legacy2) return;
-      const saved = await call("/opening");
+      const saved = await call2("/opening");
       if (saved.generation === 0) {
         const content = await legacy2.get();
-        if (content !== void 0 && content !== null) await call("/opening", { method: "PUT", body: { content, onlyMissing: true } });
+        if (content !== void 0 && content !== null) await call2("/opening", { method: "PUT", body: { content, onlyMissing: true } });
       }
     })().catch((error) => {
       initializing = null;
@@ -19816,15 +19830,15 @@ function hostOpeningDataStore({ request: request2 = tavernFetch, legacy: legacy2
   return {
     async get() {
       await ready();
-      return (await call("/opening")).content;
+      return (await call2("/opening")).content;
     },
     async put(content) {
       await ready();
-      return call("/opening", { method: "PUT", body: { content } });
+      return call2("/opening", { method: "PUT", body: { content } });
     },
     async remove() {
       await ready();
-      return call("/opening", { method: "DELETE" });
+      return call2("/opening", { method: "DELETE" });
     }
   };
 }
@@ -20151,8 +20165,8 @@ function cachedGraph(sources, graph, limits, trust, owner) {
   const legacyTruncated = graph.discovered === void 0 && /exceeds \d+ files/.test(graph.error ?? "");
   if (legacyTruncated) Object.assign(metadata, { discovered: items2.length + 1, omitted: 1, discoveryCapped: true });
   const error = metadata.omitted || metadata.discoveryCapped ? graph.error ?? "Dependency graph exceeds limits" : null;
-  const complete = !error && !metadata.omitted && !metadata.discoveryCapped && items2.every((item) => item.status === "ready");
-  return { items: items2, excluded: pending2.excluded, ...metadata, error, complete, status: complete ? "ready" : items2.some((item) => item.status === "failed") || error ? "failed" : graph.status };
+  const complete2 = !error && !metadata.omitted && !metadata.discoveryCapped && items2.every((item) => item.status === "ready");
+  return { items: items2, excluded: pending2.excluded, ...metadata, error, complete: complete2, status: complete2 ? "ready" : items2.some((item) => item.status === "failed") || error ? "failed" : graph.status };
 }
 function retainedCache(items2, active = []) {
   const activeUrls = new Set(active.filter((item) => typeof item.content === "string").map((item) => item.url)), byUrl = /* @__PURE__ */ new Map();
@@ -21731,108 +21745,6 @@ function bubbleCss(style, role2 = "assistant") {
 // packages/client/src/play/turn-actions.js
 var import_react5 = require("react");
 
-// packages/play/src/http.js
-function httpError(status, message, code) {
-  const error = new Error(message);
-  error.status = status;
-  if (code !== void 0) error.code = code;
-  return error;
-}
-
-// packages/play/src/session-coordinates.js
-function requireSnapshotVersion(version3) {
-  if (!Number.isSafeInteger(version3) || version3 < 0) {
-    throw httpError(503, "The Host did not provide the Session format version for this history snapshot. Retry when Session metadata is available.", "PLAY_COORDINATES_UNAVAILABLE");
-  }
-}
-function requireCoordinates(version3, current4) {
-  if (version3 !== void 0 && (!Number.isSafeInteger(version3) || version3 < 0)) {
-    throw httpError(400, "Invalid Session coordinate format version", "PLAY_COORDINATES_INVALID");
-  }
-  requireSnapshotVersion(current4?.sessionFormatVersion);
-  if (version3 !== void 0 && version3 !== current4.sessionFormatVersion || version3 === void 0 && (current4.migratedFromV2 || current4.sessionFormatVersion >= 4)) {
-    throw httpError(
-      409,
-      "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs. For missing markers after a V3-to-V4 upgrade, preview --auto-v3-v4. Use --stamp-only for independently verified message IDs.",
-      "PLAY_COORDINATES_MIGRATION_REQUIRED"
-    );
-  }
-}
-function variantFormatVersion(variant2) {
-  return variant2.ext?.pmpDshTavern?.sessionFormatVersion;
-}
-function withVariantFormat(variant2, version3) {
-  requireSnapshotVersion(version3);
-  return { ...variant2, ext: { ...variant2.ext, pmpDshTavern: {
-    ...variant2.ext?.pmpDshTavern,
-    sessionFormatVersion: version3
-  } } };
-}
-
-// packages/client/src/play/pending-swipe.js
-var clients = /* @__PURE__ */ new WeakMap();
-var key = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
-function notify() {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
-}
-function pendingSwipes(client) {
-  return [...clients.get(client)?.values() ?? []];
-}
-function pendingSwipe(client, playthrough) {
-  return clients.get(client)?.get(key(playthrough)) ?? null;
-}
-function pendingSwipeForSession(client, sessionId) {
-  return pendingSwipes(client).find((item) => item.sessionId === sessionId) ?? null;
-}
-function beginPendingSwipe(client, value) {
-  let entries2 = clients.get(client);
-  if (!entries2) clients.set(client, entries2 = /* @__PURE__ */ new Map());
-  const pending2 = { ...value, error: null };
-  entries2.set(key(value.playthrough), pending2);
-  notify();
-  return pending2;
-}
-function finishPendingSwipe(client, pending2, error = null) {
-  const entries2 = clients.get(client);
-  if (entries2?.get(key(pending2.playthrough)) !== pending2) return;
-  if (error === null) entries2.delete(key(pending2.playthrough));
-  else pending2.error = error instanceof Error ? error.message : String(error);
-  notify();
-}
-function pendingSwipeTimeline(timeline, entries2, sourceIndex, sessionId) {
-  const prefix = entries2.slice(0, sourceIndex);
-  const parent = prefix.at(-1);
-  return {
-    ...timeline,
-    nodes: prefix.map(({ node, variant: variant2 }) => ({ ...node, adoptedVariantId: variant2.id })),
-    head: parent ? { sessionId, nodeId: parent.node.id, variantId: parent.variant.id } : null
-  };
-}
-
-// packages/client/src/play/mutations.js
-async function updateCatalog(client, mutator, options) {
-  if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
-  const current4 = await readCatalogOrEmpty(client);
-  const next = await mutator(current4);
-  const saved = await client.putCatalog(next);
-  return saved ?? next;
-}
-async function updateTimeline(client, playthrough, mutator, options) {
-  if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
-  const current4 = options?.initial ?? await client.getTimeline(playthrough);
-  const next = await mutator(current4);
-  const saved = await client.putTimeline(playthrough, next);
-  return saved ?? next;
-}
-async function readCatalogOrEmpty(client) {
-  try {
-    return await client.getCatalog();
-  } catch (error) {
-    if (error?.code === "PLAY_PATH_NOT_FOUND" && (error?.status === void 0 || error?.status === 404)) return { playthroughs: [] };
-    throw error;
-  }
-}
-
 // packages/play/src/timeline-tree.js
 function adoptedVariant(node) {
   return node?.variants?.find((variant2) => variant2.id === node.adoptedVariantId) ?? null;
@@ -21991,6 +21903,200 @@ function activeVariantEnd(timeline, sessionId) {
   return entry?.variant?.endEventId ?? -1;
 }
 
+// packages/client/src/play/pending-swipe.js
+var clients = /* @__PURE__ */ new WeakMap();
+var key = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
+function notify() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+}
+function pendingSwipes(client) {
+  return [...clients.get(client)?.values() ?? []];
+}
+function pendingSwipe(client, playthrough) {
+  return clients.get(client)?.get(key(playthrough)) ?? null;
+}
+function pendingSwipeForSession(client, sessionId) {
+  return pendingSwipes(client).find((item) => item.sessionId === sessionId) ?? null;
+}
+function beginPendingSwipe(client, value) {
+  let entries2 = clients.get(client);
+  if (!entries2) clients.set(client, entries2 = /* @__PURE__ */ new Map());
+  const pending2 = { ...value, error: null };
+  entries2.set(key(value.playthrough), pending2);
+  notify();
+  return pending2;
+}
+function finishPendingSwipe(client, pending2, error = null) {
+  const entries2 = clients.get(client);
+  if (entries2?.get(key(pending2.playthrough)) !== pending2) return;
+  if (error === null) entries2.delete(key(pending2.playthrough));
+  else pending2.error = error instanceof Error ? error.message : String(error);
+  notify();
+}
+function pendingSwipeTimeline(timeline, entries2, sourceIndex, sessionId) {
+  const prefix = entries2.slice(0, sourceIndex);
+  const parent = prefix.at(-1);
+  return {
+    ...timeline,
+    nodes: prefix.map(({ node, variant: variant2 }) => ({ ...node, adoptedVariantId: variant2.id })),
+    head: parent ? { sessionId, nodeId: parent.node.id, variantId: parent.variant.id } : null
+  };
+}
+
+// packages/client/src/play/generation.js
+function requestKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)), (b2) => b2.toString(16).padStart(2, "0")).join("");
+}
+function project(client, playthrough, timeline, entry, expectedWorkspaceScope, restored = false) {
+  const previous = pendingSwipe(client, playthrough);
+  if (previous?.operationKey === entry.operationKey && previous.expectedWorkspaceScope === expectedWorkspaceScope) return previous;
+  return beginPendingSwipe(client, {
+    ...entry,
+    playthrough,
+    expectedWorkspaceScope,
+    restored,
+    timeline: pendingSwipeTimeline(timeline, activeTimelineEntries(timeline), entry.sourceIndex, entry.sessionId)
+  });
+}
+function call(client, pending2, action) {
+  return client.generation(pending2.playthrough, { action, operationKey: pending2.operationKey, expectedWorkspaceScope: pending2.expectedWorkspaceScope });
+}
+function statusError(status) {
+  const message = status.state === "stopped" ? "Generation stopped without a saved assistant reply." : "Generation needs verification. Open Repair playthrough. Operation " + status.pending.operationKey;
+  return Object.assign(new Error(message), { code: status.code ?? "PLAY_GENERATION_PENDING" });
+}
+async function complete(client, pending2) {
+  const result = await call(client, pending2, "finish");
+  finishPendingSwipe(client, pending2);
+  return result;
+}
+async function recoverDurableGeneration(client, pending2) {
+  const status = await call(client, pending2, "status");
+  if (status.state === "ready" || status.state === "done") return complete(client, pending2);
+  if (status.state === "stopped") {
+    try {
+      await complete(client, pending2);
+    } catch (error) {
+      if (pending2.error !== error.message) finishPendingSwipe(client, pending2, error);
+    }
+  } else if (status.state === "uncertain") {
+    const error = statusError(status);
+    if (pending2.error !== error.message) finishPendingSwipe(client, pending2, error);
+  } else if (pending2.restored) pending2.error = null;
+  return null;
+}
+async function restorePendingGeneration(client, playthrough, timeline, { sessionId, expectedWorkspaceScope } = {}) {
+  if (typeof client.generation !== "function") return null;
+  if (!expectedWorkspaceScope) {
+    const workspace = await client.getWorkspace();
+    expectedWorkspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  }
+  const status = await client.generation(playthrough, { action: "status", expectedWorkspaceScope });
+  if (!status.pending) {
+    const prior = pendingSwipe(client, playthrough);
+    if (prior?.operationKey && prior.expectedWorkspaceScope === expectedWorkspaceScope && (!sessionId || prior.sessionId === sessionId)) finishPendingSwipe(client, prior);
+    return null;
+  }
+  const entry = status.pending;
+  if (!entry.sessionId || sessionId && entry.sessionId !== sessionId) return null;
+  const pending2 = project(client, playthrough, timeline, entry, expectedWorkspaceScope, true);
+  if (status.state === "ready") return complete(client, pending2);
+  if (status.state === "stopped") {
+    try {
+      await complete(client, pending2);
+    } catch (error) {
+      finishPendingSwipe(client, pending2, error);
+    }
+  } else if (status.state === "uncertain" && !pending2.error) {
+    finishPendingSwipe(client, pending2, statusError(status));
+  }
+  return pending2;
+}
+async function runGeneration(client, playthrough, request2, { onStarted, delay, pollInterval, maxPolls }) {
+  const workspace = await client.getWorkspace();
+  const scope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  const timeline = await client.getTimeline(playthrough);
+  const started = await client.generation(playthrough, { ...request2, action: "start", operationKey: requestKey(), expectedWorkspaceScope: scope }, timeline);
+  const pending2 = project(client, playthrough, timeline, started, scope);
+  try {
+    onStarted?.({ sessionId: pending2.sessionId, nodeId: pending2.nodeId });
+    for (let idlePolls = 0; idlePolls < maxPolls; ) {
+      const status = await call(client, pending2, "status");
+      if (status.state === "ready" || status.state === "done" || status.state === "stopped") return await complete(client, pending2);
+      if (!["busy", "waiting", "running"].includes(status.state)) throw statusError(status);
+      idlePolls = status.state === "running" ? 0 : idlePolls + 1;
+      if (idlePolls < maxPolls) await delay(pollInterval);
+    }
+    throw new Error("Timed out waiting for the generation. Open Repair playthrough to check the saved request.");
+  } catch (error) {
+    finishPendingSwipe(client, pending2, error);
+    throw error;
+  }
+}
+
+// packages/play/src/http.js
+function httpError(status, message, code) {
+  const error = new Error(message);
+  error.status = status;
+  if (code !== void 0) error.code = code;
+  return error;
+}
+
+// packages/play/src/session-coordinates.js
+function requireSnapshotVersion(version3) {
+  if (!Number.isSafeInteger(version3) || version3 < 0) {
+    throw httpError(503, "The Host did not provide the Session format version for this history snapshot. Retry when Session metadata is available.", "PLAY_COORDINATES_UNAVAILABLE");
+  }
+}
+function requireCoordinates(version3, current4) {
+  if (version3 !== void 0 && (!Number.isSafeInteger(version3) || version3 < 0)) {
+    throw httpError(400, "Invalid Session coordinate format version", "PLAY_COORDINATES_INVALID");
+  }
+  requireSnapshotVersion(current4?.sessionFormatVersion);
+  if (version3 !== void 0 && version3 !== current4.sessionFormatVersion || version3 === void 0 && (current4.migratedFromV2 || current4.sessionFormatVersion >= 4)) {
+    throw httpError(
+      409,
+      "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs. For missing markers after a V3-to-V4 upgrade, preview --auto-v3-v4. Use --stamp-only for independently verified message IDs.",
+      "PLAY_COORDINATES_MIGRATION_REQUIRED"
+    );
+  }
+}
+function variantFormatVersion(variant2) {
+  return variant2.ext?.pmpDshTavern?.sessionFormatVersion;
+}
+function withVariantFormat(variant2, version3) {
+  requireSnapshotVersion(version3);
+  return { ...variant2, ext: { ...variant2.ext, pmpDshTavern: {
+    ...variant2.ext?.pmpDshTavern,
+    sessionFormatVersion: version3
+  } } };
+}
+
+// packages/client/src/play/mutations.js
+async function updateCatalog(client, mutator, options) {
+  if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
+  const current4 = await readCatalogOrEmpty(client);
+  const next = await mutator(current4);
+  const saved = await client.putCatalog(next);
+  return saved ?? next;
+}
+async function updateTimeline(client, playthrough, mutator, options) {
+  if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
+  const current4 = options?.initial ?? await client.getTimeline(playthrough);
+  const next = await mutator(current4);
+  const saved = await client.putTimeline(playthrough, next);
+  return saved ?? next;
+}
+async function readCatalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (error) {
+    if (error?.code === "PLAY_PATH_NOT_FOUND" && (error?.status === void 0 || error?.status === 404)) return { playthroughs: [] };
+    throw error;
+  }
+}
+
 // packages/client/src/play/swipe-completion.js
 var origin = (message) => message?.origin?.kind ?? (message?.role === "user" ? "user" : message?.role);
 function completedSwipePair(state, boundary) {
@@ -22027,6 +22133,7 @@ async function commitSwipeReply(client, pending2, pair, {
   return { timeline: next, sessionId: pending2.sessionId, nodeId: pending2.nodeId, variantId: next.head.variantId };
 }
 async function recoverCompletedSwipe(client, pending2) {
+  if (pending2.operationKey) return recoverDurableGeneration(client, pending2);
   if (!pending2.error || pending2.kind === "request-retry") return null;
   if (pending2.recovery) return pending2.recovery;
   const work = (async () => {
@@ -22043,1083 +22150,61 @@ async function recoverCompletedSwipe(client, pending2) {
   }
 }
 
-// packages/play/src/playthrough-state.js
-function isPlaythroughArchived(playthrough) {
-  return typeof playthrough?.ext?.pmpDshTavern?.archivedAt === "string";
-}
-function withPlaythroughArchive(playthrough, archivedAt) {
-  if (isPlaythroughArchived(playthrough) === (archivedAt !== null)) return playthrough;
-  const known = { ...playthrough.ext?.pmpDshTavern };
-  if (archivedAt === null) delete known.archivedAt;
-  else known.archivedAt = archivedAt;
-  const ext = { ...playthrough.ext };
-  if (Object.keys(known).length === 0) delete ext.pmpDshTavern;
-  else ext.pmpDshTavern = known;
-  const updated = { ...playthrough };
-  if (Object.keys(ext).length === 0) delete updated.ext;
-  else updated.ext = ext;
-  return updated;
-}
-function isArchiveTimestamp(value) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
-}
-
-// packages/client/src/play/schema.js
-var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
-var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system", "developer", "tool"]);
-var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
-function isRecord3(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function fail2(label, detail) {
-  throw new TypeError(`${label}: ${detail}`);
-}
-function stringId(value, label) {
-  if (typeof value !== "string" || value.trim() === "") fail2(label, "must be a non-empty string");
-  return value;
-}
-function eventSeq(value, label) {
-  if (!Number.isSafeInteger(value) || value < 0) fail2(label, "must be a non-negative integer");
-  return value;
-}
-function extRecord(value, label) {
-  if (value === void 0) return void 0;
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  return value;
-}
-function normalizeChrome(value, label = "chrome") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!CHROME_MODES.has(value.mode)) fail2(label, "mode must be native or play");
-  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
-    fail2(label, "revision must be a non-empty string or null");
-  }
-  return { mode: value.mode, revision: value.revision ?? null };
-}
-function normalizeWorkspace(value, label = "workspace") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (typeof value.selected !== "boolean") fail2(label, "selected must be a boolean");
-  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
-    fail2(label, "rootPath must be a string or null");
-  }
-  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
-    fail2(label, "contractVersion must be a positive integer");
-  }
-  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord3).map((item) => ({
-    code: typeof item.code === "string" ? item.code : "",
-    message: typeof item.message === "string" ? item.message : ""
-  })) : [];
-  return {
-    selected: value.selected,
-    rootPath: value.rootPath ?? null,
-    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
-    contractVersion: value.contractVersion,
-    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
-    firstSelection: value.firstSelection === true,
-    warnings
-  };
-}
-function normalizeTimelineVariant(value, label = "variant") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
-  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
-  if (startEventId > endEventId) fail2(label, "startEventId must not exceed endEventId");
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return {
-    id: stringId(value.id, `${label}.id`),
-    sessionId: stringId(value.sessionId, `${label}.sessionId`),
-    startEventId,
-    endEventId,
-    ...ext === void 0 ? {} : { ext }
-  };
-}
-function normalizeTimelineNode(value, label = "node") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (value.kind !== "qa") fail2(label, "kind must be qa");
-  if (!Array.isArray(value.variants) || value.variants.length === 0) {
-    fail2(label, "variants must be a non-empty array");
-  }
-  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
-  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
-  if (!variants.some((item) => item.id === adoptedVariantId)) fail2(label, "adoptedVariantId must match a variant");
-  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
-    fail2(label, "displayOverride must be a string or null");
-  }
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return {
-    id: stringId(value.id, `${label}.id`),
-    kind: "qa",
-    displayOverride: value.displayOverride ?? null,
-    ...Object.hasOwn(value, "parentVariantId") ? {
-      parentVariantId: value.parentVariantId === null ? null : stringId(value.parentVariantId, `${label}.parentVariantId`)
-    } : {},
-    adoptedVariantId,
-    variants,
-    ...ext === void 0 ? {} : { ext }
-  };
-}
-function normalizeTimeline(value, label = "timeline") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!Array.isArray(value.nodes)) fail2(label, "nodes must be an array");
-  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
-  const ids = /* @__PURE__ */ new Set();
-  const variantOwners = /* @__PURE__ */ new Map();
-  const tree = value.head !== void 0 || nodes.some((node) => Object.hasOwn(node, "parentVariantId"));
-  for (const node of nodes) {
-    if (ids.has(node.id)) fail2(label, `duplicate node id ${node.id}`);
-    ids.add(node.id);
-    for (const variant2 of node.variants) {
-      if (tree && variantOwners.has(variant2.id)) fail2(label, `duplicate tree variant id ${variant2.id}`);
-      variantOwners.set(variant2.id, node.id);
-    }
-  }
-  for (const [index, node] of nodes.entries()) {
-    if (!Object.hasOwn(node, "parentVariantId") || node.parentVariantId === null) continue;
-    const parentNodeId = variantOwners.get(node.parentVariantId);
-    if (parentNodeId === void 0) fail2(`${label}.nodes[${index}]`, "parentVariantId is unknown");
-    if (nodes.findIndex((item) => item.id === parentNodeId) >= index) fail2(`${label}.nodes[${index}]`, "parentVariantId must reference an earlier node");
-  }
-  let head;
-  if (value.head !== void 0) {
-    if (!isRecord3(value.head)) fail2(`${label}.head`, "must be an object");
-    head = {
-      sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
-      nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
-      variantId: stringId(value.head.variantId, `${label}.head.variantId`)
-    };
-    if (variantOwners.get(head.variantId) !== head.nodeId) fail2(`${label}.head`, "must reference a variant on its node");
-  }
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return { nodes, ...head === void 0 ? {} : { head }, ...ext === void 0 ? {} : { ext } };
-}
-function normalizeCatalog(value, label = "catalog") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!Array.isArray(value.playthroughs)) fail2(label, "playthroughs must be an array");
-  const playthroughs = value.playthroughs.map((item, index) => {
-    const itemLabel = `${label}.playthroughs[${index}]`;
-    if (!isRecord3(item)) fail2(itemLabel, "must be an object");
-    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
-    const archivedAt = ext2?.pmpDshTavern?.archivedAt;
-    if (archivedAt !== void 0 && !isArchiveTimestamp(archivedAt)) {
-      fail2(`${itemLabel}.ext.pmpDshTavern.archivedAt`, "must be a UTC ISO timestamp with milliseconds");
-    }
-    return {
-      id: stringId(item.id, `${itemLabel}.id`),
-      path: stringId(item.path, `${itemLabel}.path`),
-      ...typeof item.title === "string" ? { title: item.title } : {},
-      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
-      ...ext2 === void 0 ? {} : { ext: ext2 }
-    };
+// packages/client/src/play/creation-request.js
+var adapters = /* @__PURE__ */ new WeakMap();
+async function creationRequest(client, action, creationId, run, reusable) {
+  const deadline = AbortSignal.timeout(35e3);
+  let onAbort;
+  const timeout = new Promise((_2, reject) => {
+    onAbort = () => reject(Object.assign(new Error("Creation timed out. Retry the same action or open Repair playthrough to check its status."), { code: "PLAY_CREATION_TIMEOUT" }));
+    deadline.addEventListener("abort", onAbort, { once: true });
   });
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return { playthroughs, ...ext === void 0 ? {} : { ext } };
-}
-function parseJsonDocument(content, normalize, label) {
-  if (typeof content !== "string") fail2(label, "content must be a JSON string");
-  let parsed;
   try {
-    parsed = JSON.parse(content);
-  } catch {
-    fail2(label, "content must be valid JSON");
-  }
-  return normalize(parsed, label);
-}
-function projectContentText(content) {
-  if (!Array.isArray(content)) return "";
-  return content.map((part) => {
-    if (!isRecord3(part)) return "";
-    if (typeof part.text === "string") return part.text;
-    return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
-  }).join("");
-}
-function normalizeSessionMessages(value, label = "messages") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  if (!Array.isArray(value.messages)) fail2(label, "messages must be an array");
-  if (typeof value.incompleteTurn !== "boolean") fail2(label, "incompleteTurn must be a boolean");
-  const stopped = value.stoppedRequest;
-  if (stopped != null && (!isRecord3(stopped) || !["userEventId", "turnStartEventId", "turnEndEventId"].every((key2) => Number.isSafeInteger(stopped[key2]) && stopped[key2] >= 0) || stopped.turnStartEventId >= stopped.userEventId || stopped.userEventId >= stopped.turnEndEventId || value.incompleteTurn)) fail2(label, "invalid stopped request coordinates");
-  const messages = value.messages.map((item, index) => {
-    const itemLabel = `${label}.messages[${index}]`;
-    if (!isRecord3(item)) fail2(itemLabel, "must be an object");
-    if (!MESSAGE_ROLES.has(item.role)) fail2(itemLabel, "role is invalid");
-    if (!Array.isArray(item.content)) fail2(itemLabel, "content must be an array");
-    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail2(itemLabel, "seq must be a non-negative integer or null");
-    const fallbackKind = item.role === "tool" || item.role === "developer" ? "context" : item.role;
-    const origin2 = item.origin === void 0 ? { kind: fallbackKind } : (() => {
-      if (!isRecord3(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail2(`${itemLabel}.origin`, "kind is invalid");
-      if (item.origin.kind !== "context") return { kind: item.origin.kind };
-      const optional = (field, maximum) => {
-        const fieldValue = item.origin[field];
-        if (fieldValue !== null && fieldValue !== void 0 && (typeof fieldValue !== "string" || fieldValue.length > maximum)) {
-          fail2(`${itemLabel}.origin.${field}`, `must be a string up to ${maximum} characters or null`);
-        }
-        return typeof fieldValue === "string" && fieldValue !== "" ? fieldValue : null;
-      };
-      return {
-        kind: "context",
-        producer: optional("producer", 200),
-        form: optional("form", 64),
-        summary: optional("summary", 1e3)
-      };
-    })();
-    return {
-      id: stringId(item.id, `${itemLabel}.id`),
-      role: item.role,
-      content: item.content,
-      seq: item.seq,
-      text: projectContentText(item.content),
-      origin: origin2
-    };
-  });
-  return {
-    messages,
-    incompleteTurn: value.incompleteTurn,
-    ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {},
-    ...value.migratedFromV2 === true ? { migratedFromV2: true } : {},
-    ...stopped === void 0 ? {} : { stoppedRequest: stopped === null ? null : { userEventId: stopped.userEventId, turnStartEventId: stopped.turnStartEventId, turnEndEventId: stopped.turnEndEventId } }
-  };
-}
-function normalizeFocus(value, label = "focus") {
-  if (!isRecord3(value)) fail2(label, "must be an object");
-  const nullableId = (field, fieldLabel) => {
-    if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
-      fail2(label, `${fieldLabel} must be a non-empty string or null`);
-    }
-    return value[field];
-  };
-  return {
-    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
-    sessionId: nullableId("sessionId", "sessionId"),
-    nodeId: nullableId("nodeId", "nodeId"),
-    variantId: nullableId("variantId", "variantId")
-  };
-}
-function timelinePath(value, label = "timeline path") {
-  const path3 = typeof value === "string" ? value : value?.path;
-  stringId(path3, label);
-  if (!path3.endsWith("timeline.json")) fail2(label, "must point to timeline.json");
-  return path3;
-}
-function playthroughCharacterId(playthrough) {
-  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
-  if (typeof explicit === "string" && explicit !== "") return explicit;
-  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
-  const first = path3.split("/").filter(Boolean)[0];
-  return first || null;
-}
-
-// packages/client/src/play/sidebar-model.js
-var SIDEBAR_LOAD_CONCURRENCY = 4;
-function characterIdFromSelection(value) {
-  const selection = value?.selection ?? value;
-  const id = selection?.characterCardId;
-  return typeof id === "string" && id !== "" ? id : null;
-}
-function rootSessionId(playthrough) {
-  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof id === "string" && id !== "" ? id : null;
-}
-function sessionTitle(session, id) {
-  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
-  if (typeof session?.title === "string" && session.title !== "") return session.title;
-  return id;
-}
-function timestamp(value) {
-  if (Number.isFinite(value)) return value;
-  if (typeof value !== "string" || value === "") return 0;
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-function latestCharacterSessionActivity(character, sessions) {
-  let latest = 0;
-  for (const playthrough of character.playthroughs) {
-    for (const id of playthrough.sessionIds) latest = Math.max(latest, timestamp(sessions[id]?.updatedAt));
-  }
-  for (const session of character.unassigned) latest = Math.max(latest, timestamp(sessions[session.id]?.updatedAt));
-  return latest;
-}
-function compareProjectedNames(left, right) {
-  const named = left.name.localeCompare(right.name, "zh-CN", { numeric: true, sensitivity: "base" });
-  return named !== 0 ? named : left.id.localeCompare(right.id);
-}
-function sortCharactersByRecentConversation(characters, sessions) {
-  return characters.toSorted((left, right) => {
-    const activity = latestCharacterSessionActivity(right, sessions) - latestCharacterSessionActivity(left, sessions);
-    if (activity !== 0) return activity;
-    const resourceUpdate = timestamp(right.updatedAt) - timestamp(left.updatedAt);
-    return resourceUpdate !== 0 ? resourceUpdate : compareProjectedNames(left, right);
-  });
-}
-function historicalCharacterName(playthrough, sessions, fallback) {
-  const preserved = playthrough?.ext?.pmpDshTavern?.characterName;
-  if (typeof preserved === "string" && preserved.trim() !== "") return preserved;
-  const root = rootSessionId(playthrough);
-  if (root === null) return fallback;
-  const title = sessionTitle(sessions[root], root);
-  const inferred = title.replace(/\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/, "").trim();
-  return inferred !== "" && inferred !== root ? inferred : fallback;
-}
-function normalizedCharacterName(value) {
-  return String(value ?? "").trim().toLocaleLowerCase("zh-CN");
-}
-function assessPlaythroughCharacterRelink({
-  playthrough,
-  target,
-  characters = [],
-  missingCharacters = []
-} = {}) {
-  const reference = playthrough?.ext?.pmpDshTavern ?? {};
-  const currentId = playthroughCharacterId(playthrough);
-  if (typeof target?.id !== "string" || target.id === "") return { automatic: false, reason: "target-missing" };
-  if (target.id === currentId) return { automatic: true, reason: "unchanged" };
-  if (typeof reference.characterSha256 === "string" && reference.characterSha256 !== "") {
-    const shaMatches = characters.filter((character) => character.sha256 === reference.characterSha256);
-    if (shaMatches.length === 1 && shaMatches[0].id === target.id) return { automatic: true, reason: "sha256" };
-  }
-  const name2 = normalizedCharacterName(reference.characterName);
-  if (name2 !== "") {
-    const missingNameMatches = missingCharacters.filter((character) => normalizedCharacterName(character.name) === name2);
-    const currentNameMatches = characters.filter((character) => normalizedCharacterName(character.name) === name2);
-    const missingIdentityIsUnique = missingNameMatches.length === 0 || missingNameMatches.length === 1 && missingNameMatches[0].id === currentId;
-    if (missingIdentityIsUnique && currentNameMatches.length === 1 && currentNameMatches[0].id === target.id) {
-      return { automatic: true, reason: "name" };
-    }
-  }
-  return { automatic: false, reason: "manual" };
-}
-function normalizedPath(value) {
-  if (typeof value !== "string") return "";
-  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
-  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
-}
-function requiresSystemWorkspaceConfirmation(value) {
-  const path3 = typeof value === "string" ? value.replaceAll("\\", "/") : "";
-  return /^c:\//i.test(path3) || path3 === "/" || path3 === "/usr" || path3.startsWith("/usr/") || path3 === "/System" || path3.startsWith("/System/");
-}
-function timelineFor(timelines, playthrough) {
-  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
-}
-function playthroughMembers(playthrough, timeline) {
-  const ids = /* @__PURE__ */ new Set();
-  const rootId = rootSessionId(playthrough);
-  if (rootId !== null) ids.add(rootId);
-  if (typeof timeline?.head?.sessionId === "string" && timeline.head.sessionId !== "") {
-    ids.add(timeline.head.sessionId);
-  }
-  for (const head of timeline?.ext?.pmpDshTavern?.branchHeads ?? []) {
-    if (typeof head?.sessionId === "string" && head.sessionId !== "") ids.add(head.sessionId);
-  }
-  for (const node of timeline?.nodes ?? []) {
-    for (const variant2 of node?.variants ?? []) {
-      if (typeof variant2?.sessionId === "string" && variant2.sessionId !== "") ids.add(variant2.sessionId);
-    }
-  }
-  return ids;
-}
-function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
-  const ids = /* @__PURE__ */ new Set();
-  if (workspace?.selected !== true) return ids;
-  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
-    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
-    if (item !== void 0) {
-      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
-      return ids;
-    }
-  }
-  const root = normalizedPath(workspace.rootPath);
-  if (root === "") return ids;
-  for (const [id, session] of Object.entries(sessions)) {
-    if (normalizedPath(session?.cwd) === root) ids.add(id);
-  }
-  return ids;
-}
-var SessionCharacterBindingCache = class {
-  constructor() {
-    this.entries = /* @__PURE__ */ new Map();
-    this.generation = 0;
-  }
-  clear() {
-    this.generation += 1;
-    this.entries.clear();
-  }
-  get(client, sessionId) {
-    const cached = this.entries.get(sessionId);
-    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
-    const generation = this.generation;
-    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
-    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
-    this.entries.set(sessionId, { promise });
-    promise.then((value) => {
-      if (this.generation === generation) this.entries.set(sessionId, { value });
-    });
-    return promise;
-  }
-};
-async function loadSessionCharacterBindings(client, sessionIds, {
-  concurrency = SIDEBAR_LOAD_CONCURRENCY,
-  cache = new SessionCharacterBindingCache()
-} = {}) {
-  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
-  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
-  const result = {};
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < ids.length) {
-      const index = cursor;
-      cursor += 1;
-      const id = ids[index];
-      result[id] = await cache.get(client, id);
-    }
-  };
-  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
-  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
-  await Promise.all(Array.from({ length: workerCount }, worker));
-  return result;
-}
-async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
-  const result = new Array(values.length);
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < values.length) {
-      const index = cursor;
-      cursor += 1;
-      result[index] = await mapper(values[index], index);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
-  return result;
-}
-async function loadPlaySidebarResources(client) {
-  if (client == null) throw new TypeError("playClient.required");
-  const [workspace, characterResponse] = await Promise.all([
-    client.getWorkspace(),
-    client.getCharacters()
-  ]);
-  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
-  const missingCharacters = Array.isArray(characterResponse?.missingCharacters) ? characterResponse.missingCharacters : [];
-  const characterSorting = characterResponse?.sorting ?? { mode: "updated" };
-  if (workspace.selected !== true) return { workspace, characters, missingCharacters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
-  let catalog2;
-  try {
-    catalog2 = await client.getCatalog();
-  } catch (reason) {
-    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
-    catalog2 = { playthroughs: [] };
-  }
-  const timelines = {};
-  const diagnostics = [];
-  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
-    try {
-      timelines[playthrough.path] = await client.getTimeline(playthrough);
-    } catch (reason) {
-      diagnostics.push({
-        playthroughId: playthrough.id,
-        ...typeof reason?.code === "string" ? { code: reason.code } : {},
-        path: playthrough.path,
-        message: reason instanceof Error ? reason.message : String(reason)
-      });
-    }
-  });
-  return { workspace, characters, missingCharacters, characterSorting, catalog: catalog2, timelines, diagnostics };
-}
-function projectPlaySidebar({
-  workspace = { selected: false },
-  workspaceItems = [],
-  characters = [],
-  characterSorting = { mode: "updated" },
-  missingCharacters = [],
-  catalog: catalog2 = { playthroughs: [] },
-  timelines = {},
-  sessions = {},
-  sessionIds = [],
-  archivedSessionIds = [],
-  currentId = null,
-  activePlaythroughId = null,
-  sessionCharacters = {},
-  pendingSwipes: pendingSwipes2 = []
-} = {}) {
-  const archived = new Set(archivedSessionIds);
-  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
-  const characterById = /* @__PURE__ */ new Map();
-  const missingById = new Map(missingCharacters.map((item) => [item.id, item]));
-  const missingCharacterById = /* @__PURE__ */ new Map();
-  const ensureCharacter = (id, name2 = id) => {
-    if (!characterById.has(id) && !characters.some((item) => item?.id === id)) {
-      if (!missingCharacterById.has(id)) {
-        const missing = missingById.get(id);
-        missingCharacterById.set(id, {
-          id,
-          name: missing?.name ?? name2,
-          ...typeof missing?.sha256 === "string" ? { sha256: missing.sha256 } : {},
-          playthroughs: [],
-          unassigned: [],
-          missing: true
-        });
-      }
-      return missingCharacterById.get(id);
-    }
-    if (!characterById.has(id)) {
-      const resource2 = characters.find((item) => item?.id === id);
-      characterById.set(id, {
-        id,
-        name: name2,
-        ...typeof resource2?.updatedAt === "string" ? { updatedAt: resource2.updatedAt } : {},
-        playthroughs: [],
-        unassigned: []
-      });
-    }
-    return characterById.get(id);
-  };
-  for (const character of characters) {
-    if (typeof character?.id !== "string" || character.id === "") continue;
-    ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
-  }
-  const claimedRpSessions = /* @__PURE__ */ new Set();
-  const archivedPlaythroughs = [];
-  for (const playthrough of catalog2.playthroughs ?? []) {
-    const rootId = rootSessionId(playthrough);
-    const draft = rootId === null && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id;
-    const characterId = playthroughCharacterId(playthrough);
-    if (characterId === null) continue;
-    const characterReference = playthrough.ext?.pmpDshTavern ?? {};
-    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
-    for (const pending2 of pendingSwipes2) {
-      if (pending2.playthrough.id === playthrough.id && pending2.playthrough.path === playthrough.path) allMembers.add(pending2.sessionId);
-    }
-    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
-    for (const id of members) claimedRpSessions.add(id);
-    if (isPlaythroughArchived(playthrough)) {
-      archivedPlaythroughs.push({
-        ...playthrough,
-        characterName: characters.find((item) => item.id === characterId)?.name ?? historicalCharacterName(playthrough, sessions, characterId),
-        rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
-        sessionIds: members,
-        missing: members.length === 0 && !draft
-      });
-      continue;
-    }
-    const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId));
-    if (characterGroup.missing === true && characterGroup.sha256 === void 0 && typeof characterReference.characterSha256 === "string") {
-      characterGroup.sha256 = characterReference.characterSha256;
-    }
-    characterGroup.playthroughs.push({
-      ...playthrough,
-      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
-      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
-      sessionIds: members,
-      active: typeof activePlaythroughId === "string" && activePlaythroughId !== "" ? playthrough.id === activePlaythroughId : currentId !== null && members.includes(currentId),
-      missing: members.length === 0 && !draft
-    });
-  }
-  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
-  const otherSessions = [];
-  for (const id of ids) {
-    const session = sessions[id];
-    if (session == null || archived.has(id)) continue;
-    if (session.origin === "subagent") continue;
-    if (!rpSessionIds.has(id)) {
-      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
-      continue;
-    }
-    if (claimedRpSessions.has(id)) continue;
-    const characterId = sessionCharacters[id];
-    if (typeof characterId === "string" && characterId !== "") {
-      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
-      continue;
-    }
-    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
-  }
-  const projectedCharacters = [...characterById.values()];
-  return {
-    workspaceReady: workspace.selected === true,
-    rpSessionIds: [...rpSessionIds],
-    playSessionIds: [...claimedRpSessions],
-    characters: characterSorting?.mode === "updated" ? sortCharactersByRecentConversation(projectedCharacters, sessions) : projectedCharacters,
-    missingCharacters: [...missingCharacterById.values()],
-    otherSessions,
-    archivedPlaythroughs
-  };
-}
-function playthroughFocusTarget({ focus, playthrough, rpSessionIds = [] } = {}) {
-  const target = typeof focus?.sessionId === "string" ? focus.sessionId : playthrough?.rootSessionId;
-  return typeof target === "string" && new Set(rpSessionIds).has(target) ? target : null;
-}
-function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
-  if (workspace == null || session == null) return false;
-  if (workspace.selected !== true) return true;
-  const workspacePath = normalizedPath(workspace.rootPath);
-  const sessionPath = normalizedPath(session.cwd);
-  if (workspacePath === "" || sessionPath !== workspacePath) return true;
-  return characterIdFromSelection(selection) === null;
-}
-async function runAutomaticCharacterRelinks(recoveries, { attempted, isActive, relink, onError, onChanged }) {
-  let changed = false;
-  try {
-    for (const recovery of recoveries) {
-      if (!isActive()) break;
-      if (attempted.has(recovery.key)) continue;
-      attempted.add(recovery.key);
-      try {
-        await relink(recovery.missing.id, recovery.character.id);
-        changed = true;
-      } catch (reason) {
-        if (isActive()) onError(reason);
-      }
-    }
+    return await Promise.race([submit(client, action, creationId, run, reusable, deadline), timeout]);
   } finally {
-    if (changed) onChanged();
+    deadline.removeEventListener("abort", onAbort);
   }
 }
-
-// packages/client/src/play/import.js
-function parseJsonl(text3) {
-  const rows = text3.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-  if (rows.length === 0) throw new TypeError("play.import.empty");
-  if (rows[0]?.kind === "pmp-dsh-tavern-playthrough") throw new TypeError("play.import.unsupported");
-  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
-  let greeting = null;
-  const qa = [];
-  let pending2 = null;
-  for (const message of messages) {
-    if (message.is_user === true) {
-      if (pending2 !== null) throw new TypeError("play.import.unpaired");
-      pending2 = message.mes;
-    } else if (pending2 === null && qa.length === 0 && greeting === null) {
-      greeting = message.mes;
-    } else if (pending2 !== null) {
-      qa.push({ user: pending2, assistant: message.mes });
-      pending2 = null;
-    }
+async function submit(client, action, creationId, run, reusable, signal) {
+  const binding = await client.getWorkspace?.({ signal });
+  signal.throwIfAborted();
+  const scope = binding && JSON.stringify([binding.workspaceId, binding.rootPath]);
+  const key2 = "pmp-dsh-tavern:creation:" + JSON.stringify([client.apiRoot, scope, action]);
+  let storage;
+  if (typeof window !== "undefined") {
+    storage = window.localStorage;
+    if (!storage) throw new Error("Playthrough creation requires browser storage for retry recovery.");
+  } else {
+    if (!adapters.has(client)) adapters.set(client, /* @__PURE__ */ new Map());
+    const records = adapters.get(client);
+    storage = { getItem: (key3) => records.get(key3), setItem: (key3, value) => records.set(key3, value), removeItem: (key3) => records.delete(key3) };
   }
-  if (pending2 !== null) throw new TypeError("play.import.unpaired");
-  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
-}
-function parsePlaythroughImport(text3, fileName = "") {
-  if (typeof text3 !== "string" || text3.trim() === "") throw new TypeError("play.import.empty");
-  const parsed = parseJsonl(text3);
-  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
-}
-function rootSessionId2(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-function playthroughDirectory(playthrough) {
-  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
-  if (!path3.endsWith("/timeline.json")) throw new TypeError("play.import.timelineRequired");
-  return path3.slice(0, -"/timeline.json".length);
-}
-function fallbackImportPath(playthrough, timeline) {
-  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
-  if (typeof direct === "string" && direct !== "") return direct;
-  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
-  return typeof nested === "string" && nested !== "" ? nested : null;
-}
-async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
-  if (typeof client.getImportContextBinding === "function") {
-    return client.getImportContextBinding(sessionId);
+  const previous = storage.getItem(key2);
+  if (!previous && !creationId && reusable) {
+    const found = await reusable();
+    if (found) return found;
   }
-  const path3 = fallbackImportPath(playthrough, timeline);
-  return path3 === null ? null : { path: path3, state: "pending" };
-}
-async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
-  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
-  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
-  const document2 = JSON.parse((await client.getFile(binding.path)).content);
-  return { binding, document: document2 };
-}
-function assertLocallyMutable(timeline, messages) {
-  if ((timeline?.nodes?.length ?? 0) > 0 || messages?.incompleteTurn === true || (messages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant")) {
-    const error = new Error("play.import.locked");
-    error.code = "PLAY_IMPORT_CONTEXT_LOCKED";
-    throw error;
-  }
-}
-async function bindPlaythroughImport(client, playthrough, file, {
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  const document2 = parsePlaythroughImport(await file.text(), file.name);
-  const sessionId = rootSessionId2(playthrough);
-  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
-  const [timeline, messages] = await Promise.all([
-    client.getTimeline(playthrough),
-    client.getMessages(sessionId)
-  ]);
-  assertLocallyMutable(timeline, messages);
-  const directory = playthroughDirectory(playthrough);
-  const token = String(randomUUID());
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError("play.import.idInvalid");
-  const contextPath = `${directory}/import-context-${token}.json`;
-  await client.createDirs(directory);
-  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
-  const bound = await client.putImportContextBinding(sessionId, { path: contextPath });
-  const [savedFile, savedBinding] = await Promise.all([
-    client.getFile(contextPath),
-    client.getImportContextBinding(sessionId)
-  ]);
-  const savedDocument = JSON.parse(savedFile.content);
-  if (bound?.path !== contextPath || savedBinding?.path !== contextPath || savedBinding?.state !== "pending" || savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length) {
-    throw new Error("play.import.verificationFailed");
-  }
-  return { sessionId, binding: savedBinding, document: document2 };
-}
-async function unbindPlaythroughImport(client, playthrough) {
-  const sessionId = rootSessionId2(playthrough);
-  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
-  const [timeline, messages] = await Promise.all([
-    client.getTimeline(playthrough),
-    client.getMessages(sessionId)
-  ]);
-  assertLocallyMutable(timeline, messages);
-  await client.deleteImportContextBinding(sessionId);
-  const saved = await client.getImportContextBinding(sessionId);
-  if (saved !== null) throw new Error("play.import.verificationFailed");
-  return { sessionId, binding: null };
-}
-
-// packages/session-template/src/model.js
-var MAX_RESOURCE_ID_CHARACTERS = 200;
-var MAX_WORLD_BOOKS = 100;
-function stringOrNull(value) {
-  return typeof value === "string" && value !== "" && value.length <= MAX_RESOURCE_ID_CHARACTERS ? value : null;
-}
-function characterOptions(value) {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
-  const result = {};
-  if (Number.isSafeInteger(value.greetingIndex) && value.greetingIndex >= 0) result.greetingIndex = value.greetingIndex;
-  if (typeof value.preferCharacterSystemPrompt === "boolean") result.preferCharacterSystemPrompt = value.preferCharacterSystemPrompt;
-  if (typeof value.preferCharacterPostHistory === "boolean") result.preferCharacterPostHistory = value.preferCharacterPostHistory;
-  return result;
-}
-var RP_SOURCES = /* @__PURE__ */ new Set(["command", "character-follow"]);
-var SANDBOX_MODES = /* @__PURE__ */ new Set(["read-only", "workspace-write", "danger-full-access"]);
-function rpState(value) {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return { active: false, source: null, followSuppressed: false, sandboxBefore: null };
-  }
-  return {
-    active: value.active === true,
-    source: RP_SOURCES.has(value.source) ? value.source : null,
-    followSuppressed: value.followSuppressed === true,
-    sandboxBefore: SANDBOX_MODES.has(value.sandboxBefore) ? value.sandboxBefore : null
+  signal.throwIfAborted();
+  const id = creationId ?? storage.getItem(key2) ?? globalThis.crypto.randomUUID();
+  storage.setItem(key2, id);
+  const acknowledge = () => {
+    if (storage.getItem(key2) === id) storage.removeItem(key2);
   };
-}
-function normalizeTemplateSelection(value = {}) {
-  const worldBookIds = Array.isArray(value?.worldBookIds) ? [...new Set(value.worldBookIds.filter((item) => typeof item === "string" && item !== "" && item.length <= MAX_RESOURCE_ID_CHARACTERS))].slice(0, MAX_WORLD_BOOKS) : [];
-  return {
-    presetId: stringOrNull(value?.presetId),
-    characterCardId: stringOrNull(value?.characterCardId),
-    userId: stringOrNull(value?.userId),
-    worldBookIds,
-    character: characterOptions(value?.character),
-    rp: rpState(value?.rp)
-  };
-}
-var sessionTemplateModelConstants = Object.freeze({
-  maxResourceIdCharacters: MAX_RESOURCE_ID_CHARACTERS,
-  maxWorldBooks: MAX_WORLD_BOOKS
-});
-
-// packages/client/src/play/create.js
-var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
-var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
-function safeSegment(value, label) {
-  if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
-    throw new TypeError(`${label} must be a safe path segment`);
-  }
-  return value;
-}
-function safeSessionId(value) {
-  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
-    throw new TypeError("session.id must be a valid DSH session id");
-  }
-  return value;
-}
-function isoNow(now) {
-  const value = now();
-  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
-  return value.toISOString();
-}
-async function catalogOrEmpty(client) {
   try {
-    return await client.getCatalog();
-  } catch (reason) {
-    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
-    throw reason;
-  }
-}
-function playthroughCharacterId2(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.characterId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-function rootSessionId3(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-async function ensureCharacterSelection(client, sessionId, characterId) {
-  const current4 = await client.getCharacterSelection(sessionId);
-  if (characterIdFromSelection(current4) !== characterId) {
-    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
-  }
-  const verified = await client.getCharacterSelection(sessionId);
-  if (characterIdFromSelection(verified) !== characterId) {
-    throw new Error("playthrough character selection did not persist");
-  }
-  return verified;
-}
-function latestCharacterPlaythrough(catalog2, characterId) {
-  let latest = null;
-  let latestNumber = 0;
-  let ordinal = 0;
-  for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (playthroughCharacterId2(playthrough) !== characterId) continue;
-    ordinal += 1;
-    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-    const number2 = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
-    if (latest === null || number2 >= latestNumber) {
-      latest = playthrough;
-      latestNumber = number2;
-    }
-  }
-  return latest;
-}
-async function playthroughIsReusable(client, playthrough) {
-  if (isPlaythroughArchived(playthrough)) return false;
-  try {
-    const sessionId = rootSessionId3(playthrough);
-    const timeline = await client.getTimeline(playthrough);
-    if ((timeline?.nodes?.length ?? 0) > 0) return false;
-    if (sessionId === null) {
-      return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
-    }
-    const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
-    if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
-    const history = await client.getMessages(sessionId);
-    if (history?.incompleteTurn === true) return false;
-    return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
-  } catch (reason) {
-    if (reason?.code === "PLAY_SESSION_NOT_FOUND") return false;
-    throw reason;
-  }
-}
-function nextPlaythroughNumber(catalog2, characterId) {
-  let maximum = 0;
-  let legacyOrdinal = 0;
-  for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (playthroughCharacterId2(playthrough) !== characterId) continue;
-    legacyOrdinal += 1;
-    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal);
-  }
-  return maximum + 1;
-}
-async function renamePlaythrough(client, playthrough, title) {
-  if (client == null) throw new TypeError("playClient.required");
-  const normalized = typeof title === "string" ? title.trim() : "";
-  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
-  const saved = await updateCatalog(client, (current4) => {
-    const freshIndex = current4.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
-    if (freshIndex < 0) throw new TypeError("play.rename.missing");
-    const freshPlaythroughs = [...current4.playthroughs];
-    const fresh = freshPlaythroughs[freshIndex];
-    freshPlaythroughs[freshIndex] = {
-      ...fresh,
-      title: normalized,
-      ext: {
-        ...fresh.ext,
-        pmpDshTavern: { ...fresh.ext?.pmpDshTavern, autoTitle: false }
-      }
-    };
-    return { ...current4, playthroughs: freshPlaythroughs };
-  });
-  const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
-  const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
-  if (renamed?.title !== normalized || renamed.ext?.pmpDshTavern?.autoTitle !== false) {
-    throw new Error("play.rename.verificationFailed");
-  }
-  return renamed;
-}
-function sourceSessionIdForCharacter(character) {
-  const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
-  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
-  const activeLoose = character?.unassigned?.find((item) => item.active);
-  if (activeLoose !== void 0) return activeLoose.id;
-  const loose = character?.unassigned?.find((item) => typeof item.id === "string");
-  if (loose !== void 0) return loose.id;
-  const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
-  return rooted?.rootSessionId ?? null;
-}
-async function reusableOpeningDraft(client, characterId, configurationSelection) {
-  const latest = latestCharacterPlaythrough(await catalogOrEmpty(client), characterId);
-  if (!latest || isPlaythroughArchived(latest) || rootSessionId3(latest) || latest.ext?.pmpDshTavern?.draftId !== latest.id) return null;
-  let result;
-  try {
-    result = await client.getDraft(latest.id);
+    const result = await run({ creationId: id, ...scope ? { expectedWorkspaceScope: scope } : {} }, { signal });
+    signal.throwIfAborted();
+    acknowledge();
+    return result;
   } catch (error) {
-    if (["PLAY_DRAFT_NOT_FOUND", "PLAY_DRAFT_ARCHIVED"].includes(error.code)) return null;
+    if (error.code === "PLAY_CREATION_DISMISSED") acknowledge();
     throw error;
   }
-  const { draft, playthrough } = result;
-  if (draft.phase !== "draft" || draft.claim || draft.selection.characterCardId !== characterId || isPlaythroughArchived(playthrough) || rootSessionId3(playthrough)) return null;
-  if (configurationSelection && JSON.stringify(normalizeTemplateSelection(draft.selection)) !== JSON.stringify(normalizeTemplateSelection(configurationSelection))) return null;
-  return { ...result, sessionId: null, reused: true };
-}
-async function createCharacterPlaythrough(client, {
-  character,
-  selectionFromSessionId = null,
-  configureSession = null,
-  configurationSource = null,
-  configurationSelection = null,
-  reuseEmpty = true,
-  now = () => /* @__PURE__ */ new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  if (client == null) throw new TypeError("playClient.required");
-  if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
-  const characterId = safeSegment(character?.id, "character.id");
-  if (typeof client.postDraft === "function") {
-    const pending2 = reuseEmpty ? await reusableOpeningDraft(client, characterId, configurationSelection) : null;
-    if (pending2) return pending2;
-    return { ...await client.postDraft({ characterId, ...configurationSource ? { source: configurationSource } : selectionFromSessionId ? { source: { mode: "current", sessionId: selectionFromSessionId } } : {} }), reused: false };
-  }
-  const createdAt = isoNow(now);
-  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
-  const directory = `${characterId}/${playthroughId}`;
-  const path3 = `${directory}/timeline.json`;
-  const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
-  const catalog2 = await catalogOrEmpty(client);
-  let latest = latestCharacterPlaythrough(catalog2, characterId);
-  let reusable = reuseEmpty && latest !== null && await playthroughIsReusable(client, latest);
-  if (reusable) {
-    const fresh = (await client.getCatalog()).playthroughs.find((item) => item.id === latest.id && item.path === latest.path);
-    reusable = fresh !== void 0 && !isPlaythroughArchived(fresh) && rootSessionId3(fresh) === rootSessionId3(latest);
-    if (reusable) latest = fresh;
-  }
-  if (reusable) {
-    const existingRoot = rootSessionId3(latest);
-    if (existingRoot !== null) {
-      if (typeof configureSession === "function") await configureSession(existingRoot);
-      await ensureCharacterSelection(client, existingRoot, characterId);
-      return { sessionId: existingRoot, playthrough: latest, reused: true };
-    }
-    const created2 = await client.postSession(sourceId);
-    const sessionId2 = safeSessionId(created2?.sessionId);
-    if (typeof configureSession === "function") await configureSession(sessionId2);
-    await ensureCharacterSelection(client, sessionId2, characterId);
-    let attached;
-    const savedCatalog2 = await updateCatalog(client, (fresh) => {
-      const index = fresh.playthroughs.findIndex((item) => item.id === latest.id && item.path === latest.path);
-      if (index < 0) throw new Error("playthrough.create.missingVacancy");
-      const current4 = fresh.playthroughs[index];
-      if (isPlaythroughArchived(current4)) throw new Error("playthrough.create.archivedVacancy");
-      const currentRoot = rootSessionId3(current4);
-      if (currentRoot !== null && currentRoot !== sessionId2) throw new Error("playthrough.create.identityConflict");
-      attached = {
-        ...current4,
-        lastOpenedAt: createdAt,
-        ext: {
-          ...current4.ext ?? {},
-          pmpDshTavern: {
-            ...current4.ext?.pmpDshTavern ?? {},
-            characterId,
-            rootSessionId: sessionId2
-          }
-        }
-      };
-      const playthroughs = [...fresh.playthroughs];
-      playthroughs[index] = attached;
-      return { ...fresh, playthroughs };
-    });
-    attached ??= savedCatalog2?.playthroughs?.find((item) => item.id === latest.id && item.path === latest.path);
-    if (rootSessionId3(attached) !== sessionId2) throw new Error("playthrough vacancy attachment did not persist");
-    return { sessionId: sessionId2, playthrough: attached, reused: true, reattached: true };
-  }
-  const created = await client.postSession(sourceId);
-  const sessionId = safeSessionId(created?.sessionId);
-  if (typeof configureSession === "function") await configureSession(sessionId);
-  await ensureCharacterSelection(client, sessionId, characterId);
-  const playthrough = {
-    id: playthroughId,
-    path: path3,
-    title: "\u5468\u76EE",
-    lastOpenedAt: createdAt,
-    ext: {
-      pmpDshTavern: {
-        characterId,
-        characterName: character.name,
-        ...typeof character.sha256 === "string" ? { characterSha256: character.sha256 } : {},
-        rootSessionId: sessionId,
-        playthroughNumber: 0,
-        autoTitle: true
-      }
-    }
-  };
-  await client.createDirs(directory);
-  await client.putTimeline(playthrough, { nodes: [] });
-  let saved;
-  const savedCatalog = await updateCatalog(client, (fresh) => {
-    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path3);
-    if (existing !== void 0) {
-      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) throw new Error("playthrough.create.identityConflict");
-      saved = existing;
-      return fresh;
-    }
-    const playthroughNumber2 = nextPlaythroughNumber(fresh, characterId);
-    const row = {
-      ...playthrough,
-      title: `${playthroughNumber2}\u5468\u76EE`,
-      ext: {
-        ...playthrough.ext,
-        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber: playthroughNumber2, autoTitle: true }
-      }
-    };
-    saved = row;
-    return { ...fresh, playthroughs: [...fresh.playthroughs, row] };
-  });
-  const savedTimeline = await client.getTimeline(playthrough);
-  saved ??= savedCatalog?.playthroughs?.find((item) => item.id === playthroughId && item.path === path3);
-  if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
-    throw new Error("playthrough verification failed");
-  }
-  return { sessionId, playthrough: saved, reused: false };
-}
-function createPlaythroughController(client, dependencies = {}) {
-  const inFlight = /* @__PURE__ */ new Map();
-  let tail = Promise.resolve();
-  return {
-    create(args) {
-      const characterId = safeSegment(args?.character?.id, "character.id");
-      const reuseEmpty = args?.reuseEmpty === void 0 ? dependencies.reuseEmpty === void 0 ? true : dependencies.reuseEmpty : args.reuseEmpty;
-      if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
-      const key2 = JSON.stringify([characterId, reuseEmpty, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null]);
-      const existing = inFlight.get(key2);
-      if (existing !== void 0) return existing;
-      const task = tail.catch(() => {
-      }).then(() => createCharacterPlaythrough(client, {
-        ...dependencies,
-        ...args,
-        reuseEmpty
-      }));
-      tail = task;
-      inFlight.set(key2, task);
-      task.finally(() => {
-        if (inFlight.get(key2) === task) inFlight.delete(key2);
-      }).catch(() => {
-      });
-      return task;
-    }
-  };
 }
 
 // packages/client/src/play/fork.js
-var SAFE_SEGMENT2 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
-var SAFE_SESSION_ID2 = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
-function safeSegment2(value, label) {
-  if (typeof value !== "string" || !SAFE_SEGMENT2.test(value)) {
-    throw new TypeError(`${label} must be a safe path segment`);
-  }
-  return value;
-}
-function safeSessionId2(value) {
-  if (typeof value !== "string" || !SAFE_SESSION_ID2.test(value)) {
+var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+function safeSessionId(value) {
+  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
     throw new TypeError("session.id must be a valid DSH session id");
   }
   return value;
@@ -23128,27 +22213,6 @@ function nodeById(timeline, nodeId) {
   const index = timeline.nodes.findIndex((node) => node.id === nodeId);
   if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
   return { index, node: timeline.nodes[index] };
-}
-function forkedTimeline(source, nodeIndex, adoptedId, sessionId, version3) {
-  const entries2 = activeTimelineEntries(source);
-  const activeIndex = entries2.findIndex((entry) => entry.node.id === source.nodes[nodeIndex].id);
-  if (activeIndex < 0) throw new TypeError("Fork target is not on the active timeline branch");
-  let parentVariantId = null;
-  const nodes = entries2.slice(0, activeIndex + 1).map(({ node, variant: variant2 }) => {
-    const copy2 = {
-      ...node,
-      parentVariantId,
-      adoptedVariantId: variant2.id,
-      variants: node.variants.map((item) => node.id === source.nodes[nodeIndex].id && item.id === adoptedId ? withVariantFormat({ ...item, sessionId }, version3) : { ...item })
-    };
-    parentVariantId = variant2.id;
-    return copy2;
-  });
-  return {
-    ...source,
-    nodes,
-    head: { sessionId, nodeId: nodes.at(-1).id, variantId: adoptedId }
-  };
 }
 function inheritedRangeExists(messages, variant2) {
   const values = messages?.messages ?? [];
@@ -23164,72 +22228,23 @@ async function branchPlaythroughAtNode(client, { playthrough, nodeId } = {}) {
   if (active === void 0) throw new TypeError("Branch target is not on the active timeline branch");
   const adopted = active.variant;
   const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, variantFormatVersion(adopted));
-  const sessionId = safeSessionId2(branch?.sessionId);
+  const sessionId = safeSessionId(branch?.sessionId);
   const inherited = await client.getMessages(sessionId);
   if (!inheritedRangeExists(inherited, adopted)) {
     throw new Error("Forked session does not contain the adopted reply range");
   }
   return { source, index, node, adopted, sessionId, inherited };
 }
-async function forkPlaythroughAtNode(client, {
-  playthrough,
-  nodeId,
-  now = () => /* @__PURE__ */ new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  if (client == null) throw new TypeError("playClient.required");
-  const characterId = safeSegment2(playthroughCharacterId(playthrough), "character.id");
-  const { source, index, node, adopted, sessionId, inherited } = await branchPlaythroughAtNode(client, { playthrough, nodeId });
-  const value = now();
-  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
-  const playthroughId = safeSegment2(`playthrough-${randomUUID()}`, "playthrough.id");
-  const directory = `${characterId}/${playthroughId}`;
-  const path3 = `${directory}/timeline.json`;
-  requireCoordinates(variantFormatVersion(adopted), inherited);
-  const timeline = forkedTimeline(source, index, adopted.id, sessionId, inherited.sessionFormatVersion);
-  const draft = {
-    id: playthroughId,
-    path: path3,
-    title: "\u5468\u76EE",
-    lastOpenedAt: value.toISOString(),
-    ext: {
-      pmpDshTavern: {
-        characterId,
-        rootSessionId: sessionId,
-        playthroughNumber: 0,
-        autoTitle: true
-      }
-    }
-  };
-  await client.createDirs(directory);
-  await client.putTimeline(draft, timeline);
-  let saved;
-  const catalog2 = await updateCatalog(client, (fresh) => {
-    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path3);
-    if (existing !== void 0) {
-      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) {
-        throw new Error("playthrough.fork.identityConflict");
-      }
-      saved = existing;
-      return fresh;
-    }
-    const playthroughNumber2 = nextPlaythroughNumber(fresh, characterId);
-    saved = {
-      ...draft,
-      title: `${playthroughNumber2}\u5468\u76EE`,
-      ext: {
-        ...draft.ext,
-        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber: playthroughNumber2, autoTitle: true }
-      }
-    };
-    return { ...fresh, playthroughs: [...fresh.playthroughs, saved] };
-  });
-  saved ??= catalog2?.playthroughs?.find((item) => item.id === playthroughId && item.path === path3);
-  const focus = await client.getFocus(saved ?? draft);
-  if (focus.sessionId !== sessionId || focus.nodeId !== node.id || focus.variantId !== adopted.id) {
-    throw new Error("Forked playthrough focus verification failed");
+async function forkPlaythroughAtNode(client, { playthrough, nodeId, variantId, creationId } = {}) {
+  if (typeof client?.forkPlaythrough !== "function") {
+    throw Object.assign(new Error("This client requires the Host forkPlaythrough API to create a recoverable branch."), { code: "PLAY_CREATION_UNAVAILABLE" });
   }
-  return { sessionId, playthrough: saved ?? draft, timeline };
+  return creationRequest(
+    client,
+    ["fork", playthrough.id, playthrough.path, nodeId, variantId],
+    creationId,
+    (identity, options) => client.forkPlaythrough(playthrough, { nodeId, ...variantId === void 0 ? {} : { variantId }, ...identity }, options)
+  );
 }
 
 // packages/client/src/play/nodes.js
@@ -23334,12 +22349,19 @@ function createPlayNodeController(client, {
         return { timeline: next, sessionId: focus.sessionId };
       });
     },
-    createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
+    createReplySwipe(playthrough, nodeId, { onStarted, variantId } = {}) {
+      if (typeof client.generation === "function") return schedule(playthrough, () => runGeneration(
+        client,
+        playthrough,
+        { kind: "reply-swipe", nodeId, variantId },
+        { onStarted, delay, pollInterval, maxPolls }
+      ));
       return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough);
         const entries2 = activeTimelineEntries(timeline);
         const requestedIndex = entries2.findIndex((entry) => entry.node.id === nodeId);
         if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`);
+        if (variantId !== void 0 && entries2[requestedIndex].variant.id !== variantId) throw new Error("The active reply changed");
         let sourceNode = null;
         let sourceIndex = -1;
         let adopted = null;
@@ -23393,6 +22415,12 @@ function createPlayNodeController(client, {
       });
     },
     retryStoppedRequest(playthrough, { sessionId, userEventId }, { onStarted } = {}) {
+      if (typeof client.generation === "function") return schedule(playthrough, () => runGeneration(
+        client,
+        playthrough,
+        { kind: "request-retry", sessionId, userEventId },
+        { onStarted, delay, pollInterval, maxPolls }
+      ));
       return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough), entries2 = activeTimelineEntries(timeline);
         if ((timeline.head?.sessionId ?? playthrough.ext?.pmpDshTavern?.rootSessionId) !== sessionId) throw Error("The stopped request is not on the active session");
@@ -23431,8 +22459,8 @@ function createPlayNodeController(client, {
         }
       });
     },
-    forkPlaythrough(playthrough, nodeId) {
-      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }));
+    forkPlaythrough(playthrough, nodeId, variantId) {
+      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId, variantId }));
     },
     rollbackPlaythrough(playthrough, nodeId, variantId) {
       return schedule(playthrough, async () => {
@@ -23620,6 +22648,7 @@ function PlayTurnActions({
     onSwipePending?.(turn.id, true);
     try {
       await controller(playClient).createReplySwipe(playthrough, turn.id, {
+        variantId: turn.variant.id,
         onStarted: (result) => {
           queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
           openSession(result.sessionId, playthrough);
@@ -23707,7 +22736,7 @@ function PlayTurnActions({
       label: uiMessage("play.chat.forkPlaythrough"),
       disabled,
       onClick: () => mutate(async () => {
-        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id);
+        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id, turn.variant.id);
         window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
         openSession(result.sessionId, result.playthrough);
       })
@@ -24553,7 +23582,7 @@ function normalizePreset(value) {
 var BUILTINS = Object.freeze([{ id: "builtin-native", ...normalizePreset({ format: FORMAT, version: 1, name: "DSH \u539F\u751F / DSH native", backend: "native", rules: DEFAULT_RULES }) }]);
 
 // node_modules/dsh-prompt-assembler/src/native-policy.js
-var fail3 = (message, detail) => {
+var fail2 = (message, detail) => {
   throw Object.assign(new Error(message), { status: 409, code: "ASSEMBLY_NATIVE_UNSUPPORTED", detail });
 };
 var adaptiveNativePlacement = (preset) => preset?.backend === "native" && ["native-roles", "native-slots"].includes(preset.placement);
@@ -24562,17 +23591,17 @@ function presetBackend(preset) {
 }
 function validateNativePreset(value) {
   const preset = normalizePreset(value);
-  if (presetBackend(preset) !== "native") fail3("This strategy requires the optional core assembly extension.", { backend: "core" });
+  if (presetBackend(preset) !== "native") fail2("This strategy requires the optional core assembly extension.", { backend: "core" });
   for (const kind of ["history", "input"]) {
     const rule = preset.rules.find((r) => r.kind === kind);
-    if (!rule?.enabled) fail3(`Native assembly must preserve ${kind}.`, { ruleId: rule?.id, kind });
+    if (!rule?.enabled) fail2(`Native assembly must preserve ${kind}.`, { ruleId: rule?.id, kind });
   }
   for (const rule of preset.rules.filter((r) => isContextControl(r.kind))) {
-    if (rule.role !== "preserve" || rule.lifetime !== "request" || rule.depth !== null || rule.inputMode === "text") fail3("Native context controls only support enable/disable.", { ruleId: rule.id });
+    if (rule.role !== "preserve" || rule.lifetime !== "request" || rule.depth !== null || rule.inputMode === "text") fail2("Native context controls only support enable/disable.", { ruleId: rule.id });
   }
   if (adaptiveNativePlacement(preset)) {
     for (const rule of preset.rules.filter((r) => r.enabled)) {
-      if (rule.lifetime === "snapshot" || rule.depth !== null || rule.role === "assistant") fail3("Native ordering does not support snapshots, depth or assistant contributions.", { ruleId: rule.id });
+      if (rule.lifetime === "snapshot" || rule.depth !== null || rule.role === "assistant") fail2("Native ordering does not support snapshots, depth or assistant contributions.", { ruleId: rule.id });
     }
     return preset;
   }
@@ -24580,27 +23609,27 @@ function validateNativePreset(value) {
   for (const rule of preset.rules.filter((r) => r.enabled)) {
     if (isContextControl(rule.kind)) continue;
     if (rule.kind === "history") {
-      if (phase !== "system") fail3("Native history cannot be moved after current input.");
+      if (phase !== "system") fail2("Native history cannot be moved after current input.");
       phase = "before-input";
       continue;
     }
     if (rule.kind === "input") {
-      if (phase !== "before-input") fail3("Current input must follow native history.");
+      if (phase !== "before-input") fail2("Current input must follow native history.");
       phase = "after-input";
       continue;
     }
-    if (rule.lifetime === "snapshot" || rule.depth !== null) fail3("Retained request snapshots and insertion depth require core assembly.", { ruleId: rule.id });
-    if (rule.role === "assistant") fail3("Assistant-role contributions require core assembly.", { ruleId: rule.id });
+    if (rule.lifetime === "snapshot" || rule.depth !== null) fail2("Retained request snapshots and insertion depth require core assembly.", { ruleId: rule.id });
+    if (rule.role === "assistant") fail2("Assistant-role contributions require core assembly.", { ruleId: rule.id });
     if (rule.role === "user") {
-      if (phase === "system") fail3("Native user contributions must follow native history.", { ruleId: rule.id });
-      if (phase === "before-input" && rule.delivery !== "pre-step") fail3("User context snapshots follow current input; use pre-step before input.", { ruleId: rule.id });
+      if (phase === "system") fail2("Native user contributions must follow native history.", { ruleId: rule.id });
+      if (phase === "before-input" && rule.delivery !== "pre-step") fail2("User context snapshots follow current input; use pre-step before input.", { ruleId: rule.id });
       if (phase === "after-input") {
         if (rule.delivery === "pre-step") afterInputMessages = true;
-        else if (afterInputMessages) fail3("Native context snapshots precede post-input pre-step messages; reorder these contributions.", { ruleId: rule.id });
+        else if (afterInputMessages) fail2("Native context snapshots precede post-input pre-step messages; reorder these contributions.", { ruleId: rule.id });
       }
-    } else if (phase !== "system") fail3("Native system contributions must precede native history.", { ruleId: rule.id });
+    } else if (phase !== "system") fail2("Native system contributions must precede native history.", { ruleId: rule.id });
   }
-  if (preset.placement !== "modules") fail3("ST slot/depth placement requires core assembly; choose a native strategy.");
+  if (preset.placement !== "modules") fail2("ST slot/depth placement requires core assembly; choose a native strategy.");
   return preset;
 }
 
@@ -29246,17 +28275,17 @@ var TAVERN_MENU_ITEMS = Object.freeze([
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
 var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 416 });
-function isRecord4(value) {
+function isRecord3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function firstRecord(...values) {
-  return values.find(isRecord4) ?? null;
+  return values.find(isRecord3) ?? null;
 }
 function firstArray(...values) {
   return values.find(Array.isArray) ?? [];
 }
 function resourceTitle(resource2, fallback = "") {
-  if (!isRecord4(resource2)) return fallback;
+  if (!isRecord3(resource2)) return fallback;
   for (const key2 of ["name", "title", "displayName", "label"]) {
     if (typeof resource2[key2] === "string" && resource2[key2].trim() !== "") return resource2[key2].trim();
   }
@@ -29264,7 +28293,7 @@ function resourceTitle(resource2, fallback = "") {
 }
 function catalog(snapshot, ...keys2) {
   for (const container of [snapshot?.catalog, snapshot?.catalogs]) {
-    if (!isRecord4(container)) continue;
+    if (!isRecord3(container)) continue;
     for (const key2 of keys2) {
       if (Array.isArray(container[key2])) return container[key2];
       if (Array.isArray(container[key2]?.items)) return container[key2].items;
@@ -29273,16 +28302,16 @@ function catalog(snapshot, ...keys2) {
   return [];
 }
 function findResourceById(items2, id) {
-  return items2.find((item) => isRecord4(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
+  return items2.find((item) => isRecord3(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
 }
 function selectionIds(value) {
   if (!Array.isArray(value)) return [];
-  const ids = value.map((item) => isRecord4(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
+  const ids = value.map((item) => isRecord3(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
   return ids.filter((id, index) => ids.findIndex((item) => String(item) === String(id)) === index);
 }
 function singleStatus({ id, resource: resource2, items: items2, emptyTitleKey }) {
   const bound = id !== null && id !== void 0 && id !== "";
-  const directResource = isRecord4(resource2) && (resource2.id === void 0 || String(resource2.id) === String(id)) ? resource2 : null;
+  const directResource = isRecord3(resource2) && (resource2.id === void 0 || String(resource2.id) === String(id)) ? resource2 : null;
   const resolved = firstRecord(directResource, bound ? findResourceById(items2, id) : null);
   return {
     bound,
@@ -29292,8 +28321,8 @@ function singleStatus({ id, resource: resource2, items: items2, emptyTitleKey })
   };
 }
 function launcherResourceStatuses(snapshot) {
-  const selection = isRecord4(snapshot?.selection) ? snapshot.selection : {};
-  const resources = isRecord4(snapshot?.resources) ? snapshot.resources : {};
+  const selection = isRecord3(snapshot?.selection) ? snapshot.selection : {};
+  const resources = isRecord3(snapshot?.resources) ? snapshot.resources : {};
   const presetResource = firstRecord(resources.preset, snapshot?.selected);
   const presetId = selection.presetId ?? presetResource?.id ?? null;
   const characterResource = firstRecord(resources.characterCard, resources.character);
@@ -29305,7 +28334,7 @@ function launcherResourceStatuses(snapshot) {
     selection.worldBooks,
     selection.worldBookSelection?.ids
   ));
-  const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord4);
+  const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord3);
   const implicitlySelectedWorlds = resolvedWorlds.filter((resource2) => resource2.selected !== false);
   const worldIds = explicitWorldIds.length > 0 ? explicitWorldIds : implicitlySelectedWorlds.map((resource2) => resource2.id ?? resource2.resourceId).filter((id) => id !== void 0 && id !== null);
   const worldCatalog = catalog(snapshot, "worldBooks", "worldBook", "lorebooks");
@@ -29645,7 +28674,7 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
       if (!disposed && listeners.size) timer = setTimeout(poll, Math.max(250, pollMs));
     }
   };
-  const submit = async ({ operation, value, expectedRevision, operationId, cause = "script", signal: writeSignal } = {}) => {
+  const submit2 = async ({ operation, value, expectedRevision, operationId, cause = "script", signal: writeSignal } = {}) => {
     if (disposed) throw new Error("MVU binding is disposed");
     if (!capability2) throw Object.assign(new Error("MVU binding is read-only"), { code: "MVU_WRITE_DENIED" });
     if (readFailed) throw Object.assign(new Error("A fresh MVU snapshot is required before writing"), { code: "MVU_READ_FAILED" });
@@ -29680,10 +28709,10 @@ async function createMvuCardBinding({ client, scope, pollMs = 1e3, signal, write
       return { ...copy(current4), writable: Boolean(capability2) && !readFailed && current4.status === "available" };
     },
     async write(request2) {
-      return (await submit(request2)).snapshot;
+      return (await submit2(request2)).snapshot;
     },
     async writeOperation(request2) {
-      return (await submit(request2)).receipt;
+      return (await submit2(request2)).receipt;
     },
     subscribe(listener) {
       if (disposed) throw new Error("MVU binding is disposed");
@@ -31435,13 +30464,13 @@ async function fetchImage(source, signal) {
   if (length && (!/^\d+$/.test(length) || Number(length) > IMAGE_LIMITS.imageBytes)) throw Error("IMAGE_BYTES");
   if (!response.body) throw Error("IMAGE_NETWORK");
   const reader = response.body.getReader(), chunks = [];
-  let total = 0, complete = false;
+  let total = 0, complete2 = false;
   try {
     for (; ; ) {
       signal.throwIfAborted();
       const { done, value } = await reader.read();
       if (done) {
-        complete = true;
+        complete2 = true;
         break;
       }
       total += value.byteLength;
@@ -31449,7 +30478,7 @@ async function fetchImage(source, signal) {
       chunks.push(value);
     }
   } finally {
-    if (!complete) await reader.cancel().catch(() => {
+    if (!complete2) await reader.cancel().catch(() => {
     });
     reader.releaseLock();
   }
@@ -49777,7 +48806,7 @@ function createFixedIdentityActionModel(source) {
   const tick = () => {
     if (--fuel < 0 || depth > 32) throw Error("Identity transformation limit exceeded");
   };
-  const call = (name2, args) => {
+  const call2 = (name2, args) => {
     tick();
     if (name2 === "String") return String(args[0]);
     if (name2 === "isPlainObject") return plain(args[0]);
@@ -49868,7 +48897,7 @@ function createFixedIdentityActionModel(source) {
       }
       case "CallExpression": {
         const args = node.arguments.map((item) => expression2(item, env));
-        if (node.callee.type === "Identifier") return call(node.callee.name, args);
+        if (node.callee.type === "Identifier") return call2(node.callee.name, args);
         if (path2(node.callee) === "Object.entries") {
           if (!plain(args[0])) throw Error("Invalid identity entries");
           return Object.entries(args[0]);
@@ -49936,7 +48965,7 @@ function createFixedIdentityActionModel(source) {
   const run = (name2, args) => {
     fuel = 2e4;
     depth = 0;
-    return call(name2, args);
+    return call2(name2, args);
   };
   if (values.OPENING_CHOICES.map((item) => item.id).join(",") !== "default,police_done,hospital_done,alisa_party,pool" || values.OPENING_PERKS.map((item) => item.id).join(",") !== "scholarship,lucky-user,yamane-huge") throw Error("Identity choices changed");
   return Object.freeze({ choices: json(values.OPENING_CHOICES), perks: json(values.OPENING_PERKS), initialRoles: json(values.INITIAL_ROLE_NAMES), apply(root, identity) {
@@ -52131,7 +51160,7 @@ function parseSexagesimal(str, asBigInt) {
   const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
   return sign === "-" ? num(-1) * res : res;
 }
-var timestamp2 = {
+var timestamp = {
   identify: (value) => value instanceof Date,
   default: true,
   tag: "tag:yaml.org,2002:timestamp",
@@ -52140,7 +51169,7 @@ var timestamp2 = {
   // assumed to be 00:00:00Z (start of day, UTC).
   test: RegExp("^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:(?:t|T|[ \\t]+)([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?)?$"),
   resolve(str) {
-    const match = str.match(timestamp2.test);
+    const match = str.match(timestamp.test);
     if (!match)
       throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
     const [, year, month, day, hour, minute, second] = match.map(Number);
@@ -52394,7 +51423,7 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
     emit();
     endGuest(item, null, { ok: true, operationId: item.operationId, revision: item.receipt.result.revision, proposalReady: true });
   };
-  const submit = async (item, at4) => {
+  const submit2 = async (item, at4) => {
     try {
       if (!live(item) || wall() >= item.expiresAt || !Number.isFinite(at4) || at4 > clock() || clock() - at4 >= 1500) throw Error("Identity confirmation expired");
       const current4 = item.authorization.binding.getSnapshot();
@@ -52497,7 +51526,7 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
       item.state = "accepted";
       item.retry = false;
       emit();
-      return submit(item, at4);
+      return submit2(item, at4);
     },
     retryOperation(proposalId, { trusted = false, at: at4 } = {}) {
       const item = ticket;
@@ -52507,7 +51536,7 @@ function createIdentityActionBridge({ model, prepareBinding, onState = () => {
       item.retry = true;
       item.suppressed = false;
       emit();
-      return submit(item, at4);
+      return submit2(item, at4);
     },
     async retryMessage(proposalId, { trusted = false } = {}) {
       const item = ticket;
@@ -52803,7 +51832,7 @@ function cardDocument(source) {
   return { html: html2, scripts, root: sourceRootPresentation(source), unsupported: [...new Set(unsupported)] };
 }
 function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
-  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters = [], schemaDeclarations = [], commandDeclarations = [];
+  const modules = /* @__PURE__ */ Object.create(null), runs = [], seen = /* @__PURE__ */ new Set(), reviewed = /* @__PURE__ */ new Set(), adapters2 = [], schemaDeclarations = [], commandDeclarations = [];
   let total = source.length, expanded = source.length, virtual = false;
   const analyzed = /* @__PURE__ */ new Map(), pending2 = [];
   const read = (url, ownerHint) => {
@@ -52842,7 +51871,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
           if (!isSideEffectModuleReference(content, dependency.url, base2)) throw Error("Built-in MVU adapter supports only a side-effect initialization import");
           if (Object.hasOwn(modules, dependency.url) && modules[dependency.url] !== "globalThis.__initializeBuiltinMvu(1);") throw Error("Conflicting built-in adapter modes across source owners");
           modules[dependency.url] = "globalThis.__initializeBuiltinMvu(1);";
-          if (!adapters.some((item) => item.url === dependency.url && item.owner === next.owner)) adapters.push({ ...next.builtin, owner: next.owner, replacement: "Tavern scoped MVU facade; original module is not executed" });
+          if (!adapters2.some((item) => item.url === dependency.url && item.owner === next.owner)) adapters2.push({ ...next.builtin, owner: next.owner, replacement: "Tavern scoped MVU facade; original module is not executed" });
           continue;
         }
         if (Object.hasOwn(modules, dependency.url)) {
@@ -52871,7 +51900,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
       identitySource = source;
       source = adaptIdentityHtml(source, wrapper);
       runs.push({ code: identityLoaderBootstrap(wrapper), name: "identity-loader-adapter-v1.js" });
-      adapters.push({ ...wrapper, replacement: "Scoped HTML, storage and explicit proposal adapter; original wrapper is not executed" });
+      adapters2.push({ ...wrapper, replacement: "Scoped HTML, storage and explicit proposal adapter; original wrapper is not executed" });
     }
   }
   if (source.length > 1024 * 1024) throw Error("Card HTML exceeds 1 MiB");
@@ -52889,7 +51918,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
     if (schemaDependencies.length) {
       for (const { item, record } of schemaDependencies) {
         trust.read(helper.owner, item.url);
-        adapters.push({ ...mvuAdapter(item.url, record.adapterVersion), owner: helper.owner, replacement: "Complete schema declaration handled by the backend interpreter" });
+        adapters2.push({ ...mvuAdapter(item.url, record.adapterVersion), owner: helper.owner, replacement: "Complete schema declaration handled by the backend interpreter" });
       }
       schemaDeclarations.push({ source: content, owner: helper.owner, key: helper.key, sha256: helper.contentDigest ?? trust.inspect(helper.owner, helper.key)?.digest });
       continue;
@@ -52897,7 +51926,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
     if (commandHookDeclaration(content)) {
       const declaration = { source: content, owner: helper.owner, key: helper.key };
       commandDeclarations.push(declaration);
-      adapters.push({ kind: "backend-command-hook", version: 1, ...declaration, replacement: "Source-owned precommit command processing; original script is not executed in display VMs" });
+      adapters2.push({ kind: "backend-command-hook", version: 1, ...declaration, replacement: "Source-owned precommit command processing; original script is not executed in display VMs" });
       continue;
     }
     collect(content, void 0, helper.owner);
@@ -52916,7 +51945,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
       scriptDepth = result.depth ?? (base ? baseDepth + 1 : 0);
       if (result.builtin) {
         if (result.builtin.kind !== "mvu-facade") throw Error("Schema adapter requires a complete Helper declaration");
-        adapters.push({ ...result.builtin, owner: scriptOwner, replacement: "Tavern scoped MVU facade; original script is not executed" });
+        adapters2.push({ ...result.builtin, owner: scriptOwner, replacement: "Tavern scoped MVU facade; original script is not executed" });
         code = "globalThis.__initializeBuiltinMvu(1);";
       }
     }
@@ -52929,7 +51958,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   }
   collectModules();
   const data3 = cardDocument(template.innerHTML);
-  return { ...data3, root, runs, modules, virtual, adapters, schemaDeclarations, commandDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
+  return { ...data3, root, runs, modules, virtual, adapters: adapters2, schemaDeclarations, commandDeclarations, cardStorage: wrapper?.kind === "identity-html-loader", identitySource };
 }
 function createDomBridge(doc, context, onProposal, onError, helperBinding) {
   const nodes = [doc.body], ids = new WeakMap([[doc.body, 0]]), disposers = [];
@@ -53546,15 +52575,15 @@ var InteractiveCard = (0, import_react28.memo)(function InteractiveCard2({ sourc
               signal?.throwIfAborted();
               const snapshot = writeBinding.getSnapshot();
               if (options !== null && options !== void 0 && (typeof options !== "object" || Array.isArray(options) || Object.keys(options).some((key2) => !["type", "message_id"].includes(key2)) || options.type !== void 0 && options.type !== "message" || options.message_id !== void 0 && options.message_id !== snapshot.scope?.messageId)) throw Error("Variable scope is bound to this card");
-              const submit = () => writeBinding.write({ operation, value, expectedRevision: observedRevision, operationId, cause, signal: signal ? AbortSignal.any([signal, writeController.signal]) : writeController.signal });
+              const submit2 = () => writeBinding.write({ operation, value, expectedRevision: observedRevision, operationId, cause, signal: signal ? AbortSignal.any([signal, writeController.signal]) : writeController.signal });
               let result;
               try {
-                result = await submit();
+                result = await submit2();
               } catch (error2) {
                 if (error2.code !== "MVU_WRITE_DENIED" || signal?.aborted || cleaned || current4 !== generation.current) throw error2;
                 await ensureWriteBinding(true);
                 signal?.throwIfAborted();
-                result = await submit();
+                result = await submit2();
               }
               if (cleaned || current4 !== generation.current) throw Error("Variable write cancelled");
               setError("");
@@ -53806,10 +52835,10 @@ function characterAvatarUrl(id) {
 var import_react32 = require("react");
 
 // packages/client/src/play/chat-model.js
-function normalizedPath2(value) {
+function normalizedPath(value) {
   return typeof value === "string" ? value.replaceAll("\\", "/").replace(/\/+$/, "").toLocaleLowerCase() : "";
 }
-function rootSessionId4(playthrough) {
+function rootSessionId(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof value === "string" && value !== "" ? value : null;
 }
@@ -53862,8 +52891,8 @@ function contextProjection(message) {
 }
 function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false;
-  const root = normalizedPath2(workspace.rootPath);
-  return root !== "" && normalizedPath2(session.cwd) === root;
+  const root = normalizedPath(workspace.rootPath);
+  return root !== "" && normalizedPath(session.cwd) === root;
 }
 function sessionHasConversationHistory(response) {
   return (response?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
@@ -53871,7 +52900,7 @@ function sessionHasConversationHistory(response) {
 function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
   if (typeof sessionId !== "string" || sessionId === "") return null;
   for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (rootSessionId4(playthrough) === sessionId) {
+    if (rootSessionId(playthrough) === sessionId) {
       return { playthrough, timeline: timelines[playthrough.path] ?? null };
     }
   }
@@ -53920,21 +52949,35 @@ async function loadCurrentPlaythrough(client, session, options = {}) {
   const sessionId = session.id ?? session.sessionId;
   const pending2 = pendingSwipeForSession(client, sessionId);
   const pendingOwner = pending2 && playthroughs.find((item) => item.id === pending2.playthrough.id && item.path === pending2.playthrough.path);
-  if (pendingOwner) return { workspace, playthrough: pendingOwner, timeline: pending2.timeline };
+  const expectedWorkspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  if (pendingOwner && (!pending2.operationKey || pending2.expectedWorkspaceScope === expectedWorkspaceScope)) return { workspace, playthrough: pendingOwner, timeline: pending2.timeline };
   const preferred = typeof options.preferredPlaythroughId === "string" ? playthroughs.find((item) => item.id === options.preferredPlaythroughId) : void 0;
   if (preferred !== void 0) {
-    const timeline = rootSessionId4(preferred) === sessionId ? await client.getTimeline(preferred) : await loadClassificationTimeline(client, preferred);
-    if (rootSessionId4(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
+    const timeline = rootSessionId(preferred) === sessionId ? await client.getTimeline(preferred) : await loadClassificationTimeline(client, preferred);
+    if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
       return { workspace, playthrough: preferred, timeline };
     }
+    if (timeline) {
+      const recovered = await restorePendingGeneration(client, preferred, timeline, { sessionId, expectedWorkspaceScope });
+      if (recovered) return { workspace, playthrough: preferred, timeline: recovered.timeline };
+    }
   }
-  const root = playthroughs.find((item) => rootSessionId4(item) === sessionId);
+  const root = playthroughs.find((item) => rootSessionId(item) === sessionId);
   if (root !== void 0) {
     return { workspace, playthrough: root, timeline: await client.getTimeline(root) };
   }
   const timelines = await loadTimelines(client, playthroughs, options.concurrency);
   const match = findPlaythroughForSession(sessionId, catalog2, timelines);
-  return match === null ? null : { workspace, ...match };
+  if (match) return { workspace, ...match };
+  if (typeof client.generation === "function") {
+    for (const row of playthroughs) {
+      const timeline = timelines[row.path];
+      if (!timeline || row === preferred) continue;
+      const recovered = await restorePendingGeneration(client, row, timeline, { sessionId, expectedWorkspaceScope });
+      if (recovered) return { workspace, playthrough: row, timeline: recovered.timeline };
+    }
+  }
+  return null;
 }
 function projectTimelineVariant(node, variant2, messagesBySession = {}) {
   const messages = messagesBySession[variant2.sessionId]?.messages ?? messagesBySession[variant2.sessionId] ?? [];
@@ -54268,6 +53311,111 @@ function createTurnReconciler(client) {
   };
 }
 
+// packages/client/src/play/import.js
+function parseJsonl(text3) {
+  const rows = text3.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  if (rows.length === 0) throw new TypeError("play.import.empty");
+  if (rows[0]?.kind === "pmp-dsh-tavern-playthrough") throw new TypeError("play.import.unsupported");
+  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
+  let greeting = null;
+  const qa = [];
+  let pending2 = null;
+  for (const message of messages) {
+    if (message.is_user === true) {
+      if (pending2 !== null) throw new TypeError("play.import.unpaired");
+      pending2 = message.mes;
+    } else if (pending2 === null && qa.length === 0 && greeting === null) {
+      greeting = message.mes;
+    } else if (pending2 !== null) {
+      qa.push({ user: pending2, assistant: message.mes });
+      pending2 = null;
+    }
+  }
+  if (pending2 !== null) throw new TypeError("play.import.unpaired");
+  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
+}
+function parsePlaythroughImport(text3, fileName = "") {
+  if (typeof text3 !== "string" || text3.trim() === "") throw new TypeError("play.import.empty");
+  const parsed = parseJsonl(text3);
+  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
+}
+function rootSessionId2(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function playthroughDirectory(playthrough) {
+  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  if (!path3.endsWith("/timeline.json")) throw new TypeError("play.import.timelineRequired");
+  return path3.slice(0, -"/timeline.json".length);
+}
+function fallbackImportPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  if (typeof direct === "string" && direct !== "") return direct;
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
+  return typeof nested === "string" && nested !== "" ? nested : null;
+}
+async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
+  if (typeof client.getImportContextBinding === "function") {
+    return client.getImportContextBinding(sessionId);
+  }
+  const path3 = fallbackImportPath(playthrough, timeline);
+  return path3 === null ? null : { path: path3, state: "pending" };
+}
+async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
+  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
+  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
+  const document2 = JSON.parse((await client.getFile(binding.path)).content);
+  return { binding, document: document2 };
+}
+function assertLocallyMutable(timeline, messages) {
+  if ((timeline?.nodes?.length ?? 0) > 0 || messages?.incompleteTurn === true || (messages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant")) {
+    const error = new Error("play.import.locked");
+    error.code = "PLAY_IMPORT_CONTEXT_LOCKED";
+    throw error;
+  }
+}
+async function bindPlaythroughImport(client, playthrough, file, {
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  const document2 = parsePlaythroughImport(await file.text(), file.name);
+  const sessionId = rootSessionId2(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  const directory = playthroughDirectory(playthrough);
+  const token = String(randomUUID());
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError("play.import.idInvalid");
+  const contextPath = `${directory}/import-context-${token}.json`;
+  await client.createDirs(directory);
+  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
+  const bound = await client.putImportContextBinding(sessionId, { path: contextPath });
+  const [savedFile, savedBinding] = await Promise.all([
+    client.getFile(contextPath),
+    client.getImportContextBinding(sessionId)
+  ]);
+  const savedDocument = JSON.parse(savedFile.content);
+  if (bound?.path !== contextPath || savedBinding?.path !== contextPath || savedBinding?.state !== "pending" || savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length) {
+    throw new Error("play.import.verificationFailed");
+  }
+  return { sessionId, binding: savedBinding, document: document2 };
+}
+async function unbindPlaythroughImport(client, playthrough) {
+  const sessionId = rootSessionId2(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  await client.deleteImportContextBinding(sessionId);
+  const saved = await client.getImportContextBinding(sessionId);
+  if (saved !== null) throw new Error("play.import.verificationFailed");
+  return { sessionId, binding: null };
+}
+
 // packages/client/src/i18n/use-ui-settings.js
 var import_react30 = require("react");
 function useClientUiSettings() {
@@ -54411,7 +53559,7 @@ function turnReconciler(client) {
 }
 async function loadChatState(client, sessionId, playthrough) {
   let pending2 = pendingSwipeForSession(client, sessionId);
-  if (pending2?.error) {
+  if (pending2?.error || pending2?.restored) {
     await recoverCompletedSwipe(client, pending2);
     pending2 = pendingSwipeForSession(client, sessionId);
   }
@@ -55135,10 +54283,31 @@ function MowanChatView({ sessionId, useSession, useChat, useInput, inputActions,
   );
 }
 
+// packages/play/src/playthrough-state.js
+function isPlaythroughArchived(playthrough) {
+  return typeof playthrough?.ext?.pmpDshTavern?.archivedAt === "string";
+}
+function withPlaythroughArchive(playthrough, archivedAt) {
+  if (isPlaythroughArchived(playthrough) === (archivedAt !== null)) return playthrough;
+  const known = { ...playthrough.ext?.pmpDshTavern };
+  if (archivedAt === null) delete known.archivedAt;
+  else known.archivedAt = archivedAt;
+  const ext = { ...playthrough.ext };
+  if (Object.keys(known).length === 0) delete ext.pmpDshTavern;
+  else ext.pmpDshTavern = known;
+  const updated = { ...playthrough };
+  if (Object.keys(ext).length === 0) delete updated.ext;
+  else updated.ext = ext;
+  return updated;
+}
+function isArchiveTimestamp(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+}
+
 // packages/play/src/timeline.js
-var SAFE_SEGMENT3 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
 function isSafeCatalogSegment(value) {
-  return typeof value === "string" && SAFE_SEGMENT3.test(value);
+  return typeof value === "string" && SAFE_SEGMENT.test(value);
 }
 
 // packages/client/src/play/title.js
@@ -55212,6 +54381,846 @@ function RpWorkspaceNotice() {
 
 // packages/client/src/play/sidebar.js
 var import_react36 = require("react");
+
+// packages/play/src/message-content.js
+function projectContentText(content) {
+  if (!Array.isArray(content)) return "";
+  return content.map((part) => {
+    if (part === null || typeof part !== "object" || Array.isArray(part)) return "";
+    if (typeof part.text === "string") return part.text;
+    return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
+  }).join("");
+}
+
+// packages/client/src/play/schema.js
+var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
+var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system", "developer", "tool"]);
+var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
+function isRecord4(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function fail3(label, detail) {
+  throw new TypeError(`${label}: ${detail}`);
+}
+function stringId(value, label) {
+  if (typeof value !== "string" || value.trim() === "") fail3(label, "must be a non-empty string");
+  return value;
+}
+function eventSeq(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) fail3(label, "must be a non-negative integer");
+  return value;
+}
+function extRecord(value, label) {
+  if (value === void 0) return void 0;
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  return value;
+}
+function normalizeChrome(value, label = "chrome") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!CHROME_MODES.has(value.mode)) fail3(label, "mode must be native or play");
+  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
+    fail3(label, "revision must be a non-empty string or null");
+  }
+  return { mode: value.mode, revision: value.revision ?? null };
+}
+function normalizeWorkspace(value, label = "workspace") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (typeof value.selected !== "boolean") fail3(label, "selected must be a boolean");
+  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
+    fail3(label, "rootPath must be a string or null");
+  }
+  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
+    fail3(label, "contractVersion must be a positive integer");
+  }
+  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord4).map((item) => ({
+    code: typeof item.code === "string" ? item.code : "",
+    message: typeof item.message === "string" ? item.message : ""
+  })) : [];
+  return {
+    selected: value.selected,
+    rootPath: value.rootPath ?? null,
+    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
+    contractVersion: value.contractVersion,
+    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
+    firstSelection: value.firstSelection === true,
+    warnings
+  };
+}
+function normalizeTimelineVariant(value, label = "variant") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
+  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
+  if (startEventId > endEventId) fail3(label, "startEventId must not exceed endEventId");
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    sessionId: stringId(value.sessionId, `${label}.sessionId`),
+    startEventId,
+    endEventId,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimelineNode(value, label = "node") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (value.kind !== "qa") fail3(label, "kind must be qa");
+  if (!Array.isArray(value.variants) || value.variants.length === 0) {
+    fail3(label, "variants must be a non-empty array");
+  }
+  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
+  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
+  if (!variants.some((item) => item.id === adoptedVariantId)) fail3(label, "adoptedVariantId must match a variant");
+  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
+    fail3(label, "displayOverride must be a string or null");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    kind: "qa",
+    displayOverride: value.displayOverride ?? null,
+    ...Object.hasOwn(value, "parentVariantId") ? {
+      parentVariantId: value.parentVariantId === null ? null : stringId(value.parentVariantId, `${label}.parentVariantId`)
+    } : {},
+    adoptedVariantId,
+    variants,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimeline(value, label = "timeline") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!Array.isArray(value.nodes)) fail3(label, "nodes must be an array");
+  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
+  const ids = /* @__PURE__ */ new Set();
+  const variantOwners = /* @__PURE__ */ new Map();
+  const tree = value.head !== void 0 || nodes.some((node) => Object.hasOwn(node, "parentVariantId"));
+  for (const node of nodes) {
+    if (ids.has(node.id)) fail3(label, `duplicate node id ${node.id}`);
+    ids.add(node.id);
+    for (const variant2 of node.variants) {
+      if (tree && variantOwners.has(variant2.id)) fail3(label, `duplicate tree variant id ${variant2.id}`);
+      variantOwners.set(variant2.id, node.id);
+    }
+  }
+  for (const [index, node] of nodes.entries()) {
+    if (!Object.hasOwn(node, "parentVariantId") || node.parentVariantId === null) continue;
+    const parentNodeId = variantOwners.get(node.parentVariantId);
+    if (parentNodeId === void 0) fail3(`${label}.nodes[${index}]`, "parentVariantId is unknown");
+    if (nodes.findIndex((item) => item.id === parentNodeId) >= index) fail3(`${label}.nodes[${index}]`, "parentVariantId must reference an earlier node");
+  }
+  let head;
+  if (value.head !== void 0) {
+    if (!isRecord4(value.head)) fail3(`${label}.head`, "must be an object");
+    head = {
+      sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
+      nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
+      variantId: stringId(value.head.variantId, `${label}.head.variantId`)
+    };
+    if (variantOwners.get(head.variantId) !== head.nodeId) fail3(`${label}.head`, "must reference a variant on its node");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { nodes, ...head === void 0 ? {} : { head }, ...ext === void 0 ? {} : { ext } };
+}
+function normalizeCatalog(value, label = "catalog") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!Array.isArray(value.playthroughs)) fail3(label, "playthroughs must be an array");
+  const playthroughs = value.playthroughs.map((item, index) => {
+    const itemLabel = `${label}.playthroughs[${index}]`;
+    if (!isRecord4(item)) fail3(itemLabel, "must be an object");
+    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
+    const archivedAt = ext2?.pmpDshTavern?.archivedAt;
+    if (archivedAt !== void 0 && !isArchiveTimestamp(archivedAt)) {
+      fail3(`${itemLabel}.ext.pmpDshTavern.archivedAt`, "must be a UTC ISO timestamp with milliseconds");
+    }
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      path: stringId(item.path, `${itemLabel}.path`),
+      ...typeof item.title === "string" ? { title: item.title } : {},
+      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
+      ...ext2 === void 0 ? {} : { ext: ext2 }
+    };
+  });
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { playthroughs, ...ext === void 0 ? {} : { ext } };
+}
+function parseJsonDocument(content, normalize, label) {
+  if (typeof content !== "string") fail3(label, "content must be a JSON string");
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    fail3(label, "content must be valid JSON");
+  }
+  return normalize(parsed, label);
+}
+function normalizeSessionMessages(value, label = "messages") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  if (!Array.isArray(value.messages)) fail3(label, "messages must be an array");
+  if (typeof value.incompleteTurn !== "boolean") fail3(label, "incompleteTurn must be a boolean");
+  const stopped = value.stoppedRequest;
+  if (stopped != null && (!isRecord4(stopped) || !["userEventId", "turnStartEventId", "turnEndEventId"].every((key2) => Number.isSafeInteger(stopped[key2]) && stopped[key2] >= 0) || stopped.turnStartEventId >= stopped.userEventId || stopped.userEventId >= stopped.turnEndEventId || value.incompleteTurn)) fail3(label, "invalid stopped request coordinates");
+  const messages = value.messages.map((item, index) => {
+    const itemLabel = `${label}.messages[${index}]`;
+    if (!isRecord4(item)) fail3(itemLabel, "must be an object");
+    if (!MESSAGE_ROLES.has(item.role)) fail3(itemLabel, "role is invalid");
+    if (!Array.isArray(item.content)) fail3(itemLabel, "content must be an array");
+    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail3(itemLabel, "seq must be a non-negative integer or null");
+    const fallbackKind = item.role === "tool" || item.role === "developer" ? "context" : item.role;
+    const origin2 = item.origin === void 0 ? { kind: fallbackKind } : (() => {
+      if (!isRecord4(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail3(`${itemLabel}.origin`, "kind is invalid");
+      if (item.origin.kind !== "context") return { kind: item.origin.kind };
+      const optional = (field, maximum) => {
+        const fieldValue = item.origin[field];
+        if (fieldValue !== null && fieldValue !== void 0 && (typeof fieldValue !== "string" || fieldValue.length > maximum)) {
+          fail3(`${itemLabel}.origin.${field}`, `must be a string up to ${maximum} characters or null`);
+        }
+        return typeof fieldValue === "string" && fieldValue !== "" ? fieldValue : null;
+      };
+      return {
+        kind: "context",
+        producer: optional("producer", 200),
+        form: optional("form", 64),
+        summary: optional("summary", 1e3)
+      };
+    })();
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      role: item.role,
+      content: item.content,
+      seq: item.seq,
+      text: projectContentText(item.content),
+      origin: origin2
+    };
+  });
+  return {
+    messages,
+    incompleteTurn: value.incompleteTurn,
+    ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {},
+    ...value.migratedFromV2 === true ? { migratedFromV2: true } : {},
+    ...stopped === void 0 ? {} : { stoppedRequest: stopped === null ? null : { userEventId: stopped.userEventId, turnStartEventId: stopped.turnStartEventId, turnEndEventId: stopped.turnEndEventId } }
+  };
+}
+function normalizeFocus(value, label = "focus") {
+  if (!isRecord4(value)) fail3(label, "must be an object");
+  const nullableId = (field, fieldLabel) => {
+    if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
+      fail3(label, `${fieldLabel} must be a non-empty string or null`);
+    }
+    return value[field];
+  };
+  return {
+    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
+    sessionId: nullableId("sessionId", "sessionId"),
+    nodeId: nullableId("nodeId", "nodeId"),
+    variantId: nullableId("variantId", "variantId")
+  };
+}
+function timelinePath(value, label = "timeline path") {
+  const path3 = typeof value === "string" ? value : value?.path;
+  stringId(path3, label);
+  if (!path3.endsWith("timeline.json")) fail3(label, "must point to timeline.json");
+  return path3;
+}
+function playthroughCharacterId(playthrough) {
+  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
+  if (typeof explicit === "string" && explicit !== "") return explicit;
+  const path3 = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  const first = path3.split("/").filter(Boolean)[0];
+  return first || null;
+}
+
+// packages/client/src/play/sidebar-model.js
+var SIDEBAR_LOAD_CONCURRENCY = 4;
+function characterIdFromSelection(value) {
+  const selection = value?.selection ?? value;
+  const id = selection?.characterCardId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function rootSessionId3(playthrough) {
+  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function sessionTitle(session, id) {
+  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
+  if (typeof session?.title === "string" && session.title !== "") return session.title;
+  return id;
+}
+function timestamp2(value) {
+  if (Number.isFinite(value)) return value;
+  if (typeof value !== "string" || value === "") return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+function latestCharacterSessionActivity(character, sessions) {
+  let latest = 0;
+  for (const playthrough of character.playthroughs) {
+    for (const id of playthrough.sessionIds) latest = Math.max(latest, timestamp2(sessions[id]?.updatedAt));
+  }
+  for (const session of character.unassigned) latest = Math.max(latest, timestamp2(sessions[session.id]?.updatedAt));
+  return latest;
+}
+function compareProjectedNames(left, right) {
+  const named = left.name.localeCompare(right.name, "zh-CN", { numeric: true, sensitivity: "base" });
+  return named !== 0 ? named : left.id.localeCompare(right.id);
+}
+function sortCharactersByRecentConversation(characters, sessions) {
+  return characters.toSorted((left, right) => {
+    const activity = latestCharacterSessionActivity(right, sessions) - latestCharacterSessionActivity(left, sessions);
+    if (activity !== 0) return activity;
+    const resourceUpdate = timestamp2(right.updatedAt) - timestamp2(left.updatedAt);
+    return resourceUpdate !== 0 ? resourceUpdate : compareProjectedNames(left, right);
+  });
+}
+function historicalCharacterName(playthrough, sessions, fallback) {
+  const preserved = playthrough?.ext?.pmpDshTavern?.characterName;
+  if (typeof preserved === "string" && preserved.trim() !== "") return preserved;
+  const root = rootSessionId3(playthrough);
+  if (root === null) return fallback;
+  const title = sessionTitle(sessions[root], root);
+  const inferred = title.replace(/\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/, "").trim();
+  return inferred !== "" && inferred !== root ? inferred : fallback;
+}
+function normalizedCharacterName(value) {
+  return String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+}
+function assessPlaythroughCharacterRelink({
+  playthrough,
+  target,
+  characters = [],
+  missingCharacters = []
+} = {}) {
+  const reference = playthrough?.ext?.pmpDshTavern ?? {};
+  const currentId = playthroughCharacterId(playthrough);
+  if (typeof target?.id !== "string" || target.id === "") return { automatic: false, reason: "target-missing" };
+  if (target.id === currentId) return { automatic: true, reason: "unchanged" };
+  if (typeof reference.characterSha256 === "string" && reference.characterSha256 !== "") {
+    const shaMatches = characters.filter((character) => character.sha256 === reference.characterSha256);
+    if (shaMatches.length === 1 && shaMatches[0].id === target.id) return { automatic: true, reason: "sha256" };
+  }
+  const name2 = normalizedCharacterName(reference.characterName);
+  if (name2 !== "") {
+    const missingNameMatches = missingCharacters.filter((character) => normalizedCharacterName(character.name) === name2);
+    const currentNameMatches = characters.filter((character) => normalizedCharacterName(character.name) === name2);
+    const missingIdentityIsUnique = missingNameMatches.length === 0 || missingNameMatches.length === 1 && missingNameMatches[0].id === currentId;
+    if (missingIdentityIsUnique && currentNameMatches.length === 1 && currentNameMatches[0].id === target.id) {
+      return { automatic: true, reason: "name" };
+    }
+  }
+  return { automatic: false, reason: "manual" };
+}
+function normalizedPath2(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+function requiresSystemWorkspaceConfirmation(value) {
+  const path3 = typeof value === "string" ? value.replaceAll("\\", "/") : "";
+  return /^c:\//i.test(path3) || path3 === "/" || path3 === "/usr" || path3.startsWith("/usr/") || path3 === "/System" || path3.startsWith("/System/");
+}
+function timelineFor(timelines, playthrough) {
+  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
+}
+function playthroughMembers(playthrough, timeline) {
+  const ids = /* @__PURE__ */ new Set();
+  const rootId = rootSessionId3(playthrough);
+  if (rootId !== null) ids.add(rootId);
+  if (typeof timeline?.head?.sessionId === "string" && timeline.head.sessionId !== "") {
+    ids.add(timeline.head.sessionId);
+  }
+  for (const head of timeline?.ext?.pmpDshTavern?.branchHeads ?? []) {
+    if (typeof head?.sessionId === "string" && head.sessionId !== "") ids.add(head.sessionId);
+  }
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant2 of node?.variants ?? []) {
+      if (typeof variant2?.sessionId === "string" && variant2.sessionId !== "") ids.add(variant2.sessionId);
+    }
+  }
+  return ids;
+}
+function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
+  const ids = /* @__PURE__ */ new Set();
+  if (workspace?.selected !== true) return ids;
+  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
+    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
+    if (item !== void 0) {
+      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
+      return ids;
+    }
+  }
+  const root = normalizedPath2(workspace.rootPath);
+  if (root === "") return ids;
+  for (const [id, session] of Object.entries(sessions)) {
+    if (normalizedPath2(session?.cwd) === root) ids.add(id);
+  }
+  return ids;
+}
+var SessionCharacterBindingCache = class {
+  constructor() {
+    this.entries = /* @__PURE__ */ new Map();
+    this.generation = 0;
+  }
+  clear() {
+    this.generation += 1;
+    this.entries.clear();
+  }
+  get(client, sessionId) {
+    const cached = this.entries.get(sessionId);
+    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
+    const generation = this.generation;
+    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
+    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
+    this.entries.set(sessionId, { promise });
+    promise.then((value) => {
+      if (this.generation === generation) this.entries.set(sessionId, { value });
+    });
+    return promise;
+  }
+};
+async function loadSessionCharacterBindings(client, sessionIds, {
+  concurrency = SIDEBAR_LOAD_CONCURRENCY,
+  cache = new SessionCharacterBindingCache()
+} = {}) {
+  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
+  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < ids.length) {
+      const index = cursor;
+      cursor += 1;
+      const id = ids[index];
+      result[id] = await cache.get(client, id);
+    }
+  };
+  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
+  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return result;
+}
+async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
+  const result = new Array(values.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < values.length) {
+      const index = cursor;
+      cursor += 1;
+      result[index] = await mapper(values[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
+  return result;
+}
+async function loadPlaySidebarResources(client) {
+  if (client == null) throw new TypeError("playClient.required");
+  const [workspace, characterResponse] = await Promise.all([
+    client.getWorkspace(),
+    client.getCharacters()
+  ]);
+  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
+  const missingCharacters = Array.isArray(characterResponse?.missingCharacters) ? characterResponse.missingCharacters : [];
+  const characterSorting = characterResponse?.sorting ?? { mode: "updated" };
+  if (workspace.selected !== true) return { workspace, characters, missingCharacters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
+  let catalog2;
+  try {
+    catalog2 = await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
+    catalog2 = { playthroughs: [] };
+  }
+  const timelines = {};
+  const diagnostics = [];
+  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
+    try {
+      timelines[playthrough.path] = await client.getTimeline(playthrough);
+    } catch (reason) {
+      diagnostics.push({
+        playthroughId: playthrough.id,
+        ...typeof reason?.code === "string" ? { code: reason.code } : {},
+        path: playthrough.path,
+        message: reason instanceof Error ? reason.message : String(reason)
+      });
+    }
+  });
+  return { workspace, characters, missingCharacters, characterSorting, catalog: catalog2, timelines, diagnostics };
+}
+function projectPlaySidebar({
+  workspace = { selected: false },
+  workspaceItems = [],
+  characters = [],
+  characterSorting = { mode: "updated" },
+  missingCharacters = [],
+  catalog: catalog2 = { playthroughs: [] },
+  timelines = {},
+  sessions = {},
+  sessionIds = [],
+  archivedSessionIds = [],
+  currentId = null,
+  activePlaythroughId = null,
+  sessionCharacters = {},
+  pendingSwipes: pendingSwipes2 = []
+} = {}) {
+  const archived = new Set(archivedSessionIds);
+  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
+  const characterById = /* @__PURE__ */ new Map();
+  const missingById = new Map(missingCharacters.map((item) => [item.id, item]));
+  const missingCharacterById = /* @__PURE__ */ new Map();
+  const ensureCharacter = (id, name2 = id) => {
+    if (!characterById.has(id) && !characters.some((item) => item?.id === id)) {
+      if (!missingCharacterById.has(id)) {
+        const missing = missingById.get(id);
+        missingCharacterById.set(id, {
+          id,
+          name: missing?.name ?? name2,
+          ...typeof missing?.sha256 === "string" ? { sha256: missing.sha256 } : {},
+          playthroughs: [],
+          unassigned: [],
+          missing: true
+        });
+      }
+      return missingCharacterById.get(id);
+    }
+    if (!characterById.has(id)) {
+      const resource2 = characters.find((item) => item?.id === id);
+      characterById.set(id, {
+        id,
+        name: name2,
+        ...typeof resource2?.updatedAt === "string" ? { updatedAt: resource2.updatedAt } : {},
+        playthroughs: [],
+        unassigned: []
+      });
+    }
+    return characterById.get(id);
+  };
+  for (const character of characters) {
+    if (typeof character?.id !== "string" || character.id === "") continue;
+    ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
+  }
+  const claimedRpSessions = /* @__PURE__ */ new Set();
+  const archivedPlaythroughs = [];
+  for (const playthrough of catalog2.playthroughs ?? []) {
+    const rootId = rootSessionId3(playthrough);
+    const draft = rootId === null && playthrough.ext?.pmpDshTavern?.draftId === playthrough.id;
+    const characterId = playthroughCharacterId(playthrough);
+    if (characterId === null) continue;
+    const characterReference = playthrough.ext?.pmpDshTavern ?? {};
+    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
+    for (const pending2 of pendingSwipes2) {
+      if (pending2.playthrough.id === playthrough.id && pending2.playthrough.path === playthrough.path) allMembers.add(pending2.sessionId);
+    }
+    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
+    for (const id of members) claimedRpSessions.add(id);
+    if (isPlaythroughArchived(playthrough)) {
+      archivedPlaythroughs.push({
+        ...playthrough,
+        characterName: characters.find((item) => item.id === characterId)?.name ?? historicalCharacterName(playthrough, sessions, characterId),
+        rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+        sessionIds: members,
+        missing: members.length === 0 && !draft
+      });
+      continue;
+    }
+    const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId));
+    if (characterGroup.missing === true && characterGroup.sha256 === void 0 && typeof characterReference.characterSha256 === "string") {
+      characterGroup.sha256 = characterReference.characterSha256;
+    }
+    characterGroup.playthroughs.push({
+      ...playthrough,
+      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
+      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+      sessionIds: members,
+      active: typeof activePlaythroughId === "string" && activePlaythroughId !== "" ? playthrough.id === activePlaythroughId : currentId !== null && members.includes(currentId),
+      missing: members.length === 0 && !draft
+    });
+  }
+  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
+  const otherSessions = [];
+  for (const id of ids) {
+    const session = sessions[id];
+    if (session == null || archived.has(id)) continue;
+    if (session.origin === "subagent") continue;
+    if (!rpSessionIds.has(id)) {
+      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
+      continue;
+    }
+    if (claimedRpSessions.has(id)) continue;
+    const characterId = sessionCharacters[id];
+    if (typeof characterId === "string" && characterId !== "") {
+      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
+      continue;
+    }
+    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
+  }
+  const projectedCharacters = [...characterById.values()];
+  return {
+    workspaceReady: workspace.selected === true,
+    rpSessionIds: [...rpSessionIds],
+    playSessionIds: [...claimedRpSessions],
+    characters: characterSorting?.mode === "updated" ? sortCharactersByRecentConversation(projectedCharacters, sessions) : projectedCharacters,
+    missingCharacters: [...missingCharacterById.values()],
+    otherSessions,
+    archivedPlaythroughs
+  };
+}
+function playthroughFocusTarget({ focus, playthrough, rpSessionIds = [] } = {}) {
+  const target = typeof focus?.sessionId === "string" ? focus.sessionId : playthrough?.rootSessionId;
+  return typeof target === "string" && new Set(rpSessionIds).has(target) ? target : null;
+}
+function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
+  if (workspace == null || session == null) return false;
+  if (workspace.selected !== true) return true;
+  const workspacePath = normalizedPath2(workspace.rootPath);
+  const sessionPath = normalizedPath2(session.cwd);
+  if (workspacePath === "" || sessionPath !== workspacePath) return true;
+  return characterIdFromSelection(selection) === null;
+}
+async function runAutomaticCharacterRelinks(recoveries, { attempted, isActive, relink, onError, onChanged }) {
+  let changed = false;
+  try {
+    for (const recovery of recoveries) {
+      if (!isActive()) break;
+      if (attempted.has(recovery.key)) continue;
+      attempted.add(recovery.key);
+      try {
+        await relink(recovery.missing.id, recovery.character.id);
+        changed = true;
+      } catch (reason) {
+        if (isActive()) onError(reason);
+      }
+    }
+  } finally {
+    if (changed) onChanged();
+  }
+}
+
+// packages/session-template/src/model.js
+var MAX_RESOURCE_ID_CHARACTERS = 200;
+var MAX_WORLD_BOOKS = 100;
+function stringOrNull(value) {
+  return typeof value === "string" && value !== "" && value.length <= MAX_RESOURCE_ID_CHARACTERS ? value : null;
+}
+function characterOptions(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
+  const result = {};
+  if (Number.isSafeInteger(value.greetingIndex) && value.greetingIndex >= 0) result.greetingIndex = value.greetingIndex;
+  if (typeof value.preferCharacterSystemPrompt === "boolean") result.preferCharacterSystemPrompt = value.preferCharacterSystemPrompt;
+  if (typeof value.preferCharacterPostHistory === "boolean") result.preferCharacterPostHistory = value.preferCharacterPostHistory;
+  return result;
+}
+var RP_SOURCES = /* @__PURE__ */ new Set(["command", "character-follow"]);
+var SANDBOX_MODES = /* @__PURE__ */ new Set(["read-only", "workspace-write", "danger-full-access"]);
+function rpState(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return { active: false, source: null, followSuppressed: false, sandboxBefore: null };
+  }
+  return {
+    active: value.active === true,
+    source: RP_SOURCES.has(value.source) ? value.source : null,
+    followSuppressed: value.followSuppressed === true,
+    sandboxBefore: SANDBOX_MODES.has(value.sandboxBefore) ? value.sandboxBefore : null
+  };
+}
+function normalizeTemplateSelection(value = {}) {
+  const worldBookIds = Array.isArray(value?.worldBookIds) ? [...new Set(value.worldBookIds.filter((item) => typeof item === "string" && item !== "" && item.length <= MAX_RESOURCE_ID_CHARACTERS))].slice(0, MAX_WORLD_BOOKS) : [];
+  return {
+    presetId: stringOrNull(value?.presetId),
+    characterCardId: stringOrNull(value?.characterCardId),
+    userId: stringOrNull(value?.userId),
+    worldBookIds,
+    character: characterOptions(value?.character),
+    rp: rpState(value?.rp)
+  };
+}
+var sessionTemplateModelConstants = Object.freeze({
+  maxResourceIdCharacters: MAX_RESOURCE_ID_CHARACTERS,
+  maxWorldBooks: MAX_WORLD_BOOKS
+});
+
+// packages/client/src/play/create.js
+var SAFE_SEGMENT2 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+function safeSegment(value, label) {
+  if (typeof value !== "string" || !SAFE_SEGMENT2.test(value)) {
+    throw new TypeError(`${label} must be a safe path segment`);
+  }
+  return value;
+}
+async function catalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
+    throw reason;
+  }
+}
+function playthroughCharacterId2(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.characterId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function rootSessionId4(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+async function ensureCharacterSelection(client, sessionId, characterId) {
+  const current4 = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(current4) !== characterId) {
+    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
+  }
+  const verified = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(verified) !== characterId) {
+    throw new Error("playthrough character selection did not persist");
+  }
+  return verified;
+}
+function latestCharacterPlaythrough(catalog2, characterId) {
+  let latest = null;
+  let latestNumber = 0;
+  let ordinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    ordinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    const number2 = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
+    if (latest === null || number2 >= latestNumber) {
+      latest = playthrough;
+      latestNumber = number2;
+    }
+  }
+  return latest;
+}
+async function playthroughIsReusable(client, playthrough) {
+  if (isPlaythroughArchived(playthrough)) return false;
+  try {
+    const sessionId = rootSessionId4(playthrough);
+    const timeline = await client.getTimeline(playthrough);
+    if ((timeline?.nodes?.length ?? 0) > 0) return false;
+    if (sessionId === null) {
+      return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
+    }
+    const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
+    if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
+    const history = await client.getMessages(sessionId);
+    if (history?.incompleteTurn === true) return false;
+    return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
+  } catch (reason) {
+    if (reason?.code === "PLAY_SESSION_NOT_FOUND") return false;
+    throw reason;
+  }
+}
+async function renamePlaythrough(client, playthrough, title) {
+  if (client == null) throw new TypeError("playClient.required");
+  const normalized = typeof title === "string" ? title.trim() : "";
+  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
+  const saved = await updateCatalog(client, (current4) => {
+    const freshIndex = current4.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
+    if (freshIndex < 0) throw new TypeError("play.rename.missing");
+    const freshPlaythroughs = [...current4.playthroughs];
+    const fresh = freshPlaythroughs[freshIndex];
+    freshPlaythroughs[freshIndex] = {
+      ...fresh,
+      title: normalized,
+      ext: {
+        ...fresh.ext,
+        pmpDshTavern: { ...fresh.ext?.pmpDshTavern, autoTitle: false }
+      }
+    };
+    return { ...current4, playthroughs: freshPlaythroughs };
+  });
+  const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
+  const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
+  if (renamed?.title !== normalized || renamed.ext?.pmpDshTavern?.autoTitle !== false) {
+    throw new Error("play.rename.verificationFailed");
+  }
+  return renamed;
+}
+function sourceSessionIdForCharacter(character) {
+  const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
+  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
+  const activeLoose = character?.unassigned?.find((item) => item.active);
+  if (activeLoose !== void 0) return activeLoose.id;
+  const loose = character?.unassigned?.find((item) => typeof item.id === "string");
+  if (loose !== void 0) return loose.id;
+  const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
+  return rooted?.rootSessionId ?? null;
+}
+async function reusableOpeningDraft(client, characterId, configurationSelection) {
+  const latest = latestCharacterPlaythrough(await catalogOrEmpty(client), characterId);
+  if (!latest || isPlaythroughArchived(latest) || rootSessionId4(latest) || latest.ext?.pmpDshTavern?.draftId !== latest.id) return null;
+  let result;
+  try {
+    result = await client.getDraft(latest.id);
+  } catch (error) {
+    if (["PLAY_DRAFT_NOT_FOUND", "PLAY_DRAFT_ARCHIVED"].includes(error.code)) return null;
+    throw error;
+  }
+  const { draft, playthrough } = result;
+  if (draft.phase !== "draft" || draft.claim || draft.selection.characterCardId !== characterId || isPlaythroughArchived(playthrough) || rootSessionId4(playthrough)) return null;
+  if (configurationSelection && JSON.stringify(normalizeTemplateSelection(draft.selection)) !== JSON.stringify(normalizeTemplateSelection(configurationSelection))) return null;
+  return { ...result, sessionId: null, reused: true };
+}
+async function createCharacterPlaythrough(client, {
+  character,
+  selectionFromSessionId = null,
+  configureSession = null,
+  configurationSource = null,
+  configurationSelection = null,
+  reuseEmpty = true,
+  creationId
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
+  const characterId = safeSegment(character?.id, "character.id");
+  if (typeof client.postDraft === "function") {
+    const source = configurationSource ?? (selectionFromSessionId ? { mode: "current", sessionId: selectionFromSessionId } : null);
+    return creationRequest(
+      client,
+      ["draft", characterId, source, configurationSelection, reuseEmpty],
+      creationId,
+      async (identity, options) => ({ ...await client.postDraft({ characterId, ...source ? { source } : {}, ...identity }, options), reused: false }),
+      reuseEmpty ? () => reusableOpeningDraft(client, characterId, configurationSelection) : null
+    );
+  }
+  const catalog2 = reuseEmpty && typeof client.getCatalog === "function" ? await catalogOrEmpty(client) : null;
+  let latest = latestCharacterPlaythrough(catalog2, characterId);
+  let reusable = reuseEmpty && latest !== null && await playthroughIsReusable(client, latest);
+  if (reusable) {
+    const fresh = (await client.getCatalog()).playthroughs.find((item) => item.id === latest.id && item.path === latest.path);
+    reusable = fresh !== void 0 && !isPlaythroughArchived(fresh) && rootSessionId4(fresh) === rootSessionId4(latest);
+    if (reusable) latest = fresh;
+  }
+  if (reusable) {
+    const existingRoot = rootSessionId4(latest);
+    if (existingRoot !== null) {
+      if (typeof configureSession === "function") await configureSession(existingRoot);
+      await ensureCharacterSelection(client, existingRoot, characterId);
+      return { sessionId: existingRoot, playthrough: latest, reused: true };
+    }
+  }
+  throw Object.assign(new Error("This client requires the Host draft creation API (postDraft) to start a new playthrough safely."), { code: "PLAY_CREATION_UNAVAILABLE" });
+}
+function createPlaythroughController(client, dependencies = {}) {
+  const inFlight = /* @__PURE__ */ new Map();
+  let tail = Promise.resolve();
+  return {
+    create(args) {
+      const characterId = safeSegment(args?.character?.id, "character.id");
+      const reuseEmpty = args?.reuseEmpty === void 0 ? dependencies.reuseEmpty === void 0 ? true : dependencies.reuseEmpty : args.reuseEmpty;
+      if (typeof reuseEmpty !== "boolean") throw new TypeError("reuseEmpty must be a boolean");
+      const key2 = JSON.stringify([characterId, reuseEmpty, args.creationId, args.configurationSource, args.selectionFromSessionId, args.configurationSelection ? normalizeTemplateSelection(args.configurationSelection) : null]);
+      const existing = inFlight.get(key2);
+      if (existing !== void 0) return existing;
+      const task = tail.catch(() => {
+      }).then(() => createCharacterPlaythrough(client, {
+        ...dependencies,
+        ...args,
+        reuseEmpty
+      }));
+      tail = task;
+      inFlight.set(key2, task);
+      task.finally(() => {
+        if (inFlight.get(key2) === task) inFlight.delete(key2);
+      }).catch(() => {
+      });
+      return task;
+    }
+  };
+}
 
 // packages/client/src/play/diagnostics.js
 var import_react34 = require("react");
@@ -55392,6 +55401,8 @@ var operations = /* @__PURE__ */ new Set([
   "workspace.dir.create",
   "workspace.file.write",
   "session.create",
+  "playthrough.generation",
+  "playthrough.fork",
   "playthrough.rollback",
   "session.branch",
   "session.user-message",
@@ -55411,6 +55422,11 @@ var checkpoints = /* @__PURE__ */ new Set([
   "session.import-context.unbound",
   "session.import-lineage.copied",
   "workspace.bound",
+  "playthrough.generation.intent",
+  "playthrough.generation.send-intent",
+  "playthrough.fork.intent",
+  "playthrough.fork.child-verified",
+  "playthrough.fork.published",
   "playthrough.rollback.child-verified",
   "playthrough.rollback.head-verified",
   "playthrough.rollback.intent",
@@ -56627,7 +56643,9 @@ function PlayWorkspaceBrowser({
         openSession(null, playthrough);
         return;
       }
-      const pending2 = pendingSwipe(playClient, playthrough);
+      const pending2 = typeof playClient.generation === "function" ? await restorePendingGeneration(playClient, playthrough, await playClient.getTimeline(playthrough), {
+        expectedWorkspaceScope: JSON.stringify([resources.workspace.workspaceId, resources.workspace.rootPath])
+      }) : pendingSwipe(playClient, playthrough);
       if (pending2 !== null) {
         openSession(pending2.sessionId, playthrough);
         return;
@@ -57225,7 +57243,7 @@ function sessionViewTarget(selectedView, targetViewId, binding, shouldDefault) {
   if (binding === null) return selectedView === targetViewId ? "chat" : null;
   return shouldDefault(binding) ? defaultViewTarget(selectedView, targetViewId) : null;
 }
-function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete, shouldDefault, getBinding, subscribeBindings }) {
+function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete: complete2, shouldDefault, getBinding, subscribeBindings }) {
   const binding = (0, import_react38.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
   const hasStore = typeof useStore === "function";
   const selectedView = hasStore ? useStore((state) => state.view) : void 0;
@@ -57237,8 +57255,8 @@ function DefaultConversationViewAdapter({ useStore, actions, targetViewId, compl
       } catch {
       }
     }
-    if (binding != null) complete(binding);
-  }, [actions, binding, complete, hasStore, selectedView, shouldDefault, targetViewId]);
+    if (binding != null) complete2(binding);
+  }, [actions, binding, complete2, hasStore, selectedView, shouldDefault, targetViewId]);
   return null;
 }
 
@@ -58208,10 +58226,10 @@ function createLivePlayClient({
     const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
     return v1("GET", `/character-selection${query}`);
   }
-  async function getJsonFile(path3, normalize, label) {
+  async function getJsonFile(path3, normalize, label, options) {
     let response;
     try {
-      response = await v2("GET", `/workspace/files${pathQuery(path3)}`);
+      response = await v2("GET", `/workspace/files${pathQuery(path3)}`, void 0, options);
     } catch (error) {
       if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
         managedRevisions.set(path3, null);
@@ -58268,6 +58286,25 @@ function createLivePlayClient({
       }
     }
   }
+  function operationOptions(options = {}) {
+    const deadline = AbortSignal.timeout(35e3);
+    return { ...options, signal: options.signal ? AbortSignal.any([options.signal, deadline]) : deadline };
+  }
+  async function workspaceScope(options) {
+    const workspace = normalizeWorkspace(await v2("GET", "/workspace", void 0, options));
+    return JSON.stringify([workspace.workspaceId, workspace.rootPath]);
+  }
+  async function submitPlaythroughOperation(playthrough, name2, body2, timeline, callerOptions) {
+    const options = operationOptions(callerOptions);
+    const expectedWorkspaceScope = body2.expectedWorkspaceScope ?? await workspaceScope(options);
+    const snapshot = timeline ?? await getJsonFile(timelinePath(playthrough), normalizeTimeline, "timeline", options);
+    options?.signal?.throwIfAborted();
+    return v2("POST", `/playthroughs/${encodeURIComponent(playthrough.id)}/${name2}`, {
+      ...body2,
+      expectedWorkspaceScope,
+      expectedRevision: snapshotRevisions.get(snapshot)
+    }, options);
+  }
   return {
     mode: "live",
     apiRoot,
@@ -58284,8 +58321,8 @@ function createLivePlayClient({
     async putChrome(mode) {
       return normalizeChrome(await v2("PUT", "/chrome", { mode }));
     },
-    async getWorkspace() {
-      return normalizeWorkspace(await v2("GET", "/workspace"));
+    async getWorkspace(options) {
+      return normalizeWorkspace(await v2("GET", "/workspace", void 0, operationOptions(options)));
     },
     async putWorkspace(path3) {
       return normalizeWorkspace(await v2("PUT", "/workspace", { path: path3 }));
@@ -58296,8 +58333,8 @@ function createLivePlayClient({
     async listFiles(prefix = "") {
       return v2("GET", `/workspace/files?list=${encodeURIComponent(prefix)}`);
     },
-    async getFile(path3) {
-      const response = await v2("GET", `/workspace/files${pathQuery(path3)}`);
+    async getFile(path3, options) {
+      const response = await v2("GET", `/workspace/files${pathQuery(path3)}`, void 0, options);
       return {
         path: response.path,
         content: fileContent(response, path3),
@@ -58341,19 +58378,27 @@ function createLivePlayClient({
         options
       });
     },
-    getTimeline(playthrough) {
+    getTimeline(playthrough, options) {
       const path3 = timelinePath(playthrough);
-      return getJsonFile(path3, normalizeTimeline, "timeline");
+      return getJsonFile(path3, normalizeTimeline, "timeline", operationOptions(options));
     },
-    async rollbackPlaythrough(playthrough, nodeId, variantId) {
-      const workspace = await this.getWorkspace();
-      const timeline = await this.getTimeline(playthrough);
-      return v2("POST", `/playthroughs/${encodeURIComponent(playthrough.id)}/rollback`, {
-        nodeId,
-        variantId,
-        expectedRevision: snapshotRevisions.get(timeline),
-        expectedWorkspaceScope: JSON.stringify([workspace.workspaceId, workspace.rootPath])
-      });
+    rollbackPlaythrough(playthrough, nodeId, variantId) {
+      return submitPlaythroughOperation(playthrough, "rollback", { nodeId, variantId });
+    },
+    forkPlaythrough(playthrough, body2, options) {
+      return submitPlaythroughOperation(playthrough, "fork", body2, void 0, options);
+    },
+    async generation(playthrough, body2, timeline) {
+      if (body2.action === "start") return submitPlaythroughOperation(playthrough, "generation", body2, timeline);
+      const options = operationOptions();
+      const expectedWorkspaceScope = body2.expectedWorkspaceScope ?? await workspaceScope(options);
+      const path3 = `/playthroughs/${encodeURIComponent(playthrough.id)}/generation`;
+      if (body2.action === "status") {
+        const query = new URLSearchParams({ scope: expectedWorkspaceScope });
+        if (body2.operationKey) query.set("key", body2.operationKey);
+        return v2("GET", path3 + "?" + query, void 0, options);
+      }
+      return v2("POST", path3, { ...body2, expectedWorkspaceScope }, options);
     },
     putTimeline(playthrough, timeline) {
       const path3 = timelinePath(playthrough);
@@ -58403,8 +58448,10 @@ function createLivePlayClient({
     postUserMessage(sessionId, text3, options) {
       return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text3, ...options?.requestId ? { requestId: options.requestId } : {} }, options);
     },
-    postDraft(body2) {
-      return v2("POST", "/drafts", body2);
+    async postDraft(body2, options) {
+      const expectedWorkspaceScope = body2.expectedWorkspaceScope ?? await workspaceScope(options);
+      options?.signal?.throwIfAborted();
+      return v2("POST", "/drafts", { ...body2, expectedWorkspaceScope }, options);
     },
     getDraft(id, options) {
       return v2("GET", `/drafts/${encodeURIComponent(id)}`, void 0, options);
@@ -59222,7 +59269,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [chromeError, setChromeError] = (0, import_react43.useState)("");
   const [activeSnapshot, setActiveSnapshot] = (0, import_react43.useState)(null);
   const [assemblyState, setAssemblyState] = (0, import_react43.useState)({ presets: [], selection: null });
-  const [statusError, setStatusError] = (0, import_react43.useState)("");
+  const [statusError2, setStatusError] = (0, import_react43.useState)("");
   const [uiSettings, setUiSettings] = (0, import_react43.useState)(getClientUiSettings);
   const [conversationSettings, setConversationSettings] = (0, import_react43.useState)(getClientConversationSettings);
   const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react43.useState)({ text: translate("conversationSettings.saved"), error: false });
@@ -59767,7 +59814,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       h35(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h35("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: bindingTarget?.label || sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h35("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError2 === "" ? uiMessage("nav.menuTitle", { session: bindingTarget?.label || sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError2 })),
         h35(
           "button",
           {

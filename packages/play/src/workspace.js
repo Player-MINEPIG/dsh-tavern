@@ -256,9 +256,29 @@ export class PlayWorkspaceStore {
     })
   }
 
-  async withReservedTimeline(row, callback) {
+  connectOperations({ generation, rollback, creation, membership }) {
+    this.generationGuards = generation
+    this.recoveryGuards = [
+      ['rollback', row => rollback?.hasPending(row.id), 'PLAY_ROLLBACK_PENDING'],
+      ['fork', row => creation?.hasPending(row.id), 'PLAY_CREATION_PENDING'],
+      ['detach', row => membership?.hasPendingDetach?.(row), 'PLAY_DETACH_PENDING'],
+    ]
+  }
+
+  assertPlaythroughAvailable(row, kind, generationOwner) {
+    this.generationGuards?.guardPathChange(row, generationOwner)
+    for (const [operation, pending, code] of this.recoveryGuards ?? []) {
+      if (operation !== kind && pending(row)) {
+        throw httpError(409, 'A previous ' + operation + ' needs verification. Open Repair playthrough.', code)
+      }
+    }
     const key = realpathSync.native(resolvePlayPath(requireRoot(this.binding), row.path, { mustExist: true }))
-    if (this.writeReservations.has(key)) throw httpError(409, 'A rollback is in progress for this playthrough', 'PLAY_ROLLBACK_BUSY')
+    if (this.writeReservations.has(key)) throw httpError(409, 'A playthrough operation is still running', 'PLAY_ROLLBACK_BUSY')
+    return key
+  }
+
+  async withReservedTimeline(row, callback, generationOwner, kind = 'rollback') {
+    const key = this.assertPlaythroughAvailable(row, kind, generationOwner)
     const token = Symbol()
     this.writeReservations.set(key, { token, row })
     try { return await callback(token) } finally { this.writeReservations.delete(key) }
@@ -311,7 +331,33 @@ export class PlayWorkspaceStore {
     return managed ? this.withTargetGuard(posix, operation) : operation()
   }
 
-  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false, expectedWorkspaceScope, reservation } = {}) {
+  guardGenerationWrite(path, absolute, content, owner) {
+    const guards = this.generationGuards
+    if (!guards?.hasRecords()) return
+    if (path === 'catalog.json') {
+      const previous = parseCatalogJson(readFileSync(absolute, 'utf8')).playthroughs
+      const updated = new Map(parseCatalogJson(content).playthroughs.map(row => [row.id, row]))
+      for (const row of previous) {
+        const next = updated.get(row.id)
+        if (JSON.stringify(row) !== JSON.stringify(next)) guards.guardCatalogChange(row, next)
+      }
+      return
+    }
+    const root = requireRoot(this.binding)
+    const catalog = resolvePlayPath(root, 'catalog.json')
+    if (!existsSync(catalog)) return
+    const caseFold = value => value.normalize('NFD').toLowerCase()
+    const key = caseFold(path)
+    for (const row of parseCatalogJson(readFileSync(catalog, 'utf8')).playthroughs) {
+      if (caseFold(row.path) !== key || !guards.hasPending(row)) continue
+      const target = resolvePlayPath(root, row.path)
+      if (existsSync(target) && realpathSync.native(target) === realpathSync.native(absolute)) {
+        guards.guardTimelineWrite(row, parseTimelineJson(readFileSync(absolute, 'utf8')), parseTimelineJson(content), owner)
+      }
+    }
+  }
+
+  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false, expectedWorkspaceScope, reservation, generationOwner } = {}) {
     const checkWorkspace = () => {
       if (expectedWorkspaceScope === undefined) return
       if (typeof expectedWorkspaceScope !== 'string') throw httpError(400, 'expectedWorkspaceScope must be a string', 'PLAY_WORKSPACE_SCOPE_INVALID')
@@ -378,6 +424,7 @@ export class PlayWorkspaceStore {
         }
       }
       if (typeof validate === 'function') validate(posix, content)
+      if (managed && existing) this.guardGenerationWrite(posix, absolute, content, generationOwner)
       const temporary = absolute + '.' + process.pid + '.' + Math.random().toString(36).slice(2) + '.tmp'
       let descriptor = null
       try {

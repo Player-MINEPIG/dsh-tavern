@@ -198,7 +198,7 @@ export function createCreationService(store, host, { waitMs = 30_000 } = {}) {
         if (!record || ['done', 'dismissed', 'unattempted'].includes(record.stage) || error.code === 'PLAY_CREATION_PENDING') throw error
         throw httpError(error.status ?? 409, error.message + ' · ' + pending(record).message, error.code ?? 'PLAY_CREATION_PENDING')
       } finally { stopped.removeEventListener('abort', rejectStopped) }
-    })
+    }, undefined, 'fork')
   }
 
   async function repair(row, { apply, beforeWrite, signal } = {}) {
@@ -221,5 +221,9 @@ export function createCreationService(store, host, { waitMs = 30_000 } = {}) {
     if (active.has(path)) throw httpError(409, 'Fork still running.', 'PLAY_CREATION_BUSY')
     atomicJson(path, { ...record, stage: 'dismissed' }, limit)
   }
-  return { run, repair, dismiss }
+  function hasPending(id) {
+    const record = read(join(recordDirectory(store, id), 'pending.json'))
+    return Boolean(record && !['done', 'dismissed', 'unattempted'].includes(record.stage))
+  }
+  return { run, repair, dismiss, hasPending }
 }

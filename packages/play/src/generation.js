@@ -266,7 +266,7 @@ export function createGenerationService(store, host, { waitMs = 30_000 } = {}) {
       if (!/^[a-f0-9]{64}$/.test(request.expectedRevision)
         || !(request.kind === 'reply-swipe' && typeof request.nodeId === 'string' && request.nodeId
           || request.kind === 'request-retry' && requireSessionId(request.sessionId) && Number.isSafeInteger(request.userEventId) && request.userEventId >= 0)) throw invalid()
-      return store.withReservedTimeline(row, () => bounded(waitMs, null, signal => start(row, path, request, operation, signal)), publicationOwner)
+      return store.withReservedTimeline(row, () => bounded(waitMs, null, signal => start(row, path, request, operation, signal)), publicationOwner, 'generation')
     }
     const record = read(path)
     if (record?.operationKey !== key) throw generationConflict()

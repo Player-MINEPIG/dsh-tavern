@@ -144,6 +144,7 @@ export function PlayTurnActions({
     onSwipePending?.(turn.id, true)
     try {
       await controller(playClient).createReplySwipe(playthrough, turn.id, {
+        variantId: turn.variant.id,
         onStarted: result => {
           queueSwipeTransition(result.sessionId, 'next', result.nodeId ?? turn.id)
           openSession(result.sessionId, playthrough)
@@ -227,7 +228,7 @@ export function PlayTurnActions({
       label: uiMessage('play.chat.forkPlaythrough'),
       disabled,
       onClick: () => mutate(async () => {
-        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id)
+        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id, turn.variant.id)
         window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
         openSession(result.sessionId, result.playthrough)
       }),

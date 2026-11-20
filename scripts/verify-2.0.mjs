@@ -37,6 +37,10 @@ const groups = [
     files: [
       'test/play-maintenance.test.mjs',
       'test/playthrough-repair.test.mjs',
+      'test/play-rollback.test.mjs',
+      'test/play-creation.test.mjs',
+      'test/play-generation.test.mjs',
+      'test/play-detach-recovery.test.mjs',
       'test/play-cleanup.test.mjs',
       'test/maintenance-tools-host.test.mjs',
       'test/play-timeline.test.mjs',
