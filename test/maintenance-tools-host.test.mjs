@@ -4,16 +4,101 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import assembler from 'dsh-prompt-assembler/plugin'
 import * as tavern from '../packages/tavern-loader/src/index.js'
+import { createCreationService } from '../packages/play/src/creation.js'
+import { createGenerationService } from '../packages/play/src/generation.js'
 import { createRollbackService } from '../packages/play/src/rollback.js'
 import { createContractOperation } from '../packages/play/src/operation-contract.js'
 import { REPAIR_TOOL } from '../packages/tavern-loader/src/repair-command.js'
 import { MAINTENANCE_TOOL } from '../packages/tavern-loader/src/maintenance-tools.js'
 
 const root = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
+
+async function verifyGenerationAndFork({ ctx, load, workspace, row, nodeId, expectedWorkspaceScope }) {
+  const { LlmAdapter } = await load('@deepseek-ai/dsh-llm')
+  const answer = 'Offline swipe result'
+  class Offline extends LlmAdapter {
+    async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
+    async *stream() {
+      yield { type: 'block-start', index: 0, blockType: 'text' }
+      yield { type: 'text-delta', index: 0, text: answer }
+      yield { type: 'block-end', index: 0, block: { type: 'text', text: answer } }
+      yield { type: 'finish', reason: { kind: 'stop' } }
+    }
+  }
+  ctx.llm.registerAdapter(['offline'], new Offline())
+
+  const admitted = Promise.withResolvers()
+  const sends = []
+  const generation = createGenerationService(workspace, {
+    ...workspace.host,
+    async promptSession(request) {
+      sends.push(request)
+      try {
+        const result = await workspace.host.promptSession(request)
+        admitted.resolve()
+        return result
+      } catch (error) {
+        admitted.reject(error)
+        throw error
+      }
+    },
+  })
+  const operation = name => createContractOperation({ operation: name, meta: { playthroughId: row.id } })
+  const generationOp = operation('playthrough.generation')
+  const identity = { operationKey: randomUUID(), expectedWorkspaceScope }
+  const start = { ...identity, action: 'start', kind: 'reply-swipe', nodeId, expectedRevision: workspace.readFile(row.path).revision }
+  const generated = await generation.run(row.id, start, generationOp)
+  await admitted.promise
+  const { agent } = await ctx.sessionController.resolveAgent(generated.sessionId)
+  await agent.whenIdle()
+
+  const read = createSessionReader(ctx)
+  const { events } = await read(generated.sessionId)
+  assert.equal(sends.length, 1)
+  assert.equal(sends[0].sessionId, generated.sessionId)
+  assert.equal(sends[0].text, 'offline fixture')
+  assert.ok(sends[0].requestId)
+  const inputs = events.filter(event => event.type === 'user/message' && event.data.source?.rpcId === sends[0].requestId)
+  assert.equal(inputs.length, 1, 'native prompt must echo its requestId in the durable user source')
+  const user = inputs[0]
+  const reply = events.find(event => event.type === 'assistant/message' && event.data.message.content.some(part => part.text === answer))
+  const end = events.find(event => event.type === 'turn/end' && event.seq > user.seq)
+  assert.equal(end?.data.reason.kind, 'completed')
+  assert.ok(user.seq < reply?.seq && reply.seq < end.seq)
+
+  const status = await generation.run(row.id, { ...identity, action: 'status' }, generationOp)
+  assert.equal(status.state, 'ready', JSON.stringify(status))
+  const finished = await generation.run(row.id, { ...identity, action: 'finish' }, generationOp)
+  const saved = JSON.parse(workspace.readFile(row.path).content)
+  assert.equal(saved.head.sessionId, generated.sessionId)
+  assert.deepEqual(saved.head, finished.timeline.head)
+  const variant = saved.nodes.find(node => node.id === nodeId).variants.find(item => item.id === saved.head.variantId)
+  assert.deepEqual([variant.startEventId, variant.endEventId], [user.seq, reply.seq])
+  assert.equal((await generation.run(row.id, start, generationOp)).sessionId, generated.sessionId)
+  assert.equal(sends.length, 1)
+
+  const creation = createCreationService(workspace, workspace.host)
+  const creationOp = operation('playthrough.fork')
+  const request = { nodeId, creationId: randomUUID(), expectedWorkspaceScope, expectedRevision: workspace.readFile(row.path).revision }
+  const fork = await creation.run(row.id, request, creationOp)
+  assert.notEqual(fork.sessionId, generated.sessionId)
+  const child = await read(fork.sessionId)
+  assert.equal(child.inheritedEventCount, reply.seq + 1)
+  assert.equal(child.events[user.seq].data.source.rpcId, sends[0].requestId)
+  assert.equal(child.events[reply.seq].data.message.id, reply.data.message.id)
+  const catalog = JSON.parse(workspace.readFile('catalog.json').content)
+  const published = catalog.playthroughs.filter(item => item.id === fork.playthrough.id)
+  assert.deepEqual(published, [fork.playthrough])
+  assert.equal(published[0].ext.pmpDshTavern.rootSessionId, fork.sessionId)
+  assert.equal(JSON.parse(workspace.readFile(published[0].path).content).head.sessionId, fork.sessionId)
+  assert.equal(workspace.readFile(row.path).revision, request.expectedRevision)
+  assert.equal((await creation.run(row.id, request, creationOp)).sessionId, fork.sessionId)
+}
 
 test('official Host runs chat repair, scoped maintenance tools and plugin disposal', { skip: !root }, async () => {
   const require = createRequire(join(resolve(root), 'package.json'))
@@ -166,6 +251,8 @@ test('official Host runs chat repair, scoped maintenance tools and plugin dispos
     assert.notEqual(rolled.sessionId, created.sessionId)
     assert.equal(rolled.timeline.head.sessionId, rolled.sessionId)
     assert.equal((await rollback.run(rows[1].id, rollbackRequest, operation)).sessionId, rolled.sessionId)
+    await verifyGenerationAndFork({ ctx, load, workspace, row: rows[1], nodeId: repaired.nodes[0].id,
+      expectedWorkspaceScope: rollbackRequest.expectedWorkspaceScope })
     await handle.dispose()
     assert.equal(ctx.commands.list(agent).some(item => item.name === 'tavern-repair'), false)
   } finally {
