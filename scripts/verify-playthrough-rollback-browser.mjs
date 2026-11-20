@@ -23,8 +23,8 @@ const host = {
   createWorkspace: async () => ({ workspaceId: 'browser' }),
   coordinates: async () => ({ sessionFormatVersion: 4 }),
   forkSession: async () => { forks++; return { sessionId: childId } },
-  inspectSession: async () => ({
-    meta: { id: childId, version: 4 }, inheritedEventCount: 2,
+  inspectSession: async id => ({
+    meta: { id, version: 4 }, inheritedEventCount: id === childId ? 2 : 0,
     events: [
       { seq: 0, type: 'user/message', data: { id: 'question', role: 'user' } },
       { seq: 1, type: 'assistant/message', data: { message: { id: 'answer', role: 'assistant' } } },

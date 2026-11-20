@@ -22,7 +22,7 @@ function turn(text, { turn = 1, rpcId, stopped = false } = {}) {
   ]
 }
 
-async function fixture(t, { retry = false, later = false } = {}) {
+async function fixture(t, { retry = false, later = false, atomic = false } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'play-generation-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   const root = join(dir, 'rp'), storage = join(dir, 'storage')
@@ -44,6 +44,11 @@ async function fixture(t, { retry = false, later = false } = {}) {
     ...(retry ? { sessionId: 'old', userEventId: later ? 5 : 1 } : { nodeId: 'target' }),
     operationKey: 'generation-one', expectedWorkspaceScope: JSON.stringify([null, root]), expectedRevision: revision }
   const checkpoint = () => {
+    if (atomic) {
+      const record = store.checkpoints.get(row.id, request.expectedWorkspaceScope)
+      assert.equal(record.owner, 'tavern.generation')
+      return record.data
+    }
     const directory = join(storage, 'playthrough-generations')
     return JSON.parse(readFileSync(join(directory, readdirSync(directory)[0]), 'utf8'))
   }
@@ -51,8 +56,12 @@ async function fixture(t, { retry = false, later = false } = {}) {
   const calls = []
   const host = {
     coordinates: async () => ({ sessionFormatVersion: 4 }),
-    history: async () => ({ sessionFormatVersion: 4, events: original, throughSeq: original.length - 1 }),
-    inspectSession: async id => ({ meta: { id, version: 4 }, inheritedEventCount: later ? 3 : 0, events: seq(childEvents) }),
+    history: async ({sessionId}) => {
+      const events = sessionId === 'old' ? original : seq(childEvents)
+      return { sessionFormatVersion: 4, events, throughSeq: events.length - 1 }
+    },
+    inspectSession: async id => ({ meta: { id, version: 4 }, inheritedEventCount: id === 'new' && later ? 3 : 0,
+      events: id === 'old' ? original : seq(childEvents) }),
     async createSession(args, { operation }) {
       creates++; assert.equal(checkpoint().stage, 'creating')
       calls.push(['create', args.stateSource]); operation.checkpoint('session.created', { sessionId: 'new' })
@@ -279,36 +288,53 @@ test('reopened service observes the admitted RPC in the durable inbox before use
   } finally {admission.resolve();await f.settle()}
 })
 
-test('two live clients and a remounted Host preserve a pending reply across concurrent writes and refresh', async t => {
-  const f = await fixture(t, { later: true })
-  const connect = store => {
-    const api = createPlayApiHandler({ workspaceStore: store, host: f.host, chromeStore: {} })
-    return () => createLivePlayClient({ fetchImpl: async (url, options) => {
-      const req = Readable.from(options.body ? [Buffer.from(options.body)] : [])
-      Object.assign(req, { url, method: options.method })
-      const res = { setHeader() {}, end(body) { this.body = body } }
-      await api(req, res)
-      return new Response(res.body, { status: res.statusCode })
-    } })
-  }
-  const tab = connect(f.store)
-  const first = tab()
-  const opened = await first.generation(f.row, { ...f.request, variantId: 'target-v' })
-  assert.equal(opened.sessionId, 'new')
-  await f.settle()
-  const afterRestart = connect(new PlayWorkspaceStore(f.storage))
-  const second = afterRestart()
-  await assert.rejects(second.rollbackPlaythrough(f.row, 'first', 'first-v'), { code: 'PLAY_GENERATION_PENDING' })
-  await assert.rejects(second.updateTimeline(f.row, timeline => ({
-    ...timeline, head: { sessionId: 'old', nodeId: 'first', variantId: 'first-v' },
-  })), { code: 'PLAY_GENERATION_PENDING' })
-  await second.updateTimeline(f.row, timeline => ({
-    ...timeline, nodes: timeline.nodes.map(node => ({ ...node, displayOverride: 'display edit' })),
-  }))
-  f.append(turn('prompt', { rpcId: f.rpc(), turn: 3 }))
-  const reopened = await loadCurrentPlaythrough(afterRestart(), { id: 'new', cwd: f.store.get().rootPath })
-  assert.equal(reopened.playthrough.id, f.row.id)
-  assert.equal(reopened.timeline.head.sessionId, 'new')
-  assert.equal(reopened.timeline.nodes.at(-1).displayOverride, 'display edit')
-  assert.deepEqual(f.counts(), [1, 1])
-})
+for (const retry of [false, true]) for (const later of [false, true]) {
+  const scenario = (later ? 'later' : 'opening') + (retry ? ' stopped request' : ' reply')
+  test('two live clients recover the ' + scenario + ' through public primitives after remount', async t => {
+    const f = await fixture(t, { retry, later, atomic: true })
+    const calls = []
+    const connect = store => {
+      const api = createPlayApiHandler({ workspaceStore: store, host: f.host, chromeStore: {} })
+      return () => createLivePlayClient({ fetchImpl: async (url, options) => {
+        const { pathname } = new URL(url, 'http://localhost')
+        calls.push({ method: options.method, path: pathname, body: options.body && JSON.parse(options.body) })
+        const req = Readable.from(options.body ? [Buffer.from(options.body)] : [])
+        Object.assign(req, { url, method: options.method })
+        const res = { setHeader() {}, end(body) { this.body = body } }
+        await api(req, res)
+        return new Response(res.body, { status: res.statusCode })
+      } })
+    }
+    const first = connect(f.store)()
+    const opened = await first.generation(f.row, f.request)
+    assert.equal(opened.sessionId, 'new')
+    await f.settle()
+    const afterRestart = connect(new PlayWorkspaceStore(f.storage))
+    const second = afterRestart()
+    if (later && !retry) {
+      await assert.rejects(second.rollbackPlaythrough(f.row, 'first', 'first-v'), { code: 'PLAY_BRANCH_PENDING' })
+      await assert.rejects(second.updateTimeline(f.row, timeline => ({
+        ...timeline, head: { sessionId: 'old', nodeId: 'first', variantId: 'first-v' },
+      })), { code: 'PLAY_CHECKPOINT_CONFLICT' })
+    }
+    if (f.timeline.nodes.length) {
+      await second.updateTimeline(f.row, timeline => ({
+        ...timeline, nodes: timeline.nodes.map(node => ({ ...node, displayOverride: 'display edit' })),
+      }))
+    }
+    f.append(turn('prompt', { rpcId: f.rpc(), turn: 3 }))
+    const reopened = await loadCurrentPlaythrough(afterRestart(), { id: 'new', cwd: f.store.get().rootPath })
+    assert.equal(reopened.playthrough.id, f.row.id)
+    assert.equal(reopened.timeline.head.sessionId, 'new')
+    if (f.timeline.nodes.length) assert.equal(reopened.timeline.nodes[0].displayOverride, 'display edit')
+    assert.deepEqual(f.counts(), [1, 1])
+    assert.ok(!calls.some(call => /\/playthroughs\/[^/]+\/(?:rollback|fork|generation)$/.test(call.path)))
+    assert.ok(calls.some(call => call.method === 'PUT' && call.path.endsWith('/workspace/checkpoints/p') && call.body.expectedRevision === null))
+    const mutations = calls.filter(call => call.method === 'POST')
+    assert.deepEqual(mutations.map(call => call.path.split('/sessions').at(-1)), [later ? '/old/branch' : '', '/new/user-message'])
+    assert.ok(mutations.every(call => call.body.operationKey && call.body.checkpointKey === f.request.operationKey && call.body.checkpointId === 'p'))
+    assert.ok(calls.some(call => call.method === 'GET' && call.path.includes('/operation-receipts/')))
+    assert.ok(calls.some(call => call.method === 'PUT' && call.path.endsWith('/workspace/files') && call.body.checkpointKey === f.request.operationKey))
+    assert.equal((await second.getCheckpoint(f.row, f.request.expectedWorkspaceScope)).released, true)
+  })
+}
