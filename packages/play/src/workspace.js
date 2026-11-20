@@ -17,6 +17,7 @@ import { basename, join, resolve } from 'node:path'
 import { atomicJson, readJsonFile } from './atomic-json.js'
 import { httpError, readBoundedJson, sendJson } from './http.js'
 import { parseCatalogJson, parseTimelineJson } from './timeline.js'
+import { createWorkspaceCheckpoints } from './workspace-checkpoints.js'
 import { validateTimelineCoordinates } from './session-coordinates.js'
 import { assertNoLink, assertSafeRoot, isSystemDiskPath, posixPlayPath, resolvePlayPath, splitRelativeSegments } from './paths.js'
 
@@ -75,6 +76,13 @@ function isManagedDocument(relativePath) {
 
 function revisionOf(content) {
   return createHash('sha256').update(content).digest('hex')
+}
+
+// Presentation edits can run while another caller owns the branch coordinates.
+function timelineReferences(timeline) {
+  return JSON.stringify([timeline.head, timeline.ext?.pmpDshTavern?.branchHeads,
+    timeline.nodes.map(node => [node.id, node.parentVariantId, node.adoptedVariantId,
+      node.variants.map(item => [item.id, item.sessionId, item.startEventId, item.endEventId, item.ext?.pmpDshTavern?.sessionFormatVersion])])])
 }
 
 function revisionConflict(message = 'managed file revision does not match') {
@@ -140,6 +148,7 @@ export class PlayWorkspaceStore {
     this.beforeRename = beforeRename
     mkdirSync(this.storageDir, { recursive: true })
     this.binding = readBinding(this.path)
+    this.checkpoints = createWorkspaceCheckpoints(this)
   }
 
   get() {
@@ -266,6 +275,7 @@ export class PlayWorkspaceStore {
   }
 
   assertPlaythroughAvailable(row, kind, generationOwner) {
+    if (this.checkpoints.active(row.id)) throw httpError(409, 'Playthrough has an active checkpoint', 'PLAY_CHECKPOINT_CONFLICT')
     this.generationGuards?.guardPathChange(row, generationOwner)
     for (const [operation, pending, code] of this.recoveryGuards ?? []) {
       if (operation !== kind && pending(row)) {
@@ -331,15 +341,20 @@ export class PlayWorkspaceStore {
     return managed ? this.withTargetGuard(posix, operation) : operation()
   }
 
-  guardGenerationWrite(path, absolute, content, owner) {
+  guardTimelineWrite(path, absolute, content, owner, checkpointId) {
     const guards = this.generationGuards
-    if (!guards?.hasRecords()) return
+    if (!guards?.hasRecords() && !this.checkpoints.hasRecords()) return
+    const protectedRow = row => row.id !== checkpointId && this.checkpoints.active(row.id)
+    const blocked = () => { throw httpError(409, 'The affected playthrough has an active checkpoint', 'PLAY_CHECKPOINT_CONFLICT') }
     if (path === 'catalog.json') {
       const previous = parseCatalogJson(readFileSync(absolute, 'utf8')).playthroughs
       const updated = new Map(parseCatalogJson(content).playthroughs.map(row => [row.id, row]))
       for (const row of previous) {
         const next = updated.get(row.id)
-        if (JSON.stringify(row) !== JSON.stringify(next)) guards.guardCatalogChange(row, next)
+        if (JSON.stringify(row) === JSON.stringify(next)) continue
+        if (protectedRow(row) && (!next || row.path !== next.path ||
+          ['archivedAt', 'rootSessionId', 'characterId'].some(key => row.ext?.pmpDshTavern?.[key] !== next.ext?.pmpDshTavern?.[key]))) blocked()
+        guards?.guardCatalogChange(row, next)
       }
       return
     }
@@ -349,15 +364,18 @@ export class PlayWorkspaceStore {
     const caseFold = value => value.normalize('NFD').toLowerCase()
     const key = caseFold(path)
     for (const row of parseCatalogJson(readFileSync(catalog, 'utf8')).playthroughs) {
-      if (caseFold(row.path) !== key || !guards.hasPending(row)) continue
+      if (caseFold(row.path) !== key || (!protectedRow(row) && !guards?.hasPending(row))) continue
       const target = resolvePlayPath(root, row.path)
       if (existsSync(target) && realpathSync.native(target) === realpathSync.native(absolute)) {
-        guards.guardTimelineWrite(row, parseTimelineJson(readFileSync(absolute, 'utf8')), parseTimelineJson(content), owner)
+        const before = parseTimelineJson(readFileSync(absolute, 'utf8'))
+        const after = parseTimelineJson(content)
+        if (protectedRow(row) && timelineReferences(before) !== timelineReferences(after)) blocked()
+        guards?.guardTimelineWrite(row, before, after, owner)
       }
     }
   }
 
-  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false, expectedWorkspaceScope, reservation, generationOwner } = {}) {
+  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false, expectedWorkspaceScope, reservation, generationOwner, checkpointId, checkpointKey } = {}) {
     const checkWorkspace = () => {
       if (expectedWorkspaceScope === undefined) return
       if (typeof expectedWorkspaceScope !== 'string') throw httpError(400, 'expectedWorkspaceScope must be a string', 'PLAY_WORKSPACE_SCOPE_INVALID')
@@ -365,7 +383,11 @@ export class PlayWorkspaceStore {
         throw httpError(409, 'play workspace changed', 'PLAY_WORKSPACE_CHANGED')
       }
     }
+    const checkOwner = () => {
+      if (checkpointId !== undefined || checkpointKey !== undefined) this.checkpoints.assertOwner(checkpointId, checkpointKey, expectedWorkspaceScope)
+    }
     checkWorkspace()
+    checkOwner()
     const root = requireRoot(this.binding)
     if (typeof content !== 'string') throw httpError(400, 'content must be a string', 'PLAY_FILE_INVALID')
     if (Buffer.byteLength(content) > MAX_FILE_BYTES) {
@@ -424,7 +446,7 @@ export class PlayWorkspaceStore {
         }
       }
       if (typeof validate === 'function') validate(posix, content)
-      if (managed && existing) this.guardGenerationWrite(posix, absolute, content, generationOwner)
+      if (managed && existing) this.guardTimelineWrite(posix, absolute, content, generationOwner, checkpointId)
       const temporary = absolute + '.' + process.pid + '.' + Math.random().toString(36).slice(2) + '.tmp'
       let descriptor = null
       try {
@@ -434,6 +456,7 @@ export class PlayWorkspaceStore {
         descriptor = null
         if (typeof this.beforeRename === 'function') this.beforeRename({ absolute, parent })
         checkWorkspace()
+        checkOwner()
         const verifiedParent = parentSegments.length === 0
           ? assertSafeRoot(root)
           : resolvePlayPath(root, posixPlayPath(parentSegments), { mustExist: true })
@@ -508,6 +531,7 @@ export function createWorkspaceApiHandler(store, { validateFile, coordinates } =
           expectedRevision: body?.expectedRevision,
           expectedRevisionPresent: managed && Object.hasOwn(body ?? {}, 'expectedRevision'),
           expectedWorkspaceScope: body?.expectedWorkspaceScope,
+          checkpointId: body?.checkpointId, checkpointKey: body?.checkpointKey,
         })
         operation?.checkpoint('workspace.file.written')
         return sendJson(res, 200, result)

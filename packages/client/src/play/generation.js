@@ -1,5 +1,14 @@
+import { runGenerationOperation } from './generation-recovery.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 import { beginPendingSwipe, finishPendingSwipe, pendingSwipe, pendingSwipeTimeline } from './pending-swipe.js'
+
+export function supportsGenerationRecovery(client) {
+  return typeof client?.getCheckpoint === 'function' || typeof client?.generation === 'function'
+}
+
+function generation(client, row, body, timeline) {
+  return typeof client.generation === 'function' ? client.generation(row, body, timeline) : runGenerationOperation(client, row, body)
+}
 
 function requestKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
@@ -14,7 +23,7 @@ function project(client, playthrough, timeline, entry, expectedWorkspaceScope, r
 }
 
 function call(client, pending, action) {
-  return client.generation(pending.playthrough, { action, operationKey: pending.operationKey, expectedWorkspaceScope: pending.expectedWorkspaceScope })
+  return generation(client, pending.playthrough, { action, operationKey: pending.operationKey, expectedWorkspaceScope: pending.expectedWorkspaceScope })
 }
 
 function statusError(status) {
@@ -47,12 +56,12 @@ export async function recoverDurableGeneration(client, pending) {
 // Session classification may inspect several playthroughs. Only the matching child
 // (or a row explicitly opened by the user) can finish a verified reply.
 export async function restorePendingGeneration(client, playthrough, timeline, { sessionId, expectedWorkspaceScope } = {}) {
-  if (typeof client.generation !== 'function') return null
+  if (!supportsGenerationRecovery(client)) return null
   if (!expectedWorkspaceScope) {
     const workspace = await client.getWorkspace()
     expectedWorkspaceScope = JSON.stringify([workspace.workspaceId, workspace.rootPath])
   }
-  const status = await client.generation(playthrough, { action: 'status', expectedWorkspaceScope })
+  const status = await generation(client, playthrough, { action: 'status', expectedWorkspaceScope })
   if (!status.pending) {
     const prior = pendingSwipe(client, playthrough)
     if (prior?.operationKey && prior.expectedWorkspaceScope === expectedWorkspaceScope && (!sessionId || prior.sessionId === sessionId)) finishPendingSwipe(client, prior)
@@ -74,7 +83,7 @@ export async function runGeneration(client, playthrough, request, { onStarted, d
   const workspace = await client.getWorkspace()
   const scope = JSON.stringify([workspace.workspaceId, workspace.rootPath])
   const timeline = await client.getTimeline(playthrough)
-  const started = await client.generation(playthrough, { ...request, action: 'start', operationKey: requestKey(), expectedWorkspaceScope: scope }, timeline)
+  const started = await generation(client, playthrough, { ...request, action: 'start', operationKey: requestKey(), expectedWorkspaceScope: scope }, timeline)
   const pending = project(client, playthrough, timeline, started, scope)
   try {
     onStarted?.({ sessionId: pending.sessionId, nodeId: pending.nodeId })

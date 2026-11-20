@@ -1,4 +1,5 @@
-import { runGeneration } from './generation.js'
+import { rollbackAtNode } from './branch-recovery.js'
+import { supportsGenerationRecovery, runGeneration } from './generation.js'
 import { variantFormatVersion, withVariantFormat } from '../../../play/src/session-coordinates.js'
 import { beginPendingSwipe, finishPendingSwipe, pendingSwipeTimeline } from './pending-swipe.js'
 import { completedSwipePair, commitSwipeReply } from './swipe-completion.js'
@@ -130,7 +131,7 @@ export function createPlayNodeController(client, {
       })
     },
     createReplySwipe(playthrough, nodeId, { onStarted, variantId } = {}) {
-      if (typeof client.generation === 'function') return schedule(playthrough, () => runGeneration(client, playthrough,
+      if (supportsGenerationRecovery(client)) return schedule(playthrough, () => runGeneration(client, playthrough,
         { kind: 'reply-swipe', nodeId, variantId }, { onStarted, delay, pollInterval, maxPolls }))
       return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough)
@@ -195,7 +196,7 @@ export function createPlayNodeController(client, {
     },
 
     retryStoppedRequest(playthrough,{sessionId,userEventId},{onStarted}={}){
-      if (typeof client.generation === 'function') return schedule(playthrough, () => runGeneration(client, playthrough,
+      if (supportsGenerationRecovery(client)) return schedule(playthrough, () => runGeneration(client, playthrough,
         { kind: 'request-retry', sessionId, userEventId }, { onStarted, delay, pollInterval, maxPolls }))
       return schedule(playthrough,async()=>{
         const timeline=await client.getTimeline(playthrough),entries=activeTimelineEntries(timeline)
@@ -236,6 +237,7 @@ export function createPlayNodeController(client, {
 
     rollbackPlaythrough(playthrough, nodeId, variantId) {
       return schedule(playthrough, async () => {
+        if (typeof client.getCheckpoint === 'function') return rollbackAtNode(client, playthrough, nodeId, variantId)
         if (typeof client.rollbackPlaythrough === 'function') return client.rollbackPlaythrough(playthrough, nodeId, variantId)
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId })
         const next = await writeTimeline(playthrough, timeline => {

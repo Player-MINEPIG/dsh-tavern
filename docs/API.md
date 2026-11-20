@@ -655,7 +655,7 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 `scope` 是 `GET /workspace` 返回的 `[workspaceId, rootPath]` 编码成的 JSON 字符串。写请求的 `expectedWorkspaceScope` 使用相同值。原有会话和文件操作仍可独立调用。
 
 - `GET /workspace/checkpoints/:id?scope=…` 返回 `{ok,checkpoint}`，缺失时为 `null`。加 `key` 可查询原操作。记录含 `key`、`owner`、`data`、整数 `revision` 和 `released`。
-- `PUT /workspace/checkpoints/:id` 首次传 `{key,owner,data,expectedRevision:null,expectedTimelineRevision,expectedWorkspaceScope}`，其中时间线版本取自文件读取。一个周目同时允许一个调用方占用。后续用返回的检查点版本、相同 key 和 owner 及完整新 data 更新，最后一次传 `released:true` 释放。冲突返回 409。`data` 的结构由调用方定义，Host 按原样保存。建议只存标识和进度，避免写入正文或密码。
+- `PUT /workspace/checkpoints/:id` 首次传 `{key,owner,data,expectedRevision:null,expectedTimelineRevision,expectedWorkspaceScope}`，其中时间线版本取自文件读取。一个周目同时允许一个调用方占用。后续用返回的检查点版本、相同 key 和 owner 及完整新 data 更新，最后一次传 `released:true` 释放。冲突返回 409。`data` 的结构由调用方定义，Host 按原样保存。建议只存标识和进度，避免写入正文或密码。 可另传 `expectedBinding: {path, rootSessionId, characterId}`，在取得检查点时核对目标绑定，缺失的 ID 填 `null`。
 - `POST /sessions`、`POST /sessions/:id/branch`、`POST /sessions/:id/user-message` 可传 `operationKey` 和 `expectedWorkspaceScope`，每个 key 对应一次变更及其输入。执行受检查点保护的变更或文件写入时，同时传 `checkpointId` 和 `checkpointKey`。写文件仍需文件自己的 `expectedRevision`。同一检查点可覆盖多个不同 key 的原子操作。
 - `GET /operation-receipts/:id?scope=…` 中的 id 为原子变更的 key，状态为 `missing`、`pending` 或 `done`。已完成的请求可以取回同一结果。原生操作结果未知时保持待核实。回执在后端保存输入指纹，查询返回进度和已知结果标识，省略提问正文及其指纹。
 - 核对分支继承的回复时，使用 `GET /sessions/:id/messages?evidence=inheritance&start=…&end=…`，比较源与子会话的端点。核对提问时，使用 `GET /sessions/:id/messages?requestId=…&boundary=…&version=…&stage=sending`，已确认受理时传 `accepted`。返回 `ready` 后可登记结果坐标。请求 ID、继承边界和原生回合共同确定回复归属。

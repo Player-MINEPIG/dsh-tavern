@@ -2,7 +2,7 @@ import { API_V3 } from '../../../identity.js'
 import { rawText, uiMessage } from '../i18n.js'
 
 const operations = new Set([
-  'workspace.bind', 'workspace.dir.create', 'workspace.file.write', 'session.create',
+  'workspace.checkpoint.write', 'workspace.bind', 'workspace.dir.create', 'workspace.file.write', 'session.create',
   'playthrough.generation', 'playthrough.fork', 'playthrough.rollback', 'session.branch', 'session.user-message', 'session.import-context.bind',
   'session.import-context.unbind', 'playthrough.session.detach',
   'playthrough.character.relink', 'plugin.start', 'plugin.stop', 'rp.policy', 'trace.record',

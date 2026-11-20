@@ -1,4 +1,4 @@
-import { restorePendingGeneration } from './generation.js'
+import { supportsGenerationRecovery, restorePendingGeneration } from './generation.js'
 import { installTavernStyle } from '../../../client-style.js'
 import { pendingSwipe, pendingSwipes } from './pending-swipe.js'
 import { mainSessionId } from '../session-selection.js'
@@ -449,7 +449,7 @@ export function PlayWorkspaceBrowser({
         openSession(null, playthrough)
         return
       }
-      const pending = typeof playClient.generation === 'function'
+      const pending = supportsGenerationRecovery(playClient)
         ? await restorePendingGeneration(playClient, playthrough, await playClient.getTimeline(playthrough), {
           expectedWorkspaceScope: JSON.stringify([resources.workspace.workspaceId, resources.workspace.rootPath]),
         }) : pendingSwipe(playClient, playthrough)

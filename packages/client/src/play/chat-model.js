@@ -1,4 +1,4 @@
-import { restorePendingGeneration } from './generation.js'
+import { supportsGenerationRecovery, restorePendingGeneration } from './generation.js'
 import { pendingSwipeForSession } from './pending-swipe.js'
 import { characterGreetingOptions } from '../../../character/src/client-state.js'
 export { applyDisplayNameMacros } from './display-name-macros.js'
@@ -181,7 +181,7 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
   const timelines = await loadTimelines(client, playthroughs, options.concurrency)
   const match = findPlaythroughForSession(sessionId, catalog, timelines)
   if (match) return { workspace, ...match }
-  if (typeof client.generation === 'function') {
+  if (supportsGenerationRecovery(client)) {
     for (const row of playthroughs) {
       const timeline = timelines[row.path]
       if (!timeline || row === preferred) continue

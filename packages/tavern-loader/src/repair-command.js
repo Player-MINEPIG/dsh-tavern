@@ -9,6 +9,7 @@ const reasons = {
   'fork-creation-pending': '分支周目尚未登记完成，请核对原生子会话和操作记录',
   'draft-creation-pending': '新周目草稿尚未登记完成，请核对草稿与目录',
   'generation-pending': '重新生成或重试尚未登记，需核对原生会话、请求和活动回复',
+  'external-checkpoint': '此周目的操作由其他调用方登记，请使用该调用方核对并继续',
   'rollback-pending': '回退未完成。已确认子会话且原时间线未变时，可在原楼层重试回退；结果未知时请核对操作记录和原生会话',
   'unknown-coordinate-origin': '坐标缺少版本。确认该周目的坐标仅来自 V3/V4 后，可执行 /tavern-repair v3-v4 <周目ID>',
   'possible-v3-offset': '事件编号可能已移动，需核对原问答或旧日志',
@@ -67,7 +68,7 @@ function formatReport(result) {
   return lines.join('\n')
 }
 
-const protectedReasons = new Set(['archived', 'pending-draft', 'turn-in-progress'])
+const protectedReasons = new Set(['archived', 'pending-draft', 'turn-in-progress', 'external-checkpoint'])
 
 async function assistRepair(dependencies, { agent, signal, id }) {
   const binding = repairWorkspaceBinding(dependencies.store, agent)
@@ -77,7 +78,7 @@ async function assistRepair(dependencies, { agent, signal, id }) {
     const report = await repairPlaythroughs(dependencies, { agent, signal, id })
     text = formatReport(report)
     issues = report.items.flatMap(item => item.remaining)
-    if (!issues.length || issues.some(issue => protectedReasons.has(issue.reason) || ['PLAY_ROLLBACK_BUSY', 'PLAY_GENERATION_BUSY', 'PLAY_CREATION_BUSY'].includes(issue.code))) return { kind: 'success', text }
+    if (!issues.length || issues.some(issue => protectedReasons.has(issue.reason) || ['PLAY_ROLLBACK_BUSY', 'PLAY_GENERATION_BUSY', 'PLAY_CREATION_BUSY', 'PLAY_SESSION_OPERATION_BUSY'].includes(issue.code))) return { kind: 'success', text }
   } catch (error) {
     signal?.throwIfAborted()
     text = `周目 ${id} 的程序化检查失败。${error.message}`

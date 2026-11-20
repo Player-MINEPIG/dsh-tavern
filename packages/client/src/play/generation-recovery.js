@@ -1,3 +1,4 @@
+import { withOperationDeadline } from './operation-deadline.js'
 import { httpError } from '../../../play/src/http.js'
 import { generationConflict, generationTimeline, resolveGenerationSource, resultHead, verifyGenerationTarget } from '../../../play/src/generation-target.js'
 import { validateTimelineCoordinates } from '../../../play/src/session-coordinates.js'
@@ -58,7 +59,8 @@ async function start(client, row, body, scope, existing, signal) {
   const data = existing?.data ?? { ...intent, scope, path: row.path, request, sessionKey: uuid(), requestId: uuid(), stage: 'creating' }
   signal.throwIfAborted()
   let checkpoint = existing ?? await client.putCheckpoint(row, { owner, key: body.operationKey, data, expectedWorkspaceScope: scope,
-    expectedRevision: null, expectedTimelineRevision: file.revision })
+    expectedRevision: null, expectedTimelineRevision: file.revision,
+    expectedBinding: { path: row.path, rootSessionId: row.ext?.pmpDshTavern?.rootSessionId ?? null, characterId: row.ext?.pmpDshTavern?.characterId ?? null } })
   const options = { ...fence(row, checkpoint), operationKey: data.sessionKey, signal }
   if (!child && data.boundary >= 0) {
     child = await client.postBranch(data.sourceSessionId, data.boundary, data.forkVersion, data.stateSource, options)
@@ -109,6 +111,7 @@ async function complete(client, row, checkpoint, { apply, beforeWrite, signal })
     if (apply) await save(client, row, checkpoint, { stage: 'stopped' }, true)
     throw stopped()
   }
+  if (outcome.state === 'busy' || outcome.state === 'waiting') throw httpError(409, 'The native request is pending.', 'PLAY_GENERATION_BUSY')
   if (outcome.state === 'running') throw httpError(409, 'The native turn is still in progress.', 'PLAY_GENERATION_RUNNING')
   if (outcome.state !== 'ready') throw pending()
   const file = await client.getFile(row.path)
@@ -118,7 +121,7 @@ async function complete(client, row, checkpoint, { apply, beforeWrite, signal })
     if (next !== timeline) {
       await beforeWrite?.(file, row.path)
       signal?.throwIfAborted()
-      await client.putFile(row.path, JSON.stringify(next), { ...fence(row, checkpoint), expectedRevision: file.revision })
+      await client.putFile(row.path, JSON.stringify(next), { ...fence(row, checkpoint), expectedRevision: file.revision, signal })
     }
     signal?.throwIfAborted()
     await save(client, row, checkpoint, { stage: 'done' }, true)
@@ -163,16 +166,13 @@ async function run(client, row, body, signal) {
   return { ok: true, state: outcome.state, pending: entry }
 }
 
-export async function runGenerationOperation(client, row, body) {
-  // Bound each caller interaction; the actual turn has its own lifetime.
-  const signal = AbortSignal.timeout(35_000)
-  let onAbort
-  const timeout = new Promise((_, reject) => {
-    onAbort = () => reject(httpError(504, 'Timed out checking generation. Open Repair playthrough.', 'PLAY_GENERATION_TIMEOUT'))
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
-  try { return await Promise.race([run(client, row, body, signal), timeout]) }
-  finally { signal.removeEventListener('abort', onAbort) }
+function boundedGeneration(signal, work) {
+  const timeoutError = httpError(504, 'Timed out checking generation. Open Repair playthrough.', 'PLAY_GENERATION_TIMEOUT')
+  return withOperationDeadline({ signal, timeoutError }, work)
+}
+
+export function runGenerationOperation(client, row, body) {
+  return boundedGeneration(undefined, signal => run(client, row, body, signal))
 }
 
 export async function repairGenerationOperation(client, row, checkpoint, { apply, beforeWrite, signal } = {}) {
@@ -181,7 +181,7 @@ export async function repairGenerationOperation(client, row, checkpoint, { apply
   try {
     const current = await client.getCheckpoint(row, checkpoint.data.scope)
     if (current?.key !== checkpoint.key || current.revision !== checkpoint.revision || checkpoint.data.path !== row.path) throw generationConflict()
-    await complete(client, row, checkpoint, { apply, beforeWrite, signal })
+    await boundedGeneration(signal, inner => complete(client, row, checkpoint, { apply, beforeWrite, signal: inner }))
     return { changes: [{ ...info, kind: 'generation-recovered' }], remaining: [] }
   } catch (error) {
     signal?.throwIfAborted()

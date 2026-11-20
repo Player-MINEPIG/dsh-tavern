@@ -4,6 +4,7 @@ import { httpError, parsePlayUrl, readBoundedJson, sendJson, sendPlayError } fro
 import { createCreationService } from './creation.js'
 import { createGenerationService } from './generation.js'
 import { createRollbackService } from './rollback.js'
+import { readSessionReceipt } from './session-receipts.js'
 import { createSessionApiHandler } from './sessions.js'
 import { validatePlayDocument } from './timeline.js'
 import { createWorkspaceApiHandler } from './workspace.js'
@@ -73,20 +74,19 @@ export function createPlayApiHandler({
     PUT: mutation('workspace.file.write', ({ req, res, searchParams, operation }) => workspaceApi.files(req, res, { method: 'PUT', searchParams, operation })),
   })
   route('/focus', sessionApi !== null, { GET: quiet(({ req, res, searchParams }) => sessionApi.focus(req, res, searchParams)) })
-  function playthroughMutation(service, operationName) {
-    return mutation(operationName, async ({ req, res, id, operation }) => {
+  route('/workspace/checkpoints/:id', workspaceApi !== null, {
+    GET: quiet(({ res, id, searchParams }) => sendJson(res, 200, { ok: true,
+      checkpoint: workspaceStore.checkpoints.get(safeDecodeId(id, 'playthrough id'), searchParams.get('scope'), searchParams.get('key') ?? undefined) })),
+    PUT: mutation('workspace.checkpoint.write', async ({ req, res, id, operation }) => {
       const playthroughId = safeDecodeId(id, 'playthrough id')
       operation.identify({ playthroughId })
-      return sendJson(res, 200, await service.run(playthroughId, await readBoundedJson(req, 16 * 1024), operation))
-    })
-  }
-  route('/playthroughs/:id/rollback', Boolean(rollback), { POST: playthroughMutation(rollback, 'playthrough.rollback') })
-  route('/playthroughs/:id/fork', Boolean(creation), { POST: playthroughMutation(creation, 'playthrough.fork') })
-  route('/playthroughs/:id/generation', Boolean(generation), {
-    POST: playthroughMutation(generation, 'playthrough.generation'),
-    GET: quiet(async ({ res, id, searchParams }) => sendJson(res, 200, await generation.run(safeDecodeId(id, 'playthrough id'), {
-      action: 'status', expectedWorkspaceScope: searchParams.get('scope'), operationKey: searchParams.get('key') ?? undefined,
-    }))),
+      const checkpoint = workspaceStore.checkpoints.put(playthroughId, await readBoundedJson(req, 128 * 1024))
+      return sendJson(res, 200, { ok: true, checkpoint })
+    }),
+  })
+  route('/operation-receipts/:id', sessionApi !== null, {
+    GET: quiet(({ res, id, searchParams }) => sendJson(res, 200, { ok: true,
+      ...readSessionReceipt(workspaceStore, searchParams.get('scope'), safeDecodeId(id, 'operation key')) })),
   })
   route('/playthroughs/:id/focus', sessionApi !== null, { GET: quiet(({ req, res, id }) => sessionApi.playthroughFocus(req, res, id)) })
   route('/playthroughs/:id/availability', maintenanceService !== undefined, {
@@ -129,7 +129,7 @@ export function createPlayApiHandler({
   ]) {
     route(`/sessions/:id/${suffix}`, sessionApi !== null, { [method]: {
       operation, result: action === 'userMessage' ? 'accepted' : 'completed',
-      action: ({ req, res, id, operation }) => sessionApi[action](req, res, id, operation),
+      action: ({ req, res, id, operation, searchParams }) => sessionApi[action](req, res, id, operation, searchParams),
     } })
   }
 

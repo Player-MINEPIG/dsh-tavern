@@ -1,3 +1,5 @@
+import { runGenerationOperation } from './generation-recovery.js'
+import { rollbackAtNode, runBranchOperation } from './branch-recovery.js'
 import { tavernFetch } from '../api-fetch.js'
 import { API_V1, API_V2 } from '../../../identity.js'
 import {
@@ -161,17 +163,12 @@ export function createLivePlayClient({
     return JSON.stringify([workspace.workspaceId, workspace.rootPath])
   }
 
-  async function submitPlaythroughOperation(playthrough, name, body, timeline, callerOptions) {
-    const options = operationOptions(callerOptions)
-    const expectedWorkspaceScope = body.expectedWorkspaceScope ?? await workspaceScope(options)
-    const snapshot = timeline ?? await getJsonFile(timelinePath(playthrough), normalizeTimeline, 'timeline', options)
-    options?.signal?.throwIfAborted()
-    return v2('POST', `/playthroughs/${encodeURIComponent(playthrough.id)}/${name}`, {
-      ...body, expectedWorkspaceScope, expectedRevision: snapshotRevisions.get(snapshot),
-    }, options)
+  function mutationIdentity(options) {
+    const { operationKey, expectedWorkspaceScope, checkpointId, checkpointKey } = options ?? {}
+    return { operationKey, expectedWorkspaceScope, checkpointId, checkpointKey }
   }
 
-  return {
+  const client = {
     mode: 'live',
     apiRoot,
     chromeEventsUrl: `${apiRoot}/chrome/events`,
@@ -225,7 +222,7 @@ export function createLivePlayClient({
       if (options !== null && typeof options === 'object' && Object.hasOwn(options, 'expectedWorkspaceScope')) {
         body.expectedWorkspaceScope = options.expectedWorkspaceScope
       }
-      return v2('PUT', `/workspace/files${pathQuery(path)}`, body)
+      return v2('PUT', `/workspace/files${pathQuery(path)}`, { ...body, checkpointId: options?.checkpointId, checkpointKey: options?.checkpointKey }, operationOptions(options))
     },
 
     getCatalog() {
@@ -263,25 +260,37 @@ export function createLivePlayClient({
       return getJsonFile(path, normalizeTimeline, 'timeline', operationOptions(options))
     },
 
-    rollbackPlaythrough(playthrough, nodeId, variantId) {
-      return submitPlaythroughOperation(playthrough, 'rollback', { nodeId, variantId })
+    getCheckpoint(row, scope, key) {
+      const query = new URLSearchParams({ scope })
+      if (key !== undefined) query.set('key', key)
+      return v2('GET', `/workspace/checkpoints/${encodeURIComponent(row.id)}?${query}`, undefined, operationOptions())
+        .then(result => result.checkpoint)
     },
-
-    forkPlaythrough(playthrough, body, options) {
-      return submitPlaythroughOperation(playthrough, 'fork', body, undefined, options)
+    putCheckpoint(row, body) {
+      return v2('PUT', `/workspace/checkpoints/${encodeURIComponent(row.id)}`, body, operationOptions())
+        .then(result => result.checkpoint)
     },
-
-    async generation(playthrough, body, timeline) {
-      if (body.action === 'start') return submitPlaythroughOperation(playthrough, 'generation', body, timeline)
-      const options = operationOptions()
-      const expectedWorkspaceScope = body.expectedWorkspaceScope ?? await workspaceScope(options)
-      const path = `/playthroughs/${encodeURIComponent(playthrough.id)}/generation`
-      if (body.action === 'status') {
-        const query = new URLSearchParams({ scope: expectedWorkspaceScope })
-        if (body.operationKey) query.set('key', body.operationKey)
-        return v2('GET', path + '?' + query, undefined, options)
-      }
-      return v2('POST', path, { ...body, expectedWorkspaceScope }, options)
+    getSessionReceipt(key, scope) {
+      return v2('GET', `/operation-receipts/${encodeURIComponent(key)}?${new URLSearchParams({ scope })}`, undefined, operationOptions())
+    },
+    getSessionEvidence(id, bounds) {
+      const query = new URLSearchParams({ evidence: 'inheritance', ...bounds })
+      return v2('GET', `/sessions/${encodeURIComponent(id)}/messages?${query}`, undefined, operationOptions())
+    },
+    getCoordinates(id) {
+      return v2('GET', `/sessions/${encodeURIComponent(id)}/coordinates`, undefined, operationOptions())
+    },
+    getRequestOutcome(id, query) {
+      return v2('GET', `/sessions/${encodeURIComponent(id)}/messages?${new URLSearchParams(query)}`, undefined, operationOptions())
+    },
+    rollbackPlaythrough(row, nodeId, variantId) {
+      return rollbackAtNode(client, row, nodeId, variantId)
+    },
+    forkPlaythrough(row, body, options) {
+      return runBranchOperation(client, row, { ...body, kind: 'fork' }, options)
+    },
+    generation(row, body, timeline) {
+      return runGenerationOperation(client, row, { ...body, expectedRevision: body.expectedRevision ?? snapshotRevisions.get(timeline) })
     },
 
     putTimeline(playthrough, timeline) {
@@ -300,12 +309,12 @@ export function createLivePlayClient({
     },
 
     async getMessages(sessionId) {
-      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/messages`)
+      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/messages`, undefined, operationOptions())
       return normalizeSessionMessages(response)
     },
 
     async getImportContextBinding(sessionId) {
-      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/import-context`)
+      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/import-context`, undefined, operationOptions())
       return response?.binding ?? null
     },
 
@@ -324,7 +333,7 @@ export function createLivePlayClient({
       if (typeof playthroughId !== 'string' || playthroughId.trim() === '') {
         throw new TypeError('playthrough.id must be a non-empty string')
       }
-      const focus = normalizeFocus(await v2('GET', `/playthroughs/${encodeURIComponent(playthroughId)}/focus`))
+      const focus = normalizeFocus(await v2('GET', `/playthroughs/${encodeURIComponent(playthroughId)}/focus`, undefined, operationOptions()))
       if (focus.playthroughId !== playthroughId) {
         throw new TypeError('focus.playthroughId does not match playthrough.id')
       }
@@ -338,7 +347,7 @@ export function createLivePlayClient({
     },
 
     postUserMessage(sessionId, text, options) {
-      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text, ...(options?.requestId ? { requestId: options.requestId } : {}) }, options)
+      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text, ...mutationIdentity(options), ...(options?.requestId ? { requestId: options.requestId } : {}) }, operationOptions(options))
     },
     async postDraft(body, options) {
       const expectedWorkspaceScope = body.expectedWorkspaceScope ?? await workspaceScope(options)
@@ -350,23 +359,23 @@ export function createLivePlayClient({
     materializeDraft(id, body, options) { return v2('POST', `/drafts/${encodeURIComponent(id)}/materialize`, body, options) },
     cancelDraft(id) { return v2('POST', `/drafts/${encodeURIComponent(id)}/cancel`, {}) },
 
-    postBranch(sessionId, atEventId, sessionFormatVersion, stateSource) {
+    postBranch(sessionId, atEventId, sessionFormatVersion, stateSource, options) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError('atEventId must be a non-negative integer')
       }
-      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId,
+      return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId, ...mutationIdentity(options),
         ...(stateSource === undefined ? {} : { stateSource }),
         ...(sessionFormatVersion === undefined ? {} : { sessionFormatVersion }),
-      })
+      }, operationOptions(options))
     },
 
-    postSession(selectionFromSessionId, importContextRef, stateSource) {
-      const body = {
+    postSession(selectionFromSessionId, importContextRef, stateSource, options) {
+      const body = { ...mutationIdentity(options),
         ...(typeof selectionFromSessionId === 'string' && selectionFromSessionId !== '' ? { selectionFromSessionId } : {}),
         ...(importContextRef === undefined ? {} : { importContextRef }),
         ...(stateSource === undefined ? {} : { stateSource }),
       }
-      return v2('POST', '/sessions', body)
+      return v2('POST', '/sessions', body, operationOptions(options))
     },
 
     getCharacterSelection,
@@ -461,4 +470,5 @@ export function createLivePlayClient({
       })
     },
   }
+  return client
 }

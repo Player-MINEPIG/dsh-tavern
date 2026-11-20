@@ -9,6 +9,7 @@ import { PlayCleanupService } from '../../play/src/cleanup.js'
 import { createCreationService } from '../../play/src/creation.js'
 import { createGenerationService } from '../../play/src/generation.js'
 import { createRollbackService } from '../../play/src/rollback.js'
+import { createCheckpointRepair } from './checkpoint-repair.js'
 import { installRepairCommand } from './repair-command.js'
 import { installMaintenanceTools } from './maintenance-tools.js'
 import { PlaythroughDrafts } from './playthrough-drafts.js'
@@ -608,20 +609,22 @@ export function apply(ctx, config = {}) {
         .map(record => record.importContextRef?.path).filter(Boolean),
     ],
   })
+  const checkpoints = createCheckpointRepair(playWorkspaceStore, playHost)
   installRepairCommand(ctx, {
     repairDraftCreations: options => playthroughDrafts.repairCreations(options),
     recoverOperations: [
+      checkpoints.repair,
       (row, options) => playMemberships.repairDetach(row, options),
       (row, options) => creationService.repair(row, options),
       (row, options) => generationService.repair(row, options),
     ],
     dismissDetach: (id, operationId, scope) => playMemberships.dismissDetach(id, operationId, scope),
-    dismissFork: (id, operationId, scope) => creationService.dismiss(id, operationId, scope),
-    dismissGeneration: (id, operationKey, expectedWorkspaceScope) => generationService.run(id, {
+    dismissFork: async (id, key, scope) => await checkpoints.dismiss('tavern.fork', id, key, scope) || creationService.dismiss(id, key, scope),
+    dismissGeneration: async (id, operationKey, expectedWorkspaceScope) => await checkpoints.dismiss('tavern.generation', id, operationKey, expectedWorkspaceScope) || generationService.run(id, {
       action: 'dismiss', operationKey, expectedWorkspaceScope,
     }, operationContext('playthrough.generation', { playthroughId: id })),
     isRollbackActive: rollbackService.isActive,
-    dismissRollback: (id, opId) => rollbackService.dismiss(id, opId),
+    dismissRollback: async (id, key, scope) => await checkpoints.dismiss('tavern.rollback', id, key, scope) || rollbackService.dismiss(id, key),
     async resumeRollback(id, request, beforeWrite) {
       const operation = operationContext('playthrough.rollback', { playthroughId: id })
       operation.start()

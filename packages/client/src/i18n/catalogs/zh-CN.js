@@ -377,6 +377,7 @@ export default Object.freeze({
   "diagnostics.logsResult.completed": "操作已完成 · 后端处理已返回",
   "diagnostics.logsOperation.workspace.bind": "绑定工作区",
   "diagnostics.logsOperation.workspace.dir.create": "创建目录",
+  "diagnostics.logsOperation.workspace.checkpoint.write": "保存操作检查点",
   "diagnostics.logsOperation.workspace.file.write": "写入文件",
   "diagnostics.logsOperation.session.create": "创建会话",
   "diagnostics.logsOperation.session.branch": "分支会话",

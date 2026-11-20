@@ -1,3 +1,4 @@
+import { withOperationDeadline } from './operation-deadline.js'
 import { creationRow, nextPlaythroughNumber } from '../../../play/src/creation-publication.js'
 import { httpError } from '../../../play/src/http.js'
 import { isPlaythroughArchived } from '../../../play/src/playthrough-state.js'
@@ -61,7 +62,8 @@ async function acquire(client, row, request, scope, key, signal) {
   if (request.kind === 'fork') data.target = targetId(key)
   signal.throwIfAborted()
   return client.putCheckpoint(row, {key, owner: ownerFor(request.kind), data, expectedRevision: null,
-    expectedWorkspaceScope: scope, expectedTimelineRevision: file.revision})
+    expectedWorkspaceScope: scope, expectedTimelineRevision: file.revision,
+    expectedBinding: {path: saved.path, rootSessionId: root(saved), characterId: saved.ext?.pmpDshTavern?.characterId ?? null}})
 }
 
 function forkTimeline(timeline, data, child) {
@@ -119,6 +121,7 @@ async function publish(client, row, checkpoint, {signal, beforeWrite, preview, a
     await client.postBranch(data.source, data.end, data.version, undefined, {...ownership, operationKey: data.nativeKey, signal})
     receipt = await client.getSessionReceipt(data.nativeKey, scope)
   }
+  if (receipt.active) throw httpError(409, 'Native session operation is running', 'PLAY_SESSION_OPERATION_BUSY')
   if (receipt.state !== 'done') throw pending(key)
   const child = receipt.result?.sessionId
   if (!child || child === data.source) throw conflict()
@@ -175,21 +178,8 @@ async function returned(client, row, checkpoint) {
   return {ok: true, ...(playthrough ? {playthrough} : {}), sessionId: data.child, timeline}
 }
 
-async function bounded(options, work) {
-  const deadline = AbortSignal.timeout(35_000)
-  const signal = options?.signal ? AbortSignal.any([options.signal, deadline]) : deadline
-  signal.throwIfAborted()
-  let abort
-  const timeout = new Promise((_, reject) => {
-    abort = () => reject(signal.reason)
-    signal.addEventListener('abort', abort, {once: true})
-  })
-  try { return await Promise.race([timeout, work(signal)]) }
-  finally { signal.removeEventListener('abort', abort) }
-}
-
 export function runBranchOperation(client, row, request, options) {
-  return bounded(options, async signal => {
+  return withOperationDeadline(options, async signal => {
     if (!['fork', 'rollback'].includes(request.kind)) throw new TypeError('Unknown branch operation')
     const workspace = await client.getWorkspace()
     const scope = JSON.stringify([workspace.workspaceId, workspace.rootPath])
@@ -222,7 +212,7 @@ export async function repairBranchOperation(client, row, checkpoint, options = {
   try {
     const workspace = await client.getWorkspace()
     if (checkpoint.data.scope !== JSON.stringify([workspace.workspaceId, workspace.rootPath])) throw conflict()
-    const result = await bounded(options, signal => publish(client, row, checkpoint, {...options, signal, preview: !options.apply, allowBranch: false}))
+    const result = await withOperationDeadline(options, signal => publish(client, row, checkpoint, {...options, signal, preview: !options.apply, allowBranch: false}))
     return {changes: [{kind: fork ? 'fork-creation-recovered' : 'rollback-recovered', ...details, sessionId: result.sessionId}], remaining: []}
   } catch (error) {
     options.signal?.throwIfAborted()

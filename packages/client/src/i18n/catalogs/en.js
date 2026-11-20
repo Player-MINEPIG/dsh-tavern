@@ -377,6 +377,7 @@ export default Object.freeze({
   "diagnostics.logsResult.completed": "Operation completed · backend handler returned",
   "diagnostics.logsOperation.workspace.bind": "Bind workspace",
   "diagnostics.logsOperation.workspace.dir.create": "Create directory",
+  "diagnostics.logsOperation.workspace.checkpoint.write": "Save operation checkpoint",
   "diagnostics.logsOperation.workspace.file.write": "Write file",
   "diagnostics.logsOperation.session.create": "Create session",
   "diagnostics.logsOperation.session.branch": "Branch session",
