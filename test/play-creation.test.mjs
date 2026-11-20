@@ -190,3 +190,28 @@ test('a child used natively while publication was interrupted is preserved for m
   assert.equal(f.forks(), 1)
   assert.equal(JSON.parse(f.store.readFile('catalog.json').content).playthroughs.length, 1)
 })
+
+test('timeouts reading a known child or its source release the owner for repair and ignore late inspections', async t => {
+  const f = await fixture(t), inspect = f.host.inspectSession
+  const timer = setInterval(() => {}, 100); t.after(() => clearInterval(timer))
+  const service = createCreationService(f.store, f.host, { waitMs: 50 })
+  for (const blocked of ['child-1', 'source']) {
+    const gate = Promise.withResolvers(), started = Promise.withResolvers()
+    f.host.inspectSession = async id => {
+      if (id === blocked) { started.resolve(); await gate.promise }
+      return inspect(id)
+    }
+    const request = service.run('run', f.req)
+    await started.promise
+    await assert.rejects(request, { code: 'PLAY_CREATION_PENDING' })
+    const report = await service.repair(f.row, { apply: false })
+    assert.equal(report.remaining[0].stage, 'forked')
+    assert.equal(report.remaining[0].code, undefined)
+    gate.resolve()
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(JSON.parse(f.store.readFile('catalog.json').content).playthroughs.length, 1)
+  }
+  f.host.inspectSession = inspect
+  assert.deepEqual((await service.repair(f.row, { apply: true })).remaining, [])
+  assert.equal(f.forks(), 1)
+})

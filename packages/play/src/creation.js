@@ -85,7 +85,11 @@ export function createCreationService(store, host, { waitMs = 30_000 } = {}) {
       const stopped = signal ? AbortSignal.any([deadline, signal]) : deadline
       const file = store.readFile(row.path), lease = store.captureReadLease([row.path])
       const timeline = parseTimelineJson(file.content)
-      let record = read(current), lastSaved = record
+      let record = read(current), lastSaved = record, mutationInFlight = false
+      const hostMutation = async callback => {
+        mutationInFlight = true
+        try { return await callback() } finally { mutationInFlight = false }
+      }
       const checkCheckpoint = () => {
         if (JSON.stringify(read(current)) !== JSON.stringify(lastSaved)) throw creationConflict()
       }
@@ -134,11 +138,11 @@ export function createCreationService(store, host, { waitMs = 30_000 } = {}) {
             target, targetPath: characterId + '/' + target + '/timeline.json', characterId, createdAt: new Date().toISOString() })
           operation?.checkpoint('playthrough.fork.intent', { playthroughId: id, sessionId: variant.sessionId })
           try {
-            const created = await host.forkSession({ sessionId: variant.sessionId, atSeq: variant.endEventId,
+            const created = await hostMutation(() => host.forkSession({ sessionId: variant.sessionId, atSeq: variant.endEventId,
               sessionFormatVersion: variantFormatVersion(variant) }, { operation: { checkpoint(event, data) {
               if (event === 'session.created') save({ stage: 'created', child: requireSessionId(data.sessionId) })
               operation?.checkpoint(event, data)
-            } } })
+            } } }))
             const child = requireSessionId(created.sessionId)
             if (child === record.source || (record.child && record.child !== child)) throw creationConflict()
             save({ stage: 'forked', child })
@@ -158,11 +162,11 @@ export function createCreationService(store, host, { waitMs = 30_000 } = {}) {
         check()
         operation?.checkpoint('playthrough.fork.child-verified', { sessionId: record.child })
         if (record.stage !== 'ready') {
-          await copyBranchContext(host, variant.sessionId, record.child, variant.endEventId, { checkpoint(event, data) {
+          await hostMutation(() => copyBranchContext(host, variant.sessionId, record.child, variant.endEventId, { checkpoint(event, data) {
             save({ stage: event === 'session.selection.copied' ? 'selection-copied' : 'ready' })
             operation?.checkpoint(event, data)
             check()
-          } }, { selectionCopied: record.stage === 'selection-copied' })
+          } }, { selectionCopied: record.stage === 'selection-copied' }))
           if (record.stage !== 'ready') save({ stage: 'ready' })
         }
         check()
@@ -182,7 +186,9 @@ export function createCreationService(store, host, { waitMs = 30_000 } = {}) {
       let rejectStopped
       const interrupted = new Promise((_, reject) => {
         rejectStopped = () => {
-          if (!record) release() // A late preflight cannot pass check() and create a session.
+          // Read-only waits can expire before or after a fork. Their late
+          // results cannot pass check() or replace a newer checkpoint.
+          if (!mutationInFlight) release()
           reject(record ? pending(record) : httpError(409, 'Fork preflight stopped before Session creation. Retry after checking the Host.', 'PLAY_CREATION_PREFLIGHT_STOPPED'))
         }
       })
