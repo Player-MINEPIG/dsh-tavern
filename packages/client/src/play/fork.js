@@ -1,4 +1,5 @@
 import { variantFormatVersion } from '../../../play/src/session-coordinates.js'
+import { runBranchOperation } from './branch-recovery.js'
 import { creationRequest } from './creation-request.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 
@@ -45,9 +46,12 @@ export async function branchPlaythroughAtNode(client, { playthrough, nodeId } = 
 }
 
 export async function forkPlaythroughAtNode(client, { playthrough, nodeId, variantId, creationId } = {}) {
-  if (typeof client?.forkPlaythrough !== 'function') {
-    throw Object.assign(new Error('This client requires the Host forkPlaythrough API to create a recoverable branch.'), { code: 'PLAY_CREATION_UNAVAILABLE' })
+  const submit = typeof client?.getCheckpoint === 'function'
+    ? (row, body, options) => runBranchOperation(client, row, {...body, kind: 'fork'}, options)
+    : client?.forkPlaythrough?.bind(client)
+  if (!submit) {
+    throw Object.assign(new Error('Recoverable branching requires workspace checkpoints and session receipts.'), { code: 'PLAY_CREATION_UNAVAILABLE' })
   }
   return creationRequest(client, ['fork', playthrough.id, playthrough.path, nodeId, variantId], creationId,
-    (identity, options) => client.forkPlaythrough(playthrough, { nodeId, ...(variantId === undefined ? {} : { variantId }), ...identity }, options))
+    (identity, options) => submit(playthrough, { nodeId, ...(variantId === undefined ? {} : { variantId }), ...identity }, options))
 }
