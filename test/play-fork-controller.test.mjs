@@ -2,140 +2,65 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { forkPlaythroughAtNode } from '../packages/client/src/play/fork.js'
 
-function sourceTimeline() {
-  return { nodes: [
-    {
-      id: 'qa-1', kind: 'qa', displayOverride: null,
-      adoptedVariantId: 'v-1',
-      variants: [{ id: 'v-1', sessionId: 'ancestor-a', startEventId: 1, endEventId: 3 }],
+test('fork retries send the same creation identity and start a fresh identity after acknowledgement', async () => {
+  const calls = [], playthrough = { id: 'run', path: 'a/run/timeline.json' }
+  const client = {
+    getWorkspace: async () => ({ workspaceId: 'a', rootPath: '/work' }),
+    async forkPlaythrough(row, body) {
+      assert.equal(row, playthrough)
+      calls.push(body)
+      if (calls.length === 1) throw Error('response lost')
+      return { playthrough: { id: 'child' }, sessionId: 'child-session' }
     },
-    {
-      id: 'qa-2', kind: 'qa', displayOverride: 'display only',
-      adoptedVariantId: 'v-2b',
-      variants: [
-        { id: 'v-2a', sessionId: 'ancestor-a', startEventId: 4, endEventId: 6 },
-        { id: 'v-2b', sessionId: 'ancestor-b', startEventId: 4, endEventId: 7, ext: { pmpDshTavern: { sessionFormatVersion: 4 } } },
-      ],
-    },
-    {
-      id: 'qa-3', kind: 'qa', displayOverride: null,
-      adoptedVariantId: 'v-3',
-      variants: [{ id: 'v-3', sessionId: 'later', startEventId: 8, endEventId: 9 }],
-    },
-  ] }
-}
+  }
+  const request = () => forkPlaythroughAtNode(client, { playthrough, nodeId: 'qa' })
+  await assert.rejects(request(), /response lost/)
+  assert.equal((await request()).sessionId, 'child-session')
+  assert.deepEqual(calls[1], calls[0])
+  assert.equal(calls[1].expectedWorkspaceScope, JSON.stringify(['a', '/work']))
+  await request()
+  assert.notEqual(calls[2].creationId, calls[1].creationId)
+})
 
-test('Tavern fork branches durable history and rebases only the copied focus variant', async () => {
-  let catalog = { playthroughs: [{
-    id: 'old', path: 'character-a/old/timeline.json', title: '1周目',
-    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'ancestor-a', playthroughNumber: 1 } },
-  }] }
-  let savedTimeline
+test('clients without a durable fork service stop before creating a native child', async () => {
+  await assert.rejects(forkPlaythroughAtNode({ postBranch: assert.fail }, { playthrough: { id: 'run' }, nodeId: 'qa' }), { code: 'PLAY_CREATION_UNAVAILABLE' })
+})
+
+test('a fresh browser client reuses a lost fork receipt after remount', async t => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const disk = new Map()
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage: {
+    getItem: key => disk.get(key), setItem: (key, value) => disk.set(key, value), removeItem: key => disk.delete(key),
+  } } })
+  t.after(() => previous ? Object.defineProperty(globalThis, 'window', previous) : delete globalThis.window)
   const calls = []
-  const client = {
-    async getTimeline() { calls.push('timeline:read'); return sourceTimeline() },
-    async postBranch(sessionId, eventId) { calls.push(`branch:${sessionId}:${eventId}`); return { sessionId: 'child' } },
-    async getMessages() {
-      calls.push('messages:child')
-      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 4 }, { role: 'assistant', seq: 7 }] }
+  const client = () => ({
+    apiRoot: '/play', getWorkspace: async () => ({ rootPath: '/rp', workspaceId: 'work' }),
+    forkPlaythrough: async (_row, body) => {
+      calls.push(body)
+      if (calls.length === 1) throw Error('connection reset')
+      return { sessionId: 'original-child' }
     },
-    async createDirs(path) { calls.push(`dirs:${path}`) },
-    async putTimeline(playthrough, timeline) {
-      calls.push(`timeline:write:${playthrough.path}`)
-      savedTimeline = structuredClone(timeline)
-    },
-    async updateCatalog(mutator) {
-      calls.push('catalog:update')
-      catalog = await mutator(structuredClone(catalog))
-      return structuredClone(catalog)
-    },
-    async getFocus(playthrough) {
-      calls.push(`focus:${playthrough.id}`)
-      const node = savedTimeline.nodes.at(-1)
-      const variant = node.variants.find(item => item.id === node.adoptedVariantId)
-      return { playthroughId: playthrough.id, sessionId: variant.sessionId, nodeId: node.id, variantId: variant.id }
-    },
-  }
-
-  const result = await forkPlaythroughAtNode(client, {
-    playthrough: catalog.playthroughs[0],
-    nodeId: 'qa-2',
-    now: () => new Date('2026-08-21T00:00:00.000Z'),
-    randomUUID: () => 'fork-id',
   })
-
-  assert.equal(result.sessionId, 'child')
-  assert.equal(result.playthrough.title, '2周目')
-  assert.equal(result.playthrough.ext.pmpDshTavern.rootSessionId, 'child')
-  assert.equal(result.playthrough.ext.pmpDshTavern.autoTitle, true)
-  assert.equal(savedTimeline.nodes.length, 2)
-  assert.equal(savedTimeline.nodes[0].variants[0].sessionId, 'ancestor-a')
-  assert.equal(savedTimeline.nodes[1].variants[0].sessionId, 'ancestor-a')
-  assert.equal(savedTimeline.nodes[1].variants[1].sessionId, 'child')
-  assert.equal(savedTimeline.nodes[1].variants[1].ext.pmpDshTavern.sessionFormatVersion, 4)
-  assert.equal(sourceTimeline().nodes[1].variants[1].sessionId, 'ancestor-b')
-  assert.deepEqual(calls, [
-    'timeline:read',
-    'branch:ancestor-b:7',
-    'messages:child',
-    'dirs:character-a/playthrough-fork-id',
-    'timeline:write:character-a/playthrough-fork-id/timeline.json',
-    'catalog:update',
-    'focus:playthrough-fork-id',
-  ])
+  const args = { playthrough: { id: 'run', path: 'a/run/timeline.json' }, nodeId: 'qa', variantId: 'visible' }
+  await assert.rejects(forkPlaythroughAtNode(client(), args), /connection reset/)
+  assert.equal(disk.size, 1)
+  assert.equal((await forkPlaythroughAtNode(client(), args)).sessionId, 'original-child')
+  assert.deepEqual(calls[0], calls[1])
+  assert.equal(calls[1].variantId, 'visible')
+  assert.equal(disk.size, 0)
 })
 
-test('Tavern fork rejects a branch without the adopted durable range before workspace writes', async () => {
-  let writes = 0
-  const client = {
-    async getTimeline() { return sourceTimeline() },
-    async postBranch() { return { sessionId: 'child' } },
-    async getMessages() { return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 4 }] } },
-    async createDirs() { writes += 1 },
-    async putTimeline() { writes += 1 },
-    async updateCatalog() { writes += 1 },
-  }
-  await assert.rejects(forkPlaythroughAtNode(client, {
-    playthrough: { id: 'old', path: 'character-a/old/timeline.json', ext: { pmpDshTavern: { characterId: 'character-a' } } },
-    nodeId: 'qa-2',
-    randomUUID: () => 'fork-id',
-  }), /does not contain/)
-  assert.equal(writes, 0)
-})
-
-test('catalog CAS replay recomputes the playthrough number without repeating branch side effects', async () => {
-  let branchCalls = 0
-  let catalog = { playthroughs: [{
-    id: 'old', path: 'character-a/old/timeline.json',
-    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'ancestor-a', playthroughNumber: 1 } },
-  }] }
-  let savedTimeline
-  const client = {
-    async getTimeline() { return sourceTimeline() },
-    async postBranch() { branchCalls += 1; return { sessionId: 'child' } },
-    async getMessages() {
-      return { sessionFormatVersion: 4, incompleteTurn: false, messages: [{ role: 'user', seq: 4 }, { role: 'assistant', seq: 7 }] }
-    },
-    async createDirs() {},
-    async putTimeline(_playthrough, timeline) { savedTimeline = timeline },
-    async updateCatalog(mutator) {
-      await mutator(structuredClone(catalog))
-      catalog.playthroughs.push({
-        id: 'concurrent', path: 'character-a/concurrent/timeline.json',
-        ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'other', playthroughNumber: 2 } },
-      })
-      catalog = await mutator(structuredClone(catalog))
-      return structuredClone(catalog)
-    },
-    async getFocus(playthrough) {
-      const node = savedTimeline.nodes.at(-1)
-      return { playthroughId: playthrough.id, sessionId: 'child', nodeId: node.id, variantId: node.adoptedVariantId }
-    },
-  }
-  const result = await forkPlaythroughAtNode(client, {
-    playthrough: catalog.playthroughs[0], nodeId: 'qa-2', randomUUID: () => 'fork-id',
-  })
-  assert.equal(branchCalls, 1)
-  assert.equal(result.playthrough.title, '3周目')
-  assert.deepEqual(catalog.playthroughs.map(item => item.id), ['old', 'concurrent', 'playthrough-fork-id'])
+test('a late client preflight cannot submit a fork after the user sees a timeout', async t => {
+  const controller = new AbortController()
+  t.mock.method(AbortSignal, 'timeout', () => controller.signal)
+  const scope = Promise.withResolvers()
+  let called = false
+  const client = { getWorkspace: () => scope.promise, forkPlaythrough() { called = true } }
+  const request = forkPlaythroughAtNode(client, { playthrough: { id: 'run' }, nodeId: 'qa' })
+  controller.abort()
+  await assert.rejects(request, { code: 'PLAY_CREATION_TIMEOUT' })
+  scope.resolve({ workspaceId: 'work', rootPath: '/rp' })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(called, false)
 })

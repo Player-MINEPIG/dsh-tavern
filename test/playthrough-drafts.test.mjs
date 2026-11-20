@@ -164,3 +164,39 @@ test('cancel before admission and retry with new input do not retain character, 
   const stale = await invoke({expectedRevision:1}); assert.equal(stale.status,409); assert.equal(stale.body.code,'REVISION_CONFLICT')
   const override = await invoke({expectedRevision:0,sessionId:'other'}); assert.equal(override.status,400); assert.equal(override.body.code,'PLAY_DRAFT_INVALID')
  })
+
+for (const step of ['intent', 'timeline', 'catalog', 'receipt']) {
+  test('draft creation survives interrupted ' + step + ' with one stable ID and one catalog row', t => {
+    const { service, created, sessions } = fixture(t)
+    const body = { characterId: created.draft.selection.characterCardId, creationId: 'request-key' }
+    const write = service.workspace.writeFile
+    const persist = service.persist.bind(service)
+    let privateWrites = 0
+    service.persist = () => {
+      privateWrites++
+      if ((step === 'intent' && privateWrites === 1) || (step === 'receipt' && privateWrites === 2)) throw Error('private write interrupted')
+      return persist()
+    }
+    service.workspace.writeFile = (path, ...args) => {
+      if (step === 'timeline' && path.endsWith('/timeline.json') || step === 'catalog' && path === 'catalog.json') throw Error('publication interrupted')
+      return write(path, ...args)
+    }
+    assert.throws(() => service.create(body), /interrupted/)
+    const reopened = new PlaythroughDrafts({ ...service, storageDir: created.draft.rootPath })
+    t.after(() => reopened.dispose())
+    const preview = reopened.repairCreations({ apply: false })
+    assert.equal(preview.length, step === 'intent' ? 0 : 1)
+    service.workspace.writeFile = write
+    if (step !== 'intent') {
+      const repaired = reopened.repairCreations({ id: preview[0].id, apply: true })
+      assert.equal(repaired[0].changes[0].kind, 'draft-creation-recovered')
+    }
+    const replay = reopened.create(body)
+    assert.deepEqual(reopened.create(body), replay)
+    assert.equal(reopened.repairCreations({ apply: false }).length, 0)
+    assert.deepEqual(reopened.catalog().value.playthroughs.map(x => x.id), [created.draft.id, replay.draft.id])
+    assert.equal(sessions.size, 0)
+    assert.throws(() => reopened.create({ ...body, assemblyPresetId: null }), { code: 'PLAY_CREATION_CONFLICT' })
+    assert.throws(() => reopened.create({ ...body, expectedWorkspaceScope: 'another-workspace' }), { code: 'PLAY_WORKSPACE_CHANGED' })
+  })
+}

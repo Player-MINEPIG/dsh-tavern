@@ -62,103 +62,10 @@ const dependencies = {
   randomUUID: () => '11111111-2222-4333-8444-555555555555',
 }
 
-test('archived empty runs retain their identity and numbering when a new run is created', async () => {
+test('clients without durable draft creation reject a new run before a native or workspace write', async () => {
   const client = fakeClient()
-  const archived = {
-    id: 'previous', path: 'character-a/previous/timeline.json', title: 'My empty run',
-    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root', playthroughNumber: 7, archivedAt: '2026-09-19T00:00:00.000Z' } },
-  }
-  await client.putCatalog({ playthroughs: [archived] })
-  await client.putTimeline(archived, { nodes: [] })
-  client.calls.length = 0
-  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a', name: 'Alice' }, ...dependencies })
-  assert.equal(result.reused, false)
-  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 8)
-  assert.deepEqual((await client.getCatalog()).playthroughs[0], archived)
-  assert.equal(client.calls.some(call => call[0] === 'getTimeline' && call[1] === archived.path), false)
-})
-
-test('an empty run archived by another tab during history inspection is not reused', async () => {
-  const client = fakeClient()
-  const candidate = {
-    id: 'previous', path: 'character-a/previous/timeline.json',
-    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root', playthroughNumber: 1 } },
-  }
-  await client.putCatalog({ playthroughs: [candidate] })
-  await client.putTimeline(candidate, { nodes: [] })
-  client.getMessages = async () => {
-    candidate.ext.pmpDshTavern.archivedAt = '2026-09-19T00:00:00.000Z'
-    await client.putCatalog({ playthroughs: [candidate] })
-    return { messages: [], incompleteTurn: false }
-  }
-  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a', name: 'Alice' }, ...dependencies })
-  assert.equal(result.reused, false)
-  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 2)
-})
-
-test('new card playthrough binds the card and persists an empty verified timeline without a greeting message', async () => {
-  const client = fakeClient()
-  const result = await createCharacterPlaythrough(client, {
-    character: { id: 'character-a', name: 'Alice' },
-    ...dependencies,
-  })
-
-  assert.equal(result.sessionId, 'session-new')
-  assert.equal(result.playthrough.ext.pmpDshTavern.characterId, 'character-a')
-  assert.equal(result.playthrough.ext.pmpDshTavern.rootSessionId, 'session-new')
-  assert.equal(result.playthrough.title, '1周目')
-  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 1)
-  assert.equal(result.playthrough.ext.pmpDshTavern.autoTitle, true)
-  assert.deepEqual(client.calls[0], ['getCatalog'])
-  assert.deepEqual(client.calls[1], ['postSession', null])
-  assert.deepEqual(client.calls[2], ['getCharacterSelection', 'session-new'])
-  assert.deepEqual(client.calls[3], ['putCharacterSelection', 'session-new', 'character-a', { greetingIndex: 0 }])
-  const timelineWrite = client.calls.find(call => call[0] === 'putTimeline')
-  assert.match(timelineWrite[1], /^character-a\/playthrough-[^/]+\/timeline\.json$/)
-  assert.deepEqual(timelineWrite[2], { nodes: [] })
-  assert.equal(client.calls.some(call => call[0] === 'postUserMessage'), false)
-  assert.equal(client.calls.some(call => call[0] === 'putGreetingIndex'), false)
-})
-
-test('existing card session is copied instead of rebinding only the character', async () => {
-  const client = fakeClient({ copied: true })
-  const result = await createCharacterPlaythrough(client, {
-    character: { id: 'character-a', name: 'Alice' },
-    selectionFromSessionId: 'session-source',
-    ...dependencies,
-  })
-  assert.equal(result.playthrough.title, '1周目')
-  assert.deepEqual(client.calls[1], ['postSession', 'session-source'])
-  assert.equal(client.calls.some(call => call[0] === 'putCharacterSelection'), false)
-  assert.equal(client.calls.filter(call => call[0] === 'getCharacterSelection').length, 2)
-})
-
-test('copied DSH settings are corrected when they still point at the previously focused character', async () => {
-  const client = fakeClient({ copied: true })
-  const result = await createCharacterPlaythrough(client, {
-    character: { id: 'character-b', name: 'Bob' },
-    selectionFromSessionId: 'session-b-source',
-    ...dependencies,
-  })
-  assert.equal(result.playthrough.ext.pmpDshTavern.characterId, 'character-b')
-  assert.deepEqual(client.calls.find(call => call[0] === 'putCharacterSelection'), [
-    'putCharacterSelection', 'session-new', 'character-b', { greetingIndex: 0 },
-  ])
-})
-
-test('configured playthrough applies the full selection before enforcing the owning character', async () => {
-  const client = fakeClient({ copied: true })
-  const configured = []
-  await createCharacterPlaythrough(client, {
-    character: { id: 'character-b', name: 'Bob' },
-    configureSession: async sessionId => {
-      configured.push(sessionId)
-      await client.putCharacterSelection(sessionId, 'character-b', { greetingIndex: 3 })
-    },
-    ...dependencies,
-  })
-  assert.deepEqual(configured, ['session-new'])
-  assert.equal(client.calls.filter(call => call[0] === 'putCharacterSelection').length, 1)
+  await assert.rejects(createCharacterPlaythrough(client, { character: { id: 'character-a' }, reuseEmpty: false }), { code: 'PLAY_CREATION_UNAVAILABLE' })
+  assert.deepEqual(client.calls, [])
 })
 
 test('playthrough numbers are character-local and survive renamed or legacy rows', () => {
@@ -200,33 +107,6 @@ test('character source selection prefers active playthrough, then loose session,
   assert.equal(sourceSessionIdForCharacter({ playthroughs: [], unassigned: [] }), null)
 })
 
-test('controller deduplicates a same-character double click into one transaction', async () => {
-  const client = fakeClient()
-  const controller = createPlaythroughController(client, dependencies)
-  const args = { character: { id: 'character-a', name: 'Alice' } }
-  const first = controller.create(args)
-  const second = controller.create(args)
-  assert.equal(first, second)
-  const [left, right] = await Promise.all([first, second])
-  assert.equal(left.sessionId, right.sessionId)
-  assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
-  assert.equal(client.calls.filter(call => call[0] === 'putCatalog').length, 1)
-})
-
-test('selection verification failure stops before workspace metadata writes', async () => {
-  const client = fakeClient()
-  client.putCharacterSelection = async (...args) => {
-    client.calls.push(['putCharacterSelection', ...args])
-  }
-  await assert.rejects(createCharacterPlaythrough(client, {
-    character: { id: 'character-a', name: 'Alice' },
-    ...dependencies,
-  }), /selection did not persist/)
-  assert.equal(client.calls.some(call => call[0] === 'createDirs'), false)
-  assert.equal(client.calls.some(call => call[0] === 'putTimeline'), false)
-  assert.equal(client.calls.some(call => call[0] === 'putCatalog'), false)
-})
-
 test('latest empty playthrough is reused without creating workspace or session data', async () => {
   const playthrough = {
     id: 'pt-2', path: 'character-a/pt-2/timeline.json', title: '2周目',
@@ -248,86 +128,10 @@ test('latest empty playthrough is reused without creating workspace or session d
   assert.equal(calls.includes('postSession'), false)
 })
 
-test('explicit new playthrough never reads or reuses an empty initialized previous run', async () => {
-  const client = fakeClient()
-  const previous = {
-    id: 'old', path: 'character-a/old/timeline.json', title: 'Initialized opening',
-    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root', playthroughNumber: 2 } },
-  }
-  await client.putCatalog({ playthroughs: [previous] })
-  await client.putTimeline(previous, { nodes: [] })
-  client.getMessages = async () => { throw Error('The previous MVU run must not be inspected or resumed') }
-  const result = await createCharacterPlaythrough(client, {
-    character: { id: 'character-a' }, reuseEmpty: false, selectionFromSessionId: 'old-root', ...dependencies,
-  })
-  assert.equal(result.reused, false)
-  assert.equal(result.sessionId, 'session-new')
-  assert.notEqual(result.playthrough.id, previous.id)
-  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 3)
-  assert.deepEqual((await client.getCatalog()).playthroughs[0], previous)
-  assert.deepEqual(client.calls.find(call => call[0] === 'postSession'), ['postSession', 'old-root'])
-})
-
-test('explicit new and reusable requests share ordering but never share an in-flight result', async () => {
-  const client = fakeClient()
-  const previous = { id: 'old', path: 'character-a/old/timeline.json', ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root' } } }
-  await client.putCatalog({ playthroughs: [previous] })
-  await client.putTimeline(previous, { nodes: [] })
-  let release
-  const blocked = new Promise(resolve => { release = resolve })
-  client.getMessages = async () => { await blocked; return { messages: [], incompleteTurn: false } }
-  const controller = createPlaythroughController(client, dependencies)
-  const reusable = controller.create({ character: { id: 'character-a' } })
-  const fresh = controller.create({ character: { id: 'character-a' }, reuseEmpty: false })
-  assert.notEqual(fresh, reusable)
-  assert.equal(fresh, controller.create({ character: { id: 'character-a' }, reuseEmpty: false }))
-  release()
-  assert.equal((await reusable).sessionId, 'old-root')
-  assert.equal((await fresh).sessionId, 'session-new')
-  assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
-})
-
-test('controller passes the same effective reuse mode used for deduplication and rejects null', async () => {
-  const client = fakeClient()
-  const previous = { id: 'old', path: 'character-a/old/timeline.json', ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root' } } }
-  await client.putCatalog({ playthroughs: [previous] })
-  await client.putTimeline(previous, { nodes: [] })
-  client.getMessages = async () => { throw Error('The effective false mode must reach the transaction') }
-  const controller = createPlaythroughController(client, { ...dependencies, reuseEmpty: false })
-  assert.throws(() => controller.create({ character: { id: 'character-a' }, reuseEmpty: null }), /reuseEmpty/)
-  const first = controller.create({ character: { id: 'character-a' }, reuseEmpty: undefined })
-  assert.equal(first, controller.create({ character: { id: 'character-a' }, reuseEmpty: false }))
-  assert.equal((await first).reused, false)
-})
-
-test('an empty detached playthrough receives a new root session instead of creating another playthrough', async () => {
-  const playthrough = {
-    id: 'pt-vacant', path: 'character-a/pt-vacant/timeline.json', title: '2周目',
-    ext: { pmpDshTavern: { characterId: 'character-a', playthroughNumber: 2 } },
-  }
-  let catalog = { playthroughs: [playthrough] }
-  let selection = { selection: null }
-  const calls = []
-  const client = {
-    async getCatalog() { return structuredClone(catalog) },
-    async putCatalog(next) { catalog = structuredClone(next) },
-    async getTimeline() { return { nodes: [] } },
-    async postSession(sourceId) { calls.push(['postSession', sourceId]); return { sessionId: 'session-new' } },
-    async getCharacterSelection() { return selection },
-    async putCharacterSelection(sessionId, characterId, character) {
-      calls.push(['putCharacterSelection', sessionId, characterId, character])
-      selection = { selection: { characterCardId: characterId, character } }
-    },
-    async createDirs() { throw new Error('must not create another directory') },
-    async putTimeline() { throw new Error('must not create another timeline') },
-  }
-  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a' }, ...dependencies })
-  assert.equal(result.reused, true)
-  assert.equal(result.reattached, true)
-  assert.equal(result.playthrough.id, 'pt-vacant')
-  assert.equal(result.playthrough.title, '2周目')
-  assert.equal(result.playthrough.ext.pmpDshTavern.rootSessionId, 'session-new')
-  assert.deepEqual(calls[0], ['postSession', null])
+test('a detached legacy run cannot acquire an untracked native child', async () => {
+  const row = { id: 'vacant', path: 'card/vacant/timeline.json', ext: { pmpDshTavern: { characterId: 'card' } } }
+  const client = { getCatalog: async () => ({ playthroughs: [row] }), getTimeline: async () => ({ nodes: [] }), postSession: assert.fail }
+  await assert.rejects(createCharacterPlaythrough(client, { character: { id: 'card' } }), { code: 'PLAY_CREATION_UNAVAILABLE' })
 })
 
 test('a reusable empty playthrough repairs a stale character binding before navigation', async () => {
@@ -392,56 +196,6 @@ test('timeline QA, authoritative messages and incomplete turns each prevent empt
   client.history = { incompleteTurn: true, messages: [] }
   assert.equal(await playthroughIsReusable(client, playthrough), false)
 })
-
-test('a nonempty latest playthrough does not reuse an older empty one', async () => {
-  const older = {
-    id: 'pt-1', path: 'character-a/pt-1/timeline.json',
-    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'older', playthroughNumber: 1 } },
-  }
-  const latest = {
-    id: 'pt-2', path: 'character-a/pt-2/timeline.json',
-    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'latest', playthroughNumber: 2 } },
-  }
-  const client = fakeClient()
-  let catalog = { playthroughs: [older, latest] }
-  client.getCatalog = async () => catalog
-  client.getTimeline = async playthrough => playthrough.id === 'pt-2'
-    ? { nodes: [{ kind: 'qa' }] }
-    : { nodes: [] }
-  client.putCatalog = async value => { catalog = value }
-  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a' }, ...dependencies })
-  assert.equal(result.reused, false)
-  assert.equal(result.playthrough.title, '3周目')
-  assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
-})
-
-for (const failureAt of ['timeline', 'history']) {
-  test(`a missing session during ${failureAt} reuse checks does not block a new playthrough or rewrite the old one`, async () => {
-    const old = {
-      id: 'pt-old', path: 'character-a/pt-old/timeline.json', title: '2周目',
-      ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'missing-session', playthroughNumber: 2 }, external: { keep: true } },
-    }
-    const preserved = structuredClone(old)
-    let catalog = { playthroughs: [old] }
-    const client = fakeClient()
-    const missing = () => { throw Object.assign(new Error('session missing'), { code: 'PLAY_SESSION_NOT_FOUND', status: 404 }) }
-    const getTimeline = client.getTimeline.bind(client)
-    client.getCatalog = async () => structuredClone(catalog)
-    client.putCatalog = async next => { catalog = structuredClone(next) }
-    client.getTimeline = async playthrough => playthrough.id === old.id
-      ? failureAt === 'timeline' ? missing() : { nodes: [] }
-      : getTimeline(playthrough)
-    client.getMessages = missing
-    const result = await createCharacterPlaythrough(client, { character: { id: 'character-a' }, ...dependencies })
-    assert.equal(result.reused, false)
-    assert.equal(result.playthrough.title, '3周目')
-    assert.equal(result.sessionId, 'session-new')
-    assert.deepEqual(catalog.playthroughs[0], preserved)
-    assert.equal(catalog.playthroughs.length, 2)
-    assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
-    assert.ok(client.calls.filter(call => call[0] === 'putTimeline').every(call => call[1] !== old.path))
-  })
-}
 
 for (const code of ['PLAY_COORDINATES_MIGRATION_REQUIRED', 'PLAY_PATH_NOT_FOUND', 'PLAY_HOST_ERROR', 'FORBIDDEN']) {
   test(`reuse check still rejects ${code} without creating a session`, async () => {

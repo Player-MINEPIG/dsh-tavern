@@ -1,18 +1,8 @@
-import { requireCoordinates, variantFormatVersion, withVariantFormat } from '../../../play/src/session-coordinates.js'
-import { nextPlaythroughNumber } from './create.js'
-import { updateCatalog } from './mutations.js'
-import { playthroughCharacterId } from './schema.js'
+import { variantFormatVersion } from '../../../play/src/session-coordinates.js'
+import { creationRequest } from './creation-request.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 
-const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
-
-function safeSegment(value, label) {
-  if (typeof value !== 'string' || !SAFE_SEGMENT.test(value)) {
-    throw new TypeError(`${label} must be a safe path segment`)
-  }
-  return value
-}
 
 function safeSessionId(value) {
   if (typeof value !== 'string' || !SAFE_SESSION_ID.test(value)) {
@@ -25,30 +15,6 @@ function nodeById(timeline, nodeId) {
   const index = timeline.nodes.findIndex(node => node.id === nodeId)
   if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`)
   return { index, node: timeline.nodes[index] }
-}
-
-function forkedTimeline(source, nodeIndex, adoptedId, sessionId, version) {
-  const entries = activeTimelineEntries(source)
-  const activeIndex = entries.findIndex(entry => entry.node.id === source.nodes[nodeIndex].id)
-  if (activeIndex < 0) throw new TypeError('Fork target is not on the active timeline branch')
-  let parentVariantId = null
-  const nodes = entries.slice(0, activeIndex + 1).map(({ node, variant }) => {
-    const copy = {
-      ...node,
-      parentVariantId,
-      adoptedVariantId: variant.id,
-      variants: node.variants.map(item => node.id === source.nodes[nodeIndex].id && item.id === adoptedId
-        ? withVariantFormat({ ...item, sessionId }, version)
-        : { ...item }),
-    }
-    parentVariantId = variant.id
-    return copy
-  })
-  return {
-    ...source,
-    nodes,
-    head: { sessionId, nodeId: nodes.at(-1).id, variantId: adoptedId },
-  }
 }
 
 function inheritedRangeExists(messages, variant) {
@@ -78,65 +44,10 @@ export async function branchPlaythroughAtNode(client, { playthrough, nodeId } = 
   return { source, index, node, adopted, sessionId, inherited }
 }
 
-export async function forkPlaythroughAtNode(client, {
-  playthrough,
-  nodeId,
-  now = () => new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID(),
-} = {}) {
-  if (client == null) throw new TypeError('playClient.required')
-  const characterId = safeSegment(playthroughCharacterId(playthrough), 'character.id')
-  const { source, index, node, adopted, sessionId, inherited } = await branchPlaythroughAtNode(client, { playthrough, nodeId })
-
-  const value = now()
-  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError('now must return a valid Date')
-  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, 'playthrough.id')
-  const directory = `${characterId}/${playthroughId}`
-  const path = `${directory}/timeline.json`
-  requireCoordinates(variantFormatVersion(adopted), inherited)
-  const timeline = forkedTimeline(source, index, adopted.id, sessionId, inherited.sessionFormatVersion)
-  const draft = {
-    id: playthroughId,
-    path,
-    title: '周目',
-    lastOpenedAt: value.toISOString(),
-    ext: {
-      pmpDshTavern: {
-        characterId,
-        rootSessionId: sessionId,
-        playthroughNumber: 0,
-        autoTitle: true,
-      },
-    },
+export async function forkPlaythroughAtNode(client, { playthrough, nodeId, variantId, creationId } = {}) {
+  if (typeof client?.forkPlaythrough !== 'function') {
+    throw Object.assign(new Error('This client requires the Host forkPlaythrough API to create a recoverable branch.'), { code: 'PLAY_CREATION_UNAVAILABLE' })
   }
-
-  await client.createDirs(directory)
-  await client.putTimeline(draft, timeline)
-  let saved
-  const catalog = await updateCatalog(client, fresh => {
-    const existing = fresh.playthroughs.find(item => item.id === playthroughId && item.path === path)
-    if (existing !== undefined) {
-      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) {
-        throw new Error('playthrough.fork.identityConflict')
-      }
-      saved = existing
-      return fresh
-    }
-    const playthroughNumber = nextPlaythroughNumber(fresh, characterId)
-    saved = {
-      ...draft,
-      title: `${playthroughNumber}周目`,
-      ext: {
-        ...draft.ext,
-        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber, autoTitle: true },
-      },
-    }
-    return { ...fresh, playthroughs: [...fresh.playthroughs, saved] }
-  })
-  saved ??= catalog?.playthroughs?.find(item => item.id === playthroughId && item.path === path)
-  const focus = await client.getFocus(saved ?? draft)
-  if (focus.sessionId !== sessionId || focus.nodeId !== node.id || focus.variantId !== adopted.id) {
-    throw new Error('Forked playthrough focus verification failed')
-  }
-  return { sessionId, playthrough: saved ?? draft, timeline }
+  return creationRequest(client, ['fork', playthrough.id, playthrough.path, nodeId, variantId], creationId,
+    (identity, options) => client.forkPlaythrough(playthrough, { nodeId, ...(variantId === undefined ? {} : { variantId }), ...identity }, options))
 }

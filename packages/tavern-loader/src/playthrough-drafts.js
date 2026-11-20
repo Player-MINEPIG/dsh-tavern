@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { atomicJson, readJsonFile } from '../../play/src/atomic-json.js'
+import { creationConflict, publishCreation } from '../../play/src/creation-publication.js'
 import { httpError } from '../../play/src/http.js'
 import { parseCatalogJson, validatePlayDocument } from '../../play/src/timeline.js'
 import { isPlaythroughArchived } from '../../play/src/playthrough-state.js'
@@ -39,6 +40,7 @@ export class PlaythroughDrafts {
     if (!safeId(id)) fail('PLAY_DRAFT_INVALID', 'Invalid draft identity', 400)
     const record = this.state.records[id], binding = this.workspace.get()
     if (!record || record.id !== id || record.rootPath !== binding.rootPath) fail('PLAY_DRAFT_NOT_FOUND', 'Draft does not belong to this workspace', 404)
+    if (record.creation && record.creation.stage !== 'done') fail('PLAY_CREATION_PENDING', 'Draft publication is pending. Retry creation or use Repair playthrough. Operation ' + record.creation.key)
     const playthrough = this.catalog().value.playthroughs.find(row => row.id === id && row.path === record.path && row.ext?.pmpDshTavern?.draftId === id)
     if (!playthrough || playthrough.ext.pmpDshTavern.characterId !== record.selection.characterCardId) fail('PLAY_DRAFT_NOT_FOUND', 'Draft playthrough reference changed', 404)
     if (isPlaythroughArchived(playthrough)) fail('PLAY_DRAFT_ARCHIVED', 'This playthrough is archived')
@@ -61,25 +63,70 @@ export class PlaythroughDrafts {
     const greeting = createCharacterCardResource(character, { characterCardId: character.id, character: { greetingIndex } }).greeting
     return applyMvuGreetingInitialization(normalizeVariables(initial), greeting.text)
   }
-  create({ characterId, source, selection, assemblyPresetId } = {}) {
+  saveCreation(record) {
+    const previous = this.state.records[record.id]
+    this.state.records[record.id] = record
+    try { this.persist() } catch (error) {
+      if (previous) this.state.records[record.id] = previous
+      else delete this.state.records[record.id]
+      throw error
+    }
+  }
+  publishCreation(record, beforeWrite) {
+    const { creation } = record
     const binding = this.workspace.get()
+    if (creation.scope !== JSON.stringify([binding.workspaceId, binding.rootPath])) throw creationConflict()
+    if (creation.stage === 'done') {
+      const draft = this.record(record.id)
+      const playthrough = this.catalog().value.playthroughs.find(row => row.id === record.id)
+      return { draft: copy(draft), playthrough, sessionId: playthrough.ext?.pmpDshTavern?.rootSessionId ?? null }
+    }
+    const playthrough = publishCreation(this.workspace, { ...creation, id: record.id, path: record.path, content: JSON.stringify({ nodes: [] }) }, beforeWrite)
+    const committed = { ...record, creation: { ...creation, stage: 'done' } }
+    this.saveCreation(committed)
+    return { draft: copy(committed), playthrough, sessionId: null }
+  }
+  repairCreations({ id, apply = false, signal, beforeWrite } = {}) {
+    const binding = this.workspace.get(), scope = JSON.stringify([binding.workspaceId, binding.rootPath])
+    const items = []
+    for (const record of Object.values(this.state.records)) {
+      if ((id && id !== record.id) || record.creation?.scope !== scope || record.creation.stage === 'done') continue
+      signal?.throwIfAborted()
+      const item = { id: record.id, changes: [], remaining: [] }
+      const details = { operationId: record.creation.key, stage: record.creation.stage }
+      if (!apply) item.remaining.push({ reason: 'draft-creation-pending', ...details })
+      else {
+        try { this.publishCreation(record, beforeWrite); item.changes.push({ kind: 'draft-creation-recovered', ...details }) }
+        catch (error) { item.remaining.push({ reason: 'draft-creation-pending', ...details, code: error.code ?? 'repair-unavailable' }) }
+      }
+      items.push(item)
+    }
+    return items
+  }
+  create({ characterId, source, selection, assemblyPresetId, creationId, expectedWorkspaceScope } = {}) {
+    const binding = this.workspace.get(), scope = JSON.stringify([binding.workspaceId, binding.rootPath])
     if (!binding.rootPath) fail('PLAY_WORKSPACE_UNBOUND', 'Select an RP workspace first')
+    if (expectedWorkspaceScope !== undefined && expectedWorkspaceScope !== scope) fail('PLAY_WORKSPACE_CHANGED', 'The RP workspace changed')
+    if (creationId !== undefined && !safeId(creationId)) fail('PLAY_DRAFT_INVALID', 'Invalid creation identity', 400)
+    const fingerprint = hash({ characterId, source, selection, assemblyPresetId })
+    const previous = Object.values(this.state.records).find(row => row.creation?.scope === scope
+      && (creationId ? row.creation.key === creationId : row.creation.stage !== 'done' && row.creation.fingerprint === fingerprint))
+    if (previous) {
+      if (previous.creation.fingerprint !== fingerprint) throw creationConflict()
+      return this.publishCreation(previous)
+    }
     let value = selection ?? (source ? this.configurations.preview(source).selection : this.selections.get(null))
     if (characterId) value = { ...value, characterCardId: characterId, character: value.characterCardId === characterId ? value.character : { greetingIndex: 0 } }
     value = this.validateSelection(value)
     const character = this.characters.get(value.characterCardId), id = `playthrough-${randomUUID()}`, directory = `${value.characterCardId}/${id}`
-    const { value: catalog, revision } = this.catalog()
-    let number = 0, ordinal = 0
-    for (const row of catalog.playthroughs) if (row.ext?.pmpDshTavern?.characterId === value.characterCardId) { ordinal++; number = Math.max(number, row.ext.pmpDshTavern.playthroughNumber ?? ordinal) }
     const preset = assemblyPresetId !== undefined ? (assemblyPresetId === null ? null : this.assembly.get(assemblyPresetId))
       : source?.mode === 'current' ? this.assembly.selection(source.sessionId) : this.assembly.get(this.assembly.defaultPresetId ?? 'builtin-native-slots')
     const record = { id, path: `${directory}/timeline.json`, rootPath: binding.rootPath, selection: value, assembly: preset, characterHash: hash(character), variables: this.initial(character, value.character.greetingIndex ?? 0), revision: 0, variableRevision: 0, phase: 'draft', claim: null, receipts: [] }
     record.greetingVariables = { [value.character.greetingIndex ?? 0]: copy(record.variables) }
-    this.workspace.writeFile(record.path, JSON.stringify({ nodes: [] }), { validate: validatePlayDocument, expectedRevision: null, expectedRevisionPresent: true })
-    this.state.records[id] = record; this.persist()
-    const playthrough = { id, path: record.path, title: `${number + 1}周目`, lastOpenedAt: new Date().toISOString(), ext: { pmpDshTavern: { characterId: value.characterCardId, characterName: character.name, ...(character.sha256 ? { characterSha256: character.sha256 } : {}), draftId: id, playthroughNumber: number + 1, autoTitle: true } } }
-    this.saveCatalog({ ...catalog, playthroughs: [...catalog.playthroughs, playthrough] }, revision)
-    return { draft: copy(record), playthrough, sessionId: null }
+    record.creation = { key: creationId ?? randomUUID(), stage: 'planned', fingerprint, scope, createdAt: new Date().toISOString(),
+      meta: { characterId: value.characterCardId, characterName: character.name, ...(character.sha256 ? { characterSha256: character.sha256 } : {}), draftId: id } }
+    this.saveCreation(record)
+    return this.publishCreation(record)
   }
   async read(id) {
     const record = this.record(id)
